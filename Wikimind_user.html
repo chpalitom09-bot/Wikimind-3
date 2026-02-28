@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WikiMind • Espace Utilisateur</title>
+    <title>WikiMind • Accès Utilisateur</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <!-- Toastify pour les erreurs de login -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     
     <script>
         tailwind.config = {
@@ -13,7 +15,7 @@
             theme: {
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
-                    colors: { brand: { 500: '#6366f1', glow: '#818cf8' } }
+                    colors: { brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' } }
                 }
             }
         }
@@ -22,172 +24,279 @@
         body { background-color: #050505; color: #ffffff; }
         .glass-card {
             background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
         }
+        .login-input {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: white; outline: none; transition: all 0.3s;
+        }
+        .login-input:focus { border-color: #6366f1; background: rgba(255,255,255,0.1); }
     </style>
 </head>
-<body class="min-h-screen flex flex-col md:flex-row">
+<body class="min-h-screen flex">
 
-    <!-- SIDEBAR -->
-    <aside class="w-full md:w-64 border-r border-white/5 bg-black/50 p-6 flex flex-col justify-between">
-        <div>
-            <div class="flex items-center gap-3 mb-10">
-                <div class="w-8 h-8 bg-gradient-to-tr from-brand-500 to-purple-500 rounded-lg flex items-center justify-center">
-                    <span class="font-bold text-white">W</span>
-                </div>
-                <span class="font-display font-bold text-lg">WikiMind OS</span>
-            </div>
-            
-            <nav class="space-y-2">
-                <a href="#" class="block px-4 py-3 rounded-xl bg-white/10 text-white font-medium text-sm flex items-center gap-3">
-                    <span>📊</span> Tableau de bord
-                </a>
-                <a href="#" class="block px-4 py-3 rounded-xl text-white/50 hover:text-white hover:bg-white/5 font-medium text-sm transition flex items-center gap-3">
-                    <span>🔐</span> Sécurité & Données
-                </a>
-                <a href="#" class="block px-4 py-3 rounded-xl text-white/50 hover:text-white hover:bg-white/5 font-medium text-sm transition flex items-center gap-3">
-                    <span>🧩</span> Applications
-                </a>
-                <a href="index.html" class="block px-4 py-3 rounded-xl text-white/50 hover:text-white hover:bg-white/5 font-medium text-sm transition flex items-center gap-3">
-                    <span>↩️</span> Retour à l'accueil
-                </a>
-            </nav>
+    <!-- LOADING OVERLAY (Pour éviter le flash du formulaire si déjà connecté) -->
+    <div id="loader" class="fixed inset-0 z-50 bg-black flex items-center justify-center">
+        <div class="animate-spin w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full"></div>
+    </div>
+
+    <!-- === SECTION 1 : LOGIN FORM (Visible si NON connecté) === -->
+    <div id="auth-view" class="hidden w-full h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
+        <!-- Background Effect -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-brand-500/20 blur-[100px] rounded-full -z-10"></div>
+
+        <div class="text-center mb-8">
+            <h1 class="font-display font-bold text-4xl mb-2">WikiMind <span class="text-brand-glow">ID</span></h1>
+            <p class="text-white/40">Connectez-vous pour accéder à votre écosystème.</p>
         </div>
 
-        <button id="logout-btn" class="w-full py-3 rounded-xl border border-red-500/20 text-red-400 hover:bg-red-500/10 text-sm font-bold transition flex items-center justify-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-            Déconnexion
-        </button>
-    </aside>
+        <div class="glass-card w-full max-w-md p-8 rounded-3xl shadow-2xl">
+            
+            <!-- Social Login -->
+            <div class="grid grid-cols-3 gap-3 mb-6">
+                <button id="btn-google" class="flex items-center justify-center p-3 rounded-xl bg-white/5 hover:bg-white/10 transition border border-white/5 hover:border-brand-500/30">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-6 h-6" alt="Google">
+                </button>
+                <button id="btn-microsoft" class="flex items-center justify-center p-3 rounded-xl bg-white/5 hover:bg-white/10 transition border border-white/5 hover:border-brand-500/30">
+                    <img src="https://www.svgrepo.com/show/452263/microsoft.svg" class="w-6 h-6" alt="Microsoft">
+                </button>
+                <button id="btn-facebook" class="flex items-center justify-center p-3 rounded-xl bg-white/5 hover:bg-white/10 transition border border-white/5 hover:border-brand-500/30">
+                    <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" class="w-6 h-6" alt="Facebook">
+                </button>
+            </div>
 
-    <!-- MAIN CONTENT -->
-    <main class="flex-1 p-8 md:p-12 overflow-y-auto">
-        <header class="flex justify-between items-center mb-12">
+            <div class="relative flex py-2 items-center mb-6">
+                <div class="flex-grow border-t border-white/10"></div>
+                <span class="flex-shrink-0 mx-4 text-white/30 text-xs">OU EMAIL</span>
+                <div class="flex-grow border-t border-white/10"></div>
+            </div>
+
+            <!-- Email Form -->
+            <form id="email-form" class="space-y-4">
+                <div>
+                    <input type="email" id="email" placeholder="Adresse Email" class="login-input w-full p-3 rounded-xl text-sm" required>
+                </div>
+                <div>
+                    <input type="password" id="password" placeholder="Mot de passe" class="login-input w-full p-3 rounded-xl text-sm" required>
+                </div>
+                <button type="submit" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 rounded-xl transition shadow-[0_0_20px_rgba(99,102,241,0.3)]">
+                    Se Connecter / Créer
+                </button>
+            </form>
+
+            <div class="mt-6 text-center">
+                <a href="index.html" class="text-xs text-white/40 hover:text-white transition border-b border-transparent hover:border-white/40 pb-0.5">Retourner à l'accueil sans connexion</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- === SECTION 2 : DASHBOARD (Visible si Connecté) === -->
+    <div id="dashboard-view" class="hidden w-full h-screen flex flex-col md:flex-row">
+        
+        <!-- SIDEBAR -->
+        <aside class="w-full md:w-64 border-r border-white/5 bg-black/50 p-6 flex flex-col justify-between z-20 glass-card">
             <div>
-                <h1 class="text-3xl font-display font-bold mb-1">Bonjour, <span id="user-display-name" class="text-brand-glow">Utilisateur</span></h1>
-                <p class="text-white/40 text-sm">Gérez votre identité numérique unifiée.</p>
-            </div>
-            <img id="user-avatar-large" src="" class="w-12 h-12 rounded-full border border-white/10 shadow-lg">
-        </header>
-
-        <!-- DASHBOARD GRID -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            
-            <!-- Profil Card -->
-            <div class="glass-card rounded-2xl p-6 col-span-1 md:col-span-2">
-                <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-green-500"></span> État du Compte
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="p-4 rounded-xl bg-white/5">
-                        <div class="text-xs text-white/40 uppercase mb-1">Email</div>
-                        <div id="user-email" class="text-white font-mono text-sm truncate">...</div>
+                <div class="flex items-center gap-3 mb-10">
+                    <div class="w-8 h-8 bg-gradient-to-tr from-brand-500 to-purple-500 rounded-lg flex items-center justify-center">
+                        <span class="font-bold text-white">W</span>
                     </div>
-                    <div class="p-4 rounded-xl bg-white/5">
-                        <div class="text-xs text-white/40 uppercase mb-1">ID Unique</div>
-                        <div id="user-uid" class="text-white font-mono text-xs truncate opacity-50">...</div>
-                    </div>
-                    <div class="p-4 rounded-xl bg-white/5 col-span-1 md:col-span-2">
-                        <div class="text-xs text-white/40 uppercase mb-1">Dernière connexion</div>
-                        <div id="last-login" class="text-white text-sm">...</div>
-                    </div>
+                    <span class="font-display font-bold text-lg">WikiMind OS</span>
                 </div>
-            </div>
-
-            <!-- Storage Card -->
-            <div class="glass-card rounded-2xl p-6 relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-20 bg-brand-500/10 blur-[60px] rounded-full"></div>
-                <h3 class="text-lg font-bold mb-6">Stockage Hybride</h3>
                 
-                <div class="space-y-4 relative z-10">
-                    <div>
-                        <div class="flex justify-between text-xs mb-2">
-                            <span class="text-white/60">Local (Appareil)</span>
-                            <span class="text-brand-glow">45%</span>
-                        </div>
-                        <div class="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                            <div class="h-full bg-brand-500 w-[45%]"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-xs mb-2">
-                            <span class="text-white/60">Cloud Privé (WikiMind)</span>
-                            <span class="text-purple-400">12%</span>
-                        </div>
-                        <div class="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                            <div class="h-full bg-purple-500 w-[12%]"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-6 text-xs text-white/30 text-center">
-                    Toutes les données Cloud sont chiffrées de bout en bout.
-                </div>
+                <nav class="space-y-2">
+                    <a href="#" class="block px-4 py-3 rounded-xl bg-brand-500/20 text-brand-glow font-medium text-sm flex items-center gap-3 border border-brand-500/20">
+                        <span>📊</span> Tableau de bord
+                    </a>
+                    <a href="index.html" class="block px-4 py-3 rounded-xl text-white/50 hover:text-white hover:bg-white/5 font-medium text-sm transition flex items-center gap-3">
+                        <span>🏠</span> Retour Accueil
+                    </a>
+                </nav>
             </div>
 
-            <!-- Services Connectés -->
-            <div class="glass-card rounded-2xl p-6 col-span-1 md:col-span-3">
-                <h3 class="text-lg font-bold mb-6">Applications Autorisées</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/5">
-                        <div class="w-10 h-10 rounded bg-indigo-500/20 flex items-center justify-center text-xl">🧠</div>
-                        <div>
-                            <div class="font-bold text-sm">WikiMind Core</div>
-                            <div class="text-xs text-green-400">Connecté</div>
+            <button id="logout-btn" class="w-full py-3 rounded-xl border border-red-500/20 text-red-400 hover:bg-red-500/10 text-sm font-bold transition flex items-center justify-center gap-2">
+                Déconnexion
+            </button>
+        </aside>
+
+        <!-- DASHBOARD CONTENT -->
+        <main class="flex-1 p-8 md:p-12 overflow-y-auto bg-gradient-to-br from-[#050505] to-[#0a0a0a]">
+            <header class="flex justify-between items-center mb-12">
+                <div>
+                    <h1 class="text-3xl font-display font-bold mb-1">Bienvenue, <span id="user-display-name" class="text-brand-glow">...</span></h1>
+                    <p class="text-white/40 text-sm">Votre identité numérique est synchronisée.</p>
+                </div>
+                <img id="user-avatar-large" src="" class="w-12 h-12 rounded-full border border-white/10 shadow-lg">
+            </header>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Info Card -->
+                <div class="glass-card rounded-2xl p-6 col-span-1 md:col-span-2">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> État du Compte
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-4 rounded-xl bg-white/5">
+                            <div class="text-xs text-white/40 uppercase mb-1">Email</div>
+                            <div id="user-email" class="text-white font-mono text-sm truncate">...</div>
+                        </div>
+                        <div class="p-4 rounded-xl bg-white/5">
+                            <div class="text-xs text-white/40 uppercase mb-1">ID Utilisateur</div>
+                            <div id="user-uid" class="text-white font-mono text-xs truncate opacity-50">...</div>
                         </div>
                     </div>
-                    <div class="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/5">
-                        <div class="w-10 h-10 rounded bg-purple-500/20 flex items-center justify-center text-xl">💬</div>
+                </div>
+
+                <!-- Storage Visualization -->
+                <div class="glass-card rounded-2xl p-6 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-20 bg-brand-500/10 blur-[60px] rounded-full"></div>
+                    <h3 class="text-lg font-bold mb-6">Stockage Hybride</h3>
+                    <div class="space-y-4 relative z-10">
                         <div>
-                            <div class="font-bold text-sm">Community Hub</div>
-                            <div class="text-xs text-green-400">Connecté</div>
+                            <div class="flex justify-between text-xs mb-2">
+                                <span class="text-white/60">Local (Appareil)</span>
+                                <span class="text-brand-glow">45%</span>
+                            </div>
+                            <div class="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                                <div class="h-full bg-brand-500 w-[45%]"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs mb-2">
+                                <span class="text-white/60">WikiMind Cloud</span>
+                                <span class="text-purple-400">10%</span>
+                            </div>
+                            <div class="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                                <div class="h-full bg-purple-500 w-[10%]"></div>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-dashed border-white/20 opacity-50">
-                        <div class="w-10 h-10 rounded flex items-center justify-center text-xl">➕</div>
-                        <div>
-                            <div class="font-bold text-sm">Connecter une App</div>
-                            <div class="text-xs">Bientôt disponible</div>
+                </div>
+
+                <!-- Connected Services -->
+                <div class="glass-card rounded-2xl p-6 col-span-1 md:col-span-3">
+                    <h3 class="text-lg font-bold mb-6">Services Actifs</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/5">
+                            <div class="w-10 h-10 rounded bg-indigo-500/20 flex items-center justify-center text-xl">🧠</div>
+                            <div>
+                                <div class="font-bold text-sm">WikiMind Core</div>
+                                <div class="text-xs text-green-400">Synchronisé</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/5">
+                            <div class="w-10 h-10 rounded bg-purple-500/20 flex items-center justify-center text-xl">💬</div>
+                            <div>
+                                <div class="font-bold text-sm">Community Hub</div>
+                                <div class="text-xs text-green-400">Connecté</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </main>
+    </div>
 
-        </div>
-    </main>
-
-    <!-- SCRIPT (AUTH CHECK ONLY) -->
+    <!-- SCRIPT AUTH LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signOut, GoogleAuthProvider, FacebookAuthProvider, OAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import Toastify from "https://cdn.jsdelivr.net/npm/toastify-js/src/toastify-es.js";
 
+        // CONFIG (Projet Auth)
         const authConfig = {
             apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
             authDomain: "wikimind-3-comments.firebaseapp.com",
             projectId: "wikimind-3-comments",
-            storageBucket: "wikimind-3-comments.firebasestorage.app",
-            messagingSenderId: "137479541640",
             appId: "1:137479541640:web:4ed2510a9908055052e03d"
         };
         const app = initializeApp(authConfig);
         const auth = getAuth(app);
 
+        // DOM ELEMENTS
+        const loader = document.getElementById('loader');
+        const authView = document.getElementById('auth-view');
+        const dashboardView = document.getElementById('dashboard-view');
+
+        // STATE MANAGER
         onAuthStateChanged(auth, (user) => {
+            loader.style.display = 'none'; // Stop loading
+            
             if (user) {
-                // Populate Data
-                document.getElementById('user-display-name').textContent = user.displayName || "Utilisateur";
+                // User is logged in -> Show Dashboard
+                authView.classList.add('hidden');
+                dashboardView.classList.remove('hidden');
+                dashboardView.classList.add('flex'); // important for layout
+                
+                // Fill Dashboard Data
+                document.getElementById('user-display-name').textContent = user.displayName || user.email.split('@')[0];
                 document.getElementById('user-email').textContent = user.email;
                 document.getElementById('user-uid').textContent = user.uid;
-                document.getElementById('user-avatar-large').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}&background=random`;
-                document.getElementById('last-login').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                document.getElementById('user-avatar-large').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=random`;
             } else {
-                // Redirect if not logged in
-                window.location.href = "index.html";
+                // No user -> Show Login Form
+                dashboardView.classList.add('hidden');
+                dashboardView.classList.remove('flex');
+                authView.classList.remove('hidden');
+                authView.classList.add('flex');
             }
         });
 
+        // LOGIN ACTIONS
+        const showError = (msg) => Toastify({ text: msg, duration: 3000, style: { background: "#ef4444" } }).showToast();
+
+        // 1. Google
+        document.getElementById('btn-google').addEventListener('click', () => {
+            const provider = new GoogleAuthProvider();
+            signInWithPopup(auth, provider).catch(err => showError(err.message));
+        });
+
+        // 2. Microsoft
+        document.getElementById('btn-microsoft').addEventListener('click', () => {
+            const provider = new OAuthProvider('microsoft.com');
+            provider.setCustomParameters({ prompt: 'select_account' });
+            signInWithPopup(auth, provider).catch(err => showError(err.message));
+        });
+
+        // 3. Facebook
+        document.getElementById('btn-facebook').addEventListener('click', () => {
+            const provider = new FacebookAuthProvider();
+            signInWithPopup(auth, provider).catch(err => showError(err.message));
+        });
+
+        // 4. Email / Password (Auto Login or Create)
+        document.getElementById('email-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            // Try to Login first
+            signInWithEmailAndPassword(auth, email, password)
+                .then(() => {
+                    Toastify({ text: "Connexion réussie", duration: 2000, style: { background: "#10b981" } }).showToast();
+                })
+                .catch((error) => {
+                    // If user not found, try to Create Account
+                    if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                        if(confirm("Aucun compte trouvé. Voulez-vous en créer un avec ces identifiants ?")) {
+                            createUserWithEmailAndPassword(auth, email, password)
+                                .then((userCredential) => {
+                                    // Set default display name from email
+                                    updateProfile(userCredential.user, { displayName: email.split('@')[0] });
+                                    Toastify({ text: "Compte créé !", duration: 2000, style: { background: "#10b981" } }).showToast();
+                                })
+                                .catch(createErr => showError(createErr.message));
+                        }
+                    } else {
+                        showError(error.message);
+                    }
+                });
+        });
+
+        // LOGOUT ACTION
         document.getElementById('logout-btn').addEventListener('click', () => {
             signOut(auth).then(() => {
-                window.location.href = "index.html";
+                Toastify({ text: "Déconnecté", duration: 2000 }).showToast();
+                // AuthStateChanged will handle the UI switch
             });
         });
     </script>
