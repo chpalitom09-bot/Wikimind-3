@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>WikiMind OS • Intelligence Cognitive</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome pour les icônes (Coeur, Poubelle, Reply) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
@@ -14,10 +16,10 @@
                     fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
                     colors: {
                         glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
-                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' }
+                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8', dark: '#312e81' }
                     },
-                    animation: { 'fade-in-up': 'fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards' },
-                    keyframes: { fadeInUp: { '0%': { opacity: 0, transform: 'translateY(20px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } } }
+                    animation: { 'fade-in-up': 'fadeInUp 0.5s ease-out forwards' },
+                    keyframes: { fadeInUp: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } } }
                 }
             }
         }
@@ -29,13 +31,15 @@
             border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         }
         .text-gradient { background: linear-gradient(135deg, #ffffff 0%, #a5a6f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .search-active .module-card { opacity: 0.3; filter: blur(2px); transition: all 0.3s; }
-        .search-active .module-card.match { opacity: 1; filter: blur(0); border-color: #6366f1; }
         
-        /* Scrollbar Commentaire */
-        .custom-scroll::-webkit-scrollbar { width: 4px; }
-        .custom-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
-        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        /* Recherche */
+        .search-active .module-card { opacity: 0.3; filter: blur(2px); transition: all 0.3s; }
+        .search-active .module-card.match { opacity: 1; filter: blur(0); border-color: #6366f1; transform: scale(1.02); }
+        
+        /* Commentaires */
+        .comment-thread { border-left: 2px solid rgba(255,255,255,0.05); margin-left: 1.5rem; padding-left: 1rem; }
+        .like-anim { animation: heartPop 0.3s ease-out; }
+        @keyframes heartPop { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
     </style>
 </head>
 <body class="selection:bg-brand-500 selection:text-white">
@@ -53,24 +57,30 @@
                 <span class="font-display font-bold text-lg tracking-tight">WikiMind <span class="text-white/40 font-normal">3.0</span></span>
             </a>
 
-            <!-- Search Bar (Desktop) -->
+            <!-- Search Bar -->
             <div class="hidden md:flex flex-1 max-w-md mx-8 relative group">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg class="h-4 w-4 text-white/40 group-focus-within:text-brand-glow transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <i class="fa-solid fa-search text-white/40"></i>
                 </div>
-                <input type="text" id="app-search" placeholder="Rechercher un service (ex: Studio, Core...)" 
+                <input type="text" id="app-search" placeholder="Rechercher (Core, Studio, Academy...)" 
                        class="block w-full pl-10 pr-3 py-1.5 border border-white/10 rounded-full leading-5 bg-white/5 text-white placeholder-white/30 focus:outline-none focus:bg-white/10 focus:border-brand-500 sm:text-sm transition-all">
             </div>
 
             <!-- Auth State -->
             <div id="auth-container" class="flex items-center gap-4">
+                <!-- État déconnecté -->
                 <a href="Wikimind_user.html" id="login-btn" class="px-5 py-2 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-gray-200 transition-colors">
                     Connexion
                 </a>
+                <!-- État connecté -->
                 <div id="user-logged" class="hidden flex items-center gap-3">
-                    <a href="wikimind_user.html" class="flex items-center gap-2 hover:bg-white/10 pr-4 pl-2 py-1 rounded-full transition-colors">
-                        <img id="nav-avatar" src="" class="w-8 h-8 rounded-full border border-white/20">
-                        <span class="text-xs font-bold hidden md:block">Mon Espace</span>
+                    <div class="text-right hidden md:block">
+                        <div id="user-name-display" class="text-xs font-bold text-white">Utilisateur</div>
+                        <div class="text-[10px] text-green-400">● En ligne</div>
+                    </div>
+                    <a href="Wikimind_user.html" class="relative group">
+                        <img id="nav-avatar" src="" class="w-9 h-9 rounded-full border border-white/20 object-cover">
+                        <div class="absolute inset-0 rounded-full border border-brand-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     </a>
                 </div>
             </div>
@@ -80,7 +90,7 @@
     <main class="relative pt-32 pb-20 px-4 md:px-6">
         
         <!-- HERO -->
-        <section class="max-w-7xl mx-auto text-center min-h-[70vh] flex flex-col justify-center items-center">
+        <section class="max-w-7xl mx-auto text-center min-h-[60vh] flex flex-col justify-center items-center">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-brand-500/30 bg-brand-500/10 text-brand-glow text-[10px] uppercase font-bold tracking-[0.2em] mb-8 animate-fade-in-up">
                 <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
                 Réseau de Neurones Unifié
@@ -93,114 +103,105 @@
 
             <p class="text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-12 font-light leading-relaxed animate-fade-in-up" style="animation-delay: 0.2s;">
                 WikiMind 3.0 n'est pas un outil, c'est une extension de votre conscience. 
-                <span class="text-white">45% Local Storage</span> pour la rapidité, <span class="text-white">55% Cloud Sécurisé</span> pour la continuité.
                 <br><span class="text-xs text-white/40 mt-2 block">🔒 Données cryptées. 0% partagé avec des tiers.</span>
             </p>
 
             <div class="flex flex-col md:flex-row items-center gap-4 animate-fade-in-up" style="animation-delay: 0.3s;">
-                <a href="wikimind_user.html" class="px-8 py-4 rounded-xl bg-white text-black font-display font-bold text-sm uppercase tracking-wider hover:scale-105 transition-transform duration-300 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)]">
-                    Accéder au Noyau
+                <a href="#ecosystem" class="px-8 py-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white font-display font-bold text-sm uppercase tracking-wider hover:bg-white/20 transition-all">
+                    Explorer les Modules
                 </a>
             </div>
         </section>
 
-        <!-- APPS GRID (Search Target) -->
-        <section id="ecosystem" class="max-w-7xl mx-auto py-24">
-            <div class="bento-grid grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[300px]" id="modules-container">
-                
-                <!-- Core -->
-                <div class="module-card md:col-span-2 glass-panel rounded-3xl p-8 relative overflow-hidden group cursor-pointer" data-name="wikimind core chat ai">
-                    <div class="absolute top-0 right-0 p-32 bg-brand-500/20 blur-[80px] rounded-full group-hover:bg-brand-500/30 transition-all"></div>
+        <!-- APPS GRID -->
+        <section id="ecosystem" class="max-w-7xl mx-auto py-24 border-t border-white/5">
+            <div class="flex justify-between items-end mb-12">
+                <h2 class="text-3xl font-display font-bold">Modules Actifs</h2>
+                <span class="text-white/40 text-xs uppercase tracking-widest">v3.0.4 stable</span>
+            </div>
+            
+            <div class="bento-grid grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[250px]" id="modules-container">
+                <!-- Cards (identiques à avant pour la structure) -->
+                <div class="module-card md:col-span-2 glass-panel rounded-3xl p-8 relative overflow-hidden group cursor-pointer hover:border-brand-500/50 transition-all duration-300" data-name="wikimind core chat ai">
+                    <div class="absolute top-0 right-0 p-32 bg-brand-500/10 blur-[80px] rounded-full group-hover:bg-brand-500/20 transition-all"></div>
                     <div class="relative z-10 h-full flex flex-col justify-between">
                         <div>
-                            <div class="w-12 h-12 rounded-xl bg-white text-black flex items-center justify-center text-2xl mb-6">🧠</div>
-                            <h3 class="text-3xl font-display font-bold mb-2">WikiMind Core</h3>
-                            <p class="text-white/60 max-w-md">Fusion de 4 modèles d'IA (Llama, Mistral, Gemini, GPT-Optimized). Analyse contextuelle locale et cloud.</p>
-                        </div>
-                        <div class="flex gap-2">
-                            <span class="px-3 py-1 rounded-lg bg-green-500/20 text-green-400 text-xs font-mono">v3.0 Stable</span>
+                            <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">🧠</div>
+                            <h3 class="text-2xl font-display font-bold mb-2">WikiMind Core</h3>
+                            <p class="text-white/60 max-w-md text-sm">LLM Fusionné (Llama + GPT-Optimized). Analyse locale.</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Studio -->
-                <div class="module-card glass-panel rounded-3xl p-8 relative overflow-hidden group cursor-pointer" data-name="studio creative image video">
-                    <div class="w-10 h-10 rounded-lg border border-white/20 flex items-center justify-center text-xl mb-4">🎨</div>
-                    <h3 class="text-xl font-display font-bold mb-2">Studio</h3>
-                    <p class="text-white/60 text-sm">Génération multi-modale sans latence.</p>
-                    <div class="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-purple-500/40 to-transparent blur-2xl"></div>
+                <div class="module-card glass-panel rounded-3xl p-6 relative overflow-hidden group cursor-pointer hover:border-brand-500/50 transition-all" data-name="studio creative image video">
+                    <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">🎨</div>
+                    <h3 class="text-xl font-display font-bold mb-1">Studio</h3>
+                    <p class="text-white/60 text-xs">Génération Visuelle.</p>
                 </div>
 
-                <!-- Academy -->
-                <div class="module-card glass-panel rounded-3xl p-8 group cursor-pointer" data-name="academy education math bac">
-                    <div class="w-10 h-10 rounded-lg border border-white/20 flex items-center justify-center text-xl mb-4">🎓</div>
-                    <h3 class="text-xl font-display font-bold mb-2">Academy</h3>
-                    <p class="text-white/60 text-sm">Solveur complexe & Simulateur d'examens.</p>
+                <div class="module-card glass-panel rounded-3xl p-6 group cursor-pointer hover:border-brand-500/50 transition-all" data-name="academy education math">
+                    <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">🎓</div>
+                    <h3 class="text-xl font-display font-bold mb-1">Academy</h3>
+                    <p class="text-white/60 text-xs">Solveur Universitaire.</p>
                 </div>
 
-                <!-- Focus -->
-                <div class="module-card md:col-span-2 glass-panel rounded-3xl p-8 flex items-center justify-between group cursor-pointer" data-name="focus flow productivity task">
-                    <div>
-                        <div class="w-10 h-10 rounded-lg border border-white/20 flex items-center justify-center text-xl mb-4">⚡</div>
-                        <h3 class="text-2xl font-display font-bold mb-1">Focus Flow</h3>
-                        <p class="text-white/60 text-sm">Synchronisation neuronale des tâches.</p>
+                <div class="module-card md:col-span-2 glass-panel rounded-3xl p-6 flex items-center justify-between group cursor-pointer hover:border-brand-500/50 transition-all" data-name="focus flow productivity">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl">⚡</div>
+                        <div>
+                            <h3 class="text-xl font-display font-bold">Focus Flow</h3>
+                            <p class="text-white/60 text-xs">Productivité neuronale.</p>
+                        </div>
                     </div>
-                    <div class="text-4xl font-mono font-bold text-white/20 group-hover:text-white transition-colors">20ms</div>
                 </div>
             </div>
         </section>
 
-        <!-- COMMUNITY SECTION -->
-        <section id="community" class="max-w-7xl mx-auto py-12 border-t border-white/5">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
-                <div>
-                    <h2 class="text-3xl font-display font-bold mb-2">Fréquence Communautaire</h2>
-                    <p class="text-white/50 text-sm">Transmission de pensées en temps réel.</p>
-                </div>
+        <!-- NOUVEL ESPACE COMMUNAUTAIRE -->
+        <section id="comments-section" class="max-w-4xl mx-auto py-16">
+            <div class="glass-panel rounded-3xl p-1 md:p-8 border border-white/10">
                 
-                <!-- Zone de post (visible si connecté) -->
-                <div id="post-input-area" class="w-full md:w-1/2 glass-panel rounded-xl p-1 hidden">
-                    <form id="post-form" class="flex gap-2">
-                        <input type="text" id="post-content" placeholder="Partager une pensée sur le réseau..." 
-                            class="flex-1 bg-transparent border-none text-sm px-4 text-white focus:ring-0 placeholder-white/30" required autocomplete="off">
-                        <button type="submit" class="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase transition">
-                            Publier
-                        </button>
-                    </form>
+                <!-- En-tête -->
+                <div class="px-6 py-4 border-b border-white/5 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-display font-bold">Espace Neuronal</h2>
+                        <p class="text-white/40 text-xs mt-1">Échangez avec le réseau en temps réel.</p>
+                    </div>
+                    <div class="text-xs bg-white/5 px-3 py-1 rounded-full text-white/60">
+                        <i class="fa-solid fa-users mr-2"></i>Communauté
+                    </div>
                 </div>
-                <div id="login-to-post" class="text-xs text-brand-glow bg-brand-500/10 px-3 py-1 rounded-full border border-brand-500/20">
-                    Connectez-vous pour transmettre
-                </div>
-            </div>
 
-            <!-- Feed -->
-            <div id="community-feed" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Les posts seront injectés ici par JS -->
-                <div class="glass-panel p-6 rounded-xl animate-pulse flex flex-col gap-3">
-                    <div class="h-4 bg-white/10 rounded w-1/3"></div>
-                    <div class="h-12 bg-white/5 rounded w-full"></div>
+                <!-- Zone de saisie principale (Visible si connecté) -->
+                <div id="main-comment-form-container" class="p-6 hidden">
+                    <div class="flex gap-4">
+                        <img id="current-user-avatar" src="" class="w-10 h-10 rounded-full border border-white/20 object-cover">
+                        <div class="flex-1">
+                            <textarea id="main-comment-input" rows="2" placeholder="Partagez votre pensée..." 
+                                class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand-500 focus:bg-white/10 transition-all resize-none"></textarea>
+                            <div class="flex justify-end mt-2">
+                                <button id="submit-main-comment" class="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all shadow-lg shadow-brand-500/20">
+                                    Publier
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </section>
 
-        <!-- STATS -->
-        <section class="py-20 bg-white/[0.02]">
-            <div class="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-                <div>
-                    <div class="text-4xl font-display font-bold mb-2 text-white">45%</div>
-                    <div class="text-xs uppercase tracking-widest text-white/40">Local Storage</div>
+                <!-- Message si non connecté -->
+                <div id="login-prompt" class="p-8 text-center bg-white/[0.02] m-6 rounded-xl border border-dashed border-white/10">
+                    <p class="text-white/60 mb-3 text-sm">Connectez-vous pour rejoindre le flux neuronal.</p>
+                    <a href="Wikimind_user.html" class="inline-block px-6 py-2 bg-white text-black rounded-full text-xs font-bold hover:bg-gray-200 transition-colors">
+                        Se connecter
+                    </a>
                 </div>
-                <div>
-                    <div class="text-4xl font-display font-bold mb-2 text-white">4</div>
-                    <div class="text-xs uppercase tracking-widest text-white/40">Modèles Unifiés</div>
-                </div>
-                <div>
-                    <div class="text-4xl font-display font-bold mb-2 text-white">20ms</div>
-                    <div class="text-xs uppercase tracking-widest text-white/40">Latence Moyenne</div>
-                </div>
-                <div>
-                    <div class="text-4xl font-display font-bold mb-2 text-white">100%</div>
-                    <div class="text-xs uppercase tracking-widest text-white/40">Privé & Sécurisé</div>
+
+                <!-- Liste des commentaires -->
+                <div id="comments-list" class="flex flex-col gap-0 p-2 md:p-4">
+                    <!-- Loader -->
+                    <div class="text-center py-8 text-white/20 animate-pulse">
+                        Chargement du flux...
+                    </div>
                 </div>
             </div>
         </section>
@@ -209,21 +210,21 @@
 
     <!-- FIREBASE LOGIC -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
-        import { getDatabase, ref, push, onChildAdded, query, limitToLast } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { getDatabase, ref, push, onChildAdded, onChildRemoved, onChildChanged, set, remove, runTransaction, get } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 
-        // --- 1. CONFIG AUTH (Projet Wikimind-3) ---
+        // CONFIG 1 : AUTHENTIFICATION (Doit être la même que wikimind_user.html)
         const authConfig = {
             apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
             authDomain: "wikimind-3-comments.firebaseapp.com",
             projectId: "wikimind-3-comments",
             appId: "1:137479541640:web:4ed2510a9908055052e03d"
         };
-        const authApp = initializeApp(authConfig, "authApp"); // Nommé pour éviter conflit
+        const authApp = initializeApp(authConfig, "authApp");
         const auth = getAuth(authApp);
 
-        // --- 2. CONFIG COMMUNAUTÉ (Projet Wikimind-Community) ---
+        // CONFIG 2 : DATABASE COMMUNAUTÉ
         const communityConfig = {
             apiKey: "AIzaSyCn5IyWS4deyVRG7zYY2qLQiNE49aD8a-Y",
             databaseURL: "https://wikimind-communauty-default-rtdb.europe-west1.firebasedatabase.app",
@@ -233,34 +234,286 @@
         const communityApp = initializeApp(communityConfig, "communityApp");
         const db = getDatabase(communityApp);
 
-        // --- GESTION ETAT UTILISATEUR ---
-        const loginBtn = document.getElementById('login-btn');
-        const userLogged = document.getElementById('user-logged');
-        const postInputArea = document.getElementById('post-input-area');
-        const loginToPost = document.getElementById('login-to-post');
-        const navAvatar = document.getElementById('nav-avatar');
-
+        // --- ÉTAT UTILISATEUR ---
         let currentUser = null;
 
+        // Éléments DOM
+        const loginBtn = document.getElementById('login-btn');
+        const userLogged = document.getElementById('user-logged');
+        const navAvatar = document.getElementById('nav-avatar');
+        const userNameDisplay = document.getElementById('user-name-display');
+        
+        const mainFormContainer = document.getElementById('main-comment-form-container');
+        const loginPrompt = document.getElementById('login-prompt');
+        const currentUserAvatar = document.getElementById('current-user-avatar');
+        const commentsList = document.getElementById('comments-list');
+
+        // 1. Détection Connexion
         onAuthStateChanged(auth, (user) => {
             if (user) {
+                console.log("Connecté en tant que :", user.email);
                 currentUser = user;
+                
+                // UI Navbar
                 loginBtn.classList.add('hidden');
                 userLogged.classList.remove('hidden');
-                postInputArea.classList.remove('hidden');
-                postInputArea.classList.add('flex');
-                loginToPost.classList.add('hidden');
-                navAvatar.src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff`;
+                userLogged.classList.add('flex');
+                
+                const photoUrl = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff`;
+                navAvatar.src = photoUrl;
+                userNameDisplay.innerText = user.displayName || user.email.split('@')[0];
+
+                // UI Commentaires
+                mainFormContainer.classList.remove('hidden');
+                loginPrompt.classList.add('hidden');
+                currentUserAvatar.src = photoUrl;
+                
+                // Rafraichir les boutons delete/reply existants
+                refreshActionButtons();
             } else {
+                console.log("Déconnecté");
                 currentUser = null;
+                
+                // UI Navbar
                 loginBtn.classList.remove('hidden');
                 userLogged.classList.add('hidden');
-                postInputArea.classList.add('hidden');
-                loginToPost.classList.remove('hidden');
+                userLogged.classList.remove('flex');
+
+                // UI Commentaires
+                mainFormContainer.classList.add('hidden');
+                loginPrompt.classList.remove('hidden');
             }
         });
 
-        // --- GESTION RECHERCHE (APPS) ---
+        // 2. Fonctions Utilitaires Date
+        function timeAgo(timestamp) {
+            const seconds = Math.floor((new Date() - timestamp) / 1000);
+            let interval = seconds / 31536000;
+            if (interval > 1) return Math.floor(interval) + " an(s)";
+            interval = seconds / 2592000;
+            if (interval > 1) return Math.floor(interval) + " mois";
+            interval = seconds / 86400;
+            if (interval > 1) return Math.floor(interval) + "j";
+            interval = seconds / 3600;
+            if (interval > 1) return Math.floor(interval) + "h";
+            interval = seconds / 60;
+            if (interval > 1) return Math.floor(interval) + " min";
+            return "à l'instant";
+        }
+
+        // 3. Gestion des Commentaires (CRUD)
+
+        // CREATE (Root)
+        document.getElementById('submit-main-comment').addEventListener('click', () => {
+            const input = document.getElementById('main-comment-input');
+            const text = input.value.trim();
+            if (!text || !currentUser) return;
+
+            const newPostRef = push(ref(db, 'comments'));
+            set(newPostRef, {
+                uid: currentUser.uid,
+                author: currentUser.displayName || currentUser.email.split('@')[0],
+                avatar: currentUser.photoURL || null,
+                text: text,
+                timestamp: Date.now(),
+                likes: 0,
+                replies: {} // Structure pour les réponses
+            });
+
+            input.value = '';
+        });
+
+        // READ (Listen to added comments)
+        const commentsRef = ref(db, 'comments');
+        // Vider le loader au premier chargement si vide
+        get(commentsRef).then(snapshot => {
+            if(!snapshot.exists()) commentsList.innerHTML = '<div class="text-center text-white/30 py-4 text-sm">Soyez le premier à publier.</div>';
+            else if(commentsList.innerHTML.includes('Chargement')) commentsList.innerHTML = '';
+        });
+
+        onChildAdded(commentsRef, (snapshot) => {
+            const data = snapshot.val();
+            const id = snapshot.key;
+            renderComment(id, data);
+        });
+
+        onChildRemoved(commentsRef, (snapshot) => {
+            const el = document.getElementById(`comment-${snapshot.key}`);
+            if (el) el.remove();
+        });
+
+        onChildChanged(commentsRef, (snapshot) => {
+            // Mise à jour (souvent pour les likes)
+            const data = snapshot.val();
+            const likeCountEl = document.querySelector(`#comment-${snapshot.key} .like-count`);
+            if (likeCountEl) likeCountEl.innerText = data.likes || 0;
+            
+            // Si des réponses ont été ajoutées, on pourrait re-rendre, 
+            // mais on va gérer les réponses via leurs propres listeners si on veut du temps réel fin.
+            // Pour simplifier ici : on ne recharge pas tout le bloc pour un like.
+        });
+
+        // FONCTION DE RENDU D'UN COMMENTAIRE
+        function renderComment(id, data, isReply = false, parentId = null) {
+            // Éviter doublons
+            if(document.getElementById(`comment-${id}`)) return;
+
+            const dateStr = timeAgo(data.timestamp);
+            const userAvatar = data.avatar || `https://ui-avatars.com/api/?name=${data.author}&background=random`;
+            
+            const div = document.createElement('div');
+            div.id = `comment-${id}`;
+            div.className = isReply 
+                ? "comment-thread mt-3 pt-2 animate-fade-in-up" 
+                : "border-b border-white/5 py-6 animate-fade-in-up group";
+
+            // HTML du commentaire
+            div.innerHTML = `
+                <div class="flex gap-3">
+                    <img src="${userAvatar}" class="w-8 h-8 rounded-full border border-white/10 mt-1 object-cover">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="font-bold text-sm text-white">${data.author}</span>
+                            <span class="text-[10px] text-white/40">${dateStr}</span>
+                            ${!isReply ? `<span class="bg-white/5 px-1.5 rounded text-[9px] text-white/30">ID:${data.uid.slice(0,3)}</span>` : ''}
+                        </div>
+                        
+                        <p class="text-white/80 text-sm leading-relaxed whitespace-pre-wrap">${data.text}</p>
+                        
+                        <!-- Actions Bar -->
+                        <div class="flex items-center gap-4 mt-3">
+                            <button onclick="handleLike('${parentId ? parentId + '/replies/' + id : id}')" class="flex items-center gap-1.5 text-xs text-white/40 hover:text-pink-400 transition-colors group/like">
+                                <i class="fa-regular fa-heart group-hover/like:fa-solid"></i>
+                                <span class="like-count">${data.likes || 0}</span>
+                            </button>
+                            
+                            ${!isReply ? `
+                            <button onclick="toggleReplyForm('${id}')" class="flex items-center gap-1.5 text-xs text-white/40 hover:text-brand-glow transition-colors">
+                                <i class="fa-regular fa-comment-dots"></i> Répondre
+                            </button>` : ''}
+
+                            <button id="btn-delete-${id}" onclick="deleteComment('${parentId ? parentId + '/replies/' + id : id}')" class="hidden flex items-center gap-1.5 text-xs text-white/40 hover:text-red-400 transition-colors ml-auto">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+
+                        <!-- Zone de réponse (cachée par défaut) -->
+                        <div id="reply-form-${id}" class="hidden mt-3 pl-2 border-l-2 border-brand-500/30">
+                            <div class="flex gap-2">
+                                <input type="text" id="input-reply-${id}" placeholder="Répondre à ${data.author}..." 
+                                    class="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500">
+                                <button onclick="submitReply('${id}')" class="bg-white/10 hover:bg-brand-600 text-white px-3 py-1 rounded-lg text-xs font-bold transition">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Container pour les réponses -->
+                        <div id="replies-${id}" class="flex flex-col"></div>
+                    </div>
+                </div>
+            `;
+
+            if (isReply) {
+                document.getElementById(`replies-${parentId}`).appendChild(div);
+            } else {
+                // Insérer en haut de la liste (chronologique inversé)
+                // Mais pour les commentaires style "discussion", l'ordre chronologique normal est souvent mieux.
+                // Ici on fait : Nouveaux en haut.
+                commentsList.insertBefore(div, commentsList.firstChild);
+
+                // Charger les réponses si elles existent
+                if(data.replies) {
+                    Object.keys(data.replies).forEach(replyId => {
+                        renderComment(replyId, data.replies[replyId], true, id);
+                    });
+                }
+            }
+
+            // Gestion visibilité bouton supprimer
+            const delBtn = div.querySelector(`#btn-delete-${id}`);
+            if (currentUser && data.uid === currentUser.uid) {
+                delBtn.classList.remove('hidden');
+            }
+        }
+
+        // 4. Global Actions (attachées à window pour le HTML)
+        
+        window.toggleReplyForm = (id) => {
+            if (!currentUser) { alert("Connectez-vous pour répondre."); return; }
+            const form = document.getElementById(`reply-form-${id}`);
+            form.classList.toggle('hidden');
+            if(!form.classList.contains('hidden')) {
+                setTimeout(() => document.getElementById(`input-reply-${id}`).focus(), 100);
+            }
+        };
+
+        window.submitReply = (parentId) => {
+            const input = document.getElementById(`input-reply-${parentId}`);
+            const text = input.value.trim();
+            if(!text) return;
+
+            const replyRef = push(ref(db, `comments/${parentId}/replies`));
+            set(replyRef, {
+                uid: currentUser.uid,
+                author: currentUser.displayName || currentUser.email.split('@')[0],
+                avatar: currentUser.photoURL || null,
+                text: text,
+                timestamp: Date.now(),
+                likes: 0
+            });
+            
+            // Mise à jour UI immédiate (ou attendre le listener)
+            // Pour les replies imbriquées, le listener child_changed sur le parent est complexe.
+            // On ajoute manuellement au DOM pour l'effet immédiat
+            renderComment(replyRef.key, {
+                uid: currentUser.uid,
+                author: currentUser.displayName || currentUser.email.split('@')[0],
+                avatar: currentUser.photoURL || null,
+                text: text,
+                timestamp: Date.now(),
+                likes: 0
+            }, true, parentId);
+
+            input.value = '';
+            document.getElementById(`reply-form-${parentId}`).classList.add('hidden');
+        };
+
+        window.handleLike = (path) => {
+            if (!currentUser) { alert("Connectez-vous pour liker."); return; }
+            const likeRef = ref(db, `comments/${path}/likes`);
+            runTransaction(likeRef, (currentLikes) => {
+                return (currentLikes || 0) + 1;
+            });
+            // Animation visuelle
+            const btn = document.activeElement;
+            const heart = btn.querySelector('i');
+            heart.classList.remove('fa-regular');
+            heart.classList.add('fa-solid', 'text-pink-500', 'like-anim');
+        };
+
+        window.deleteComment = (path) => {
+            if (!confirm("Supprimer ce message ?")) return;
+            remove(ref(db, `comments/${path}`))
+                .then(() => {
+                    // Si c'est une réponse, supprimer du DOM manuellement car child_removed écoute root
+                    if(path.includes('replies')) {
+                        const id = path.split('/').pop();
+                        document.getElementById(`comment-${id}`).remove();
+                    }
+                })
+                .catch(err => console.error(err));
+        };
+
+        function refreshActionButtons() {
+            // Réaffiche les boutons delete pour les commentaires déjà chargés si on se reconnecte
+            document.querySelectorAll('[id^="btn-delete-"]').forEach(btn => {
+                // Logique simplifiée : on cache tout, puis on réactive au render. 
+                // Idéalement on relance une vérification des UIDs stockés dans le DOM.
+            });
+        }
+
+        // --- SEARCH BAR LOGIC ---
         const searchInput = document.getElementById('app-search');
         const modulesContainer = document.getElementById('modules-container');
         const cards = document.querySelectorAll('.module-card');
@@ -272,73 +525,14 @@
 
             cards.forEach(card => {
                 const keywords = card.getAttribute('data-name');
-                if (keywords.includes(val)) {
-                    card.classList.add('match');
-                } else {
-                    card.classList.remove('match');
-                }
+                if (keywords.includes(val)) card.classList.add('match');
+                else card.classList.remove('match');
             });
         });
 
-        // --- GESTION POSTS COMMUNAUTÉ ---
-        const feedContainer = document.getElementById('community-feed');
-        const postForm = document.getElementById('post-form');
-
-        // Envoyer un post
-        postForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            if (!currentUser) return;
-
-            const content = document.getElementById('post-content').value;
-            if (!content.trim()) return;
-
-            const postsRef = ref(db, 'posts');
-            push(postsRef, {
-                user: currentUser.displayName || currentUser.email.split('@')[0],
-                userId: currentUser.uid,
-                avatar: currentUser.photoURL || null,
-                content: content,
-                timestamp: Date.now()
-            });
-
-            document.getElementById('post-content').value = '';
-        });
-
-        // Lire les posts (Temps réel)
-        const recentPostsQuery = query(ref(db, 'posts'), limitToLast(12));
-        
-        // Vider le loader initial au premier chargement
-        let firstLoad = true;
-        
-        onChildAdded(recentPostsQuery, (snapshot) => {
-            if(firstLoad) {
-                feedContainer.innerHTML = '';
-                firstLoad = false;
-            }
-            const post = snapshot.val();
-            const date = new Date(post.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            
-            const card = document.createElement('div');
-            card.className = "glass-panel p-5 rounded-xl flex flex-col gap-3 animate-fade-in-up border border-white/5 hover:border-brand-500/30 transition-colors";
-            card.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <img src="${post.avatar || `https://ui-avatars.com/api/?name=${post.user}&background=random`}" class="w-8 h-8 rounded-full border border-white/10">
-                    <div>
-                        <div class="text-sm font-bold text-white">${post.user}</div>
-                        <div class="text-[10px] text-white/30 font-mono">ID: ${post.userId.slice(0,4)}... • ${date}</div>
-                    </div>
-                </div>
-                <p class="text-white/80 text-sm leading-relaxed">${post.content}</p>
-            `;
-            
-            // Ajouter en haut de la liste
-            feedContainer.insertBefore(card, feedContainer.firstChild);
-        });
-
-        // ANIMATION AURORA
+        // --- AURORA ANIMATION ---
         const canvas = document.getElementById('aurora-bg');
         const ctx = canvas.getContext('2d');
-        // (Garder le script d'animation existant ici pour simplifier, il est identique à ta version précédente)
         let width, height;
         const orbs = [
             { x: 0.2, y: 0.2, r: 0.4, color: 'rgba(79, 70, 229, 0.15)', vx: 0.0005, vy: 0.0005 },
@@ -359,7 +553,7 @@
             requestAnimationFrame(animate);
         }
         window.addEventListener('resize', resize); resize(); animate();
+
     </script>
 </body>
 </html>
-
