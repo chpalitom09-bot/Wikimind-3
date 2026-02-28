@@ -1,340 +1,479 @@
 <!DOCTYPE html>
-<html lang="fr" class="scroll-smooth">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WikiMind OS • Nouvelle Génération</title>
-    
-    <!-- TAILWIND CSS (Via CDN) -->
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>WikiMind Fidelité</title>
+
+    <!-- MANIFEST PWA (Pour installation) -->
+    <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiV2lraU1pbmQgRmlkZWxpdMOuIiwic2hvcnRfbmFtZSI6Ildpa2lGb3IiLCJzdGFydF91cmwiOiIiLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjMDAwMDAwIiwidGhlbWVfY29sb3IiOiIjMDAwMDAwIiwiaWNvbnMiOlt7InNyYyI6Imh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzQ0MzgvNDQzODAxNC5wbmciLCJzaXplcyI6IjUxMng1MTIiLCJ0eXBlIjoiaW1hZ2UvcG5nIn1dfQ==">
+
+    <!-- CSS & JS EXTERNES (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- POLICES (Inter + Space Grotesk) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
-    
-    <!-- CONFIGURATION TAILWIND -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+    <!-- CONFIG TAILWIND -->
     <script>
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        display: ['Space Grotesk', 'sans-serif'],
-                    },
-                    colors: {
-                        // Couleurs personnalisées pour l'OS
-                        brand: {
-                            500: '#6366f1', // Indigo principal
-                            600: '#4f46e5',
-                            glow: '#818cf8'
-                        }
-                    },
-                    animation: {
-                        'fade-in': 'fadeIn 0.8s ease-out forwards',
-                        'float': 'float 6s ease-in-out infinite',
-                    },
-                    keyframes: {
-                        fadeIn: {
-                            '0%': { opacity: '0', transform: 'translateY(20px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' },
-                        },
-                        float: {
-                            '0%, 100%': { transform: 'translateY(0)' },
-                            '50%': { transform: 'translateY(-10px)' },
-                        }
-                    }
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
+                    colors: { brand: '#6366f1', dark: '#050505' },
+                    animation: { 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }
                 }
             }
         }
     </script>
 
     <style>
-        /* CSS GLOBAL */
-        body {
-            background-color: #030305; /* Fond très sombre presque noir */
-            color: #ffffff;
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        /* DÉSACTIVER SCROLLBAR (Esthétique) */
-        ::-webkit-scrollbar { width: 0px; background: transparent; }
-
-        /* EFFET DE VERRE (GLASSMORPHISM) */
-        .glass-panel {
-            background: rgba(20, 20, 25, 0.6);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        }
-
-        /* EFFET AU SURVOL DES CARTES */
-        .glass-panel:hover {
-            border-color: rgba(255, 255, 255, 0.2);
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-            background: rgba(30, 30, 35, 0.7);
-        }
-
-        /* BOUTON STYLE VERRE */
-        .glass-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
-        }
-        .glass-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        /* CANVAS FOND */
-        #aurora-canvas {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-        }
-
-        /* TEXTE DÉGRADÉ */
-        .text-gradient {
-            background: linear-gradient(to right, #ffffff, #a5b4fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        /* LOADING */
-        #loader {
-            position: fixed; inset: 0; background: #030305; z-index: 9999;
-            display: flex; justify-content: center; align-items: center;
-            transition: opacity 0.5s ease, visibility 0.5s;
-        }
+        body { background-color: #000; color: #fff; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+        /* Glassmorphism */
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .glass-strong { background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(20px); border-top: 1px solid rgba(255, 255, 255, 0.1); }
+        
+        /* Masquer scrollbar */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* Input File Caché */
+        input[type="file"] { display: none; }
     </style>
 </head>
-<body>
+<body class="min-h-screen pb-32">
 
-    <!-- 1. ÉCRAN DE CHARGEMENT -->
-    <div id="loader">
-        <div class="flex flex-col items-center gap-4">
-            <div class="w-10 h-10 border-2 border-white/10 border-t-brand-500 rounded-full animate-spin"></div>
-            <div class="text-xs font-mono uppercase tracking-widest text-white/50">Chargement OS...</div>
+    <!-- FOND AURORA ANIMÉ -->
+    <div class="fixed inset-0 z-[-1] overflow-hidden">
+        <div class="absolute top-[-20%] left-[-20%] w-[80vw] h-[80vw] bg-blue-600/20 rounded-full blur-[80px] animate-pulse-slow"></div>
+        <div class="absolute bottom-[-20%] right-[-20%] w-[80vw] h-[80vw] bg-purple-600/20 rounded-full blur-[80px] animate-pulse-slow" style="animation-delay: 1.5s"></div>
+    </div>
+
+    <!-- HEADER -->
+    <header class="fixed top-0 w-full z-40 px-6 py-4 bg-gradient-to-b from-black via-black/90 to-transparent">
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="font-display font-bold text-2xl tracking-tight flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-brand shadow-[0_0_10px_#6366f1]"></span>
+                WikiMind
+            </h1>
+            <div id="status-badge" class="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono text-green-400">
+                OFFLINE READY
+            </div>
+        </div>
+        
+        <!-- BARRE DE RECHERCHE -->
+        <div class="glass h-12 rounded-xl flex items-center px-4 gap-3 focus-within:border-brand/50 transition-colors">
+            <svg class="w-5 h-5 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input type="text" id="search" placeholder="Rechercher (Fnac, Leclerc...)" class="bg-transparent w-full h-full outline-none text-white placeholder-white/30 font-medium">
+        </div>
+    </header>
+
+    <!-- LISTE DES CARTES -->
+    <main class="pt-36 px-4 max-w-xl mx-auto min-h-[60vh]">
+        <div id="grid" class="grid grid-cols-2 gap-4">
+            <!-- Les cartes s'affichent ici -->
+        </div>
+
+        <!-- EMPTY STATE -->
+        <div id="empty" class="hidden flex flex-col items-center justify-center pt-24 opacity-50">
+            <div class="w-20 h-20 rounded-2xl border-2 border-dashed border-white/20 flex items-center justify-center mb-4">
+                <span class="text-3xl">📇</span>
+            </div>
+            <p class="font-display font-bold">Aucune carte</p>
+            <p class="text-xs mt-2">Appuyez sur + pour commencer</p>
+        </div>
+    </main>
+
+    <!-- FAB (BOUTON AJOUTER) -->
+    <button onclick="openModal()" class="fixed bottom-8 left-1/2 -translate-x-1/2 w-16 h-16 bg-white text-black rounded-full shadow-[0_0_40px_rgba(255,255,255,0.3)] flex items-center justify-center z-40 active:scale-95 transition-transform">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+    </button>
+
+    <!-- MODAL CRÉATION -->
+    <div id="modal" class="fixed inset-0 z-50 bg-black/90 hidden flex flex-col justify-end sm:justify-center">
+        <!-- Close Overlay -->
+        <div class="absolute inset-0" onclick="closeModal()"></div>
+        
+        <div class="relative glass-strong rounded-t-3xl sm:rounded-3xl p-6 w-full max-w-md mx-auto sm:mb-10 transition-transform duration-300 transform translate-y-0 max-h-[90vh] overflow-y-auto">
+            
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="font-display font-bold text-xl">Nouvelle Carte</h2>
+                <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-sm">✕</button>
+            </div>
+
+            <div class="space-y-6">
+                
+                <!-- 1. ENSEIGNE -->
+                <div>
+                    <label class="text-xs uppercase font-bold text-white/50 tracking-widest mb-2 block">Nom du magasin</label>
+                    <div class="relative">
+                        <input type="text" id="input-store" oninput="detectLogo()" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 pl-12 text-white outline-none focus:border-brand" placeholder="Ex: Fnac">
+                        <!-- Logo Preview Icon -->
+                        <div id="store-icon" class="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-white/50">🏪</div>
+                    </div>
+                    
+                    <!-- Logos Rapides -->
+                    <div class="flex gap-3 mt-3 overflow-x-auto no-scrollbar pb-2" id="quick-logos">
+                        <!-- Injecté par JS -->
+                    </div>
+                </div>
+
+                <!-- 2. IMAGE / VISUEL -->
+                <div>
+                    <label class="text-xs uppercase font-bold text-white/50 tracking-widest mb-2 block">Visuel</label>
+                    <div class="grid grid-cols-2 gap-3 mb-3">
+                        <div onclick="setMode('logo')" id="btn-mode-logo" class="p-3 rounded-xl border border-brand bg-brand/10 text-center cursor-pointer transition-all">
+                            <span class="block text-xl mb-1">🎨</span>
+                            <span class="text-xs font-bold">Logo</span>
+                        </div>
+                        <div onclick="setMode('photo')" id="btn-mode-photo" class="p-3 rounded-xl border border-white/10 bg-white/5 text-center cursor-pointer hover:bg-white/10 transition-all">
+                            <span class="block text-xl mb-1">📸</span>
+                            <span class="text-xs font-bold">Photo</span>
+                        </div>
+                    </div>
+
+                    <!-- Zone de Prévisualisation Photo -->
+                    <div id="photo-zone" class="hidden">
+                        <div onclick="document.getElementById('file-input').click()" class="w-full aspect-[2/1] rounded-xl border-2 border-dashed border-white/20 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 overflow-hidden relative">
+                            <img id="img-preview" class="absolute inset-0 w-full h-full object-cover hidden">
+                            <div id="img-placeholder" class="text-center">
+                                <span class="text-2xl">➕</span>
+                                <p class="text-xs mt-2 text-white/50">Importer la carte</p>
+                            </div>
+                        </div>
+                        <input type="file" id="file-input" accept="image/*" onchange="handleImage(this)">
+                    </div>
+                </div>
+
+                <!-- 3. CODE BARRES -->
+                <div>
+                    <label class="text-xs uppercase font-bold text-white/50 tracking-widest mb-2 block">Numéro de carte</label>
+                    <div class="flex gap-2">
+                        <input type="tel" id="input-code" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 font-mono text-lg outline-none focus:border-brand" placeholder="Scannez ou tapez...">
+                        <button onclick="generateRandom()" class="px-4 rounded-xl bg-white/10 border border-white/10">🎲</button>
+                    </div>
+                    <!-- Live Preview -->
+                    <div class="mt-2 h-12 bg-white rounded flex items-center justify-center overflow-hidden">
+                        <svg id="barcode-preview" class="h-full w-full"></svg>
+                    </div>
+                </div>
+
+                <!-- BOUTON SAVE -->
+                <button onclick="saveCard()" id="btn-save" class="w-full py-4 rounded-xl bg-white text-black font-bold uppercase tracking-widest hover:bg-gray-200 transition-colors shadow-lg shadow-white/10 mt-2">
+                    Valider la carte
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- 2. FOND ANIMÉ -->
-    <canvas id="aurora-canvas"></canvas>
-
-    <!-- 3. BARRE DE NAVIGATION FLOTTANTE -->
-    <nav class="fixed top-6 left-0 right-0 z-50 flex justify-center px-4">
-        <div class="glass-panel rounded-full px-6 py-3 flex items-center justify-between gap-6 w-full max-w-5xl">
-            <!-- Logo -->
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-white to-gray-400 flex items-center justify-center text-black font-bold text-lg shadow-[0_0_15px_rgba(255,255,255,0.3)]">
-                    W
-                </div>
-                <span class="font-display font-bold text-lg hidden sm:block">WikiMind</span>
+    <!-- MODAL PLEIN ÉCRAN (VISUALISATION) -->
+    <div id="viewer" class="fixed inset-0 z-[60] bg-black hidden flex flex-col items-center justify-center">
+        <!-- Close -->
+        <button onclick="closeViewer()" class="absolute top-6 right-6 w-12 h-12 bg-white/10 rounded-full text-white z-20 flex items-center justify-center backdrop-blur text-xl">✕</button>
+        
+        <div class="w-full max-w-md p-6 flex flex-col gap-6 items-center relative z-10">
+            <h2 id="view-title" class="text-4xl font-display font-bold text-center">Titre</h2>
+            
+            <!-- Visual Card -->
+            <div class="w-full aspect-[1.586/1] rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(255,255,255,0.15)] border border-white/20 bg-white relative">
+                <!-- Image Container -->
+                <img id="view-img" class="w-full h-full object-cover hidden">
+                <!-- Logo Container -->
+                <div id="view-logo" class="w-full h-full flex items-center justify-center p-8 hidden"></div>
             </div>
 
-            <!-- Menu Desktop -->
-            <div class="hidden md:flex items-center gap-6 text-sm font-medium text-white/60">
-                <a href="#" class="hover:text-white transition-colors">Accueil</a>
-                <a href="#apps" class="hover:text-white transition-colors">Applications</a>
-                <a href="#about" class="hover:text-white transition-colors">À propos</a>
+            <!-- Barcode Area -->
+            <div class="w-full bg-white p-4 rounded-2xl shadow-2xl transform scale-105">
+                <svg id="view-barcode" class="w-full h-24"></svg>
             </div>
+            <p id="view-code" class="font-mono text-xl tracking-[0.2em] text-white/60 mt-2"></p>
 
-            <!-- Bouton Action -->
-            <a href="#" class="px-5 py-2 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-gray-200 transition shadow-lg">
-                Mon Espace
-            </a>
+            <button onclick="deleteCard()" class="mt-8 text-red-500 text-xs uppercase font-bold tracking-widest border border-red-900 px-6 py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 transition">
+                Supprimer
+            </button>
         </div>
-    </nav>
+    </div>
 
-    <!-- 4. CONTENU PRINCIPAL -->
-    <main class="pt-40 pb-20 px-4 md:px-8 max-w-7xl mx-auto">
-
-        <!-- HEADER HERO -->
-        <header class="text-center mb-24 animate-fade-in">
-            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 text-[10px] uppercase font-bold tracking-widest text-brand-glow mb-8 backdrop-blur-md">
-                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                Système Opérationnel v2.0
-            </div>
-            
-            <h1 class="text-5xl md:text-8xl font-display font-bold tracking-tighter mb-6 leading-tight">
-                L'Intelligence<br>
-                <span class="text-gradient">Réinventée.</span>
-            </h1>
-            
-            <p class="text-lg text-white/50 max-w-2xl mx-auto leading-relaxed mb-10">
-                Bienvenue sur WikiMind OS. Une suite d'outils interconnectés, propulsée par l'IA, sécurisée localement et conçue pour amplifier votre potentiel.
-            </p>
-
-            <div class="flex flex-col sm:flex-row justify-center gap-4">
-                <a href="#apps" class="px-8 py-4 rounded-xl bg-white text-black font-bold text-sm uppercase tracking-wider hover:scale-105 transition-transform">
-                    Explorer les Apps
-                </a>
-                <a href="#" class="px-8 py-4 rounded-xl glass-btn text-white font-bold text-sm uppercase tracking-wider">
-                    Documentation
-                </a>
-            </div>
-        </header>
-
-        <!-- 5. GRILLE BENTO (LES APPS) -->
-        <!-- C'est ici que tu modifies tes liens. La structure est solide. -->
-        <section id="apps" class="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[minmax(180px,auto)] animate-fade-in" style="animation-delay: 0.2s;">
-            
-            <!-- --- CARTE 1: CORE (GRANDE) --- -->
-            <!-- col-span-2 signifie qu'elle prend 2 colonnes de large -->
-            <!-- row-span-2 signifie qu'elle prend 2 lignes de haut -->
-            <a href="Wikimind_AI.html" class="group relative md:col-span-2 md:row-span-2 glass-panel rounded-3xl p-8 overflow-hidden flex flex-col justify-between min-h-[400px]">
-                <!-- Effet de fond -->
-                <div class="absolute top-0 right-0 w-64 h-64 bg-brand-500/20 blur-[100px] rounded-full group-hover:bg-brand-500/30 transition-all duration-700"></div>
-                
-                <div class="relative z-10">
-                    <div class="w-14 h-14 rounded-2xl bg-white text-black flex items-center justify-center text-3xl mb-6 shadow-lg">🧠</div>
-                    <h3 class="text-3xl md:text-4xl font-display font-bold mb-3">WikiMind Core</h3>
-                    <p class="text-white/60 text-lg max-w-md">Le cerveau central. Accédez à Llama, Mistral et Gemini dans une interface unifiée capable d'analyser vos documents.</p>
-                </div>
-                
-                <div class="relative z-10 mt-8 flex items-center gap-3">
-                    <span class="px-3 py-1 rounded-md bg-white/10 text-xs font-mono border border-white/5">IA Générative</span>
-                    <div class="flex -space-x-2">
-                        <!-- Petites icones modèles -->
-                        <div class="w-6 h-6 rounded-full bg-blue-500 border border-black"></div>
-                        <div class="w-6 h-6 rounded-full bg-purple-500 border border-black"></div>
-                        <div class="w-6 h-6 rounded-full bg-orange-500 border border-black"></div>
-                    </div>
-                    <span class="ml-auto text-sm font-bold uppercase tracking-widest group-hover:translate-x-2 transition-transform">Ouvrir →</span>
-                </div>
-            </a>
-
-            <!-- --- CARTE 2: STUDIO (PETITE) --- -->
-            <a href="Wikimind_creator.html" class="group glass-panel rounded-3xl p-6 flex flex-col justify-between h-full min-h-[220px]">
-                <div>
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-xl mb-4 shadow-lg">🎨</div>
-                    <h3 class="text-xl font-display font-bold">Studio</h3>
-                    <p class="text-white/50 text-sm mt-1">Création Visuelle IA</p>
-                </div>
-                <div class="mt-4 h-1 w-full bg-white/10 rounded-full overflow-hidden">
-                    <div class="h-full bg-pink-500 w-2/3 group-hover:w-full transition-all duration-500"></div>
-                </div>
-            </a>
-
-            <!-- --- CARTE 3: ACADEMY (PETITE) --- -->
-            <a href="Wikimind_cours.html" class="group glass-panel rounded-3xl p-6 flex flex-col justify-between h-full min-h-[220px]">
-                <div>
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center text-xl mb-4 shadow-lg">🎓</div>
-                    <h3 class="text-xl font-display font-bold">Academy</h3>
-                    <p class="text-white/50 text-sm mt-1">Cours & Révisions</p>
-                </div>
-                <div class="flex items-center justify-between text-xs font-bold uppercase text-white/40 mt-4">
-                    <span>Notes</span>
-                    <span class="group-hover:text-white transition-colors">Accéder</span>
-                </div>
-            </a>
-
-            <!-- --- CARTE 4: FOCUS (LARGE HORIZONTALE) --- -->
-            <a href="WikiMind_study.html" class="md:col-span-2 glass-panel rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 group">
-                <div class="flex items-center gap-6">
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-2xl shadow-lg">⚡</div>
-                    <div>
-                        <h3 class="text-2xl font-display font-bold">Focus Flow</h3>
-                        <p class="text-white/50 text-sm">Productivité maximale & Pomodoro</p>
-                    </div>
-                </div>
-                <!-- Faux timer animé -->
-                <div class="px-6 py-2 rounded-lg bg-black/50 border border-white/10 font-mono text-xl text-red-400 group-hover:text-red-300 transition-colors">
-                    25:00
-                </div>
-            </a>
-
-            <!-- --- CARTE 5: GAMES (PETITE) --- -->
-            <a href="Wikimind_games.html" class="glass-panel rounded-3xl p-6 flex flex-col justify-center items-center text-center group">
-                <div class="text-4xl mb-2 group-hover:scale-110 transition-transform duration-300">♟️</div>
-                <h3 class="font-display font-bold">Games</h3>
-                <p class="text-xs text-white/40 mt-1 uppercase tracking-widest">Échecs vs IA</p>
-            </a>
-
-            <!-- --- CARTE 6: CATALOGUE (BOUTON FINAL) --- -->
-            <a href="#" onclick="alert('Catalogue complet bientôt disponible !')" class="md:col-span-3 glass-panel rounded-3xl p-4 flex items-center justify-center gap-2 hover:bg-white/10 transition-colors cursor-pointer border-dashed border-white/20">
-                <span class="text-sm font-bold uppercase tracking-widest text-white/60">Voir toutes les applications</span>
-                <svg class="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-            </a>
-
-        </section>
-
-        <!-- FOOTER SIMPLE -->
-        <footer class="mt-24 pt-8 border-t border-white/10 text-center text-xs text-white/30 uppercase tracking-widest">
-            <p>&copy; 2026 WikiMind Project. Tous droits réservés.</p>
-        </footer>
-
-    </main>
-
-    <!-- 6. SCRIPTS JAVASCRIPT (ANIMATION & LOADER) -->
+    <!-- SCRIPTS -->
     <script>
-        // --- GESTION DU LOADER ---
-        window.addEventListener('load', () => {
-            const loader = document.getElementById('loader');
-            // Petit délai pour l'esthétique
-            setTimeout(() => {
-                loader.style.opacity = '0';
-                loader.style.visibility = 'hidden';
-            }, 800);
-        });
+        // --- BASE DE DONNÉES SVG LOGOS (Allégée & Optimisée) ---
+        const SVGS = {
+            'fnac': '<svg viewBox="0 0 100 100" fill="#EAB308"><rect width="100" height="100"/><path fill="black" d="M20 30h15v40h-15z M45 30h15v15h10v-15h15v40h-15v-15h-10v15h-15z"/></svg>',
+            'carrefour': '<svg viewBox="0 0 100 100"><rect width="100" height="100" fill="white"/><path d="M50 10 L90 50 L50 90 L10 50 Z" fill="#003399"/><circle cx="50" cy="50" r="35" fill="white"/><path d="M45 35h10v30h-10z" fill="#EF4444"/><path d="M30 50l15-15v30z" fill="#003399"/></svg>',
+            'leclerc': '<svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#0066CC"/><text x="50" y="70" text-anchor="middle" fill="white" font-weight="bold" font-size="60" font-family="Arial">L</text><circle cx="50" cy="50" r="40" stroke="orange" stroke-width="5" fill="none"/></svg>',
+            'decathlon': '<svg viewBox="0 0 100 100" fill="#0082C3"><rect width="100" height="100"/><text x="50" y="60" text-anchor="middle" fill="white" font-weight="bold" font-size="18" font-family="Arial">DECATHLON</text></svg>',
+            'ikea': '<svg viewBox="0 0 100 100" fill="#0051BA"><rect width="100" height="100"/><ellipse cx="50" cy="50" rx="45" ry="30" fill="#FFDA1A"/><text x="50" y="60" text-anchor="middle" fill="#0051BA" font-weight="bold" font-size="30">IKEA</text></svg>',
+            'action': '<svg viewBox="0 0 100 100" fill="#009EE3"><rect width="100" height="100"/><text x="50" y="60" text-anchor="middle" fill="white" font-weight="bold" font-size="25">ACTION</text></svg>',
+            'lidl': '<svg viewBox="0 0 100 100" fill="#0050AA"><rect width="100" height="100"/><rect x="10" y="10" width="80" height="80" fill="#FFF000"/><circle cx="50" cy="50" r="35" fill="#E60000"/><text x="50" y="60" text-anchor="middle" fill="#0050AA" font-weight="bold" font-size="30" font-style="italic">LiDL</text></svg>',
+            'sephora': '<svg viewBox="0 0 100 100" fill="black"><rect width="100" height="100"/><path d="M10 50 Q50 10 90 50" stroke="white" stroke-width="2" fill="none"/><text x="50" y="70" text-anchor="middle" fill="white" font-size="16" letter-spacing="2">SEPHORA</text></svg>',
+            'generic': '<svg viewBox="0 0 100 100" fill="#333"><rect width="100" height="100"/><text x="50" y="60" text-anchor="middle" fill="white" font-size="40">?</text></svg>'
+        };
 
-        // --- ANIMATION CANVAS (AURORA) ---
-        // Cette version est simplifiée pour ne jamais planter
-        const canvas = document.getElementById('aurora-canvas');
-        const ctx = canvas.getContext('2d');
-        
-        let width, height;
-        
-        // Configuration des "bulles" de lumière
-        const orbs = [
-            { x: 0.1, y: 0.1, dx: 0.0003, dy: 0.0002, r: 400, color: 'rgba(99, 102, 241, 0.08)' }, // Bleu/Violet
-            { x: 0.8, y: 0.8, dx: -0.0004, dy: -0.0003, r: 500, color: 'rgba(168, 85, 247, 0.08)' }, // Violet
-            { x: 0.5, y: 0.5, dx: 0.0002, dy: -0.0004, r: 300, color: 'rgba(59, 130, 246, 0.06)' }  // Bleu
-        ];
+        // --- VARIABLES GLOBALES ---
+        let cards = JSON.parse(localStorage.getItem('wikimind_db_v3')) || [];
+        let currentMode = 'logo'; // 'logo' ou 'photo'
+        let currentImageBase64 = null;
+        let currentViewId = null;
 
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
+        // --- INITIALISATION ---
+        window.onload = () => {
+            renderCards();
+            initQuickLogos();
+            document.getElementById('input-code').addEventListener('input', updateBarcodePreview);
+        };
+
+        // --- GESTION DES MODES (LOGO vs PHOTO) ---
+        function setMode(mode) {
+            currentMode = mode;
+            const btnLogo = document.getElementById('btn-mode-logo');
+            const btnPhoto = document.getElementById('btn-mode-photo');
+            const photoZone = document.getElementById('photo-zone');
+
+            if(mode === 'logo') {
+                btnLogo.classList.add('border-brand', 'bg-brand/10');
+                btnLogo.classList.remove('border-white/10', 'bg-white/5');
+                btnPhoto.classList.remove('border-brand', 'bg-brand/10');
+                btnPhoto.classList.add('border-white/10', 'bg-white/5');
+                photoZone.classList.add('hidden');
+            } else {
+                btnPhoto.classList.add('border-brand', 'bg-brand/10');
+                btnPhoto.classList.remove('border-white/10', 'bg-white/5');
+                btnLogo.classList.remove('border-brand', 'bg-brand/10');
+                btnLogo.classList.add('border-white/10', 'bg-white/5');
+                photoZone.classList.remove('hidden');
+            }
         }
 
-        function animate() {
-            // Nettoyer le canvas (fond noir)
-            ctx.fillStyle = '#030305';
-            ctx.fillRect(0, 0, width, height);
+        // --- TRAITEMENT IMAGE ROBUSTE (COMPRESSION) ---
+        function handleImage(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const reader = new FileReader();
+                
+                // Feedback visuel "Chargement..."
+                document.getElementById('img-placeholder').innerHTML = '<span class="animate-spin text-2xl">⏳</span>';
 
-            orbs.forEach(orb => {
-                // Déplacement
-                orb.x += orb.dx;
-                orb.y += orb.dy;
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = function() {
+                        // Compression via Canvas pour éviter localStorage plein
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 600; // Suffisant pour une carte sur mobile
+                        const scale = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scale;
+                        
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        
+                        // Conversion en JPEG qualité 70%
+                        currentImageBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                        
+                        // Affichage Preview
+                        const preview = document.getElementById('img-preview');
+                        preview.src = currentImageBase64;
+                        preview.classList.remove('hidden');
+                        document.getElementById('img-placeholder').classList.add('hidden');
+                    }
+                }
+                reader.readAsDataURL(file);
+            }
+        }
 
-                // Rebond sur les bords (marge de sécurité)
-                if (orb.x < -0.2 || orb.x > 1.2) orb.dx *= -1;
-                if (orb.y < -0.2 || orb.y > 1.2) orb.dy *= -1;
+        // --- SAUVEGARDE (VALIDATION) ---
+        function saveCard() {
+            const store = document.getElementById('input-store').value.trim();
+            const code = document.getElementById('input-code').value.trim();
+            const btn = document.getElementById('btn-save');
 
-                // Dessin du dégradé radial
-                const gradient = ctx.createRadialGradient(
-                    orb.x * width, orb.y * height, 0,
-                    orb.x * width, orb.y * height, orb.r
-                );
-                gradient.addColorStop(0, orb.color);
-                gradient.addColorStop(1, 'transparent');
+            // 1. Validation basique
+            if (!store) { alert("Il faut entrer un nom de magasin !"); return; }
+            if (currentMode === 'photo' && !currentImageBase64) { alert("Vous n'avez pas sélectionné de photo !"); return; }
 
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.arc(orb.x * width, orb.y * height, orb.r, 0, Math.PI * 2);
-                ctx.fill();
+            // 2. Feedback bouton
+            const originalText = btn.innerText;
+            btn.innerText = "Sauvegarde...";
+            btn.disabled = true;
+
+            // 3. Construction objet
+            const newCard = {
+                id: Date.now(),
+                store: store,
+                code: code || "000000",
+                mode: currentMode,
+                logoKey: detectLogoReturnKey(),
+                image: currentMode === 'photo' ? currentImageBase64 : null
+            };
+
+            // 4. Sauvegarde
+            try {
+                cards.unshift(newCard); // Ajoute au début
+                localStorage.setItem('wikimind_db_v3', JSON.stringify(cards));
+                
+                // Reset et fermeture
+                closeModal();
+                renderCards();
+                
+                // Reset formulaire
+                setTimeout(() => {
+                    document.getElementById('input-store').value = '';
+                    document.getElementById('input-code').value = '';
+                    currentImageBase64 = null;
+                    document.getElementById('img-preview').classList.add('hidden');
+                    document.getElementById('img-placeholder').classList.remove('hidden');
+                    setMode('logo');
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }, 500);
+
+            } catch (e) {
+                alert("Erreur : La mémoire de votre téléphone est pleine. Essayez de supprimer d'anciennes cartes.");
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // --- AFFICHAGE PRINCIPAL ---
+        function renderCards() {
+            const grid = document.getElementById('grid');
+            const empty = document.getElementById('empty');
+            const searchVal = document.getElementById('search').value.toLowerCase();
+            
+            grid.innerHTML = '';
+            
+            const filtered = cards.filter(c => c.store.toLowerCase().includes(searchVal));
+
+            if (filtered.length === 0 && !searchVal) {
+                empty.classList.remove('hidden');
+            } else {
+                empty.classList.add('hidden');
+                
+                filtered.forEach(card => {
+                    const el = document.createElement('div');
+                    el.className = 'relative aspect-[1.586/1] rounded-2xl overflow-hidden cursor-pointer shadow-lg border border-white/10 group bg-gray-900';
+                    el.onclick = () => openViewer(card.id);
+                    
+                    let contentHTML = '';
+                    if (card.mode === 'logo') {
+                        const svg = SVGS[card.logoKey] || SVGS['generic'];
+                        contentHTML = `<div class="w-full h-full flex items-center justify-center p-6 bg-white">${svg}</div>`;
+                    } else {
+                        contentHTML = `<img src="${card.image}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity">`;
+                    }
+
+                    el.innerHTML = `
+                        ${contentHTML}
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent pointer-events-none"></div>
+                        <div class="absolute bottom-3 left-4 right-4 pointer-events-none">
+                            <h3 class="font-bold text-white text-lg leading-none truncate shadow-black drop-shadow-md">${card.store}</h3>
+                            <p class="text-[10px] text-white/70 font-mono mt-1">${card.code}</p>
+                        </div>
+                    `;
+                    grid.appendChild(el);
+                });
+            }
+        }
+
+        document.getElementById('search').addEventListener('input', renderCards);
+
+        // --- AUTO-DETECT LOGO ---
+        function detectLogo() {
+            const val = document.getElementById('input-store').value.toLowerCase();
+            const icon = document.getElementById('store-icon');
+            let found = false;
+            for (let key in SVGS) {
+                if (val.includes(key)) {
+                    icon.innerHTML = `<div class="w-full h-full p-0.5 bg-white rounded-sm">${SVGS[key]}</div>`;
+                    found = true;
+                    break;
+                }
+            }
+            if(!found) icon.innerHTML = "🏪";
+        }
+
+        function detectLogoReturnKey() {
+            const val = document.getElementById('input-store').value.toLowerCase();
+            for (let key in SVGS) {
+                if (val.includes(key)) return key;
+            }
+            return 'generic';
+        }
+
+        function initQuickLogos() {
+            const cont = document.getElementById('quick-logos');
+            ['fnac','leclerc','carrefour','decathlon','ikea','lidl','action'].forEach(k => {
+                const btn = document.createElement('div');
+                btn.className = "w-10 h-10 rounded-full bg-white p-1 flex-shrink-0 cursor-pointer border-2 border-transparent hover:border-brand transition-all";
+                btn.innerHTML = SVGS[k];
+                btn.onclick = () => {
+                    document.getElementById('input-store').value = k.charAt(0).toUpperCase() + k.slice(1);
+                    detectLogo();
+                }
+                cont.appendChild(btn);
             });
-
-            requestAnimationFrame(animate);
         }
 
-        // Démarrage
-        window.addEventListener('resize', resize);
-        resize();
-        animate();
+        // --- CODE BARRE ---
+        function updateBarcodePreview() {
+            const val = document.getElementById('input-code').value;
+            try {
+                JsBarcode("#barcode-preview", val || "123456", {
+                    format: "CODE128", displayValue: false, height: 40, margin: 0
+                });
+            } catch(e) {}
+        }
+        function generateRandom() {
+            document.getElementById('input-code').value = Math.floor(Math.random() * 1000000000000);
+            updateBarcodePreview();
+        }
+
+        // --- VIEWER ---
+        function openViewer(id) {
+            currentViewId = id;
+            const card = cards.find(c => c.id === id);
+            
+            document.getElementById('view-title').innerText = card.store;
+            document.getElementById('view-code').innerText = card.code;
+            
+            const imgEl = document.getElementById('view-img');
+            const logoEl = document.getElementById('view-logo');
+            
+            if (card.mode === 'logo') {
+                imgEl.classList.add('hidden');
+                logoEl.classList.remove('hidden');
+                logoEl.innerHTML = SVGS[card.logoKey] || SVGS['generic'];
+            } else {
+                logoEl.classList.add('hidden');
+                imgEl.classList.remove('hidden');
+                imgEl.src = card.image;
+            }
+
+            // Génération Grand Code Barre
+            try {
+                JsBarcode("#view-barcode", card.code, {
+                    format: "CODE128", displayValue: false, height: 100, margin: 10, width: 3
+                });
+            } catch(e) {}
+
+            document.getElementById('viewer').classList.remove('hidden');
+        }
+
+        function closeViewer() { document.getElementById('viewer').classList.add('hidden'); }
+        
+        function deleteCard() {
+            if(confirm('Supprimer cette carte ?')) {
+                cards = cards.filter(c => c.id !== currentViewId);
+                localStorage.setItem('wikimind_db_v3', JSON.stringify(cards));
+                renderCards();
+                closeViewer();
+            }
+        }
+
+        // --- MODAL UTILS ---
+        function openModal() { document.getElementById('modal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
     </script>
 </body>
 </html>
