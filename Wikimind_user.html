@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WikiMind • Accès Utilisateur</title>
+    <title>WikiMind OS • Centre de Contrôle</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
-    <!-- Toastify pour les notifications -->
+    <!-- Chart.js pour les graphiques -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Toastify -->
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     
     <script>
@@ -15,233 +17,308 @@
             theme: {
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
-                    colors: { brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' } }
+                    colors: { 
+                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8', dark: '#1e1b4b' },
+                        surface: { 100: 'rgba(255,255,255,0.03)', 200: 'rgba(255,255,255,0.07)' }
+                    },
+                    animation: { 'fade-in': 'fadeIn 0.6s ease-out forwards', 'pulse-slow': 'pulse 3s infinite' },
+                    keyframes: { fadeIn: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } } }
                 }
             }
         }
     </script>
     <style>
-        body { background-color: #050505; color: #ffffff; }
+        body { background-color: #030305; color: #ffffff; overflow: hidden; }
+        /* Glassmorphism Premium */
         .glass-card {
-            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            background: rgba(20, 20, 25, 0.7);
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, border-color 0.3s;
         }
+        .glass-card:hover { border-color: rgba(99, 102, 241, 0.4); }
+        
         .login-input {
-            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
             color: white; outline: none; transition: all 0.3s;
         }
-        .login-input:focus { border-color: #6366f1; background: rgba(255,255,255,0.1); }
-        .stat-bar-fill { transition: width 1s ease-out; }
+        .login-input:focus { border-color: #6366f1; background: rgba(99, 102, 241, 0.05); box-shadow: 0 0 15px rgba(99,102,241,0.2); }
+        
+        /* Sidebar Active State */
+        .nav-item.active { background: rgba(99, 102, 241, 0.15); border-left: 3px solid #6366f1; color: white; }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #050505; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
     </style>
 </head>
-<body class="min-h-screen flex text-sm">
+<body class="min-h-screen flex text-sm selection:bg-brand-500 selection:text-white">
+
+    <!-- AURORA BACKGROUND -->
+    <div class="fixed inset-0 z-0">
+        <div class="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-brand-600/20 rounded-full blur-[120px] animate-pulse-slow"></div>
+        <div class="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px] animate-pulse-slow" style="animation-delay: 1.5s;"></div>
+    </div>
 
     <!-- LOADING OVERLAY -->
-    <div id="loader" class="fixed inset-0 z-50 bg-black flex flex-col gap-4 items-center justify-center">
-        <div class="animate-spin w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full"></div>
-        <div class="text-white/30 font-mono text-xs">Synchronisation WikiMind...</div>
+    <div id="loader" class="fixed inset-0 z-50 bg-[#030305] flex flex-col gap-4 items-center justify-center transition-opacity duration-500">
+        <div class="relative w-16 h-16">
+            <div class="absolute inset-0 border-4 border-brand-500/30 rounded-full"></div>
+            <div class="absolute inset-0 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+        <div class="text-brand-glow font-display font-bold tracking-widest text-xs animate-pulse">INITIALISATION DU NOYAU...</div>
     </div>
 
     <!-- === AUTH VIEW (NON CONNECTÉ) === -->
-    <div id="auth-view" class="hidden w-full h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-brand-500/10 blur-[100px] rounded-full -z-10"></div>
+    <div id="auth-view" class="relative z-10 hidden w-full h-screen flex flex-col items-center justify-center p-6">
+        <div class="glass-card w-full max-w-[420px] p-8 rounded-3xl animate-fade-in relative overflow-hidden">
+            <!-- Decorative line -->
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-500 to-transparent"></div>
 
-        <div class="text-center mb-8">
-            <h1 class="font-display font-bold text-4xl mb-2">WikiMind <span class="text-brand-glow">ID</span></h1>
-            <p class="text-white/40">Portail d'accès unifié.</p>
-        </div>
+            <div class="text-center mb-10">
+                <h1 class="font-display font-bold text-3xl mb-1">WikiMind <span class="text-brand-glow">OS</span></h1>
+                <p class="text-white/40 text-xs uppercase tracking-widest">Portail d'accès sécurisé</p>
+            </div>
 
-        <div class="glass-card w-full max-w-md p-8 rounded-3xl shadow-2xl">
-            <div class="grid grid-cols-3 gap-3 mb-6">
-                <button id="btn-google" class="flex items-center justify-center p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-brand-500/30 transition">
-                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5">
+            <div class="grid grid-cols-3 gap-3 mb-8">
+                <button id="btn-google" class="group flex items-center justify-center p-3 rounded-xl bg-surface-100 hover:bg-surface-200 border border-white/5 transition">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5 group-hover:scale-110 transition">
                 </button>
-                <button id="btn-microsoft" class="flex items-center justify-center p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-brand-500/30 transition">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" class="w-5 h-5">
+                <button id="btn-microsoft" class="group flex items-center justify-center p-3 rounded-xl bg-surface-100 hover:bg-surface-200 border border-white/5 transition">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" class="w-5 h-5 group-hover:scale-110 transition">
                 </button>
-                <button id="btn-facebook" class="flex items-center justify-center p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-brand-500/30 transition">
-                    <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" class="w-5 h-5">
+                <button id="btn-facebook" class="group flex items-center justify-center p-3 rounded-xl bg-surface-100 hover:bg-surface-200 border border-white/5 transition">
+                    <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" class="w-5 h-5 group-hover:scale-110 transition">
                 </button>
             </div>
 
+            <div class="relative flex py-2 items-center mb-6">
+                <div class="flex-grow border-t border-white/10"></div>
+                <span class="flex-shrink-0 mx-4 text-white/20 text-[10px] uppercase">Ou via protocole standard</span>
+                <div class="flex-grow border-t border-white/10"></div>
+            </div>
+
             <form id="email-form" class="space-y-4">
-                <input type="email" id="email" placeholder="Identifiant neuronal (Email)" class="login-input w-full p-3 rounded-xl" required>
-                <input type="password" id="password" placeholder="Clé de chiffrement (Mots de passe)" class="login-input w-full p-3 rounded-xl" required>
-                <button type="submit" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 rounded-xl transition shadow-[0_0_20px_rgba(99,102,241,0.3)]">
-                    Initialiser la session
+                <div class="group">
+                    <input type="email" id="email" placeholder="Identifiant Neuronal" class="login-input w-full p-3.5 rounded-xl text-sm" required>
+                </div>
+                <div class="group">
+                    <input type="password" id="password" placeholder="Clé d'accès" class="login-input w-full p-3.5 rounded-xl text-sm" required>
+                </div>
+                <button type="submit" class="w-full bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-bold py-3.5 rounded-xl transition-all shadow-[0_0_30px_-5px_rgba(99,102,241,0.5)] hover:shadow-[0_0_50px_-5px_rgba(99,102,241,0.7)] transform hover:-translate-y-0.5">
+                    Connexion Système
                 </button>
             </form>
-
-            <div class="mt-6 text-center">
-                <a href="index.html" class="text-xs text-white/40 hover:text-white transition">← Retour au système</a>
+            
+            <div class="mt-8 text-center">
+                <a href="index.html" class="text-xs text-white/30 hover:text-white transition flex items-center justify-center gap-2">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                    Retour à l'accueil
+                </a>
             </div>
         </div>
     </div>
 
     <!-- === DASHBOARD VIEW (CONNECTÉ) === -->
-    <div id="dashboard-view" class="hidden w-full h-screen flex flex-col md:flex-row bg-[#050505]">
+    <div id="dashboard-view" class="hidden relative z-10 w-full h-screen flex bg-[#030305]">
         
         <!-- SIDEBAR -->
-        <aside class="w-full md:w-72 border-r border-white/5 bg-[#080808] flex flex-col justify-between z-20">
-            <div class="p-6">
-                <div class="flex items-center gap-3 mb-10">
-                    <div class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center font-bold text-white">W</div>
-                    <span class="font-display font-bold text-lg">Espace Membre</span>
+        <aside class="w-20 md:w-64 border-r border-white/5 bg-[#050507]/80 backdrop-blur-xl flex flex-col justify-between transition-all duration-300">
+            <div class="p-4 md:p-6">
+                <div class="flex items-center gap-3 mb-10 pl-1">
+                    <div class="w-8 h-8 bg-gradient-to-tr from-brand-500 to-purple-500 rounded-lg flex items-center justify-center font-bold text-white shadow-lg shadow-brand-500/20">W</div>
+                    <span class="font-display font-bold text-lg hidden md:block tracking-tight">WikiMind</span>
                 </div>
                 
-                <div class="space-y-1">
-                    <div class="px-4 py-3 rounded-xl bg-brand-500/10 text-brand-glow font-medium flex items-center gap-3 border border-brand-500/20">
-                        <span>📊</span> Vue d'ensemble
-                    </div>
-                    <a href="index.html" class="px-4 py-3 rounded-xl text-white/50 hover:text-white hover:bg-white/5 font-medium transition flex items-center gap-3">
-                        <span>🌍</span> Communauté & Apps
+                <nav class="space-y-2">
+                    <button class="nav-item active w-full px-4 py-3 rounded-xl text-left text-white/60 hover:text-white hover:bg-white/5 font-medium transition flex items-center gap-3 group">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                        <span class="hidden md:block">Tableau de Bord</span>
+                    </button>
+                    <a href="index.html" class="nav-item w-full px-4 py-3 rounded-xl text-left text-white/60 hover:text-white hover:bg-white/5 font-medium transition flex items-center gap-3">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+                        <span class="hidden md:block">Accès Réseau</span>
                     </a>
-                </div>
+                </nav>
             </div>
 
-            <div class="p-6 border-t border-white/5">
-                <div class="flex items-center gap-3 mb-4">
-                    <img id="user-avatar-small" class="w-10 h-10 rounded-full border border-white/10">
-                    <div class="overflow-hidden">
-                        <div id="sidebar-name" class="font-bold truncate text-white">User</div>
-                        <div class="text-[10px] text-green-400 flex items-center gap-1">
-                            <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> En ligne
+            <div class="p-4 md:p-6 border-t border-white/5">
+                <div class="flex items-center gap-3 mb-4 cursor-pointer hover:bg-white/5 p-2 rounded-lg transition" id="user-profile-btn">
+                    <img id="user-avatar-small" class="w-9 h-9 rounded-full border border-white/10 bg-gray-800 object-cover">
+                    <div class="hidden md:block overflow-hidden">
+                        <div id="sidebar-name" class="font-bold truncate text-sm text-white">User</div>
+                        <div class="text-[10px] text-brand-glow flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Connecté
                         </div>
                     </div>
                 </div>
-                <button id="logout-btn" class="w-full py-2 rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 text-xs font-bold transition">
-                    Fermer la session
+                <button id="logout-btn" class="w-full py-2 rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 hover:border-red-500/40 text-xs font-bold transition flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    <span class="hidden md:inline">Déconnexion</span>
                 </button>
             </div>
         </aside>
 
-        <!-- MAIN DASHBOARD -->
-        <main class="flex-1 p-6 md:p-12 overflow-y-auto relative">
-            <!-- Header -->
-            <header class="mb-10 flex justify-between items-end">
+        <!-- MAIN CONTENT -->
+        <main class="flex-1 p-6 md:p-10 overflow-y-auto relative">
+            
+            <!-- HEADER -->
+            <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4 animate-fade-in">
                 <div>
-                    <h1 class="text-3xl font-display font-bold mb-2">Centre de Contrôle</h1>
-                    <p class="text-white/40">Données synchronisées en temps réel.</p>
+                    <h2 class="text-white/40 text-xs uppercase tracking-widest mb-1">Système Opérationnel v3.0</h2>
+                    <h1 class="text-4xl font-display font-bold text-white">Vue d'ensemble</h1>
                 </div>
-                <div class="hidden md:block text-right">
-                    <div class="text-xs text-white/30 uppercase tracking-widest">Latence</div>
-                    <div class="text-xl font-mono text-green-400">20ms</div>
+                <div class="flex gap-4">
+                    <div class="glass-card px-4 py-2 rounded-full flex items-center gap-3">
+                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        <span class="text-xs font-mono text-white/80">LATENCE: <span class="text-green-400">18ms</span></span>
+                    </div>
                 </div>
             </header>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-fade-in" style="animation-delay: 0.1s;">
                 
-                <!-- Carte Identité -->
-                <div class="glass-card rounded-2xl p-6 md:col-span-2">
-                    <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" /></svg>
-                        Identité Numérique
-                    </h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="p-4 rounded-xl bg-white/5 border border-white/5">
-                            <div class="text-[10px] text-white/40 uppercase mb-1">Email Associé</div>
-                            <div id="user-email" class="font-mono truncate select-all">chargement...</div>
+                <!-- MEMORY MONITOR (Graphique) -->
+                <div class="glass-card rounded-2xl p-6 md:col-span-1 lg:col-span-1 flex flex-col items-center justify-center relative">
+                    <h3 class="absolute top-6 left-6 text-sm font-bold text-white/80">Allocation Mémoire</h3>
+                    <div class="w-48 h-48 mt-6 relative">
+                        <canvas id="storageChart"></canvas>
+                        <!-- Center Text -->
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span class="text-2xl font-bold font-display" id="total-storage-text">0%</span>
+                            <span class="text-[10px] text-white/40 uppercase">Utilisé</span>
                         </div>
-                        <div class="p-4 rounded-xl bg-white/5 border border-white/5">
-                            <div class="text-[10px] text-white/40 uppercase mb-1">UID Unique</div>
-                            <div id="user-uid" class="font-mono text-xs text-white/60 truncate select-all">chargement...</div>
+                    </div>
+                    <div class="w-full mt-6 space-y-3">
+                        <div class="flex justify-between text-xs">
+                            <span class="flex items-center gap-2 text-white/60"><span class="w-2 h-2 rounded-full bg-brand-500"></span>Cloud (WikiMind)</span>
+                            <span class="font-mono text-white" id="cloud-usage-text">...</span>
                         </div>
-                        <div class="p-4 rounded-xl bg-white/5 border border-white/5">
-                            <div class="text-[10px] text-white/40 uppercase mb-1">Dernière Connexion</div>
-                            <div id="last-login" class="font-mono text-xs text-brand-glow">À l'instant</div>
-                        </div>
-                         <div class="p-4 rounded-xl bg-white/5 border border-white/5">
-                            <div class="text-[10px] text-white/40 uppercase mb-1">Provider</div>
-                            <div id="provider-id" class="font-mono text-xs capitalize text-white">...</div>
+                        <div class="flex justify-between text-xs">
+                            <span class="flex items-center gap-2 text-white/60"><span class="w-2 h-2 rounded-full bg-purple-500"></span>Local (Device)</span>
+                            <span class="font-mono text-white" id="local-usage-text">...</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Carte Stockage -->
-                <div class="glass-card rounded-2xl p-6 relative overflow-hidden flex flex-col justify-center">
-                    <div class="absolute inset-0 bg-gradient-to-br from-brand-900/20 to-transparent"></div>
-                    <h3 class="text-lg font-bold mb-6 relative z-10">Répartition Mémoire</h3>
+                <!-- USER IDENTITY CARD -->
+                <div class="glass-card rounded-2xl p-6 md:col-span-2 lg:col-span-2 flex flex-col justify-between relative overflow-hidden">
+                    <div class="absolute right-0 top-0 w-64 h-64 bg-brand-500/10 blur-[80px] rounded-full -z-10"></div>
                     
-                    <div class="space-y-6 relative z-10">
+                    <div class="flex justify-between items-start mb-6">
+                        <h3 class="text-sm font-bold text-white/80">Signature Numérique</h3>
+                        <span class="px-2 py-1 rounded bg-brand-500/20 text-brand-glow text-[10px] border border-brand-500/30">ENCRYPTED</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-6">
                         <div>
-                            <div class="flex justify-between text-xs mb-2">
-                                <span class="text-white/80">Local Storage (Privé)</span>
-                                <span class="text-brand-glow font-bold">45%</span>
-                            </div>
-                            <div class="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                                <div class="h-full bg-brand-500 w-[45%] shadow-[0_0_10px_#6366f1]"></div>
-                            </div>
-                            <div class="text-[10px] text-white/30 mt-1 text-right">Encrypted locally on device</div>
+                            <div class="text-[10px] text-white/40 uppercase mb-1">UID</div>
+                            <div id="user-uid" class="font-mono text-xs text-white/80 break-all bg-black/20 p-2 rounded border border-white/5">Chargement...</div>
                         </div>
-                        
                         <div>
-                            <div class="flex justify-between text-xs mb-2">
-                                <span class="text-white/80">Cloud Sync (WikiMind)</span>
-                                <span class="text-purple-400 font-bold">12%</span>
+                            <div class="text-[10px] text-white/40 uppercase mb-1">Fournisseur</div>
+                            <div id="provider-id" class="font-mono text-xs text-white/80 capitalize flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 bg-white rounded-full"></span> ...
                             </div>
-                            <div class="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                                <div class="h-full bg-purple-500 w-[12%]"></div>
-                            </div>
-                             <div class="text-[10px] text-white/30 mt-1 text-right">User prefs & chats</div>
                         </div>
+                        <div class="col-span-2">
+                            <div class="text-[10px] text-white/40 uppercase mb-1">Email</div>
+                            <div id="user-email" class="font-mono text-sm text-white font-bold tracking-wide">...</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
+                        <div class="text-xs text-white/40">Session active depuis: <span class="text-white" id="last-login">À l'instant</span></div>
+                        <button class="text-xs text-brand-glow hover:text-white transition">Gérer les clés ></button>
                     </div>
                 </div>
 
-                <!-- Services Connectés -->
-                <div class="glass-card rounded-2xl p-6 md:col-span-3">
-                    <h3 class="text-lg font-bold mb-6">Services Actifs</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                        
-                        <!-- Service 1 -->
-                        <div class="p-4 rounded-xl bg-white/5 border border-white/5 flex items-center gap-4">
-                            <div class="w-10 h-10 rounded bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xl">🧠</div>
-                            <div>
-                                <div class="font-bold text-sm">Core AI</div>
-                                <div class="text-[10px] text-green-400 flex items-center gap-1">● Opérationnel</div>
+                <!-- SYSTEM STATUS -->
+                <div class="glass-card rounded-2xl p-6 flex flex-col gap-4">
+                    <h3 class="text-sm font-bold text-white/80">État des Modules</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between group">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded bg-white/5 flex items-center justify-center text-lg group-hover:bg-brand-500/20 transition-colors">🧠</div>
+                                <div>
+                                    <div class="text-xs font-bold">Core AI</div>
+                                    <div class="text-[10px] text-green-400">Opérationnel</div>
+                                </div>
                             </div>
+                            <div class="h-1.5 w-1.5 bg-green-500 rounded-full shadow-[0_0_8px_#22c55e]"></div>
                         </div>
 
-                         <!-- Service 2 -->
-                        <div class="p-4 rounded-xl bg-white/5 border border-white/5 flex items-center gap-4">
-                            <div class="w-10 h-10 rounded bg-pink-500/20 text-pink-400 flex items-center justify-center text-xl">🎨</div>
-                            <div>
-                                <div class="font-bold text-sm">Studio</div>
-                                <div class="text-[10px] text-green-400 flex items-center gap-1">● Prêt</div>
+                        <div class="flex items-center justify-between group">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded bg-white/5 flex items-center justify-center text-lg group-hover:bg-purple-500/20 transition-colors">🎨</div>
+                                <div>
+                                    <div class="text-xs font-bold">Studio</div>
+                                    <div class="text-[10px] text-green-400">Opérationnel</div>
+                                </div>
                             </div>
+                            <div class="h-1.5 w-1.5 bg-green-500 rounded-full shadow-[0_0_8px_#22c55e]"></div>
                         </div>
 
-                         <!-- Service 3 -->
-                        <div class="p-4 rounded-xl bg-white/5 border border-white/5 flex items-center gap-4">
-                            <div class="w-10 h-10 rounded bg-blue-500/20 text-blue-400 flex items-center justify-center text-xl">💬</div>
-                            <div>
-                                <div class="font-bold text-sm">Community</div>
-                                <div class="text-[10px] text-green-400 flex items-center gap-1">● Connecté</div>
+                        <div class="flex items-center justify-between group">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded bg-white/5 flex items-center justify-center text-lg group-hover:bg-blue-500/20 transition-colors">🔒</div>
+                                <div>
+                                    <div class="text-xs font-bold">Vault</div>
+                                    <div class="text-[10px] text-white/40">Veille</div>
+                                </div>
                             </div>
+                            <div class="h-1.5 w-1.5 bg-white/20 rounded-full"></div>
                         </div>
-
-                         <!-- Service 4 -->
-                        <div class="p-4 rounded-xl bg-white/5 border border-white/5 flex items-center gap-4 opacity-50">
-                            <div class="w-10 h-10 rounded bg-gray-500/20 text-gray-400 flex items-center justify-center text-xl">🔒</div>
-                            <div>
-                                <div class="font-bold text-sm">Vault</div>
-                                <div class="text-[10px] text-white/40">Non activé</div>
-                            </div>
-                        </div>
-
                     </div>
                 </div>
 
             </div>
+
+            <!-- RECENT ACTIVITY (Fake Data for vibes) -->
+            <div class="mt-6 glass-card rounded-2xl p-6 animate-fade-in" style="animation-delay: 0.2s;">
+                <h3 class="text-sm font-bold text-white/80 mb-4">Flux de Données Récent</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-[10px] text-white/30 uppercase border-b border-white/5">
+                                <th class="pb-3 pl-2">Type</th>
+                                <th class="pb-3">Source</th>
+                                <th class="pb-3">Statut</th>
+                                <th class="pb-3 text-right pr-2">Temps</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-xs">
+                            <tr class="border-b border-white/5 hover:bg-white/5 transition">
+                                <td class="py-3 pl-2 flex items-center gap-2"><span class="w-1 h-4 bg-brand-500 rounded-full"></span>Auth</td>
+                                <td class="text-white/60">Portail WikiMind</td>
+                                <td class="text-green-400">Vérifié</td>
+                                <td class="text-right pr-2 text-white/40 font-mono">00:00:01</td>
+                            </tr>
+                            <tr class="border-b border-white/5 hover:bg-white/5 transition">
+                                <td class="py-3 pl-2 flex items-center gap-2"><span class="w-1 h-4 bg-purple-500 rounded-full"></span>Sync</td>
+                                <td class="text-white/60">Base Neuronale</td>
+                                <td class="text-green-400">Complété</td>
+                                <td class="text-right pr-2 text-white/40 font-mono">00:00:05</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </main>
     </div>
 
     <!-- FIREBASE LOGIC -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut, GoogleAuthProvider, FacebookAuthProvider, OAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+        // IMPORT VERSION 10.8.0 (Version Stable et Consistante)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut, GoogleAuthProvider, FacebookAuthProvider, OAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import Toastify from "https://cdn.jsdelivr.net/npm/toastify-js/src/toastify-es.js";
 
-        // CONFIG AUTH (WikiMind-3)
+        // CONFIG AUTH (WikiMind-3) - Doit être identique partout
         const authConfig = {
             apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
             authDomain: "wikimind-3-comments.firebaseapp.com",
@@ -251,73 +328,143 @@
         const app = initializeApp(authConfig);
         const auth = getAuth(app);
 
+        // Force la persistance locale (Correction Bug Session)
+        setPersistence(auth, browserLocalPersistence)
+            .then(() => console.log("Persistance de session activée."))
+            .catch((error) => console.error("Erreur persistance:", error));
+
         // UI ELEMENTS
         const loader = document.getElementById('loader');
         const authView = document.getElementById('auth-view');
         const dashboardView = document.getElementById('dashboard-view');
+
+        // CHART VARIABLE
+        let storageChartInstance = null;
         
         // AUTH STATE LISTENER
         onAuthStateChanged(auth, (user) => {
-            loader.style.display = 'none';
-            
-            if (user) {
-                // USER CONNECTÉ
-                authView.classList.add('hidden');
-                dashboardView.classList.remove('hidden');
-                dashboardView.classList.add('flex');
+            // Effet de transition fluide
+            loader.style.opacity = '0';
+            setTimeout(() => { 
+                loader.style.display = 'none'; 
                 
-                // Remplissage Données Dashboard
-                document.getElementById('sidebar-name').textContent = user.displayName || "Utilisateur";
-                document.getElementById('user-email').textContent = user.email;
-                document.getElementById('user-uid').textContent = user.uid;
-                document.getElementById('user-avatar-small').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff`;
-                document.getElementById('provider-id').textContent = user.providerData[0]?.providerId || 'password';
-                
-            } else {
-                // USER DÉCONNECTÉ
-                dashboardView.classList.add('hidden');
-                dashboardView.classList.remove('flex');
-                authView.classList.remove('hidden');
-                authView.classList.add('flex');
+                if (user) {
+                    // USER CONNECTÉ
+                    authView.classList.add('hidden');
+                    dashboardView.classList.remove('hidden');
+                    dashboardView.classList.add('flex');
+                    
+                    updateDashboard(user);
+                } else {
+                    // USER DÉCONNECTÉ
+                    dashboardView.classList.add('hidden');
+                    dashboardView.classList.remove('flex');
+                    authView.classList.remove('hidden');
+                    authView.classList.add('flex');
+                }
+            }, 500);
+        });
+
+        // FONCTION MISE À JOUR DASHBOARD
+        function updateDashboard(user) {
+            // Textes basiques
+            document.getElementById('sidebar-name').textContent = user.displayName || "Utilisateur";
+            document.getElementById('user-email').textContent = user.email;
+            document.getElementById('user-uid').textContent = user.uid;
+            document.getElementById('user-avatar-small').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff&bold=true`;
+            document.getElementById('provider-id').innerHTML = `<span class="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span> ${user.providerData[0]?.providerId.split('.')[0] || 'password'}`;
+
+            // --- CALCULATEUR DE MÉMOIRE (SIMULATION + RÉEL) ---
+            initMemoryChart(user.uid);
+        }
+
+        function initMemoryChart(uid) {
+            // 1. Calcul du stockage Local (Réel)
+            let localSize = 0;
+            if(window.localStorage) {
+                for(let key in localStorage) {
+                    if(localStorage.hasOwnProperty(key)) localSize += ((localStorage[key].length * 2));
+                }
             }
-        });
+            const localKB = (localSize / 1024).toFixed(2);
+            
+            // 2. Simulation du stockage Cloud (Basé sur longueur UID pour être constant mais "aléatoire")
+            // Donne un chiffre entre 10MB et 100MB
+            const seed = uid.charCodeAt(0) + uid.charCodeAt(uid.length - 1);
+            const cloudMB = (seed % 90) + 10; 
+            
+            // Textes
+            document.getElementById('local-usage-text').innerText = `${localKB} KB`;
+            document.getElementById('cloud-usage-text').innerText = `${cloudMB} MB`;
 
-        const showError = (msg) => Toastify({ text: "⚠️ " + msg, duration: 3000, style: { background: "#ef4444" } }).showToast();
-        const showSuccess = (msg) => Toastify({ text: "✨ " + msg, duration: 3000, style: { background: "#10b981" } }).showToast();
+            // Setup Chart.js
+            const ctx = document.getElementById('storageChart').getContext('2d');
+            
+            if(storageChartInstance) storageChartInstance.destroy();
 
-        // 1. GOOGLE LOGIN
-        document.getElementById('btn-google').addEventListener('click', () => {
-            signInWithPopup(auth, new GoogleAuthProvider()).catch(err => showError(err.message));
-        });
+            storageChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Cloud', 'Local', 'Libre'],
+                    datasets: [{
+                        data: [cloudMB, (localKB/1024), 500 - cloudMB], // Supposons 500MB max
+                        backgroundColor: ['#6366f1', '#a855f7', 'rgba(255, 255, 255, 0.05)'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    cutout: '75%',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: true } },
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true
+                    }
+                }
+            });
 
-        // 2. MICROSOFT LOGIN
+            // Animation compteur pourcentage
+            const percent = Math.round((cloudMB / 500) * 100);
+            let current = 0;
+            const counter = setInterval(() => {
+                if(current >= percent) clearInterval(counter);
+                else {
+                    current++;
+                    document.getElementById('total-storage-text').innerText = current + "%";
+                }
+            }, 20);
+        }
+
+        // TOAST NOTIFICATIONS
+        const showError = (msg) => Toastify({ text: "⚠️ " + msg, duration: 3000, style: { background: "rgba(239, 68, 68, 0.9)", backdropFilter: "blur(10px)", boxShadow: "0 4px 12px rgba(0,0,0,0.3)" } }).showToast();
+        const showSuccess = (msg) => Toastify({ text: "✨ " + msg, duration: 3000, style: { background: "rgba(16, 185, 129, 0.9)", backdropFilter: "blur(10px)" } }).showToast();
+
+        // 1. PROVIDER LOGINS
+        document.getElementById('btn-google').addEventListener('click', () => signInWithPopup(auth, new GoogleAuthProvider()).catch(err => showError(err.message)));
+        document.getElementById('btn-facebook').addEventListener('click', () => signInWithPopup(auth, new FacebookAuthProvider()).catch(err => showError(err.message)));
         document.getElementById('btn-microsoft').addEventListener('click', () => {
             const provider = new OAuthProvider('microsoft.com');
             provider.setCustomParameters({ prompt: 'select_account' });
             signInWithPopup(auth, provider).catch(err => showError(err.message));
         });
 
-        // 3. FACEBOOK LOGIN
-        document.getElementById('btn-facebook').addEventListener('click', () => {
-            signInWithPopup(auth, new FacebookAuthProvider()).catch(err => showError(err.message));
-        });
-
-        // 4. EMAIL/PASSWORD
+        // 2. EMAIL/PASSWORD LOGIN
         document.getElementById('email-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
             signInWithEmailAndPassword(auth, email, password)
-                .then(() => showSuccess("Connexion établie"))
+                .then(() => showSuccess("Authentification réussie"))
                 .catch((error) => {
                     if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                        // Proposition création compte
-                        if(confirm("Compte inexistant. Créer un nouveau compte WikiMind ?")) {
+                        if(confirm("Identifiant inconnu. Initialiser un nouveau compte WikiMind ?")) {
                             createUserWithEmailAndPassword(auth, email, password)
                                 .then((cred) => {
                                     updateProfile(cred.user, { displayName: email.split('@')[0] });
-                                    showSuccess("Compte créé avec succès");
+                                    showSuccess("Compte initialisé");
                                 })
                                 .catch(err => showError(err.message));
                         }
@@ -329,7 +476,7 @@
 
         // LOGOUT
         document.getElementById('logout-btn').addEventListener('click', () => {
-            signOut(auth);
+            signOut(auth).then(() => showSuccess("Session terminée"));
         });
     </script>
 </body>
