@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WikiMind Fidelité • Local Secure Vault</title>
+    
+    <!-- Manifest en Base64 pour permettre l'ajout à l'écran d'accueil depuis un seul fichier -->
+    <link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiV2lraU1pbmQgRmlkZWxpdMOuIiwic2hvcnRfbmFtZSI6Ildpa2lGaWQiLCJzdGFydF91cmwiOiIiLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjMDUwNTA1IiwidGhlbWVfY29sb3IiOiIjMDUwNTA1In0=">
+    
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- JsBarcode (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
+                    colors: {
+                        glass: { 
+                            panel: 'rgba(20, 20, 20, 0.7)', 
+                            border: 'rgba(255, 255, 255, 0.08)' 
+                        },
+                        brand: { 500: '#6366f1', glow: '#818cf8' }
+                    },
+                    animation: {
+                        'blob': 'blob 10s infinite',
+                        'fade-in': 'fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                    },
+                    keyframes: {
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: 0, transform: 'translateY(10px) scale(0.98)' },
+                            '100%': { opacity: 1, transform: 'translateY(0) scale(1)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #050505;
+            color: #ffffff;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+        }
+
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-input {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .glass-input:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: #6366f1;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+            outline: none;
+        }
+
+        /* Background Aurora */
+        #aurora-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+        
+        /* Utility */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="min-h-screen pb-32">
+
+    <!-- CANVAS BACKGROUND -->
+    <canvas id="aurora-bg"></canvas>
+
+    <!-- HEADER -->
+    <header class="fixed top-0 w-full z-40 px-4 py-4 transition-all duration-300">
+        <div class="glass-panel rounded-2xl px-5 py-3 flex justify-between items-center max-w-2xl mx-auto">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-gradient-to-br from-white to-gray-400 rounded-lg flex items-center justify-center shadow-lg shadow-white/10">
+                    <svg class="w-5 h-5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="font-display font-bold text-lg leading-none">WikiMind</h1>
+                    <span class="text-[10px] uppercase tracking-[0.2em] text-brand-500 font-bold">Fidelité</span>
+                </div>
+            </div>
+            
+            <!-- Status Indicator -->
+            <div class="flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-white/5">
+                <div id="status-dot" class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse"></div>
+                <span id="status-text" class="text-[10px] font-mono text-white/60">ONLINE</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="pt-28 px-4 max-w-2xl mx-auto min-h-[80vh]">
+        
+        <!-- Stats Row -->
+        <div class="flex gap-3 mb-6 overflow-x-auto no-scrollbar pb-2">
+            <div class="glass-panel rounded-2xl p-4 flex-1 min-w-[120px]">
+                <div class="text-white/40 text-xs uppercase tracking-wider mb-1">Cartes</div>
+                <div class="text-2xl font-display font-bold" id="card-count">0</div>
+            </div>
+            <div class="glass-panel rounded-2xl p-4 flex-1 min-w-[120px]">
+                <div class="text-white/40 text-xs uppercase tracking-wider mb-1">Stockage</div>
+                <div class="text-2xl font-display font-bold text-green-400">Local</div>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden flex flex-col items-center justify-center text-center py-12 animate-fade-in">
+            <div class="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6 relative group">
+                <div class="absolute inset-0 bg-brand-500/20 blur-xl rounded-full group-hover:bg-brand-500/30 transition-all"></div>
+                <svg class="w-8 h-8 text-white/50 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/></svg>
+            </div>
+            <h2 class="text-xl font-display font-bold mb-2">Votre portefeuille est vide</h2>
+            <p class="text-white/40 text-sm max-w-[250px]">Importez vos cartes physiques pour les sécuriser dans WikiMind.</p>
+        </div>
+
+        <!-- Cards Grid -->
+        <div id="cards-grid" class="grid grid-cols-1 gap-4 pb-20">
+            <!-- Cards injected via JS -->
+        </div>
+
+    </main>
+
+    <!-- FAB (Add Button) -->
+    <button onclick="openModal()" class="fixed bottom-8 right-6 w-14 h-14 bg-white text-black rounded-2xl shadow-[0_0_40px_-5px_rgba(255,255,255,0.4)] flex items-center justify-center z-40 hover:scale-105 active:scale-95 transition-all duration-300 group">
+        <svg class="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+    </button>
+
+    <!-- ADD MODAL -->
+    <div id="add-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div class="glass-panel w-full max-w-md rounded-3xl p-6 transform translate-y-20 transition-transform duration-300" id="add-modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-display font-bold">Nouvelle Carte</h3>
+                <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50 hover:bg-white/10">✕</button>
+            </div>
+            
+            <form id="card-form" class="space-y-5">
+                <div class="group">
+                    <label class="text-[10px] uppercase tracking-widest text-brand-500 font-bold pl-1 mb-2 block group-focus-within:text-white transition-colors">Nom du magasin</label>
+                    <input type="text" id="store-name" required class="w-full glass-input rounded-xl p-4 text-lg font-bold placeholder-white/20" placeholder="Ex: Fnac">
+                </div>
+
+                <div class="group">
+                    <label class="text-[10px] uppercase tracking-widest text-brand-500 font-bold pl-1 mb-2 block group-focus-within:text-white transition-colors">Numéro / Code-barres</label>
+                    <div class="relative">
+                        <input type="text" id="card-number" required class="w-full glass-input rounded-xl p-4 text-lg font-mono placeholder-white/20" placeholder="Scanner ou taper...">
+                        <div class="absolute right-4 top-1/2 -translate-y-1/2 text-white/20">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v1m6 11h2m-6 0h-2v4h-4v-3h-4v3H4v-6h2v-2h2v2h2v6h2v-2h2v2zM8 14H6v4h2v-4z"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[10px] uppercase tracking-widest text-white/40 font-bold pl-1 mb-2 block">Thème Visuel</label>
+                    <div class="flex gap-4 mt-2 overflow-x-auto no-scrollbar py-1">
+                        <div onclick="selectColor('from-blue-600 to-indigo-900')" class="color-opt w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-indigo-900 cursor-pointer ring-2 ring-transparent ring-offset-2 ring-offset-black transition-all hover:scale-110"></div>
+                        <div onclick="selectColor('from-red-600 to-pink-900')" class="color-opt w-12 h-12 rounded-full bg-gradient-to-br from-red-600 to-pink-900 cursor-pointer ring-2 ring-transparent ring-offset-2 ring-offset-black transition-all hover:scale-110"></div>
+                        <div onclick="selectColor('from-emerald-500 to-green-900')" class="color-opt w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-green-900 cursor-pointer ring-2 ring-transparent ring-offset-2 ring-offset-black transition-all hover:scale-110"></div>
+                        <div onclick="selectColor('from-amber-400 to-orange-900')" class="color-opt w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-900 cursor-pointer ring-2 ring-transparent ring-offset-2 ring-offset-black transition-all hover:scale-110"></div>
+                        <div onclick="selectColor('from-gray-100 to-gray-500')" class="color-opt w-12 h-12 rounded-full bg-gradient-to-br from-gray-100 to-gray-500 cursor-pointer ring-2 ring-transparent ring-offset-2 ring-offset-black transition-all hover:scale-110 border border-white/20"></div>
+                        <div onclick="selectColor('from-purple-600 to-violet-900')" class="color-opt w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-violet-900 cursor-pointer ring-2 ring-transparent ring-offset-2 ring-offset-black transition-all hover:scale-110"></div>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-4 rounded-xl bg-white text-black font-display font-bold text-sm uppercase tracking-wider hover:bg-gray-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.2)] mt-4">
+                    Enregistrer la carte
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- VIEW MODAL (Fullscreen) -->
+    <div id="view-modal" class="fixed inset-0 z-50 bg-black flex flex-col hidden opacity-0 transition-opacity duration-300">
+        <!-- Close Button -->
+        <button onclick="closeViewModal()" class="absolute top-6 right-6 z-10 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-md">✕</button>
+        
+        <!-- Header -->
+        <div class="pt-12 pb-6 px-6 text-center relative overflow-hidden">
+            <div id="view-bg-glow" class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-brand-500/20 blur-[60px] rounded-full"></div>
+            <h2 id="view-store" class="text-4xl font-display font-bold relative z-10 text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50">Store Name</h2>
+        </div>
+
+        <!-- Barcode Area -->
+        <div class="flex-1 flex flex-col items-center justify-center px-6 relative z-10">
+            <div class="bg-white p-6 rounded-3xl w-full shadow-[0_0_80px_rgba(255,255,255,0.15)] transform transition-transform" id="barcode-container">
+                <svg id="view-barcode" class="w-full h-auto min-h-[120px]"></svg>
+            </div>
+            <p id="view-number" class="mt-8 font-mono text-xl tracking-[0.2em] text-white/60"></p>
+            <div class="mt-4 flex items-center gap-2 text-xs text-brand-500 font-bold bg-brand-500/10 px-3 py-1 rounded-full border border-brand-500/20">
+                <svg class="w-3 h-3 animate-pulse" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                Augmentez la luminosité
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="pb-10 px-6 flex justify-center">
+            <button onclick="deleteCard()" class="px-6 py-3 rounded-xl border border-red-500/30 text-red-400 bg-red-500/5 font-bold text-xs uppercase tracking-widest hover:bg-red-500/10 transition-colors">
+                Supprimer la carte
+            </button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // --- ETAT & DONNÉES ---
+        let cards = JSON.parse(localStorage.getItem('wikimind_cards')) || [];
+        let selectedGradient = 'from-blue-600 to-indigo-900';
+        let currentCardIndex = null;
+
+        // --- DOM ELEMENTS ---
+        const grid = document.getElementById('cards-grid');
+        const emptyState = document.getElementById('empty-state');
+        const countLabel = document.getElementById('card-count');
+        
+        // --- INITIALISATION ---
+        window.addEventListener('load', () => {
+            renderCards();
+            initAurora();
+            updateStatus();
+            
+            // Check connection status changes
+            window.addEventListener('online', updateStatus);
+            window.addEventListener('offline', updateStatus);
+        });
+
+        function updateStatus() {
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+            if(navigator.onLine) {
+                dot.classList.replace('bg-red-500', 'bg-green-500');
+                dot.classList.replace('shadow-[0_0_8px_rgba(239,68,68,0.6)]', 'shadow-[0_0_8px_rgba(34,197,94,0.6)]');
+                text.innerText = "ONLINE";
+                text.classList.remove('text-red-400');
+            } else {
+                dot.classList.replace('bg-green-500', 'bg-red-500');
+                dot.classList.replace('shadow-[0_0_8px_rgba(34,197,94,0.6)]', 'shadow-[0_0_8px_rgba(239,68,68,0.6)]');
+                text.innerText = "OFFLINE";
+                text.classList.add('text-red-400');
+            }
+        }
+
+        // --- CORE FUNCTIONS ---
+
+        function saveCards() {
+            localStorage.setItem('wikimind_cards', JSON.stringify(cards));
+            renderCards();
+        }
+
+        function renderCards() {
+            grid.innerHTML = '';
+            countLabel.innerText = cards.length;
+
+            if (cards.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            cards.forEach((card, index) => {
+                const el = document.createElement('div');
+                // Design de la carte style WikiMind
+                el.className = `group relative h-44 rounded-3xl overflow-hidden cursor-pointer transform transition-all duration-500 hover:scale-[1.02] active:scale-95 animate-fade-in`;
+                el.style.animationDelay = `${index * 0.05}s`;
+                el.onclick = () => openViewModal(index);
+
+                // Background gradient
+                el.innerHTML = `
+                    <div class="absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-90 transition-opacity group-hover:opacity-100"></div>
+                    <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-white/20 blur-2xl rounded-full group-hover:scale-150 transition-transform duration-700"></div>
+                    <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LCAyNTUsIDI1NSwgMC4wNSkiLz48L3N2Zz4=')] opacity-30"></div>
+                    
+                    <div class="relative h-full p-5 flex flex-col justify-between z-10">
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-display font-bold text-2xl tracking-tight drop-shadow-md">${card.store}</h3>
+                            <div class="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10">
+                                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" /></svg>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white/90 p-2 rounded-xl shadow-lg">
+                            <svg id="barcode-mini-${index}" class="w-full h-10 opacity-90"></svg>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(el);
+
+                // Génération code-barres (différée pour fluidité)
+                setTimeout(() => {
+                    try {
+                        JsBarcode(`#barcode-mini-${index}`, card.number, {
+                            format: "CODE128", displayValue: false, height: 40, margin: 0, background: "transparent"
+                        });
+                    } catch(e) { console.error(e); }
+                }, 10);
+            });
+        }
+
+        // --- MODAL ADD ---
+        const addModal = document.getElementById('add-modal');
+        const addContent = document.getElementById('add-modal-content');
+
+        function openModal() {
+            addModal.classList.remove('hidden');
+            // Hack pour animation CSS
+            requestAnimationFrame(() => {
+                addModal.classList.remove('opacity-0');
+                addContent.classList.remove('translate-y-20');
+            });
+            document.getElementById('store-name').focus();
+        }
+
+        function closeModal() {
+            addContent.classList.add('translate-y-20');
+            addModal.classList.add('opacity-0');
+            setTimeout(() => {
+                addModal.classList.add('hidden');
+                document.getElementById('card-form').reset();
+            }, 300);
+        }
+
+        function selectColor(grad) {
+            selectedGradient = grad;
+            // Visual feedback
+            document.querySelectorAll('.color-opt').forEach(el => el.classList.remove('ring-white'));
+            event.target.classList.add('ring-white');
+        }
+
+        document.getElementById('card-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const store = document.getElementById('store-name').value;
+            const number = document.getElementById('card-number').value;
+            
+            cards.push({ store, number, gradient: selectedGradient, id: Date.now() });
+            saveCards();
+            closeModal();
+        });
+
+        // --- MODAL VIEW ---
+        const viewModal = document.getElementById('view-modal');
+
+        function openViewModal(index) {
+            currentCardIndex = index;
+            const card = cards[index];
+
+            document.getElementById('view-store').innerText = card.store;
+            document.getElementById('view-number').innerText = card.number;
+            
+            // Generate Big Barcode
+            JsBarcode("#view-barcode", card.number, {
+                format: "CODE128", displayValue: false, height: 100, margin: 10
+            });
+
+            viewModal.classList.remove('hidden');
+            requestAnimationFrame(() => viewModal.classList.remove('opacity-0'));
+        }
+
+        function closeViewModal() {
+            viewModal.classList.add('opacity-0');
+            setTimeout(() => viewModal.classList.add('hidden'), 300);
+        }
+
+        function deleteCard() {
+            if(confirm("Supprimer définitivement cette carte ?")) {
+                cards.splice(currentCardIndex, 1);
+                saveCards();
+                closeViewModal();
+            }
+        }
+
+        // --- ANIMATION AURORA (Background) ---
+        function initAurora() {
+            const c = document.getElementById('aurora-bg');
+            const x = c.getContext('2d');
+            let w, h;
+            
+            // Orbs configuration
+            const orbs = [
+                {x:0.1, y:0.1, r:0.5, c:'#4f46e5', vx:0.0003, vy:0.0003}, // Indigo
+                {x:0.9, y:0.2, r:0.4, c:'#7c3aed', vx:-0.0004, vy:0.0004}, // Violet
+                {x:0.5, y:0.9, r:0.6, c:'#0891b2', vx:0.0002, vy:-0.0005}  // Cyan
+            ];
+
+            function resize() {
+                w = c.width = window.innerWidth;
+                h = c.height = window.innerHeight;
+            }
+
+            function animate() {
+                // Clear avec léger trail
+                x.fillStyle = '#050505';
+                x.fillRect(0, 0, w, h);
+
+                orbs.forEach(o => {
+                    o.x += o.vx; o.y += o.vy;
+                    // Rebond
+                    if(o.x < -0.2 || o.x > 1.2) o.vx *= -1;
+                    if(o.y < -0.2 || o.y > 1.2) o.vy *= -1;
+
+                    // Draw Gradient
+                    const g = x.createRadialGradient(
+                        o.x*w, o.y*h, 0,
+                        o.x*w, o.y*h, o.r*w
+                    );
+                    // Couleur très faible opacité pour effet aurora
+                    g.addColorStop(0, o.c + '20'); // Hex + alpha ~12%
+                    g.addColorStop(1, 'transparent');
+                    
+                    x.fillStyle = g;
+                    x.beginPath();
+                    x.arc(o.x*w, o.y*h, o.r*w, 0, Math.PI*2);
+                    x.fill();
+                });
+                requestAnimationFrame(animate);
+            }
+
+            window.addEventListener('resize', resize);
+            resize();
+            animate();
+        }
+    </script>
+</body>
+</html>
