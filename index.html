@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WikiMind OS • L'Intelligence Unifiée</title>
+    
+    <!-- Tailwind CSS (via CDN pour dev rapide) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Configuration Tailwind personnalisée -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    },
+                    colors: {
+                        glass: {
+                            light: 'rgba(255, 255, 255, 0.7)',
+                            dark: 'rgba(10, 10, 10, 0.7)',
+                            border: 'rgba(255, 255, 255, 0.1)',
+                            borderDark: 'rgba(255, 255, 255, 0.05)'
+                        },
+                        brand: {
+                            500: '#6366f1', // Indigo
+                            600: '#4f46e5',
+                            glow: '#818cf8'
+                        }
+                    },
+                    animation: {
+                        'blob': 'blob 7s infinite',
+                        'fade-in-up': 'fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                    },
+                    keyframes: {
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        },
+                        fadeInUp: {
+                            '0%': { opacity: 0, transform: 'translateY(20px)' },
+                            '100%': { opacity: 1, transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* CSS Global & Reset */
+        body {
+            background-color: #050505;
+            color: #ffffff;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Scrollbar masquée mais fonctionnelle */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        /* Effet Glassmorphism */
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        .glass-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+            border-color: rgba(99, 102, 241, 0.5);
+        }
+
+        /* Background Gradient Animé */
+        #aurora-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #000000 100%);
+        }
+
+        /* Texte Gradient */
+        .text-gradient {
+            background: linear-gradient(135deg, #ffffff 0%, #a5a6f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Grille Bento */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: 1.5rem;
+        }
+        @media (min-width: 768px) {
+            .bento-grid { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 300px); }
+            .bento-col-span-2 { grid-column: span 2; }
+            .bento-row-span-2 { grid-row: span 2; }
+        }
+
+        /* Loader */
+        .loader-overlay {
+            position: fixed; inset: 0; background: #000; z-index: 100;
+            display: flex; justify-content: center; align-items: center;
+            transition: opacity 0.8s ease;
+        }
+    </style>
+</head>
+<body class="selection:bg-brand-500 selection:text-white">
+
+    <!-- LOADING SCREEN -->
+    <div id="loader" class="loader-overlay">
+        <div class="flex flex-col items-center gap-4">
+            <div class="w-12 h-12 border-2 border-white/10 border-t-brand-500 rounded-full animate-spin"></div>
+            <div class="font-display text-sm tracking-widest uppercase text-white/50">Initialisation du Noyau</div>
+        </div>
+    </div>
+
+    <!-- AURORA BACKGROUND CANVAS -->
+    <canvas id="aurora-bg"></canvas>
+
+    <!-- NAVBAR -->
+    <nav class="fixed top-0 w-full z-50 px-6 py-6 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto flex justify-between items-center glass-panel rounded-full px-6 py-3">
+            <!-- Logo -->
+            <a href="#" class="flex items-center gap-3 group">
+                <div class="w-8 h-8 bg-gradient-to-tr from-white to-gray-400 rounded-lg flex items-center justify-center transform group-hover:rotate-12 transition-transform duration-500">
+                    <svg class="w-5 h-5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                    </svg>
+                </div>
+                <span class="font-display font-bold text-lg tracking-tight">WikiMind <span class="text-white/40 font-normal">OS</span></span>
+            </a>
+
+            <!-- Desktop Menu -->
+            <div class="hidden md:flex items-center gap-8 text-sm font-medium text-white/70">
+                <a href="#ecosystem" class="hover:text-white transition-colors">Écosystème</a>
+                <a href="#vision" class="hover:text-white transition-colors">Vision</a>
+                <a href="#" class="hover:text-white transition-colors">Communauté</a>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-4">
+                <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </button>
+                <a href="#" class="hidden md:block px-5 py-2 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-gray-200 transition-colors">
+                    Connexion
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="relative pt-32 pb-20 px-4 md:px-6">
+        
+        <!-- HERO SECTION -->
+        <section class="max-w-7xl mx-auto text-center min-h-[80vh] flex flex-col justify-center items-center">
+            
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-brand-500/30 bg-brand-500/10 text-brand-glow text-[10px] uppercase font-bold tracking-[0.2em] mb-8 animate-fade-in-up">
+                <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+                Système Opérationnel v2.0
+            </div>
+
+            <h1 class="text-5xl md:text-8xl font-display font-bold leading-tight mb-8 tracking-tighter animate-fade-in-up" style="animation-delay: 0.1s;">
+                L'architecture de<br>
+                <span class="text-gradient">votre pensée.</span>
+            </h1>
+
+            <p class="text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-12 font-light leading-relaxed animate-fade-in-up" style="animation-delay: 0.2s;">
+                WikiMind n'est plus seulement une suite d'outils. C'est un espace de travail fluide où l'IA s'adapte à votre contexte, pas l'inverse. 
+                <span class="text-white">Local. Sécurisé. Illimité.</span>
+            </p>
+
+            <div class="flex flex-col md:flex-row items-center gap-4 animate-fade-in-up" style="animation-delay: 0.3s;">
+                <button class="px-8 py-4 rounded-xl bg-white text-black font-display font-bold text-sm uppercase tracking-wider hover:scale-105 transition-transform duration-300 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)]">
+                    Lancer l'OS
+                </button>
+                <button class="px-8 py-4 rounded-xl glass-btn text-white font-display font-bold text-sm uppercase tracking-wider flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Voir la démo
+                </button>
+            </div>
+
+            <!-- Scroll Indicator -->
+            <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce opacity-50">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+            </div>
+        </section>
+
+        <!-- BENTO GRID (Ecosystem Preview) -->
+        <section id="ecosystem" class="max-w-7xl mx-auto py-24">
+            <div class="flex justify-between items-end mb-12 px-4">
+                <div>
+                    <h2 class="text-3xl font-display font-bold mb-2">Modules Centraux</h2>
+                    <p class="text-white/50 text-sm">Vos applications, réinventées en modules interconnectés.</p>
+                </div>
+                <button class="hidden md:flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white/60 hover:text-white transition">
+                    Tout voir <span class="text-lg">→</span>
+                </button>
+            </div>
+
+            <div class="bento-grid">
+                
+                <!-- Card 1: Main AI (Large) -->
+                <div class="bento-col-span-2 glass-panel rounded-3xl p-8 relative overflow-hidden group cursor-pointer hover:border-brand-500/50 transition-colors">
+                    <div class="absolute top-0 right-0 p-32 bg-brand-500/20 blur-[80px] rounded-full group-hover:bg-brand-500/30 transition-all"></div>
+                    <div class="relative z-10 h-full flex flex-col justify-between">
+                        <div>
+                            <div class="w-12 h-12 rounded-xl bg-white text-black flex items-center justify-center text-2xl mb-6">🧠</div>
+                            <h3 class="text-3xl font-display font-bold mb-2">WikiMind Core</h3>
+                            <p class="text-white/60 max-w-md">Le cerveau central. Connecte Llama, Mistral et Gemini dans une interface de chat unifiée capable d'analyser vos fichiers locaux.</p>
+                        </div>
+                        <div class="mt-8 flex gap-2">
+                            <span class="px-3 py-1 rounded-lg bg-white/10 text-xs font-mono">v4.2.0</span>
+                            <span class="px-3 py-1 rounded-lg bg-green-500/20 text-green-400 text-xs font-mono">En ligne</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Creative -->
+                <div class="glass-panel rounded-3xl p-8 relative overflow-hidden group cursor-pointer">
+                    <div class="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="w-10 h-10 rounded-lg border border-white/20 flex items-center justify-center text-xl mb-4">🎨</div>
+                    <h3 class="text-xl font-display font-bold mb-2">Studio</h3>
+                    <p class="text-white/60 text-sm mb-6">Génération d'images et vidéos sans limites.</p>
+                    <div class="h-32 w-full rounded-xl bg-white/5 border border-white/5 overflow-hidden relative">
+                         <!-- Abstract shape simulation -->
+                         <div class="absolute inset-0 flex items-center justify-center">
+                             <div class="w-16 h-16 bg-gradient-to-tr from-purple-500 to-pink-500 rounded-full blur-xl animate-pulse"></div>
+                         </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Academic -->
+                <div class="glass-panel rounded-3xl p-8 group cursor-pointer">
+                    <div class="w-10 h-10 rounded-lg border border-white/20 flex items-center justify-center text-xl mb-4">🎓</div>
+                    <h3 class="text-xl font-display font-bold mb-2">Academy</h3>
+                    <p class="text-white/60 text-sm">Simulateur BAC & Maths solver.</p>
+                    <div class="mt-4 space-y-2">
+                        <div class="h-1.5 w-full bg-white/10 rounded-full overflow-hidden"><div class="h-full bg-white w-3/4"></div></div>
+                        <div class="h-1.5 w-full bg-white/10 rounded-full overflow-hidden"><div class="h-full bg-white w-1/2"></div></div>
+                    </div>
+                </div>
+
+                <!-- Card 4: Productivity (Large Vertical or Horizontal) -->
+                <div class="bento-col-span-2 glass-panel rounded-3xl p-8 relative overflow-hidden group cursor-pointer flex items-center justify-between">
+                     <div class="z-10">
+                        <div class="w-10 h-10 rounded-lg border border-white/20 flex items-center justify-center text-xl mb-4">⚡</div>
+                        <h3 class="text-2xl font-display font-bold mb-1">Focus Flow</h3>
+                        <p class="text-white/60 text-sm">Pomodoro synchronisé avec vos tâches.</p>
+                    </div>
+                    <div class="text-4xl font-mono font-bold text-white/20 group-hover:text-white transition-colors">
+                        25:00
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FEATURES / STATS -->
+        <section class="py-20 border-y border-white/5 bg-white/[0.02]">
+            <div class="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+                <div>
+                    <div class="text-4xl font-display font-bold mb-2 text-white">100%</div>
+                    <div class="text-xs uppercase tracking-widest text-white/40">Local Storage</div>
+                </div>
+                <div>
+                    <div class="text-4xl font-display font-bold mb-2 text-white">3</div>
+                    <div class="text-xs uppercase tracking-widest text-white/40">Modèles IA</div>
+                </div>
+                <div>
+                    <div class="text-4xl font-display font-bold mb-2 text-white">0ms</div>
+                    <div class="text-xs uppercase tracking-widest text-white/40">Latence Serveur</div>
+                </div>
+                <div>
+                    <div class="text-4xl font-display font-bold mb-2 text-white">∞</div>
+                    <div class="text-xs uppercase tracking-widest text-white/40">Possibilités</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="py-12 border-t border-white/10 bg-black">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center text-xs font-bold">W</div>
+                <div class="text-sm text-white/40">© 2026 WikiMind Project. Open Source.</div>
+            </div>
+            <div class="flex gap-8 text-xs font-bold uppercase tracking-widest text-white/40">
+                <a href="#" class="hover:text-white transition">Github</a>
+                <a href="#" class="hover:text-white transition">Discord</a>
+                <a href="#" class="hover:text-white transition">Twitter</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- SCRIPTS -->
+    <script>
+        // ANIMATION DU CANVAS AURORA
+        const canvas = document.getElementById('aurora-bg');
+        const ctx = canvas.getContext('2d');
+        let width, height, gradient;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        // Configuration des "orbes" de couleur
+        const orbs = [
+            { x: 0.2, y: 0.2, r: 0.4, color: 'rgba(79, 70, 229, 0.15)', vx: 0.0005, vy: 0.0005 }, // Indigo
+            { x: 0.8, y: 0.3, r: 0.5, color: 'rgba(168, 85, 247, 0.15)', vx: -0.0006, vy: 0.0004 }, // Purple
+            { x: 0.5, y: 0.8, r: 0.6, color: 'rgba(56, 189, 248, 0.10)', vx: 0.0002, vy: -0.0007 }  // Cyan
+        ];
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            
+            // Fond noir profond
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, width, height);
+
+            orbs.forEach(orb => {
+                // Mouvement fluide
+                orb.x += orb.vx;
+                orb.y += orb.vy;
+                
+                // Rebond doux sur les bords
+                if(orb.x < -0.2 || orb.x > 1.2) orb.vx *= -1;
+                if(orb.y < -0.2 || orb.y > 1.2) orb.vy *= -1;
+
+                // Dessin du dégradé radial
+                const g = ctx.createRadialGradient(
+                    orb.x * width, orb.y * height, 0,
+                    orb.x * width, orb.y * height, orb.r * width
+                );
+                g.addColorStop(0, orb.color);
+                g.addColorStop(1, 'rgba(0,0,0,0)');
+                
+                ctx.fillStyle = g;
+                ctx.fillRect(0, 0, width, height);
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+        animate();
+
+        // CHARGEMENT
+        window.addEventListener('load', () => {
+            const loader = document.getElementById('loader');
+            setTimeout(() => {
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                }, 800);
+            }, 1000);
+        });
+
+        // EFFET DE NAVBAR AU SCROLL
+        const nav = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                nav.classList.add('py-2');
+                nav.classList.remove('py-6');
+            } else {
+                nav.classList.add('py-6');
+                nav.classList.remove('py-2');
+            }
+        });
+    </script>
+</body>
+</html>
