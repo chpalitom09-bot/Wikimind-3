@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>WikiMind OS • Intelligence Cognitive</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome pour les icônes (Coeur, Poubelle, Reply) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
     <script>
@@ -16,7 +15,7 @@
                     fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
                     colors: {
                         glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
-                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8', dark: '#312e81' }
+                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' }
                     },
                     animation: { 'fade-in-up': 'fadeInUp 0.5s ease-out forwards' },
                     keyframes: { fadeInUp: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } } }
@@ -79,7 +78,7 @@
                         <div class="text-[10px] text-green-400">● En ligne</div>
                     </div>
                     <a href="Wikimind_user.html" class="relative group">
-                        <img id="nav-avatar" src="" class="w-9 h-9 rounded-full border border-white/20 object-cover">
+                        <img id="nav-avatar" src="" class="w-9 h-9 rounded-full border border-white/20 object-cover bg-gray-800">
                         <div class="absolute inset-0 rounded-full border border-brand-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     </a>
                 </div>
@@ -175,7 +174,7 @@
                 <!-- Zone de saisie principale (Visible si connecté) -->
                 <div id="main-comment-form-container" class="p-6 hidden">
                     <div class="flex gap-4">
-                        <img id="current-user-avatar" src="" class="w-10 h-10 rounded-full border border-white/20 object-cover">
+                        <img id="current-user-avatar" src="" class="w-10 h-10 rounded-full border border-white/20 object-cover bg-gray-800">
                         <div class="flex-1">
                             <textarea id="main-comment-input" rows="2" placeholder="Partagez votre pensée..." 
                                 class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand-500 focus:bg-white/10 transition-all resize-none"></textarea>
@@ -210,11 +209,12 @@
 
     <!-- FIREBASE LOGIC -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-        import { getDatabase, ref, push, onChildAdded, onChildRemoved, onChildChanged, set, remove, runTransaction, get } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+        // UNIFICATION VERSION 10.8.0
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, push, onChildAdded, onChildRemoved, onChildChanged, set, remove, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // CONFIG 1 : AUTHENTIFICATION (Doit être la même que wikimind_user.html)
+        // CONFIG 1 : AUTHENTIFICATION (Identique à Wikimind_user.html)
         const authConfig = {
             apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
             authDomain: "wikimind-3-comments.firebaseapp.com",
@@ -259,7 +259,7 @@
                 userLogged.classList.remove('hidden');
                 userLogged.classList.add('flex');
                 
-                const photoUrl = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff`;
+                const photoUrl = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff&bold=true`;
                 navAvatar.src = photoUrl;
                 userNameDisplay.innerText = user.displayName || user.email.split('@')[0];
 
@@ -268,8 +268,6 @@
                 loginPrompt.classList.add('hidden');
                 currentUserAvatar.src = photoUrl;
                 
-                // Rafraichir les boutons delete/reply existants
-                refreshActionButtons();
             } else {
                 console.log("Déconnecté");
                 currentUser = null;
@@ -343,14 +341,9 @@
         });
 
         onChildChanged(commentsRef, (snapshot) => {
-            // Mise à jour (souvent pour les likes)
             const data = snapshot.val();
             const likeCountEl = document.querySelector(`#comment-${snapshot.key} .like-count`);
             if (likeCountEl) likeCountEl.innerText = data.likes || 0;
-            
-            // Si des réponses ont été ajoutées, on pourrait re-rendre, 
-            // mais on va gérer les réponses via leurs propres listeners si on veut du temps réel fin.
-            // Pour simplifier ici : on ne recharge pas tout le bloc pour un like.
         });
 
         // FONCTION DE RENDU D'UN COMMENTAIRE
@@ -370,7 +363,7 @@
             // HTML du commentaire
             div.innerHTML = `
                 <div class="flex gap-3">
-                    <img src="${userAvatar}" class="w-8 h-8 rounded-full border border-white/10 mt-1 object-cover">
+                    <img src="${userAvatar}" class="w-8 h-8 rounded-full border border-white/10 mt-1 object-cover bg-gray-800">
                     <div class="flex-1">
                         <div class="flex items-center gap-2 mb-1">
                             <span class="font-bold text-sm text-white">${data.author}</span>
@@ -417,12 +410,8 @@
             if (isReply) {
                 document.getElementById(`replies-${parentId}`).appendChild(div);
             } else {
-                // Insérer en haut de la liste (chronologique inversé)
-                // Mais pour les commentaires style "discussion", l'ordre chronologique normal est souvent mieux.
-                // Ici on fait : Nouveaux en haut.
                 commentsList.insertBefore(div, commentsList.firstChild);
 
-                // Charger les réponses si elles existent
                 if(data.replies) {
                     Object.keys(data.replies).forEach(replyId => {
                         renderComment(replyId, data.replies[replyId], true, id);
@@ -437,8 +426,7 @@
             }
         }
 
-        // 4. Global Actions (attachées à window pour le HTML)
-        
+        // 4. Global Actions
         window.toggleReplyForm = (id) => {
             if (!currentUser) { alert("Connectez-vous pour répondre."); return; }
             const form = document.getElementById(`reply-form-${id}`);
@@ -463,9 +451,7 @@
                 likes: 0
             });
             
-            // Mise à jour UI immédiate (ou attendre le listener)
-            // Pour les replies imbriquées, le listener child_changed sur le parent est complexe.
-            // On ajoute manuellement au DOM pour l'effet immédiat
+            // UI Update manuelle pour réactivité immédiate
             renderComment(replyRef.key, {
                 uid: currentUser.uid,
                 author: currentUser.displayName || currentUser.email.split('@')[0],
@@ -485,7 +471,6 @@
             runTransaction(likeRef, (currentLikes) => {
                 return (currentLikes || 0) + 1;
             });
-            // Animation visuelle
             const btn = document.activeElement;
             const heart = btn.querySelector('i');
             heart.classList.remove('fa-regular');
@@ -496,7 +481,6 @@
             if (!confirm("Supprimer ce message ?")) return;
             remove(ref(db, `comments/${path}`))
                 .then(() => {
-                    // Si c'est une réponse, supprimer du DOM manuellement car child_removed écoute root
                     if(path.includes('replies')) {
                         const id = path.split('/').pop();
                         document.getElementById(`comment-${id}`).remove();
@@ -504,14 +488,6 @@
                 })
                 .catch(err => console.error(err));
         };
-
-        function refreshActionButtons() {
-            // Réaffiche les boutons delete pour les commentaires déjà chargés si on se reconnecte
-            document.querySelectorAll('[id^="btn-delete-"]').forEach(btn => {
-                // Logique simplifiée : on cache tout, puis on réactive au render. 
-                // Idéalement on relance une vérification des UIDs stockés dans le DOM.
-            });
-        }
 
         // --- SEARCH BAR LOGIC ---
         const searchInput = document.getElementById('app-search');
