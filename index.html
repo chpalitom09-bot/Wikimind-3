@@ -281,14 +281,13 @@
 
     <!-- FIREBASE LOGIC -->
     <script type="module">
-        // UNIFICATION VERSION 10.8.0 (Version stable pour navigateur)
+        // UNIFICATION VERSION 10.8.0
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getDatabase, ref, push, onChildAdded, onChildRemoved, onChildChanged, set, remove, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         // ==========================================
-        // CONFIG 1 : GESTION DES COMPTES (Login)
-        // C'est celle qui permet de savoir si tu es connecté via Wikimind_user.html
+        // CONFIG 1 : AUTHENTIFICATION (CORRIGÉE)
         // ==========================================
         const authConfig = {
             apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
@@ -296,13 +295,14 @@
             projectId: "wikimind-3-comments",
             appId: "1:137479541640:web:4ed2510a9908055052e03d"
         };
-        // On initialise l'app "auth" spécifiquement pour les users
-        const authApp = initializeApp(authConfig, "authApp");
+        
+        // CORRECTION MAJEURE : On initialise sans nom "authApp"
+        // Cela permet de récupérer la session créée dans Wikimind_user.html
+        const authApp = initializeApp(authConfig); 
         const auth = getAuth(authApp);
 
         // ==========================================
-        // CONFIG 2 : GESTION DES COMMENTAIRES (Nouvelle DB)
-        // C'est la configuration que tu m'as donnée pour le stockage
+        // CONFIG 2 : BASE DE DONNÉES (COMMENTAIRES)
         // ==========================================
         const communityConfig = {
             apiKey: "AIzaSyCn5IyWS4deyVRG7zYY2qLQiNE49aD8a-Y",
@@ -313,6 +313,7 @@
             messagingSenderId: "842497095525",
             appId: "1:842497095525:web:2b1c33ca7f4912b34dd38c"
         };
+        
         // On initialise l'app "community" pour la DB
         const communityApp = initializeApp(communityConfig, "communityApp");
         const db = getDatabase(communityApp);
@@ -330,39 +331,45 @@
         const postingAs = document.getElementById('posting-as');
         const commentsList = document.getElementById('comments-list');
 
-        // 1. Détection Connexion (Sur l'app AUTH)
+        // 1. Détection Connexion
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                console.log("Connecté en tant que :", user.email);
+                // USER CONNECTÉ
                 currentUser = user;
                 
-                // UI Navbar
-                loginBtn.classList.add('hidden');
-                userLogged.classList.remove('hidden');
-                userLogged.classList.add('flex');
+                // Navbar Update
+                if(loginBtn) loginBtn.classList.add('hidden');
+                if(userLogged) {
+                    userLogged.classList.remove('hidden');
+                    userLogged.classList.add('flex');
+                }
                 
                 const photoUrl = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff&bold=true`;
-                navAvatar.src = photoUrl;
-                userNameDisplay.innerText = user.displayName || user.email.split('@')[0];
+                if(navAvatar) navAvatar.src = photoUrl;
+                if(userNameDisplay) userNameDisplay.innerText = user.displayName || user.email.split('@')[0];
 
-                // UI Commentaires
-                currentUserAvatar.src = photoUrl;
-                postingAs.innerText = "Connecté : " + (user.displayName || "Utilisateur");
-                postingAs.classList.replace('text-white/30', 'text-brand-glow');
+                // Comments Section Update
+                if(currentUserAvatar) currentUserAvatar.src = photoUrl;
+                if(postingAs) {
+                    postingAs.innerText = "Connecté : " + (user.displayName || "Utilisateur");
+                    postingAs.classList.replace('text-white/30', 'text-brand-glow');
+                }
                 
             } else {
-                console.log("Déconnecté");
+                // USER DÉCONNECTÉ
                 currentUser = null;
                 
-                // UI Navbar
-                loginBtn.classList.remove('hidden');
-                userLogged.classList.add('hidden');
-                userLogged.classList.remove('flex');
+                if(loginBtn) loginBtn.classList.remove('hidden');
+                if(userLogged) {
+                    userLogged.classList.add('hidden');
+                    userLogged.classList.remove('flex');
+                }
 
-                // UI Commentaires (Mode Anonyme)
-                currentUserAvatar.src = "https://ui-avatars.com/api/?name=Anonyme&background=333&color=fff";
-                postingAs.innerText = "Mode Anonyme";
-                postingAs.classList.replace('text-brand-glow', 'text-white/30');
+                if(currentUserAvatar) currentUserAvatar.src = "https://ui-avatars.com/api/?name=Anonyme&background=333&color=fff";
+                if(postingAs) {
+                    postingAs.innerText = "Mode Anonyme";
+                    postingAs.classList.replace('text-brand-glow', 'text-white/30');
+                }
             }
         });
 
@@ -382,27 +389,26 @@
             return "à l'instant";
         }
 
-        // 3. Gestion des Commentaires (Sur l'app DB)
+        // 3. Gestion des Commentaires
 
-        // CREATE (Root)
-        document.getElementById('submit-main-comment').addEventListener('click', () => {
-            const input = document.getElementById('main-comment-input');
-            const text = input.value.trim();
-            if (!text) return;
+        // CREATE (Envoi)
+        const submitBtn = document.getElementById('submit-main-comment');
+        if(submitBtn) {
+            submitBtn.addEventListener('click', () => {
+                const input = document.getElementById('main-comment-input');
+                const text = input.value.trim();
+                if (!text) return;
 
-            // Définir l'identité (User ou Anonyme)
-            let authorName = "Anonyme";
-            let uid = "anon_" + Date.now();
-            let avatarUrl = "https://ui-avatars.com/api/?name=Anonyme&background=333&color=fff";
+                let authorName = "Anonyme";
+                let uid = "anon_" + Date.now();
+                let avatarUrl = "https://ui-avatars.com/api/?name=Anonyme&background=333&color=fff";
 
-            if (currentUser) {
-                authorName = currentUser.displayName || currentUser.email.split('@')[0];
-                uid = currentUser.uid;
-                avatarUrl = currentUser.photoURL || null;
-            }
+                if (currentUser) {
+                    authorName = currentUser.displayName || currentUser.email.split('@')[0];
+                    uid = currentUser.uid;
+                    avatarUrl = currentUser.photoURL || null;
+                }
 
-            try {
-                // Écriture dans la nouvelle DB
                 const newPostRef = push(ref(db, 'comments'));
                 set(newPostRef, {
                     uid: uid,
@@ -412,28 +418,34 @@
                     timestamp: Date.now(),
                     likes: 0,
                     replies: {}
+                }).then(() => {
+                    input.value = ''; // Reset input
+                }).catch((error) => {
+                    console.error("Erreur envoi:", error);
+                    alert("Erreur: " + error.message);
                 });
-                console.log("Commentaire envoyé à la DB");
-                input.value = '';
-            } catch (error) {
-                console.error("Erreur d'envoi :", error);
-                alert("Erreur de connexion à la base de données. Vérifiez votre connexion.");
-            }
-        });
+            });
+        }
 
-        // READ (Listen to added comments)
+        // READ (Lecture en temps réel)
         const commentsRef = ref(db, 'comments');
         
+        // Vérification initiale
         get(commentsRef).then(snapshot => {
-            if(!snapshot.exists()) commentsList.innerHTML = '<div class="text-center text-white/30 py-4 text-sm">Soyez le premier à publier.</div>';
-            else if(commentsList.innerHTML.includes('Synchronisation')) commentsList.innerHTML = '';
+            if(!snapshot.exists()) {
+                commentsList.innerHTML = '<div class="text-center text-white/30 py-4 text-sm">Soyez le premier à publier.</div>';
+            } else {
+                if(commentsList.innerHTML.includes('Synchronisation')) commentsList.innerHTML = '';
+            }
         }).catch(e => {
-            console.log("Erreur lecture DB:", e);
-            commentsList.innerHTML = '<div class="text-center text-red-400 py-4 text-xs">Erreur de connexion DB.</div>';
+            console.error("Erreur DB:", e);
+            commentsList.innerHTML = `<div class="text-center text-red-400 py-4 text-xs">Impossible de charger les commentaires.<br>${e.message}</div>`;
         });
 
         onChildAdded(commentsRef, (snapshot) => {
-            if(commentsList.innerHTML.includes('Synchronisation') || commentsList.innerHTML.includes('Erreur')) commentsList.innerHTML = '';
+            if(commentsList.innerHTML.includes('Synchronisation') || commentsList.innerHTML.includes('Soyez le premier')) {
+                commentsList.innerHTML = '';
+            }
             
             const data = snapshot.val();
             const id = snapshot.key;
@@ -451,7 +463,7 @@
             if (likeCountEl) likeCountEl.innerText = data.likes || 0;
         });
 
-        // FONCTION DE RENDU
+        // FONCTION D'AFFICHAGE
         function renderComment(id, data, isReply = false, parentId = null) {
             if(document.getElementById(`comment-${id}`)) return;
 
@@ -465,6 +477,8 @@
                 ? "comment-thread mt-3 pt-2 animate-fade-in-up" 
                 : "border-b border-white/5 py-6 animate-fade-in-up group";
 
+            const pathId = parentId ? `${parentId}/replies/${id}` : id;
+
             div.innerHTML = `
                 <div class="flex gap-3">
                     <img src="${userAvatar}" class="w-8 h-8 rounded-full border border-white/10 mt-1 object-cover bg-gray-800">
@@ -473,23 +487,22 @@
                             <span class="font-bold text-sm text-white">${data.author}</span>
                             <span class="text-[10px] text-white/40">${dateStr}</span>
                             ${!isReply && !isAnon ? `<span class="bg-white/5 px-1.5 rounded text-[9px] text-white/30">Membre</span>` : ''}
-                            ${isAnon ? `<span class="bg-white/5 px-1.5 rounded text-[9px] text-white/30 italic">Invité</span>` : ''}
                         </div>
                         
                         <p class="text-white/80 text-sm leading-relaxed whitespace-pre-wrap">${data.text}</p>
                         
                         <div class="flex items-center gap-4 mt-3">
-                            <button onclick="handleLike('${parentId ? parentId + '/replies/' + id : id}')" class="flex items-center gap-1.5 text-xs text-white/40 hover:text-pink-400 transition-colors group/like">
+                            <button onclick="window.handleLike('${pathId}', event)" class="flex items-center gap-1.5 text-xs text-white/40 hover:text-pink-400 transition-colors group/like">
                                 <i class="fa-regular fa-heart group-hover/like:fa-solid"></i>
                                 <span class="like-count">${data.likes || 0}</span>
                             </button>
                             
                             ${!isReply ? `
-                            <button onclick="toggleReplyForm('${id}')" class="flex items-center gap-1.5 text-xs text-white/40 hover:text-brand-glow transition-colors">
+                            <button onclick="window.toggleReplyForm('${id}')" class="flex items-center gap-1.5 text-xs text-white/40 hover:text-brand-glow transition-colors">
                                 <i class="fa-regular fa-comment-dots"></i> Répondre
                             </button>` : ''}
 
-                            <button id="btn-delete-${id}" onclick="deleteComment('${parentId ? parentId + '/replies/' + id : id}')" class="hidden flex items-center gap-1.5 text-xs text-white/40 hover:text-red-400 transition-colors ml-auto">
+                            <button id="btn-delete-${id}" onclick="window.deleteComment('${pathId}')" class="hidden flex items-center gap-1.5 text-xs text-white/40 hover:text-red-400 transition-colors ml-auto">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
                         </div>
@@ -498,7 +511,7 @@
                             <div class="flex gap-2">
                                 <input type="text" id="input-reply-${id}" placeholder="Répondre..." 
                                     class="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500">
-                                <button onclick="submitReply('${id}')" class="bg-white/10 hover:bg-brand-600 text-white px-3 py-1 rounded-lg text-xs font-bold transition">
+                                <button onclick="window.submitReply('${id}')" class="bg-white/10 hover:bg-brand-600 text-white px-3 py-1 rounded-lg text-xs font-bold transition">
                                     <i class="fa-solid fa-paper-plane"></i>
                                 </button>
                             </div>
@@ -509,7 +522,8 @@
             `;
 
             if (isReply) {
-                document.getElementById(`replies-${parentId}`).appendChild(div);
+                const parentContainer = document.getElementById(`replies-${parentId}`);
+                if(parentContainer) parentContainer.appendChild(div);
             } else {
                 if (commentsList.firstChild) commentsList.insertBefore(div, commentsList.firstChild);
                 else commentsList.appendChild(div);
@@ -527,12 +541,20 @@
             }
         }
 
-        // Global Actions
+        // ==========================================
+        // FONCTIONS GLOBALES (Accessibles depuis le HTML)
+        // ==========================================
+        
         window.toggleReplyForm = (id) => {
             const form = document.getElementById(`reply-form-${id}`);
-            form.classList.toggle('hidden');
-            if(!form.classList.contains('hidden')) {
-                setTimeout(() => document.getElementById(`input-reply-${id}`).focus(), 100);
+            if(form) {
+                form.classList.toggle('hidden');
+                if(!form.classList.contains('hidden')) {
+                    setTimeout(() => {
+                        const input = document.getElementById(`input-reply-${id}`);
+                        if(input) input.focus();
+                    }, 100);
+                }
             }
         };
 
@@ -552,21 +574,34 @@
             }
 
             const replyRef = push(ref(db, `comments/${parentId}/replies`));
-            const replyData = { uid, author: authorName, avatar: avatarUrl, text, timestamp: Date.now(), likes: 0 };
-            set(replyRef, replyData);
+            const replyData = { 
+                uid, 
+                author: authorName, 
+                avatar: avatarUrl, 
+                text, 
+                timestamp: Date.now(), 
+                likes: 0 
+            };
             
-            renderComment(replyRef.key, replyData, true, parentId);
-            input.value = '';
-            document.getElementById(`reply-form-${parentId}`).classList.add('hidden');
+            set(replyRef, replyData).then(() => {
+                renderComment(replyRef.key, replyData, true, parentId);
+                input.value = '';
+                document.getElementById(`reply-form-${parentId}`).classList.add('hidden');
+            });
         };
 
-        window.handleLike = (path) => {
+        window.handleLike = (path, event) => {
             const likeRef = ref(db, `comments/${path}/likes`);
             runTransaction(likeRef, (c) => (c || 0) + 1);
-            const btn = document.activeElement;
-            const heart = btn.querySelector('i');
-            heart.classList.remove('fa-regular');
-            heart.classList.add('fa-solid', 'text-pink-500', 'like-anim');
+            
+            // Animation visuelle instantanée
+            if(event && event.currentTarget) {
+                const heart = event.currentTarget.querySelector('i');
+                if(heart) {
+                    heart.classList.remove('fa-regular');
+                    heart.classList.add('fa-solid', 'text-pink-500', 'like-anim');
+                }
+            }
         };
 
         window.deleteComment = (path) => {
@@ -578,7 +613,8 @@
                         const el = document.getElementById(`comment-${id}`);
                         if(el) el.remove();
                     }
-                });
+                })
+                .catch(err => alert(err.message));
         };
 
         // --- SEARCH BAR LOGIC ---
@@ -586,41 +622,45 @@
         const modulesContainer = document.getElementById('modules-container');
         const cards = document.querySelectorAll('.module-card');
 
-        searchInput.addEventListener('input', (e) => {
-            const val = e.target.value.toLowerCase();
-            if (val.length > 0) modulesContainer.classList.add('search-active');
-            else modulesContainer.classList.remove('search-active');
+        if(searchInput && modulesContainer) {
+            searchInput.addEventListener('input', (e) => {
+                const val = e.target.value.toLowerCase();
+                if (val.length > 0) modulesContainer.classList.add('search-active');
+                else modulesContainer.classList.remove('search-active');
 
-            cards.forEach(card => {
-                const keywords = card.getAttribute('data-name');
-                if (keywords.includes(val)) card.classList.add('match');
-                else card.classList.remove('match');
+                cards.forEach(card => {
+                    const keywords = card.getAttribute('data-name');
+                    if (keywords.includes(val)) card.classList.add('match');
+                    else card.classList.remove('match');
+                });
             });
-        });
+        }
 
         // --- AURORA ANIMATION ---
         const canvas = document.getElementById('aurora-bg');
-        const ctx = canvas.getContext('2d');
-        let width, height;
-        const orbs = [
-            { x: 0.2, y: 0.2, r: 0.4, color: 'rgba(79, 70, 229, 0.15)', vx: 0.0005, vy: 0.0005 },
-            { x: 0.8, y: 0.3, r: 0.5, color: 'rgba(168, 85, 247, 0.15)', vx: -0.0006, vy: 0.0004 }
-        ];
-        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
-        function animate() {
-            ctx.clearRect(0, 0, width, height);
-            ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, width, height);
-            orbs.forEach(orb => {
-                orb.x += orb.vx; orb.y += orb.vy;
-                if(orb.x < -0.2 || orb.x > 1.2) orb.vx *= -1;
-                if(orb.y < -0.2 || orb.y > 1.2) orb.vy *= -1;
-                const g = ctx.createRadialGradient(orb.x * width, orb.y * height, 0, orb.x * width, orb.y * height, orb.r * width);
-                g.addColorStop(0, orb.color); g.addColorStop(1, 'rgba(0,0,0,0)');
-                ctx.fillStyle = g; ctx.fillRect(0, 0, width, height);
-            });
-            requestAnimationFrame(animate);
+        if(canvas) {
+            const ctx = canvas.getContext('2d');
+            let width, height;
+            const orbs = [
+                { x: 0.2, y: 0.2, r: 0.4, color: 'rgba(79, 70, 229, 0.15)', vx: 0.0005, vy: 0.0005 },
+                { x: 0.8, y: 0.3, r: 0.5, color: 'rgba(168, 85, 247, 0.15)', vx: -0.0006, vy: 0.0004 }
+            ];
+            function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, width, height);
+                orbs.forEach(orb => {
+                    orb.x += orb.vx; orb.y += orb.vy;
+                    if(orb.x < -0.2 || orb.x > 1.2) orb.vx *= -1;
+                    if(orb.y < -0.2 || orb.y > 1.2) orb.vy *= -1;
+                    const g = ctx.createRadialGradient(orb.x * width, orb.y * height, 0, orb.x * width, orb.y * height, orb.r * width);
+                    g.addColorStop(0, orb.color); g.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = g; ctx.fillRect(0, 0, width, height);
+                });
+                requestAnimationFrame(animate);
+            }
+            window.addEventListener('resize', resize); resize(); animate();
         }
-        window.addEventListener('resize', resize); resize(); animate();
 
     </script>
 </body>
