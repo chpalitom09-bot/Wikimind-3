@@ -1,589 +1,564 @@
 <!DOCTYPE html>
-<html lang="fr" class="scroll-smooth">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WikiMind OS • Mistral Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiMind AI - Chat</title>
     
-    <!-- Tailwind & Fonts -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
-    
-    <!-- Markdown Parser -->
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+    <!-- Marked for Markdown rendering -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- Highlight.js for code -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
 
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
-                    colors: {
-                        glass: { panel: 'rgba(20, 20, 20, 0.7)', border: 'rgba(255, 255, 255, 0.08)' },
-                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8', mistral: '#f59e0b' }
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
                     },
-                    animation: { 'fade-in': 'fadeIn 0.4s ease-out forwards' },
-                    keyframes: { fadeIn: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } } }
+                    colors: {
+                        wiki: {
+                            dark: '#0f0f0f',
+                            panel: '#1e1e1e',
+                            accent: '#6366f1', // Indigo
+                            glow: '#818cf8'
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
                 }
             }
         }
     </script>
     <style>
-        body { background-color: #050505; color: #ffffff; overflow: hidden; }
-        .glass-panel {
-            background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        body { background-color: #0f0f0f; color: #e2e8f0; }
+        /* Scrollbar custom */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e1e1e; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #444; }
+        
+        .glass-input {
+            background: rgba(30, 30, 30, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
-
-        /* Typing Animation */
-        .typing-dot { animation: typing 1.4s infinite ease-in-out both; }
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+        .markdown-body p { margin-bottom: 1rem; line-height: 1.6; }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 { font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #fff; }
+        .markdown-body pre { background: #111; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin-bottom: 1rem; border: 1px solid #333; }
+        .markdown-body code { font-family: 'JetBrains Mono', monospace; font-size: 0.9em; }
+        .markdown-body ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
         
-        /* Markdown Styling */
-        .prose p { margin-bottom: 0.8em; line-height: 1.6; }
-        .prose pre { background: #111; padding: 1em; border-radius: 0.5em; overflow-x: auto; border: 1px solid rgba(255,255,255,0.1); margin: 1em 0; }
-        .prose code { font-family: 'Courier New', monospace; color: #a5a6f6; }
-        .prose strong { color: #fff; font-weight: 700; }
-        .prose ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 0.8em; }
-        .prose a { color: #6366f1; text-decoration: underline; }
-        .prose img { border-radius: 12px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1); }
+        .loading-dots span {
+            animation: bounce 1.4s infinite ease-in-out both;
+            display: inline-block;
+            width: 6px; height: 6px; background-color: #fff; border-radius: 50%; margin: 0 2px;
+        }
+        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
     </style>
 </head>
-<body class="selection:bg-brand-500 selection:text-white h-screen flex flex-col font-sans">
+<body class="h-screen flex overflow-hidden">
 
-    <!-- BACKGROUND ANIMÉ -->
-    <canvas id="aurora-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-wiki-panel flex-shrink-0 flex flex-col border-r border-white/5 transition-all duration-300 hidden md:flex relative z-20" id="sidebar">
+        <div class="p-4 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-wiki-accent to-purple-600 flex items-center justify-center font-bold text-white shadow-lg shadow-wiki-accent/30">W</div>
+            <span class="font-bold text-lg tracking-tight">WikiMind <span class="text-xs text-wiki-accent bg-wiki-accent/10 px-1.5 py-0.5 rounded ml-1">AI</span></span>
+        </div>
 
-    <!-- AUTH SCREEN -->
-    <div id="auth-screen" class="fixed inset-0 z-50 bg-[#050505] flex items-center justify-center transition-opacity duration-500">
-        <div class="text-center space-y-8 p-10 glass-panel rounded-3xl max-w-md w-full mx-4 border border-brand-500/20 relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-500 to-transparent"></div>
-            
-            <div class="w-20 h-20 bg-gradient-to-br from-brand-600 to-brand-500 rounded-2xl mx-auto flex items-center justify-center text-4xl font-bold shadow-[0_0_30px_rgba(99,102,241,0.4)]">
-                W
-            </div>
-            
-            <div>
-                <h1 class="text-4xl font-display font-bold mb-2">WikiMind OS</h1>
-                <p class="text-white/40 text-sm tracking-wide uppercase">Système Cognitif Unifié</p>
-            </div>
+        <button onclick="createNewChat()" class="mx-4 mt-2 mb-4 py-3 px-4 bg-wiki-dark hover:bg-white/5 border border-white/10 rounded-full flex items-center gap-3 transition-all group">
+            <i class="fa-solid fa-plus text-wiki-accent group-hover:scale-110 transition-transform"></i>
+            <span class="text-sm font-medium text-gray-300">Nouvelle conversation</span>
+        </button>
 
-            <div class="space-y-4">
-                <input type="text" id="input-username" placeholder="Comment dois-je vous appeler ?" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-center text-white focus:outline-none focus:border-brand-500 transition-colors">
-                
-                <button id="btn-login" class="w-full py-4 bg-white text-black font-bold rounded-xl hover:bg-gray-200 hover:scale-[1.02] transition-all flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-power-off"></i> INITIALISER LE SYSTÈME
-                </button>
-                
-                <button id="btn-google-login" class="w-full py-3 bg-brand-600/20 border border-brand-500/30 text-white font-bold rounded-xl hover:bg-brand-600/40 transition-all text-sm">
-                    <i class="fa-brands fa-google mr-2"></i> Connexion Cloud (Firebase)
-                </button>
+        <div class="flex-1 overflow-y-auto px-2 space-y-1" id="history-list">
+            <!-- Historique injecté ici -->
+        </div>
+
+        <div class="p-4 border-t border-white/5">
+            <div id="user-profile" class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors">
+                <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center overflow-hidden">
+                    <i class="fa-solid fa-user text-gray-400 text-xs"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-white truncate" id="username-display">Non connecté</p>
+                    <p class="text-[10px] text-gray-500 truncate" id="status-display">Mode local</p>
+                </div>
             </div>
         </div>
-    </div>
+    </aside>
 
-    <!-- MAIN INTERFACE -->
-    <div id="app-interface" class="flex h-full hidden opacity-0 transition-opacity duration-1000">
-        
-        <!-- SIDEBAR -->
-        <aside class="hidden md:flex flex-col w-72 glass-panel border-r border-white/5 m-4 mr-0 rounded-l-3xl overflow-hidden z-20">
-            <div class="p-6 border-b border-white/5 bg-white/5">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-gradient-to-tr from-brand-400 to-brand-600 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-lg">W</div>
-                    <div>
-                        <span class="font-display font-bold text-lg block leading-none">WikiMind</span>
-                        <span class="text-[10px] text-brand-glow uppercase tracking-wider">Mistral Core</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Model Selection -->
-            <div class="p-4 border-b border-white/5">
-                <label class="text-[10px] text-white/30 uppercase tracking-widest font-bold ml-1 mb-2 block">Moteur Neuronal</label>
-                <div class="relative">
-                    <select id="model-select" class="w-full appearance-none bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white focus:outline-none focus:border-brand-mistral transition-colors cursor-pointer">
-                        <option value="mistral-large-latest">⚡ Mistral Large (Expert)</option>
-                        <option value="mistral-medium">🧠 Mistral Medium (Équilibré)</option>
-                        <option value="mistral-small">🚀 Mistral Small (Rapide)</option>
-                        <option value="image-gen">🎨 Studio Créatif (Images)</option>
-                    </select>
-                    <div class="absolute right-4 top-3.5 pointer-events-none text-white/40">
-                        <i class="fa-solid fa-chevron-down text-xs"></i>
-                    </div>
-                </div>
-            </div>
-
-            <!-- History -->
-            <div class="flex-1 overflow-y-auto p-3 space-y-1" id="history-container">
-                <div class="text-[10px] text-white/20 uppercase tracking-widest font-bold ml-2 mt-2 mb-2">Mémoire Locale</div>
-                <!-- Dynamic History Items -->
-            </div>
-
-            <!-- User Footer -->
-            <div class="p-4 border-t border-white/5 bg-white/5">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-xs font-bold" id="user-avatar">U</div>
-                    <div class="flex-1 min-w-0">
-                        <p id="display-name" class="text-xs font-bold truncate text-white">Utilisateur</p>
-                        <p class="text-[9px] text-green-400 flex items-center gap-1"><span class="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span> En ligne</p>
-                    </div>
-                    <button id="btn-logout" class="text-white/30 hover:text-red-400 transition"><i class="fa-solid fa-right-from-bracket"></i></button>
-                </div>
-            </div>
-        </aside>
-
-        <!-- CHAT AREA -->
-        <main class="flex-1 flex flex-col h-full relative m-4 ml-0 md:ml-4 rounded-3xl glass-panel overflow-hidden border border-white/10">
-            
-            <!-- Mobile Header -->
-            <header class="md:hidden flex items-center justify-between p-4 border-b border-white/5 bg-white/5 backdrop-blur-md z-10 absolute top-0 w-full">
-                <span class="font-display font-bold">WikiMind</span>
-                <select id="mobile-model-select" class="bg-black/30 border border-white/10 rounded-lg text-xs py-1 px-2 text-white outline-none">
-                    <option value="mistral-large-latest">Large</option>
-                    <option value="mistral-medium">Medium</option>
-                    <option value="image-gen">Images</option>
-                </select>
-            </header>
-
-            <!-- Chat Content -->
-            <div id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 pb-32 scroll-smooth pt-16 md:pt-8">
-                <!-- Welcome -->
-                <div class="flex gap-4 max-w-3xl mx-auto animate-fade-in opacity-0" style="animation-delay: 0.2s;">
-                    <div class="w-8 h-8 rounded-lg bg-brand-mistral flex items-center justify-center shrink-0 mt-1 shadow-[0_0_15px_rgba(245,158,11,0.3)]">
-                        <i class="fa-solid fa-wind text-white text-xs"></i>
-                    </div>
-                    <div class="glass-panel p-5 rounded-2xl rounded-tl-none border border-white/10 max-w-[85%]">
-                        <p class="text-sm leading-relaxed text-white/90">
-                            <strong class="text-brand-mistral">Système Mistral Initialisé.</strong><br>
-                            Bonjour. Je suis votre assistant connecté. Je peux analyser du texte complexe ou générer des visuels via le Studio Créatif.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Input Bar -->
-            <div class="absolute bottom-0 left-0 w-full p-4 md:p-6 bg-gradient-to-t from-[#050505] via-[#050505]/90 to-transparent z-20">
-                <div class="max-w-3xl mx-auto relative group">
-                    <div class="absolute -inset-0.5 bg-gradient-to-r from-brand-500 to-brand-mistral rounded-2xl opacity-20 group-hover:opacity-40 transition duration-500 blur"></div>
-                    <div class="relative glass-panel rounded-2xl flex items-end p-2 border border-white/10 bg-[#0a0a0a]">
-                        
-                        <textarea id="user-input" rows="1" placeholder="Entrez votre commande..." 
-                            class="w-full bg-transparent border-none text-white placeholder-white/30 focus:ring-0 resize-none max-h-32 py-3 px-4 text-sm font-light leading-relaxed"></textarea>
-                        
-                        <div class="flex gap-2 pb-1 pr-1">
-                            <button id="send-btn" class="w-9 h-9 rounded-xl bg-white text-black hover:bg-brand-mistral hover:text-white transition-all flex items-center justify-center shadow-lg font-bold">
-                                <i class="fa-solid fa-arrow-up"></i>
+    <!-- MAIN CHAT -->
+    <main class="flex-1 flex flex-col relative bg-wiki-dark">
+        <!-- HEADER MOBILE & MODEL SELECTOR -->
+        <header class="h-16 flex items-center justify-between px-4 md:px-8 border-b border-white/5 z-10 bg-wiki-dark/80 backdrop-blur-md sticky top-0">
+            <div class="flex items-center gap-3">
+                <button class="md:hidden text-gray-400 hover:text-white" onclick="document.getElementById('sidebar').classList.toggle('hidden')">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="relative group">
+                    <button id="model-btn" class="flex items-center gap-2 text-sm font-medium text-gray-300 hover:text-white transition-colors">
+                        <span id="current-model-name">WikiMind Pro</span>
+                        <i class="fa-solid fa-chevron-down text-xs opacity-50"></i>
+                    </button>
+                    <!-- Dropdown Models -->
+                    <div class="absolute top-full left-0 mt-2 w-48 bg-wiki-panel border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all transform origin-top-left z-50">
+                        <div class="p-1">
+                            <button onclick="setModel('mistral-tiny', 'WikiMind Flash')" class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-lg flex items-center gap-2">
+                                <i class="fa-solid fa-bolt text-yellow-400 w-4"></i> Flash <span class="text-[10px] bg-white/10 px-1 rounded">Rapide</span>
+                            </button>
+                            <button onclick="setModel('mistral-small-latest', 'WikiMind Pro')" class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-lg flex items-center gap-2">
+                                <i class="fa-solid fa-star text-wiki-accent w-4"></i> Pro <span class="text-[10px] bg-white/10 px-1 rounded">Équilibré</span>
+                            </button>
+                            <button onclick="setModel('mistral-medium-latest', 'WikiMind Logic')" class="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-lg flex items-center gap-2">
+                                <i class="fa-solid fa-brain text-pink-400 w-4"></i> Logic <span class="text-[10px] bg-white/10 px-1 rounded">Raisonnement</span>
                             </button>
                         </div>
                     </div>
-                    <div class="text-center mt-2">
-                        <span class="text-[9px] text-white/20 uppercase tracking-[0.2em]">Sécurisé par Mistral AI • Stockage Hybride</span>
-                    </div>
                 </div>
             </div>
-        </main>
-    </div>
-
-    <!-- LOGIQUE JAVASCRIPT -->
-    <script type="module">
-        // ---------------------------------------------------------
-        // 1. CONFIGURATION & IMPORTS (Firebase v10)
-        // ---------------------------------------------------------
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-        import { getDatabase, ref, push, onChildAdded, query, limitToLast, set } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
-
-        // Config fournie par toi (Projet: wikimind-c3cef)
-        const firebaseConfig = {
-            apiKey: "AIzaSyBhlNhB8yPNWXzok_STHG5q8hI4Kk_z7Ow",
-            authDomain: "wikimind-c3cef.firebaseapp.com",
-            databaseURL: "https://wikimind-c3cef-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "wikimind-c3cef",
-            storageBucket: "wikimind-c3cef.firebasestorage.app",
-            messagingSenderId: "5176412102",
-            appId: "1:5176412102:web:2069dc70dfe70b402594c7"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app);
-        const provider = new GoogleAuthProvider();
-
-        // ---------------------------------------------------------
-        // 2. CLEFS API (Obfusquées)
-        // ---------------------------------------------------------
-        // Clé Mistral fournie: PWuDhogjoWM8XkfbaPFosUfsuADxcpyO
-        // Fonction simple pour masquer la clé dans le code source
-        const decode = (s) => s.split('').reverse().join('');
-        const _k_mistral = decode("OypcxDAusfUsoFPabfkX8MWojgohDuWP"); // Inversée
-
-        // ---------------------------------------------------------
-        // 3. ETAT DE L'APPLICATION
-        // ---------------------------------------------------------
-        const state = {
-            user: null,
-            username: localStorage.getItem('wikimind_username') || "Utilisateur",
-            currentModel: 'mistral-large-latest',
-            history: JSON.parse(localStorage.getItem('wikimind_local_history') || '[]')
-        };
-
-        // DOM Elements
-        const els = {
-            authScreen: document.getElementById('auth-screen'),
-            appInterface: document.getElementById('app-interface'),
-            chatContainer: document.getElementById('chat-container'),
-            input: document.getElementById('user-input'),
-            sendBtn: document.getElementById('send-btn'),
-            modelSelect: document.getElementById('model-select'),
-            mobileSelect: document.getElementById('mobile-model-select'),
-            historyContainer: document.getElementById('history-container'),
-            displayName: document.getElementById('display-name'),
-            inputUsername: document.getElementById('input-username'),
-            avatar: document.getElementById('user-avatar')
-        };
-
-        // ---------------------------------------------------------
-        // 4. GESTION AUTHENTIFICATION & UI
-        // ---------------------------------------------------------
-        
-        // Initialisation UI
-        function initApp() {
-            renderLocalHistory();
-            els.inputUsername.value = state.username !== "Utilisateur" ? state.username : "";
             
-            // Sync selectors
-            els.modelSelect.addEventListener('change', (e) => {
-                state.currentModel = e.target.value;
-                els.mobileSelect.value = e.target.value;
-            });
-            els.mobileSelect.addEventListener('change', (e) => {
-                state.currentModel = e.target.value;
-                els.modelSelect.value = e.target.value;
-            });
+            <div class="flex items-center gap-4">
+                <span class="text-xs px-2 py-1 bg-green-500/10 text-green-400 rounded-full border border-green-500/20 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span> Online
+                </span>
+            </div>
+        </header>
 
-            // Auto-resize textarea
-            els.input.addEventListener('input', function() {
-                this.style.height = 'auto';
-                this.style.height = (this.scrollHeight) + 'px';
-            });
+        <!-- CHAT AREA -->
+        <div id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 scroll-smooth pb-32">
+            <!-- Welcome Screen -->
+            <div id="welcome-screen" class="h-full flex flex-col items-center justify-center text-center opacity-100 transition-opacity duration-500">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-wiki-accent to-purple-600 mb-6 flex items-center justify-center shadow-2xl shadow-wiki-accent/20">
+                    <i class="fa-solid fa-sparkles text-3xl text-white"></i>
+                </div>
+                <h1 class="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-500 mb-4">Bonjour.</h1>
+                <p class="text-lg text-gray-400 mb-8 max-w-md">Je suis WikiMind. Prêt à créer, analyser ou visualiser vos idées ?</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl w-full px-4">
+                    <button onclick="fillInput('Génère une image futuriste de Paris')" class="p-4 bg-wiki-panel border border-white/5 hover:border-wiki-accent/50 rounded-xl text-left transition-all hover:-translate-y-1">
+                        <span class="text-wiki-accent mb-2 block"><i class="fa-solid fa-image"></i> Création</span>
+                        <span class="text-sm text-gray-300">"Génère une image futuriste de Paris"</span>
+                    </button>
+                    <button onclick="fillInput('Explique la physique quantique simplement')" class="p-4 bg-wiki-panel border border-white/5 hover:border-wiki-accent/50 rounded-xl text-left transition-all hover:-translate-y-1">
+                        <span class="text-pink-400 mb-2 block"><i class="fa-solid fa-graduation-cap"></i> Apprentissage</span>
+                        <span class="text-sm text-gray-300">"Explique la physique quantique"</span>
+                    </button>
+                </div>
+            </div>
 
-            els.input.addEventListener('keydown', (e) => {
-                if(e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                }
-            });
+            <!-- Messages will be injected here -->
+        </div>
 
-            els.sendBtn.addEventListener('click', handleSend);
-        }
+        <!-- INPUT AREA -->
+        <div class="absolute bottom-0 w-full bg-gradient-to-t from-wiki-dark via-wiki-dark to-transparent pt-10 pb-6 px-4">
+            <div class="max-w-4xl mx-auto">
+                <div class="relative group">
+                    <div class="absolute -inset-0.5 bg-gradient-to-r from-wiki-accent to-purple-600 rounded-2xl opacity-20 group-hover:opacity-40 transition duration-500 blur"></div>
+                    <div class="relative flex items-end gap-2 bg-wiki-panel rounded-2xl p-2 border border-white/10 shadow-2xl">
+                        <button class="p-3 text-gray-400 hover:text-white transition-colors rounded-xl hover:bg-white/5">
+                            <i class="fa-solid fa-circle-plus text-lg"></i>
+                        </button>
+                        
+                        <textarea id="user-input" rows="1" placeholder="Demandez à WikiMind..." class="w-full bg-transparent border-none focus:ring-0 text-white placeholder-gray-500 py-3 resize-none max-h-32 scrollbar-hide"></textarea>
+                        
+                        <button id="send-btn" class="p-3 bg-white text-black rounded-xl hover:bg-gray-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-arrow-up"></i>
+                        </button>
+                    </div>
+                </div>
+                <p class="text-center text-[10px] text-gray-600 mt-3">WikiMind peut faire des erreurs. Vérifiez les informations importantes.</p>
+            </div>
+        </div>
+    </main>
 
-        // Login Logique
-        document.getElementById('btn-login').addEventListener('click', () => {
-            const name = els.inputUsername.value.trim();
-            if(name) {
-                state.username = name;
-                localStorage.setItem('wikimind_username', name);
-            }
-            enterApp();
-        });
+    <!-- FIREBASE & APP LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-        document.getElementById('btn-google-login').addEventListener('click', async () => {
-            try {
-                const result = await signInWithPopup(auth, provider);
-                const user = result.user;
-                state.username = user.displayName;
-                localStorage.setItem('wikimind_username', state.username);
-                enterApp();
-            } catch (error) {
-                console.error("Auth error", error);
-                alert("Erreur connexion Google: " + error.message);
-            }
-        });
+        // --- CONFIGURATION ---
+        const MISTRAL_API_KEY = "PWuDhogjoWM8XkfbaPFosUfsuADxcpyO"; // NOTE: Client-side exposure
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+            authDomain: "wikimind-3-comments.firebaseapp.com",
+            databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "wikimind-3-comments",
+            storageBucket: "wikimind-3-comments.firebasestorage.app",
+            messagingSenderId: "137479541640",
+            appId: "1:137479541640:web:4ed2510a9908055052e03d"
+        };
 
-        document.getElementById('btn-logout').addEventListener('click', () => {
-            signOut(auth).then(() => window.location.reload());
-        });
+        // --- INIT FIREBASE ---
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const auth = getAuth(app);
 
-        // Firebase Auth Listener
+        // --- STATE MANAGEMENT ---
+        let currentUser = null;
+        let currentChatId = null;
+        let selectedModel = 'mistral-small-latest'; // Default "Pro"
+        let chatHistory = []; 
+
+        // --- DOM ELEMENTS ---
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const historyList = document.getElementById('history-list');
+
+        // --- AUTHENTIFICATION ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                state.user = user;
-                state.username = user.displayName || localStorage.getItem('wikimind_username');
-                // Charger historique cloud si dispo
-                loadCloudHistory(user.uid);
-                enterApp();
+                currentUser = user;
+                document.getElementById('username-display').textContent = user.displayName || "Utilisateur WikiMind";
+                document.getElementById('status-display').textContent = "Synchronisé Cloud";
+                document.getElementById('status-display').classList.add('text-green-400');
+                
+                // Charger l'historique depuis Firebase
+                loadHistoryFromFirebase();
+            } else {
+                // Fallback LocalStorage si non connecté (ou connexion anonyme auto)
+                console.log("Utilisateur non connecté, tentative connexion anonyme...");
+                // Pour la démo, on essaie de charger depuis LocalStorage
+                loadHistoryFromLocalStorage();
             }
         });
 
-        function enterApp() {
-            els.authScreen.style.opacity = '0';
-            setTimeout(() => {
-                els.authScreen.classList.add('hidden');
-                els.appInterface.classList.remove('hidden');
-                setTimeout(() => els.appInterface.classList.remove('opacity-0'), 50);
-            }, 500);
-            
-            els.displayName.innerText = state.username;
-            els.avatar.innerText = state.username.charAt(0).toUpperCase();
-        }
+        // --- CORE FUNCTIONS ---
 
-        // ---------------------------------------------------------
-        // 5. MOTEUR IA (MISTRAL & IMAGES)
-        // ---------------------------------------------------------
-
-        async function handleSend() {
-            const text = els.input.value.trim();
+        // 1. CHAT LOGIC
+        async function handleSendMessage() {
+            const text = userInput.value.trim();
             if (!text) return;
 
-            // Reset Input
-            els.input.value = '';
-            els.input.style.height = 'auto';
-
-            // 1. Afficher message user
-            appendMessage('user', text);
-
-            // 2. Déterminer mode (Texte ou Image)
-            const isImageMode = state.currentModel === 'image-gen' || text.toLowerCase().startsWith('/image') || text.toLowerCase().includes('dessine');
+            // UI Updates
+            userInput.value = '';
+            userInput.style.height = 'auto';
+            welcomeScreen.style.display = 'none';
             
-            // Loader
-            const loaderId = appendLoader();
+            // 1. Add User Message
+            addMessageToUI('user', text);
+            saveMessageToHistory('user', text);
 
-            try {
-                let responseContent = "";
-                
-                if (isImageMode) {
-                    // --- GENERATION IMAGE (Pollinations) ---
-                    const cleanPrompt = text.replace('/image', '').replace('dessine', '');
-                    const seed = Math.floor(Math.random() * 1000);
-                    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?width=1024&height=1024&nologo=true&seed=${seed}`;
-                    
-                    // Préchargement
-                    await new Promise((resolve, reject) => {
-                        const img = new Image();
-                        img.onload = resolve;
-                        img.onerror = reject;
-                        img.src = imageUrl;
-                    });
-                    
-                    responseContent = `![Génération Visuelle](${imageUrl})`;
-                
-                } else {
-                    // --- GENERATION TEXTE (Mistral API) ---
-                    const systemPrompt = `Tu es WikiMind, une IA intégrée dans un OS futuriste. Tu parles à ${state.username}. Sois concis, intelligent et utilise le Markdown pour formater (gras, listes, code). Ne mentionne pas que tu es une IA sauf si nécessaire.`;
-                    
-                    const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Authorization": `Bearer ${_k_mistral}`
-                        },
-                        body: JSON.stringify({
-                            model: state.currentModel, // mistral-large-latest, etc.
-                            messages: [
-                                { role: "system", content: systemPrompt },
-                                ...getLastMessages(5), // Contexte court
-                                { role: "user", content: text }
-                            ]
-                        })
-                    });
+            // 2. Analyze Intent (Image vs Text)
+            const imageKeywords = ['dessine', 'génère une image', 'crée une image', 'photo de', 'dessin de'];
+            const isImageRequest = imageKeywords.some(kw => text.toLowerCase().includes(kw));
 
-                    if (!response.ok) throw new Error("Erreur API Mistral");
-                    const data = await response.json();
-                    responseContent = data.choices[0].message.content;
-                }
+            // 3. Process
+            createLoadingIndicator();
 
-                // 3. Afficher réponse
-                removeLoader(loaderId);
-                appendMessage('ai', responseContent);
-                
-                // 4. Sauvegarder
-                saveInteraction(text, responseContent);
-
-            } catch (error) {
-                removeLoader(loaderId);
-                appendMessage('ai', `⚠️ **Erreur Système:** ${error.message}`);
+            if (isImageRequest) {
+                await generateImage(text);
+            } else {
+                await generateText(text);
             }
         }
 
-        // ---------------------------------------------------------
-        // 6. GESTION DES MESSAGES & UI
-        // ---------------------------------------------------------
-
-        function appendMessage(role, content) {
-            const div = document.createElement('div');
-            div.className = `flex gap-4 max-w-3xl mx-auto animate-fade-in ${role === 'user' ? 'flex-row-reverse' : ''}`;
+        // 2. TEXT GENERATION (MISTRAL)
+        async function generateText(prompt) {
+            const historyForContext = getRecentContext(); // Get last few messages for context
             
-            const avatarColor = role === 'user' ? 'bg-gradient-to-br from-purple-500 to-indigo-500' : 'bg-brand-mistral';
-            const icon = role === 'user' ? state.username.charAt(0) : '<i class="fa-solid fa-wind text-xs"></i>';
-            const bubbleStyle = role === 'user' ? 'bg-white/10 border-white/20 rounded-tr-none' : 'glass-panel border-white/10 rounded-tl-none';
+            try {
+                const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${MISTRAL_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: selectedModel,
+                        messages: [
+                            { role: "system", content: "Tu es WikiMind, une IA avancée, utile et bienveillante créée pour aider l'utilisateur. Tu es concis et précis. Formate tes réponses en Markdown." },
+                            ...historyForContext,
+                            { role: "user", content: prompt }
+                        ],
+                        temperature: 0.7,
+                        stream: false // Simple fetch for this demo, could upgrade to stream
+                    })
+                });
 
-            // Markdown parsing pour l'IA
-            const htmlContent = role === 'ai' ? marked.parse(content) : content.replace(/\n/g, '<br>');
+                const data = await response.json();
+                removeLoadingIndicator();
 
-            div.innerHTML = `
-                <div class="w-8 h-8 rounded-lg ${avatarColor} flex items-center justify-center shrink-0 mt-1 text-white font-bold text-xs shadow-lg">
-                    ${icon}
-                </div>
-                <div class="${bubbleStyle} p-4 rounded-2xl border max-w-[85%] text-sm leading-relaxed text-white/90 prose prose-invert">
-                    ${htmlContent}
+                if (data.choices && data.choices.length > 0) {
+                    const botResponse = data.choices[0].message.content;
+                    addMessageToUI('assistant', botResponse);
+                    saveMessageToHistory('assistant', botResponse);
+                } else {
+                    addMessageToUI('assistant', "Désolé, une erreur neuronale est survenue.");
+                }
+
+            } catch (error) {
+                removeLoadingIndicator();
+                addMessageToUI('assistant', `Erreur de connexion : ${error.message}`);
+            }
+        }
+
+        // 3. IMAGE GENERATION (POLLINATIONS)
+        async function generateImage(prompt) {
+            // Nettoyage basique du prompt pour l'anglais (Pollinations comprend mieux l'anglais mais gère le fr)
+            // On envoie le prompt tel quel, Pollinations est assez malin.
+            const encodedPrompt = encodeURIComponent(prompt);
+            const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&model=flux`;
+
+            removeLoadingIndicator();
+            
+            const imgId = Date.now();
+            const htmlContent = `
+                <div class="rounded-xl overflow-hidden max-w-md border border-white/10 shadow-2xl group relative">
+                    <div class="absolute inset-0 bg-gray-800 animate-pulse" id="loader-${imgId}"></div>
+                    <img src="${imageUrl}" 
+                         alt="${prompt}" 
+                         onload="document.getElementById('loader-${imgId}').remove()"
+                         class="w-full h-auto transform transition-transform duration-700 group-hover:scale-105"
+                    >
+                    <div class="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <p class="text-xs text-white truncate"><i class="fa-solid fa-palette mr-1"></i> ${prompt}</p>
+                    </div>
                 </div>
             `;
             
-            els.chatContainer.appendChild(div);
-            scrollToBottom();
-            
-            // Highlight code blocks
-            div.querySelectorAll('pre code').forEach((block) => {
-                hljs.highlightElement(block);
-            });
+            addMessageToUI('assistant', htmlContent, true); // true = isHTML
+            saveMessageToHistory('assistant', `[IMAGE GÉNÉRÉE: ${imageUrl}]`);
         }
 
-        function appendLoader() {
-            const id = 'loader-' + Date.now();
+        // --- UI HELPERS ---
+
+        function addMessageToUI(role, content, isHTML = false) {
             const div = document.createElement('div');
-            div.id = id;
-            div.className = "flex gap-4 max-w-3xl mx-auto animate-fade-in";
+            div.className = `flex gap-4 animate-fade-in ${role === 'user' ? 'flex-row-reverse' : ''}`;
+            
+            const avatar = role === 'user' 
+                ? `<div class="w-8 h-8 rounded-full bg-gray-600 flex-shrink-0 flex items-center justify-center"><i class="fa-solid fa-user text-xs"></i></div>`
+                : `<div class="w-8 h-8 rounded-full bg-gradient-to-tr from-wiki-accent to-purple-600 flex-shrink-0 flex items-center justify-center shadow-lg shadow-wiki-accent/30"><i class="fa-solid fa-sparkles text-xs text-white"></i></div>`;
+
+            let innerContent = '';
+            if (isHTML) {
+                innerContent = content;
+            } else {
+                // Render Markdown
+                innerContent = marked.parse(content);
+            }
+
             div.innerHTML = `
-                <div class="w-8 h-8 rounded-lg bg-brand-mistral flex items-center justify-center shrink-0 mt-1 shadow-lg">
-                    <i class="fa-solid fa-circle-notch fa-spin text-xs text-white"></i>
-                </div>
-                <div class="glass-panel p-4 rounded-2xl rounded-tl-none border border-white/10 flex items-center gap-1">
-                    <div class="w-1.5 h-1.5 bg-white/60 rounded-full typing-dot"></div>
-                    <div class="w-1.5 h-1.5 bg-white/60 rounded-full typing-dot"></div>
-                    <div class="w-1.5 h-1.5 bg-white/60 rounded-full typing-dot"></div>
+                ${avatar}
+                <div class="max-w-[80%] ${role === 'user' ? 'bg-gray-800 rounded-2xl rounded-tr-sm' : 'markdown-body text-gray-300'} p-3 md:p-0">
+                    ${role === 'user' ? `<p class="p-1 px-3 text-sm">${content}</p>` : innerContent}
                 </div>
             `;
-            els.chatContainer.appendChild(div);
-            scrollToBottom();
-            return id;
-        }
 
-        function removeLoader(id) {
-            const el = document.getElementById(id);
-            if(el) el.remove();
-        }
-
-        function scrollToBottom() {
-            els.chatContainer.scrollTo({ top: els.chatContainer.scrollHeight, behavior: 'smooth' });
-        }
-
-        function getLastMessages(limit) {
-            // Récupère les derniers messages du DOM pour le contexte
-            // C'est une méthode simple pour ne pas complexifier l'état
-            // Dans une vraie app, on utiliserait state.history
-            return [];
-        }
-
-        // ---------------------------------------------------------
-        // 7. HISTORIQUE (Local + Cloud)
-        // ---------------------------------------------------------
-
-        function saveInteraction(userText, aiText) {
-            const entry = {
-                id: Date.now(),
-                preview: userText.substring(0, 30) + (userText.length > 30 ? '...' : ''),
-                timestamp: Date.now()
-            };
-
-            // 1. Local Storage
-            state.history.unshift(entry);
-            if(state.history.length > 20) state.history.pop();
-            localStorage.setItem('wikimind_local_history', JSON.stringify(state.history));
-            renderLocalHistory();
-
-            // 2. Firebase (si connecté)
-            if(state.user) {
-                const historyRef = ref(db, `users/${state.user.uid}/history`);
-                push(historyRef, {
-                    user: userText,
-                    ai: aiText,
-                    timestamp: Date.now()
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            // Highlight Code Blocks
+            if (!isHTML && role === 'assistant') {
+                div.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
                 });
             }
         }
 
-        function renderLocalHistory() {
-            els.historyContainer.innerHTML = '<div class="text-[10px] text-white/20 uppercase tracking-widest font-bold ml-2 mt-2 mb-2">Activités</div>';
+        function createLoadingIndicator() {
+            const div = document.createElement('div');
+            div.id = 'loading-indicator';
+            div.className = 'flex gap-4 animate-fade-in';
+            div.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-wiki-accent to-purple-600 flex-shrink-0 flex items-center justify-center"><i class="fa-solid fa-sparkles text-xs text-white"></i></div>
+                <div class="loading-dots text-gray-400 self-center">
+                    <span></span><span></span><span></span>
+                </div>
+            `;
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function removeLoadingIndicator() {
+            const el = document.getElementById('loading-indicator');
+            if (el) el.remove();
+        }
+
+        // --- DATA SYNC & HISTORY ---
+
+        function createNewChat() {
+            currentChatId = Date.now().toString();
+            chatContainer.innerHTML = '';
+            chatContainer.appendChild(welcomeScreen);
+            welcomeScreen.style.display = 'flex';
             
-            state.history.forEach(item => {
-                const div = document.createElement('div');
-                div.className = "p-3 rounded-xl hover:bg-white/5 cursor-pointer group transition-colors";
-                div.innerHTML = `
-                    <div class="flex items-center gap-2 mb-1">
-                        <i class="fa-regular fa-message text-[10px] text-brand-glow"></i>
-                        <span class="text-xs font-medium text-white/80 group-hover:text-white truncate">${item.preview}</span>
-                    </div>
-                    <div class="text-[9px] text-white/30">${new Date(item.timestamp).toLocaleTimeString()}</div>
-                `;
-                els.historyContainer.appendChild(div);
+            // Add to list UI
+            renderSidebarItem(currentChatId, "Nouvelle conversation");
+        }
+
+        function getRecentContext() {
+            // Retrieve messages associated with currentChatId from memory or LS
+            // Simple implementation: retrieve what is in UI is hard, better use memory var
+            // For this single-file demo, we assume context is maintained in a variable if needed, 
+            // but here we are fetching pure stateless calls mostly.
+            // Let's implement a small memory buffer.
+            return chatHistory.filter(c => c.chatId === currentChatId).map(m => ({
+                role: m.role,
+                content: m.content
+            })).slice(-6); // Last 6 messages
+        }
+
+        function saveMessageToHistory(role, content) {
+            if (!currentChatId) createNewChat();
+
+            const msgObj = {
+                chatId: currentChatId,
+                role: role,
+                content: content,
+                timestamp: Date.now()
+            };
+
+            // 1. Local Memory
+            chatHistory.push(msgObj);
+
+            // 2. Local Storage Backup
+            localStorage.setItem('wikimind_chats', JSON.stringify(chatHistory));
+
+            // 3. Firebase Sync
+            if (currentUser) {
+                const chatRef = ref(db, `users/${currentUser.uid}/chats/${currentChatId}/messages`);
+                push(chatRef, msgObj);
+                
+                // Update Metadata (Last message)
+                const metaRef = ref(db, `users/${currentUser.uid}/chats_meta/${currentChatId}`);
+                update(metaRef, {
+                    title: content.substring(0, 30) + "...",
+                    lastUpdate: Date.now()
+                });
+            } else {
+                // If local only, update sidebar title manually based on first user message
+                if (role === 'user' && chatHistory.filter(c => c.chatId === currentChatId).length === 1) {
+                    updateSidebarTitle(currentChatId, content.substring(0, 20) + "...");
+                }
+            }
+        }
+
+        function loadHistoryFromLocalStorage() {
+            const data = localStorage.getItem('wikimind_chats');
+            if (data) {
+                chatHistory = JSON.parse(data);
+                // Extract unique chat IDs
+                const uniqueChats = [...new Set(chatHistory.map(item => item.chatId))];
+                uniqueChats.reverse().forEach(id => {
+                    const firstMsg = chatHistory.find(m => m.chatId === id && m.role === 'user');
+                    const title = firstMsg ? firstMsg.content.substring(0, 25) + "..." : "Conversation";
+                    renderSidebarItem(id, title);
+                });
+            } else {
+                createNewChat();
+            }
+        }
+
+        function loadHistoryFromFirebase() {
+            const metaRef = ref(db, `users/${currentUser.uid}/chats_meta`);
+            onValue(metaRef, (snapshot) => {
+                historyList.innerHTML = ''; // Clear current list
+                const data = snapshot.val();
+                if (data) {
+                    Object.keys(data).sort((a,b) => data[b].lastUpdate - data[a].lastUpdate).forEach(key => {
+                        renderSidebarItem(key, data[key].title);
+                    });
+                }
             });
         }
 
-        function loadCloudHistory(uid) {
-            const q = query(ref(db, `users/${uid}/history`), limitToLast(10));
-            // Pour l'instant on ne fait que charger, on pourrait les afficher dans le chat
-            // Ici, on laisse l'historique local gérer la sidebar pour la rapidité
+        function renderSidebarItem(id, title) {
+            // Check if exists
+            if (document.querySelector(`[data-chat-id="${id}"]`)) return;
+
+            const btn = document.createElement('button');
+            btn.setAttribute('data-chat-id', id);
+            btn.className = "w-full text-left px-3 py-2 rounded-lg text-sm text-gray-400 hover:bg-white/5 hover:text-white transition-colors truncate flex items-center gap-2 group";
+            btn.innerHTML = `<i class="fa-regular fa-message text-xs opacity-50 group-hover:text-wiki-accent"></i> ${title}`;
+            
+            btn.onclick = () => loadChatSession(id);
+            
+            // Insert after new chat button (at top of list)
+            historyList.prepend(btn);
         }
 
-        // ---------------------------------------------------------
-        // 8. ANIMATION CANVAS (Aurore Boréale - Design demandé)
-        // ---------------------------------------------------------
-        const canvas = document.getElementById('aurora-bg');
-        const ctx = canvas.getContext('2d');
-        let w, h;
-
-        function resize() {
-            w = canvas.width = window.innerWidth;
-            h = canvas.height = window.innerHeight;
+        function updateSidebarTitle(id, newTitle) {
+            const el = document.querySelector(`[data-chat-id="${id}"]`);
+            if (el) el.innerHTML = `<i class="fa-regular fa-message text-xs opacity-50 group-hover:text-wiki-accent"></i> ${newTitle}`;
         }
 
-        // Orbes animés
-        const orbs = [
-            { x: 0.2, y: 0.3, r: 0.5, color: 'rgba(99, 102, 241, 0.15)', vx: 0.0002, vy: 0.0003 }, // Indigo
-            { x: 0.8, y: 0.2, r: 0.6, color: 'rgba(245, 158, 11, 0.1)', vx: -0.0003, vy: 0.0002 }, // Mistral Orange
-            { x: 0.5, y: 0.8, r: 0.7, color: 'rgba(5, 5, 5, 0.9)', vx: 0, vy: 0 } // Dark mask bottom
-        ];
-
-        function animate() {
-            ctx.fillStyle = '#050505';
-            ctx.fillRect(0, 0, w, h);
-
-            orbs.forEach(orb => {
-                orb.x += orb.vx;
-                orb.y += orb.vy;
-                if(orb.x < -0.2 || orb.x > 1.2) orb.vx *= -1;
-                if(orb.y < -0.2 || orb.y > 1.2) orb.vy *= -1;
-
-                const g = ctx.createRadialGradient(
-                    orb.x * w, orb.y * h, 0,
-                    orb.x * w, orb.y * h, orb.r * w
-                );
-                g.addColorStop(0, orb.color);
-                g.addColorStop(1, 'rgba(0,0,0,0)');
-                ctx.fillStyle = g;
-                ctx.fillRect(0, 0, w, h);
+        function loadChatSession(id) {
+            currentChatId = id;
+            welcomeScreen.style.display = 'none';
+            chatContainer.innerHTML = '';
+            
+            // Filter messages for this ID
+            const sessionMsgs = chatHistory.filter(m => m.chatId === id);
+            
+            // If empty in memory (might happen on fresh reload with firebase), fetch from firebase logic would go here
+            // For now, simpler local logic:
+            sessionMsgs.forEach(msg => {
+                // Check if image
+                if (msg.content.startsWith('[IMAGE GÉNÉRÉE:')) {
+                    const url = msg.content.match(/\[IMAGE GÉNÉRÉE: (.*)\]/)[1];
+                    const imgId = Date.now() + Math.random();
+                    addMessageToUI(msg.role, `<img src="${url}" class="rounded-xl max-w-md w-full border border-white/10">`, true);
+                } else {
+                    addMessageToUI(msg.role, msg.content);
+                }
             });
-            requestAnimationFrame(animate);
         }
 
-        window.addEventListener('resize', resize);
-        resize();
-        animate();
+        // --- GLOBAL EXPORTS (for HTML onclicks) ---
+        window.setModel = (modelId, displayName) => {
+            selectedModel = modelId;
+            document.getElementById('current-model-name').innerText = displayName;
+        };
 
-        // Lancement
-        initApp();
+        window.fillInput = (text) => {
+            userInput.value = text;
+            userInput.focus();
+        };
 
+        window.createNewChat = createNewChat;
+
+        // --- EVENT LISTENERS ---
+        sendBtn.addEventListener('click', handleSendMessage);
+        
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+            }
+            // Auto resize
+            e.target.style.height = 'auto';
+            e.target.style.height = e.target.scrollHeight + 'px';
+        });
+
+        // Init
+        createNewChat();
     </script>
 </body>
 </html>
