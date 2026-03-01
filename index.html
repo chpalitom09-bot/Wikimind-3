@@ -178,12 +178,12 @@
                     </div>
                 </div>
 
-                <!-- Zone de saisie (Toujours visible, Anonyme si pas connecté) -->
+                <!-- Zone de saisie (Toujours visible) -->
                 <div id="main-comment-form-container" class="p-6">
                     <div class="flex gap-4">
                         <img id="current-user-avatar" src="https://ui-avatars.com/api/?name=Anonyme&background=333&color=fff" class="w-10 h-10 rounded-full border border-white/20 object-cover bg-gray-800">
                         <div class="flex-1">
-                            <textarea id="main-comment-input" rows="2" placeholder="Partagez votre pensée (Anonyme par défaut)..." 
+                            <textarea id="main-comment-input" rows="2" placeholder="Partagez votre pensée..." 
                                 class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand-500 focus:bg-white/10 transition-all resize-none"></textarea>
                             <div class="flex justify-end mt-2 items-center gap-3">
                                 <span id="posting-as" class="text-[10px] text-white/30 uppercase tracking-widest">Mode Anonyme</span>
@@ -199,7 +199,7 @@
                 <div id="comments-list" class="flex flex-col gap-0 p-2 md:p-4">
                     <!-- Loader -->
                     <div class="text-center py-8 text-white/20 animate-pulse">
-                        Synchronisation du flux...
+                        Synchronisation avec le serveur...
                     </div>
                 </div>
             </div>
@@ -281,28 +281,39 @@
 
     <!-- FIREBASE LOGIC -->
     <script type="module">
-        // UNIFICATION VERSION 10.8.0
+        // UNIFICATION VERSION 10.8.0 (Version stable pour navigateur)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getDatabase, ref, push, onChildAdded, onChildRemoved, onChildChanged, set, remove, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // CONFIG 1 : AUTHENTIFICATION
+        // ==========================================
+        // CONFIG 1 : GESTION DES COMPTES (Login)
+        // C'est celle qui permet de savoir si tu es connecté via Wikimind_user.html
+        // ==========================================
         const authConfig = {
             apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
             authDomain: "wikimind-3-comments.firebaseapp.com",
             projectId: "wikimind-3-comments",
             appId: "1:137479541640:web:4ed2510a9908055052e03d"
         };
+        // On initialise l'app "auth" spécifiquement pour les users
         const authApp = initializeApp(authConfig, "authApp");
         const auth = getAuth(authApp);
 
-        // CONFIG 2 : DATABASE COMMUNAUTÉ
+        // ==========================================
+        // CONFIG 2 : GESTION DES COMMENTAIRES (Nouvelle DB)
+        // C'est la configuration que tu m'as donnée pour le stockage
+        // ==========================================
         const communityConfig = {
             apiKey: "AIzaSyCn5IyWS4deyVRG7zYY2qLQiNE49aD8a-Y",
+            authDomain: "wikimind-communauty.firebaseapp.com",
             databaseURL: "https://wikimind-communauty-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "wikimind-communauty",
+            storageBucket: "wikimind-communauty.firebasestorage.app",
+            messagingSenderId: "842497095525",
             appId: "1:842497095525:web:2b1c33ca7f4912b34dd38c"
         };
+        // On initialise l'app "community" pour la DB
         const communityApp = initializeApp(communityConfig, "communityApp");
         const db = getDatabase(communityApp);
 
@@ -319,7 +330,7 @@
         const postingAs = document.getElementById('posting-as');
         const commentsList = document.getElementById('comments-list');
 
-        // 1. Détection Connexion
+        // 1. Détection Connexion (Sur l'app AUTH)
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 console.log("Connecté en tant que :", user.email);
@@ -371,7 +382,7 @@
             return "à l'instant";
         }
 
-        // 3. Gestion des Commentaires (CRUD)
+        // 3. Gestion des Commentaires (Sur l'app DB)
 
         // CREATE (Root)
         document.getElementById('submit-main-comment').addEventListener('click', () => {
@@ -381,7 +392,7 @@
 
             // Définir l'identité (User ou Anonyme)
             let authorName = "Anonyme";
-            let uid = "anon_" + Date.now(); // UID temporaire unique
+            let uid = "anon_" + Date.now();
             let avatarUrl = "https://ui-avatars.com/api/?name=Anonyme&background=333&color=fff";
 
             if (currentUser) {
@@ -390,18 +401,24 @@
                 avatarUrl = currentUser.photoURL || null;
             }
 
-            const newPostRef = push(ref(db, 'comments'));
-            set(newPostRef, {
-                uid: uid,
-                author: authorName,
-                avatar: avatarUrl,
-                text: text,
-                timestamp: Date.now(),
-                likes: 0,
-                replies: {}
-            });
-
-            input.value = '';
+            try {
+                // Écriture dans la nouvelle DB
+                const newPostRef = push(ref(db, 'comments'));
+                set(newPostRef, {
+                    uid: uid,
+                    author: authorName,
+                    avatar: avatarUrl,
+                    text: text,
+                    timestamp: Date.now(),
+                    likes: 0,
+                    replies: {}
+                });
+                console.log("Commentaire envoyé à la DB");
+                input.value = '';
+            } catch (error) {
+                console.error("Erreur d'envoi :", error);
+                alert("Erreur de connexion à la base de données. Vérifiez votre connexion.");
+            }
         });
 
         // READ (Listen to added comments)
@@ -410,11 +427,13 @@
         get(commentsRef).then(snapshot => {
             if(!snapshot.exists()) commentsList.innerHTML = '<div class="text-center text-white/30 py-4 text-sm">Soyez le premier à publier.</div>';
             else if(commentsList.innerHTML.includes('Synchronisation')) commentsList.innerHTML = '';
+        }).catch(e => {
+            console.log("Erreur lecture DB:", e);
+            commentsList.innerHTML = '<div class="text-center text-red-400 py-4 text-xs">Erreur de connexion DB.</div>';
         });
 
         onChildAdded(commentsRef, (snapshot) => {
-            // Nettoyage du loader si présent
-            if(commentsList.innerHTML.includes('Synchronisation')) commentsList.innerHTML = '';
+            if(commentsList.innerHTML.includes('Synchronisation') || commentsList.innerHTML.includes('Erreur')) commentsList.innerHTML = '';
             
             const data = snapshot.val();
             const id = snapshot.key;
@@ -432,14 +451,13 @@
             if (likeCountEl) likeCountEl.innerText = data.likes || 0;
         });
 
-        // FONCTION DE RENDU D'UN COMMENTAIRE
+        // FONCTION DE RENDU
         function renderComment(id, data, isReply = false, parentId = null) {
-            // Éviter doublons
             if(document.getElementById(`comment-${id}`)) return;
 
             const dateStr = timeAgo(data.timestamp);
             const userAvatar = data.avatar || `https://ui-avatars.com/api/?name=${data.author}&background=random`;
-            const isAnon = data.uid.startsWith('anon_');
+            const isAnon = String(data.uid).startsWith('anon_');
             
             const div = document.createElement('div');
             div.id = `comment-${id}`;
@@ -447,7 +465,6 @@
                 ? "comment-thread mt-3 pt-2 animate-fade-in-up" 
                 : "border-b border-white/5 py-6 animate-fade-in-up group";
 
-            // HTML du commentaire
             div.innerHTML = `
                 <div class="flex gap-3">
                     <img src="${userAvatar}" class="w-8 h-8 rounded-full border border-white/10 mt-1 object-cover bg-gray-800">
@@ -461,7 +478,6 @@
                         
                         <p class="text-white/80 text-sm leading-relaxed whitespace-pre-wrap">${data.text}</p>
                         
-                        <!-- Actions Bar -->
                         <div class="flex items-center gap-4 mt-3">
                             <button onclick="handleLike('${parentId ? parentId + '/replies/' + id : id}')" class="flex items-center gap-1.5 text-xs text-white/40 hover:text-pink-400 transition-colors group/like">
                                 <i class="fa-regular fa-heart group-hover/like:fa-solid"></i>
@@ -478,7 +494,6 @@
                             </button>
                         </div>
 
-                        <!-- Zone de réponse -->
                         <div id="reply-form-${id}" class="hidden mt-3 pl-2 border-l-2 border-brand-500/30">
                             <div class="flex gap-2">
                                 <input type="text" id="input-reply-${id}" placeholder="Répondre..." 
@@ -488,8 +503,6 @@
                                 </button>
                             </div>
                         </div>
-
-                        <!-- Container pour les réponses -->
                         <div id="replies-${id}" class="flex flex-col"></div>
                     </div>
                 </div>
@@ -498,12 +511,8 @@
             if (isReply) {
                 document.getElementById(`replies-${parentId}`).appendChild(div);
             } else {
-                // Insérer en haut de la liste (nouveaux en premier)
-                if (commentsList.firstChild) {
-                    commentsList.insertBefore(div, commentsList.firstChild);
-                } else {
-                    commentsList.appendChild(div);
-                }
+                if (commentsList.firstChild) commentsList.insertBefore(div, commentsList.firstChild);
+                else commentsList.appendChild(div);
 
                 if(data.replies) {
                     Object.keys(data.replies).forEach(replyId => {
@@ -512,16 +521,14 @@
                 }
             }
 
-            // Gestion visibilité bouton supprimer (Seulement si c'est MON commentaire)
             const delBtn = div.querySelector(`#btn-delete-${id}`);
             if (currentUser && data.uid === currentUser.uid) {
                 delBtn.classList.remove('hidden');
             }
         }
 
-        // 4. Global Actions
+        // Global Actions
         window.toggleReplyForm = (id) => {
-            // Pas besoin d'être connecté pour répondre en mode anonyme
             const form = document.getElementById(`reply-form-${id}`);
             form.classList.toggle('hidden');
             if(!form.classList.contains('hidden')) {
@@ -534,7 +541,6 @@
             const text = input.value.trim();
             if(!text) return;
 
-            // Identité pour la réponse
             let authorName = "Anonyme";
             let uid = "anon_" + Date.now();
             let avatarUrl = "https://ui-avatars.com/api/?name=Anonyme&background=333&color=fff";
@@ -546,30 +552,17 @@
             }
 
             const replyRef = push(ref(db, `comments/${parentId}/replies`));
-            const replyData = {
-                uid: uid,
-                author: authorName,
-                avatar: avatarUrl,
-                text: text,
-                timestamp: Date.now(),
-                likes: 0
-            };
-            
+            const replyData = { uid, author: authorName, avatar: avatarUrl, text, timestamp: Date.now(), likes: 0 };
             set(replyRef, replyData);
             
-            // Mise à jour locale immédiate pour fluidité
             renderComment(replyRef.key, replyData, true, parentId);
-
             input.value = '';
             document.getElementById(`reply-form-${parentId}`).classList.add('hidden');
         };
 
         window.handleLike = (path) => {
-            // On autorise les likes anonymes (basique, sans protection IP complexe pour l'instant)
             const likeRef = ref(db, `comments/${path}/likes`);
-            runTransaction(likeRef, (currentLikes) => {
-                return (currentLikes || 0) + 1;
-            });
+            runTransaction(likeRef, (c) => (c || 0) + 1);
             const btn = document.activeElement;
             const heart = btn.querySelector('i');
             heart.classList.remove('fa-regular');
@@ -585,8 +578,7 @@
                         const el = document.getElementById(`comment-${id}`);
                         if(el) el.remove();
                     }
-                })
-                .catch(err => console.error(err));
+                });
         };
 
         // --- SEARCH BAR LOGIC ---
