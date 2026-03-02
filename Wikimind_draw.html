@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WikiMind Draw</title>
+
+    <!-- Tailwind & Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
+                    colors: {
+                        glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
+                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' },
+                        office: { draw: '#a855f7' } // Violet Draw
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #050505; color: #ffffff; overflow: hidden; overscroll-behavior-y: none; }
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Toolbar */
+        .toolbar-btn { padding: 8px 12px; border-radius: 8px; color: rgba(255,255,255,0.7); transition: all 0.2s; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .toolbar-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+        .toolbar-btn.active { background: rgba(168, 85, 247, 0.2); color: #c084fc; box-shadow: inset 0 0 0 1px rgba(168, 85, 247, 0.5); }
+        .toolbar-divider { width: 1px; height: 24px; background: rgba(255,255,255,0.1); margin: 0 8px; }
+
+        /* Canvas Wrapper */
+        #workspace { flex: 1; display: flex; align-items: center; justify-content: center; background: #121212; overflow: auto; position: relative; padding: 20px; }
+        #draw-canvas {
+            background: #ffffff;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            cursor: crosshair;
+            touch-action: none; /* Empêche le scroll sur mobile en dessinant */
+        }
+
+        /* Custom Range Slider */
+        input[type=range] { -webkit-appearance: none; background: transparent; width: 100px; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #a855f7; cursor: pointer; margin-top: -6px; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+        /* AI Typing Animation */
+        .ai-typing span { display: inline-block; width: 4px; height: 4px; background-color: currentColor; border-radius: 50%; animation: typing 1.4s infinite both; margin: 0 2px; }
+        .ai-typing span:nth-child(1) { animation-delay: 0s; }
+        .ai-typing span:nth-child(2) { animation-delay: 0.2s; }
+        .ai-typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+    </style>
+</head>
+<body class="selection:bg-office-draw selection:text-white flex flex-col h-screen">
+
+    <!-- AURORA BG -->
+    <canvas id="aurora-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
+
+    <!-- TOP NAVBAR -->
+    <header class="glass-panel border-b border-white/10 px-4 py-3 flex items-center justify-between z-50 shrink-0">
+        <div class="flex items-center gap-4">
+            <a href="Wikimind_office.html" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded bg-office-draw/20 text-office-draw flex items-center justify-center text-lg shadow-[0_0_15px_rgba(168,85,247,0.5)]">
+                    <i class="fa-solid fa-pen-ruler"></i>
+                </div>
+                <div>
+                    <input type="text" id="doc-name" value="Chargement..." class="bg-transparent text-white font-bold text-sm focus:outline-none focus:border-b border-brand-500 w-64 px-1">
+                    <div class="flex items-center gap-2 mt-0.5 text-[10px] text-white/40">
+                        <span id="save-status"><i class="fa-solid fa-cloud-arrow-up mr-1"></i> Synchronisé</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <button onclick="toggleSidebar()" class="px-4 py-1.5 rounded-full bg-brand-600/20 text-brand-glow border border-brand-500/30 text-xs font-bold hover:bg-brand-600/40 transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> WikiMind AI
+            </button>
+            <img id="nav-avatar" src="https://ui-avatars.com/api/?name=Guest&background=333&color=fff" class="w-8 h-8 rounded-full border border-white/20 object-cover">
+        </div>
+    </header>
+
+    <!-- TOOLBAR -->
+    <div class="bg-[#1a1a1a] border-b border-white/10 px-4 py-2 flex flex-wrap items-center gap-2 shrink-0 z-40 relative">
+        
+        <!-- Outils de base -->
+        <button class="toolbar-btn active" id="tool-brush" onclick="setTool('brush')" title="Pinceau"><i class="fa-solid fa-paint-brush"></i></button>
+        <button class="toolbar-btn" id="tool-eraser" onclick="setTool('eraser')" title="Gomme"><i class="fa-solid fa-eraser"></i></button>
+        <button class="toolbar-btn" id="tool-fill" onclick="setTool('fill')" title="Remplir tout le fond"><i class="fa-solid fa-fill-drip"></i></button>
+        
+        <div class="toolbar-divider"></div>
+
+        <!-- Formes -->
+        <button class="toolbar-btn" id="tool-line" onclick="setTool('line')" title="Ligne droite"><i class="fa-solid fa-slash"></i></button>
+        <button class="toolbar-btn" id="tool-rect" onclick="setTool('rect')" title="Rectangle"><i class="fa-regular fa-square"></i></button>
+        <button class="toolbar-btn" id="tool-circle" onclick="setTool('circle')" title="Cercle"><i class="fa-regular fa-circle"></i></button>
+        
+        <div class="toolbar-divider"></div>
+
+        <!-- Couleurs & Taille -->
+        <div class="flex items-center gap-2 px-2">
+            <label class="text-white/60 text-xs" title="Couleur de trait"><i class="fa-solid fa-palette"></i></label>
+            <input type="color" id="color-picker" value="#000000" class="w-8 h-8 p-0 border-0 bg-transparent cursor-pointer rounded-full overflow-hidden">
+            
+            <label class="text-white/60 text-xs ml-3"><i class="fa-solid fa-weight-hanging"></i></label>
+            <input type="range" id="line-width" min="1" max="50" value="5">
+            <span id="line-width-val" class="text-xs text-white/50 w-4">5</span>
+        </div>
+
+        <div class="toolbar-divider"></div>
+
+        <!-- Actions -->
+        <button class="toolbar-btn" onclick="undo()" title="Annuler (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
+        <button class="toolbar-btn" onclick="redo()" title="Rétablir (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
+        <button class="toolbar-btn text-red-400 hover:text-red-300" onclick="clearCanvas()" title="Tout effacer"><i class="fa-solid fa-trash-can"></i></button>
+        
+        <div class="ml-auto">
+            <button class="toolbar-btn bg-office-draw/20 text-office-draw hover:bg-office-draw/40 border border-office-draw/30" onclick="exportImage()" title="Télécharger en PNG">
+                <i class="fa-solid fa-download mr-2"></i> Exporter
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN WORKSPACE -->
+    <div class="flex flex-1 overflow-hidden relative">
+        
+        <!-- Canvas Area -->
+        <main id="workspace">
+            <canvas id="draw-canvas" width="800" height="600"></canvas>
+        </main>
+
+        <!-- Right: AI Sidebar -->
+        <aside id="ai-sidebar" class="w-80 bg-black/80 border-l border-white/10 backdrop-blur-xl flex flex-col shrink-0 transition-transform duration-300 transform translate-x-full absolute right-0 top-0 h-full z-30 shadow-2xl">
+            <div class="p-4 border-b border-white/10 flex justify-between items-center bg-brand-500/10">
+                <h3 class="font-display font-bold text-brand-glow flex items-center gap-2">
+                    <i class="fa-solid fa-robot"></i> WikiMind AI
+                </h3>
+                <button onclick="toggleSidebar()" class="text-white/40 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex border-b border-white/10 text-xs font-bold uppercase tracking-wider">
+                <button id="tab-inspi" onclick="switchAITab('inspi')" class="flex-1 py-3 text-brand-glow border-b-2 border-brand-500 bg-white/5">Inspiration</button>
+                <button id="tab-gen" onclick="switchAITab('gen')" class="flex-1 py-3 text-white/40 hover:bg-white/5">Générateur</button>
+            </div>
+
+            <!-- INSPIRATION PANEL -->
+            <div id="ai-panel-inspi" class="p-4 overflow-y-auto flex-1 text-sm space-y-4">
+                <p class="text-xs text-white/50">Besoin d'aide ou d'idées pour votre dessin ?</p>
+                <div class="space-y-2">
+                    <button onclick="processAI('idee')" class="w-full text-left px-4 py-2.5 rounded-lg bg-white/5 hover:bg-office-draw/20 border border-transparent hover:border-office-draw/50 transition-all flex items-center gap-3">
+                        <i class="fa-regular fa-lightbulb text-office-draw"></i> Donne-moi une idée de dessin
+                    </button>
+                    <button onclick="processAI('palette')" class="w-full text-left px-4 py-2.5 rounded-lg bg-white/5 hover:bg-pink-500/20 border border-transparent hover:border-pink-500/50 transition-all flex items-center gap-3">
+                        <i class="fa-solid fa-palette text-pink-400"></i> Suggère une palette de couleurs
+                    </button>
+                </div>
+                
+                <div class="pt-2 border-t border-white/10">
+                    <textarea id="ai-custom-prompt" rows="2" placeholder="Ex: Comment dessiner un chat facilement ?" class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-brand-500 resize-none"></textarea>
+                    <button onclick="processAI('custom')" class="mt-2 w-full bg-white/10 hover:bg-brand-600 text-white py-1.5 rounded-lg text-xs font-bold transition">Demander</button>
+                </div>
+                
+                <div id="ai-text-response" class="hidden flex-col gap-2 pt-2 border-t border-white/10">
+                    <p class="text-xs font-bold uppercase text-brand-glow">Réponse</p>
+                    <div id="ai-text-output" class="p-3 bg-black/50 border border-brand-500/30 rounded-lg text-white/80 whitespace-pre-wrap text-sm leading-relaxed"></div>
+                </div>
+            </div>
+
+            <!-- GENERATOR PANEL (IMAGE) -->
+            <div id="ai-panel-gen" class="hidden p-4 overflow-y-auto flex-1 text-sm space-y-4">
+                <p class="text-xs text-white/50">Générez une image pour vous en servir de base ou de fond (Modèle : Pollinations AI).</p>
+                <textarea id="ai-image-prompt" rows="3" placeholder="Ex: Un paysage de montagne pixel art..." class="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-office-draw resize-none"></textarea>
+                <button onclick="generateAIImage()" class="w-full bg-office-draw hover:bg-purple-400 text-white py-2 rounded-lg text-xs font-bold transition shadow-lg shadow-office-draw/20">Générer l'image</button>
+                
+                <div id="ai-image-result-container" class="hidden flex-col gap-2 pt-4 border-t border-white/10">
+                    <p class="text-xs font-bold uppercase text-brand-glow">Aperçu</p>
+                    <div class="relative rounded-lg overflow-hidden border border-white/10 bg-black aspect-video flex items-center justify-center">
+                        <i id="ai-image-loader" class="fa-solid fa-spinner fa-spin text-2xl text-white/20 hidden"></i>
+                        <img id="ai-generated-img" src="" class="max-w-full max-h-full hidden">
+                    </div>
+                    <button onclick="applyAIToCanvas()" class="w-full bg-brand-600 hover:bg-brand-500 text-white py-1.5 rounded-lg text-xs font-bold transition mt-2">Coller sur la toile</button>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- FIREBASE & LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // FIREBASE CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+            authDomain: "wikimind-3-comments.firebaseapp.com",
+            databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "wikimind-3-comments",
+            storageBucket: "wikimind-3-comments.firebasestorage.app",
+            messagingSenderId: "137479541640",
+            appId: "1:137479541640:web:4ed2510a9908055052e03d"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        // API
+        const MISTRAL_API_KEY = "SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9";
+
+        // APP STATE
+        let currentUser = null;
+        let fileId = new URLSearchParams(window.location.search).get('id');
+        let source = new URLSearchParams(window.location.search).get('source');
+        
+        // CANVAS ENGINE
+        const canvas = document.getElementById('draw-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let isDrawing = false;
+        let currentTool = 'brush'; // brush, eraser, fill, line, rect, circle
+        let currentColor = '#000000';
+        let currentLineWidth = 5;
+        let startX, startY;
+        let savedImageData; // for shapes preview
+        
+        // History (Undo/Redo)
+        let undoStack = [];
+        let redoStack = [];
+        const MAX_HISTORY = 20;
+
+        // UI Elements
+        const docNameInput = document.getElementById('doc-name');
+        const saveStatus = document.getElementById('save-status');
+        const navAvatar = document.getElementById('nav-avatar');
+        let saveTimeout = null;
+        let isSaving = false;
+
+        // 1. INIT CANVAS & AUTH
+        if (!fileId) { alert("Erreur: Aucun fichier."); window.location.href = "Wikimind_office.html"; }
+
+        // Initial Canvas Setup (White Background)
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        saveState(); // Save initial blank state
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) navAvatar.src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=a855f7&color=fff`;
+            loadDocument();
+        });
+
+        // 2. LOAD/SAVE LOGIC
+        function loadDocument() {
+            if (source === 'firebase' && currentUser) {
+                get(ref(db, `users/${currentUser.uid}/files/${fileId}`)).then((snap) => {
+                    if (snap.exists()) applyData(snap.val());
+                });
+            } else if (source === 'local') {
+                const files = JSON.parse(localStorage.getItem('wikimind_guest_files') || '{}');
+                if (files[fileId]) applyData(files[fileId]);
+            }
+        }
+
+        function applyData(data) {
+            docNameInput.value = data.name || "Nouveau Dessin";
+            if (data.content && data.content.startsWith('data:image')) {
+                const img = new Image();
+                img.onload = () => {
+                    ctx.drawImage(img, 0, 0);
+                    undoStack = []; redoStack = []; // Reset history on load
+                    saveState();
+                };
+                img.src = data.content;
+            }
+        }
+
+        docNameInput.addEventListener('input', triggerSave);
+
+        function triggerSave() {
+            saveStatus.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Sauvegarde...';
+            saveStatus.className = "text-yellow-400";
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveDocument, 1500); // Debounce plus long pour l'image
+        }
+
+        async function saveDocument() {
+            if (isSaving) return;
+            isSaving = true;
+
+            const name = docNameInput.value.trim();
+            const contentStr = canvas.toDataURL('image/png'); // Base64 encoding
+            const timestamp = Date.now();
+
+            try {
+                if (source === 'firebase' && currentUser) {
+                    await update(ref(db, `users/${currentUser.uid}/files/${fileId}`), {
+                        content: contentStr, name: name, updatedAt: timestamp
+                    });
+                } else if (source === 'local') {
+                    const files = JSON.parse(localStorage.getItem('wikimind_guest_files') || '{}');
+                    if (files[fileId]) {
+                        files[fileId].content = contentStr;
+                        files[fileId].name = name;
+                        files[fileId].updatedAt = timestamp;
+                        localStorage.setItem('wikimind_guest_files', JSON.stringify(files));
+                    }
+                }
+                saveStatus.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Cloud';
+                saveStatus.className = "text-office-draw";
+            } catch (error) {
+                saveStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i> Erreur';
+                saveStatus.className = "text-red-400";
+            } finally {
+                isSaving = false;
+            }
+        }
+
+        // 3. DRAWING TOOLS LOGIC
+        window.setTool = (tool) => {
+            currentTool = tool;
+            document.querySelectorAll('.toolbar-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tool-${tool}`).classList.add('active');
+            
+            if (tool === 'fill') {
+                ctx.fillStyle = currentColor;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                saveState();
+                triggerSave();
+                setTool('brush'); // Auto revert to brush
+            }
+        };
+
+        document.getElementById('color-picker').addEventListener('input', (e) => currentColor = e.target.value);
+        document.getElementById('line-width').addEventListener('input', (e) => {
+            currentLineWidth = e.target.value;
+            document.getElementById('line-width-val').innerText = currentLineWidth;
+        });
+
+        // Coordinates Helper
+        function getMousePos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            // Handle both touch and mouse
+            const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+            const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+            
+            // Calculate scale in case CSS resizes the canvas
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        const startDraw = (e) => {
+            if(currentTool === 'fill') return;
+            isDrawing = true;
+            const pos = getMousePos(e);
+            startX = pos.x;
+            startY = pos.y;
+            
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineWidth = currentLineWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            if (currentTool === 'brush') {
+                ctx.strokeStyle = currentColor;
+                ctx.lineTo(startX, startY);
+                ctx.stroke();
+            } else if (currentTool === 'eraser') {
+                ctx.strokeStyle = '#ffffff'; // White for eraser
+                ctx.lineTo(startX, startY);
+                ctx.stroke();
+            } else {
+                // Save state for shape previews
+                savedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            }
+            e.preventDefault(); // Prevent scrolling on touch
+        };
+
+        const draw = (e) => {
+            if (!isDrawing) return;
+            const pos = getMousePos(e);
+
+            if (currentTool === 'brush') {
+                ctx.strokeStyle = currentColor;
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+            } else if (currentTool === 'eraser') {
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+            } else {
+                // Shapes: Restore background, then draw preview
+                ctx.putImageData(savedImageData, 0, 0);
+                ctx.beginPath();
+                ctx.strokeStyle = currentColor;
+                ctx.lineWidth = currentLineWidth;
+
+                if (currentTool === 'line') {
+                    ctx.moveTo(startX, startY);
+                    ctx.lineTo(pos.x, pos.y);
+                } else if (currentTool === 'rect') {
+                    ctx.rect(startX, startY, pos.x - startX, pos.y - startY);
+                } else if (currentTool === 'circle') {
+                    const radius = Math.sqrt(Math.pow(pos.x - startX, 2) + Math.pow(pos.y - startY, 2));
+                    ctx.arc(startX, startY, radius, 0, 2 * Math.PI);
+                }
+                ctx.stroke();
+            }
+            e.preventDefault();
+        };
+
+        const endDraw = () => {
+            if (!isDrawing) return;
+            isDrawing = false;
+            ctx.closePath();
+            saveState();
+            triggerSave();
+        };
+
+        // Event Listeners (Mouse & Touch)
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mousemove', draw);
+        window.addEventListener('mouseup', endDraw); // Window to catch release outside canvas
+
+        canvas.addEventListener('touchstart', startDraw, {passive: false});
+        canvas.addEventListener('touchmove', draw, {passive: false});
+        window.addEventListener('touchend', endDraw);
+
+        // 4. HISTORY & ACTIONS
+        function saveState() {
+            // Push current state to undo stack
+            if(undoStack.length >= MAX_HISTORY) undoStack.shift();
+            undoStack.push(canvas.toDataURL());
+            redoStack = []; // Clear redo on new action
+        }
+
+        window.undo = () => {
+            if (undoStack.length > 1) {
+                redoStack.push(undoStack.pop()); // Move current to redo
+                restoreCanvas(undoStack[undoStack.length - 1]);
+                triggerSave();
+            }
+        };
+
+        window.redo = () => {
+            if (redoStack.length > 0) {
+                const state = redoStack.pop();
+                undoStack.push(state);
+                restoreCanvas(state);
+                triggerSave();
+            }
+        };
+
+        function restoreCanvas(dataUrl) {
+            const img = new Image();
+            img.onload = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+            };
+            img.src = dataUrl;
+        }
+
+        window.clearCanvas = () => {
+            if(!confirm("Tout effacer ?")) return;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            saveState();
+            triggerSave();
+        };
+
+        window.exportImage = () => {
+            const link = document.createElement('a');
+            link.download = `${docNameInput.value || 'dessin'}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        };
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
+            if (e.ctrlKey && e.key === 'y') { e.preventDefault(); redo(); }
+        });
+
+
+        // 5. WIKIMIND AI LOGIC
+        window.toggleSidebar = () => {
+            document.getElementById('ai-sidebar').classList.toggle('translate-x-full');
+        };
+
+        window.switchAITab = (tab) => {
+            const inspiPanel = document.getElementById('ai-panel-inspi');
+            const genPanel = document.getElementById('ai-panel-gen');
+            const inspiBtn = document.getElementById('tab-inspi');
+            const genBtn = document.getElementById('tab-gen');
+
+            if (tab === 'inspi') {
+                inspiPanel.classList.remove('hidden'); genPanel.classList.add('hidden');
+                inspiBtn.classList.add('text-brand-glow', 'border-b-2', 'border-brand-500', 'bg-white/5');
+                inspiBtn.classList.remove('text-white/40');
+                genBtn.classList.remove('text-brand-glow', 'border-b-2', 'border-brand-500', 'bg-white/5');
+                genBtn.classList.add('text-white/40');
+            } else {
+                genPanel.classList.remove('hidden'); inspiPanel.classList.add('hidden');
+                genBtn.classList.add('text-brand-glow', 'border-b-2', 'border-brand-500', 'bg-white/5');
+                genBtn.classList.remove('text-white/40');
+                inspiBtn.classList.remove('text-brand-glow', 'border-b-2', 'border-brand-500', 'bg-white/5');
+                inspiBtn.classList.add('text-white/40');
+            }
+        };
+
+        // Text AI (Mistral)
+        window.processAI = async (action) => {
+            const outputContainer = document.getElementById('ai-text-response');
+            const outputBox = document.getElementById('ai-text-output');
+            outputContainer.classList.remove('hidden');
+            outputBox.innerHTML = '<div class="ai-typing"><span></span><span></span><span></span></div>';
+
+            let prompt = "";
+            const customInput = document.getElementById('ai-custom-prompt').value;
+
+            switch(action) {
+                case 'idee': prompt = "Tu es WikiMind. Donne-moi une idée créative, originale et simple à dessiner. Sois bref (2 phrases max)."; break;
+                case 'palette': prompt = "Tu es WikiMind. Propose-moi une palette de 4 couleurs harmonieuses pour un dessin. Donne les codes HEX et le thème visuel. Sois bref."; break;
+                case 'custom': 
+                    if(!customInput) { outputBox.innerHTML = "Posez une question."; return; }
+                    prompt = `Tu es WikiMind, un assistant en dessin. Réponds brièvement à ceci : ${customInput}`; break;
+            }
+
+            try {
+                const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${MISTRAL_API_KEY}` },
+                    body: JSON.stringify({ model: 'mistral-small-latest', messages: [{ role: 'user', content: prompt }] })
+                });
+                const data = await response.json();
+                outputBox.innerHTML = data.choices[0].message.content.trim();
+            } catch (error) { outputBox.innerHTML = "<span class='text-red-400'>Erreur IA.</span>"; }
+        };
+
+        // Image Gen (Pollinations)
+        let generatedImgObj = null;
+
+        window.generateAIImage = () => {
+            const prompt = document.getElementById('ai-image-prompt').value.trim();
+            if(!prompt) { alert("Veuillez décrire l'image."); return; }
+
+            const container = document.getElementById('ai-image-result-container');
+            const loader = document.getElementById('ai-image-loader');
+            const imgEl = document.getElementById('ai-generated-img');
+
+            container.classList.remove('hidden');
+            container.classList.add('flex');
+            loader.classList.remove('hidden');
+            imgEl.classList.add('hidden');
+
+            const seed = Math.floor(Math.random() * 100000);
+            const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=600&nologo=true&seed=${seed}`;
+
+            generatedImgObj = new Image();
+            generatedImgObj.crossOrigin = "Anonymous"; // Important to prevent canvas tainting
+            generatedImgObj.onload = () => {
+                loader.classList.add('hidden');
+                imgEl.src = url;
+                imgEl.classList.remove('hidden');
+            };
+            generatedImgObj.onerror = () => {
+                loader.classList.add('hidden');
+                alert("Erreur lors de la génération.");
+            };
+            generatedImgObj.src = url;
+        };
+
+        window.applyAIToCanvas = () => {
+            if(!generatedImgObj) return;
+            // Draw image scaled to fit canvas
+            ctx.drawImage(generatedImgObj, 0, 0, canvas.width, canvas.height);
+            saveState();
+            triggerSave();
+        };
+
+        // AURORA BACKGROUND
+        const bgCanvas = document.getElementById('aurora-bg');
+        if(bgCanvas) {
+            const bgCtx = bgCanvas.getContext('2d');
+            let width, height;
+            const orbs = [
+                { x: 0.3, y: 0.3, r: 0.5, color: 'rgba(168, 85, 247, 0.1)', vx: 0.0003, vy: 0.0004 }, // Violet
+                { x: 0.7, y: 0.6, r: 0.6, color: 'rgba(79, 70, 229, 0.08)', vx: -0.0004, vy: 0.0003 }
+            ];
+            function resize() { width = bgCanvas.width = window.innerWidth; height = bgCanvas.height = window.innerHeight; }
+            function animate() {
+                bgCtx.clearRect(0, 0, width, height);
+                bgCtx.fillStyle = '#050505'; bgCtx.fillRect(0, 0, width, height);
+                orbs.forEach(orb => {
+                    orb.x += orb.vx; orb.y += orb.vy;
+                    if(orb.x < -0.2 || orb.x > 1.2) orb.vx *= -1;
+                    if(orb.y < -0.2 || orb.y > 1.2) orb.vy *= -1;
+                    const g = bgCtx.createRadialGradient(orb.x * width, orb.y * height, 0, orb.x * width, orb.y * height, orb.r * width);
+                    g.addColorStop(0, orb.color); g.addColorStop(1, 'rgba(0,0,0,0)');
+                    bgCtx.fillStyle = g; bgCtx.fillRect(0, 0, width, height);
+                });
+                requestAnimationFrame(animate);
+            }
+            window.addEventListener('resize', resize); resize(); animate();
+        }
+
+    </script>
+</body>
+</html>
