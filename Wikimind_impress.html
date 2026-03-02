@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WikiMind Impress</title>
+
+    <!-- Tailwind & Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
+                    colors: {
+                        glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
+                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' },
+                        office: { impress: '#f97316' } // Orange Impress/PowerPoint
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #050505; color: #ffffff; overflow: hidden; }
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Toolbar */
+        .toolbar-btn { padding: 6px 10px; border-radius: 6px; color: rgba(255,255,255,0.7); transition: all 0.2s; }
+        .toolbar-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+        .toolbar-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.1); margin: 0 8px; }
+        .toolbar-select { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white; padding: 4px 8px; font-size: 12px; cursor: pointer; }
+        .toolbar-select option { background: #1a1a1a; color: white; }
+
+        /* Workspace Areas */
+        #main-workspace { display: flex; height: calc(100vh - 110px); }
+        
+        /* Sidebar Slides List */
+        #slides-sidebar { width: 220px; background: #121212; border-right: 1px solid rgba(255,255,255,0.1); overflow-y: auto; display: flex; flex-direction: column; padding: 10px; gap: 10px; }
+        .slide-thumb { width: 100%; aspect-ratio: 16/9; background: white; border-radius: 6px; cursor: pointer; border: 2px solid transparent; position: relative; overflow: hidden; color: black; font-size: 4px; padding: 4px; pointer-events: none; }
+        .slide-thumb-wrapper { position: relative; cursor: pointer; }
+        .slide-thumb-wrapper.active .slide-thumb { border-color: #f97316; }
+        .slide-thumb-wrapper.active::before { content: ''; position: absolute; left: -10px; top: 50%; transform: translateY(-50%); width: 4px; height: 20px; background: #f97316; border-radius: 0 4px 4px 0; }
+        .delete-slide-btn { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; background: rgba(0,0,0,0.5); color: white; border-radius: 4px; display: none; align-items: center; justify-content: center; font-size: 10px; pointer-events: auto; }
+        .slide-thumb-wrapper:hover .delete-slide-btn { display: flex; }
+        .slide-thumb-wrapper:hover .delete-slide-btn:hover { background: #ef4444; }
+
+        /* Slide Editor */
+        #editor-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; background: #1a1a1a; overflow: auto; position: relative; }
+        .slide-page {
+            width: 960px; height: 540px; /* 16:9 ratio */
+            background: #ffffff; color: #000000; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            outline: none; position: relative; padding: 40px; overflow: hidden;
+            font-family: 'Inter', sans-serif; transition: transform 0.3s ease;
+        }
+        /* Scale down on small screens via JS if needed, or CSS transform */
+
+        /* Slide Typography */
+        .slide-page h1 { font-size: 3em; font-weight: bold; margin-bottom: 0.5em; text-align: center; }
+        .slide-page h2 { font-size: 2em; font-weight: bold; margin-bottom: 0.5em; }
+        .slide-page p { margin-bottom: 1em; font-size: 1.5em; }
+        .slide-page ul { list-style-type: disc; margin-left: 1.5em; font-size: 1.5em; margin-bottom: 1em; }
+        .slide-page img { max-width: 100%; max-height: 400px; display: block; margin: 10px auto; object-fit: contain; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+
+        /* AI Typing Animation */
+        .ai-typing span { display: inline-block; width: 4px; height: 4px; background-color: currentColor; border-radius: 50%; animation: typing 1.4s infinite both; margin: 0 2px; }
+        .ai-typing span:nth-child(1) { animation-delay: 0s; }
+        .ai-typing span:nth-child(2) { animation-delay: 0.2s; }
+        .ai-typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+        /* Presentation Mode */
+        #presentation-overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: none; align-items: center; justify-content: center; }
+        #presentation-slide { width: 100%; height: 100%; max-width: 1920px; max-height: 1080px; aspect-ratio: 16/9; background: white; color: black; padding: 5%; overflow: hidden; position: relative; }
+        
+        /* Transitions */
+        .trans-fade { animation: fadeIn 0.5s ease-in-out; }
+        .trans-slide { animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .trans-zoom { animation: zoomIn 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body class="selection:bg-office-impress selection:text-white flex flex-col h-screen">
+
+    <!-- AURORA BG -->
+    <canvas id="aurora-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
+
+    <!-- TOP NAVBAR -->
+    <header class="glass-panel border-b border-white/10 px-4 py-3 flex items-center justify-between z-50 shrink-0">
+        <div class="flex items-center gap-4">
+            <a href="Wikimind_office.html" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded bg-office-impress/20 text-office-impress flex items-center justify-center text-lg shadow-[0_0_15px_rgba(249,115,22,0.5)]">
+                    <i class="fa-solid fa-presentation-screen"></i>
+                </div>
+                <div>
+                    <input type="text" id="doc-name" value="Chargement..." class="bg-transparent text-white font-bold text-sm focus:outline-none focus:border-b border-brand-500 w-64 px-1">
+                    <div class="flex items-center gap-2 mt-0.5 text-[10px] text-white/40">
+                        <span id="save-status"><i class="fa-solid fa-cloud-arrow-up mr-1"></i> Synchronisé</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <button onclick="toggleSidebar()" class="px-4 py-1.5 rounded-full bg-brand-600/20 text-brand-glow border border-brand-500/30 text-xs font-bold hover:bg-brand-600/40 transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> WikiMind AI
+            </button>
+            <img id="nav-avatar" src="https://ui-avatars.com/api/?name=Guest&background=333&color=fff" class="w-8 h-8 rounded-full border border-white/20 object-cover">
+        </div>
+    </header>
+
+    <!-- TOOLBAR -->
+    <div class="bg-[#121212] border-b border-white/10 px-4 py-2 flex flex-wrap items-center gap-1 shrink-0 z-40 relative justify-between">
+        <div class="flex items-center gap-1">
+            <button class="toolbar-btn" onclick="formatDoc('undo')" title="Annuler"><i class="fa-solid fa-rotate-left"></i></button>
+            <div class="toolbar-divider"></div>
+            
+            <select class="toolbar-select" onchange="formatDoc('fontSize', this.value)" title="Taille">
+                <option value="3">Petit</option>
+                <option value="5" selected>Normal</option>
+                <option value="6">Grand</option>
+                <option value="7">Titre</option>
+            </select>
+            <div class="toolbar-divider"></div>
+
+            <button class="toolbar-btn font-bold" onclick="formatDoc('bold')" title="Gras">G</button>
+            <button class="toolbar-btn italic" onclick="formatDoc('italic')" title="Italique">I</button>
+            <button class="toolbar-btn underline" onclick="formatDoc('underline')" title="Souligné">S</button>
+            
+            <div class="relative group flex items-center ml-2">
+                <input type="color" onchange="formatDoc('foreColor', this.value)" title="Couleur du texte" class="w-6 h-6 p-0 border-0 bg-transparent cursor-pointer">
+            </div>
+            <div class="toolbar-divider"></div>
+
+            <button class="toolbar-btn" onclick="formatDoc('justifyLeft')" title="Gauche"><i class="fa-solid fa-align-left"></i></button>
+            <button class="toolbar-btn" onclick="formatDoc('justifyCenter')" title="Centrer"><i class="fa-solid fa-align-center"></i></button>
+            <button class="toolbar-btn" onclick="formatDoc('insertUnorderedList')" title="Liste"><i class="fa-solid fa-list-ul"></i></button>
+            <div class="toolbar-divider"></div>
+
+            <button class="toolbar-btn" onclick="addLink()" title="Lien"><i class="fa-solid fa-link"></i></button>
+            <button class="toolbar-btn" onclick="addImage()" title="Image Locale/URL"><i class="fa-solid fa-image"></i></button>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <select id="slide-transition" class="toolbar-select" onchange="updateTransition()" title="Transition de la diapo">
+                <option value="none">Aucune Transition</option>
+                <option value="trans-fade">Fondu (Fade)</option>
+                <option value="trans-slide">Glissement (Slide)</option>
+                <option value="trans-zoom">Zoom (Zoom)</option>
+            </select>
+            <button onclick="startPresentation()" class="bg-office-impress text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-orange-400 transition flex items-center gap-2">
+                <i class="fa-solid fa-play"></i> Lancer
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN WORKSPACE -->
+    <div id="main-workspace" class="relative">
+        
+        <!-- Left: Slides List -->
+        <aside id="slides-sidebar">
+            <button onclick="addNewSlide()" class="w-full py-3 rounded-lg border border-dashed border-white/20 text-white/50 hover:text-white hover:border-white/50 transition-colors text-xs font-bold flex items-center justify-center gap-2 mb-2">
+                <i class="fa-solid fa-plus"></i> Nouvelle Diapo
+            </button>
+            <div id="thumbnails-container" class="space-y-3">
+                <!-- Thumbnails JS -->
+            </div>
+        </aside>
+
+        <!-- Center: Slide Editor -->
+        <main id="editor-wrapper" onclick="document.getElementById('slide-editor').focus()">
+            <!-- Transform scale can be dynamically adjusted for responsive if needed -->
+            <div id="slide-editor" contenteditable="true" class="slide-page" spellcheck="false">
+                <!-- HTML Content -->
+            </div>
+        </main>
+
+        <!-- Right: AI Sidebar -->
+        <aside id="ai-sidebar" class="w-80 bg-black/80 border-l border-white/10 backdrop-blur-xl flex flex-col shrink-0 transition-transform duration-300 transform translate-x-full absolute right-0 top-0 h-full z-30 shadow-2xl">
+            <div class="p-4 border-b border-white/10 flex justify-between items-center bg-brand-500/10">
+                <h3 class="font-display font-bold text-brand-glow flex items-center gap-2">
+                    <i class="fa-solid fa-robot"></i> WikiMind AI
+                </h3>
+                <button onclick="toggleSidebar()" class="text-white/40 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex border-b border-white/10 text-xs font-bold uppercase tracking-wider">
+                <button id="tab-text" onclick="switchAITab('text')" class="flex-1 py-3 text-brand-glow border-b-2 border-brand-500 bg-white/5">Texte</button>
+                <button id="tab-image" onclick="switchAITab('image')" class="flex-1 py-3 text-white/40 hover:bg-white/5">Image</button>
+            </div>
+
+            <!-- TEXT PANEL -->
+            <div id="ai-panel-text" class="p-4 overflow-y-auto flex-1 text-sm space-y-4">
+                <p class="text-xs text-white/50">Sélectionnez du texte dans la diapo.</p>
+                <div class="space-y-2">
+                    <button onclick="processAIText('titre')" class="w-full text-left px-4 py-2.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all">Générer un titre d'accroche</button>
+                    <button onclick="processAIText('puces')" class="w-full text-left px-4 py-2.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all">Transformer en points clés (Puces)</button>
+                    <button onclick="processAIText('resumer')" class="w-full text-left px-4 py-2.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all">Raccourcir le texte</button>
+                </div>
+                <div class="pt-2 border-t border-white/10">
+                    <textarea id="ai-custom-prompt" rows="2" placeholder="Demande personnalisée..." class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-brand-500 resize-none"></textarea>
+                    <button onclick="processAIText('custom')" class="mt-2 w-full bg-white/10 hover:bg-brand-600 text-white py-1.5 rounded-lg text-xs font-bold transition">Générer</button>
+                </div>
+                <div id="ai-text-response" class="hidden flex-col gap-2">
+                    <div id="ai-text-output" class="p-3 bg-black/50 border border-brand-500/30 rounded-lg text-white/80 whitespace-pre-wrap text-sm leading-relaxed"></div>
+                    <button onclick="replaceSelectionWithAI()" class="w-full bg-brand-600 hover:bg-brand-500 text-white py-1.5 rounded-lg text-xs font-bold transition">Remplacer</button>
+                </div>
+            </div>
+
+            <!-- IMAGE PANEL -->
+            <div id="ai-panel-image" class="hidden p-4 overflow-y-auto flex-1 text-sm space-y-4">
+                <p class="text-xs text-white/50">Décrivez l'image que vous souhaitez générer (Modèle : Pollinations AI).</p>
+                <textarea id="ai-image-prompt" rows="3" placeholder="Ex: Une fusée spatiale au-dessus de Mars, style futuriste, 4K..." class="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-office-impress resize-none"></textarea>
+                <button onclick="generateAIImage()" class="w-full bg-office-impress hover:bg-orange-400 text-white py-2 rounded-lg text-xs font-bold transition">Générer l'image</button>
+                
+                <div id="ai-image-result-container" class="hidden flex-col gap-2 pt-4">
+                    <p class="text-xs font-bold uppercase text-brand-glow">Résultat</p>
+                    <div class="relative rounded-lg overflow-hidden border border-white/10 bg-black aspect-video flex items-center justify-center">
+                        <i id="ai-image-loader" class="fa-solid fa-spinner fa-spin text-2xl text-white/20 hidden"></i>
+                        <img id="ai-generated-img" src="" class="max-w-full max-h-full hidden">
+                    </div>
+                    <button onclick="insertAIImage()" class="w-full bg-brand-600 hover:bg-brand-500 text-white py-1.5 rounded-lg text-xs font-bold transition mt-2">Insérer dans la diapo</button>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- PRESENTATION MODE OVERLAY -->
+    <div id="presentation-overlay">
+        <button onclick="stopPresentation()" class="absolute top-6 right-6 text-white/50 hover:text-white text-2xl z-50 bg-black/50 w-10 h-10 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+        <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-white/10 backdrop-blur-md px-6 py-2 rounded-full flex gap-6 z-50">
+            <button onclick="prevSlide()" class="text-white hover:text-office-impress text-xl"><i class="fa-solid fa-chevron-left"></i></button>
+            <span id="pres-counter" class="text-white font-bold text-sm flex items-center">1 / 1</span>
+            <button onclick="nextSlide()" class="text-white hover:text-office-impress text-xl"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+        
+        <!-- Conteneur qui reçoit le HTML et la classe de transition -->
+        <div id="presentation-slide" class="slide-page shadow-none border-0"></div>
+    </div>
+
+    <!-- FIREBASE & LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+            authDomain: "wikimind-3-comments.firebaseapp.com",
+            databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "wikimind-3-comments",
+            storageBucket: "wikimind-3-comments.firebasestorage.app",
+            messagingSenderId: "137479541640",
+            appId: "1:137479541640:web:4ed2510a9908055052e03d"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        // API
+        const MISTRAL_API_KEY = "SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9";
+
+        // APP STATE
+        let currentUser = null;
+        let fileId = new URLSearchParams(window.location.search).get('id');
+        let source = new URLSearchParams(window.location.search).get('source');
+        
+        // SLIDES ENGINE
+        let slidesData = [
+            { id: "slide_" + Date.now(), html: "<h1>Titre de la Présentation</h1><p style='text-align:center;'>Sous-titre ou description...</p>", transition: "none" }
+        ];
+        let activeIndex = 0;
+        let isSaving = false;
+        let saveTimeout = null;
+
+        // DOM Elements
+        const editor = document.getElementById('slide-editor');
+        const thumbnailsContainer = document.getElementById('thumbnails-container');
+        const transitionSelect = document.getElementById('slide-transition');
+        const docNameInput = document.getElementById('doc-name');
+        const saveStatus = document.getElementById('save-status');
+        const navAvatar = document.getElementById('nav-avatar');
+
+        // Prevent toolbar from stealing focus
+        document.querySelectorAll('.toolbar-btn').forEach(btn => btn.addEventListener('mousedown', (e) => e.preventDefault()));
+
+        // 1. INIT
+        if (!fileId) { alert("Erreur: Aucun fichier."); window.location.href = "Wikimind_office.html"; }
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) navAvatar.src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=f97316&color=fff`;
+            loadDocument();
+        });
+
+        function loadDocument() {
+            if (source === 'firebase' && currentUser) {
+                get(ref(db, `users/${currentUser.uid}/files/${fileId}`)).then((snap) => {
+                    if (snap.exists()) applyData(snap.val());
+                });
+            } else if (source === 'local') {
+                const files = JSON.parse(localStorage.getItem('wikimind_guest_files') || '{}');
+                if (files[fileId]) applyData(files[fileId]);
+            }
+        }
+
+        function applyData(data) {
+            docNameInput.value = data.name || "Nouvelle Présentation";
+            if (data.content) {
+                try {
+                    const parsed = JSON.parse(data.content);
+                    if (parsed && parsed.length > 0) slidesData = parsed;
+                } catch(e) {}
+            }
+            renderThumbnails();
+            selectSlide(0);
+        }
+
+        // 2. SLIDES MANAGEMENT
+        function renderThumbnails() {
+            thumbnailsContainer.innerHTML = '';
+            slidesData.forEach((slide, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = `slide-thumb-wrapper ${index === activeIndex ? 'active' : ''}`;
+                
+                const thumb = document.createElement('div');
+                thumb.className = "slide-thumb";
+                // Render text only for thumbnail performance
+                thumb.innerHTML = slide.html.replace(/<img[^>]*>/g, '[Image]'); 
+
+                const delBtn = document.createElement('button');
+                delBtn.className = "delete-slide-btn";
+                delBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+                delBtn.onclick = (e) => { e.stopPropagation(); deleteSlide(index); };
+
+                wrapper.onclick = () => selectSlide(index);
+                wrapper.appendChild(thumb);
+                wrapper.appendChild(delBtn);
+                thumbnailsContainer.appendChild(wrapper);
+            });
+        }
+
+        window.selectSlide = (index) => {
+            // Save current before switching
+            saveCurrentSlideToMemory();
+            
+            activeIndex = index;
+            editor.innerHTML = slidesData[activeIndex].html;
+            transitionSelect.value = slidesData[activeIndex].transition || "none";
+            
+            renderThumbnails();
+        };
+
+        window.addNewSlide = () => {
+            saveCurrentSlideToMemory();
+            const newSlide = { id: "slide_" + Date.now(), html: "<h2>Nouvelle Diapo</h2><ul><li>Point 1</li></ul>", transition: "none" };
+            slidesData.splice(activeIndex + 1, 0, newSlide);
+            selectSlide(activeIndex + 1);
+            triggerSave();
+        };
+
+        window.deleteSlide = (index) => {
+            if (slidesData.length <= 1) { alert("Impossible de supprimer la dernière diapo."); return; }
+            if (!confirm("Supprimer cette diapositive ?")) return;
+            
+            slidesData.splice(index, 1);
+            if (activeIndex >= index && activeIndex > 0) activeIndex--;
+            selectSlide(activeIndex);
+            triggerSave();
+        };
+
+        window.updateTransition = () => {
+            slidesData[activeIndex].transition = transitionSelect.value;
+            triggerSave();
+        };
+
+        // Live update thumbnail & sync memory
+        editor.addEventListener('input', () => {
+            saveCurrentSlideToMemory();
+            triggerSave();
+            
+            // Debounced thumbnail update
+            const thumbs = document.querySelectorAll('.slide-thumb');
+            if(thumbs[activeIndex]) thumbs[activeIndex].innerHTML = editor.innerHTML.replace(/<img[^>]*>/g, '[Image]');
+        });
+
+        function saveCurrentSlideToMemory() {
+            if (slidesData[activeIndex]) {
+                slidesData[activeIndex].html = editor.innerHTML;
+            }
+        }
+
+        // 3. AUTO SAVE
+        docNameInput.addEventListener('input', triggerSave);
+
+        function triggerSave() {
+            saveStatus.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Sauvegarde...';
+            saveStatus.className = "text-yellow-400";
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveDocument, 1000);
+        }
+
+        async function saveDocument() {
+            if (isSaving) return;
+            isSaving = true;
+            saveCurrentSlideToMemory(); // Ensure latest changes are caught
+
+            const name = docNameInput.value.trim();
+            const contentStr = JSON.stringify(slidesData);
+            const timestamp = Date.now();
+
+            try {
+                if (source === 'firebase' && currentUser) {
+                    await update(ref(db, `users/${currentUser.uid}/files/${fileId}`), {
+                        content: contentStr, name: name, updatedAt: timestamp
+                    });
+                } else if (source === 'local') {
+                    const files = JSON.parse(localStorage.getItem('wikimind_guest_files') || '{}');
+                    if (files[fileId]) {
+                        files[fileId].content = contentStr;
+                        files[fileId].name = name;
+                        files[fileId].updatedAt = timestamp;
+                        localStorage.setItem('wikimind_guest_files', JSON.stringify(files));
+                    }
+                }
+                saveStatus.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Cloud';
+                saveStatus.className = "text-office-impress";
+            } catch (error) {
+                saveStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i> Erreur';
+                saveStatus.className = "text-red-400";
+            } finally {
+                isSaving = false;
+            }
+        }
+
+        // 4. FORMATTING
+        window.formatDoc = (cmd, value = null) => {
+            document.execCommand(cmd, false, value);
+            editor.focus();
+            triggerSave();
+            const thumbs = document.querySelectorAll('.slide-thumb');
+            if(thumbs[activeIndex]) thumbs[activeIndex].innerHTML = editor.innerHTML.replace(/<img[^>]*>/g, '[Img]');
+        };
+
+        window.addLink = () => {
+            const url = prompt("URL :");
+            if (url) formatDoc('createLink', url);
+        };
+
+        window.addImage = () => {
+            const url = prompt("URL de l'image (Lien direct) :");
+            if (url) formatDoc('insertImage', url);
+        };
+
+        // 5. PRESENTATION MODE
+        const presOverlay = document.getElementById('presentation-overlay');
+        const presSlide = document.getElementById('presentation-slide');
+        const presCounter = document.getElementById('pres-counter');
+        let presIndex = 0;
+
+        window.startPresentation = () => {
+            saveCurrentSlideToMemory();
+            presIndex = 0;
+            presOverlay.style.display = 'flex';
+            if(document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(e => console.log(e));
+            }
+            renderPresSlide();
+        };
+
+        window.stopPresentation = () => {
+            presOverlay.style.display = 'none';
+            if (document.exitFullscreen && document.fullscreenElement) {
+                document.exitFullscreen().catch(e => console.log(e));
+            }
+        };
+
+        window.nextSlide = () => { if (presIndex < slidesData.length - 1) { presIndex++; renderPresSlide(); } };
+        window.prevSlide = () => { if (presIndex > 0) { presIndex--; renderPresSlide(); } };
+
+        function renderPresSlide() {
+            presCounter.innerText = `${presIndex + 1} / ${slidesData.length}`;
+            
+            // Remove old transition classes
+            presSlide.className = "slide-page shadow-none border-0";
+            
+            // Force reflow to restart animation
+            void presSlide.offsetWidth; 
+
+            // Add new content & transition
+            presSlide.innerHTML = slidesData[presIndex].html;
+            const trans = slidesData[presIndex].transition;
+            if (trans !== "none") presSlide.classList.add(trans);
+        }
+
+        // Keydown for presentation
+        document.addEventListener('keydown', (e) => {
+            if (presOverlay.style.display === 'flex') {
+                if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+                if (e.key === 'ArrowLeft') prevSlide();
+                if (e.key === 'Escape') stopPresentation();
+            }
+        });
+
+        // 6. AI ASSISTANT (Mistral + Pollinations)
+        window.toggleSidebar = () => {
+            document.getElementById('ai-sidebar').classList.toggle('translate-x-full');
+        };
+
+        window.switchAITab = (tab) => {
+            const textPanel = document.getElementById('ai-panel-text');
+            const imgPanel = document.getElementById('ai-panel-image');
+            const textBtn = document.getElementById('tab-text');
+            const imgBtn = document.getElementById('tab-image');
+
+            if (tab === 'text') {
+                textPanel.classList.remove('hidden'); imgPanel.classList.add('hidden');
+                textBtn.classList.add('text-brand-glow', 'border-b-2', 'border-brand-500', 'bg-white/5');
+                textBtn.classList.remove('text-white/40');
+                imgBtn.classList.remove('text-brand-glow', 'border-b-2', 'border-brand-500', 'bg-white/5');
+                imgBtn.classList.add('text-white/40');
+            } else {
+                imgPanel.classList.remove('hidden'); textPanel.classList.add('hidden');
+                imgBtn.classList.add('text-brand-glow', 'border-b-2', 'border-brand-500', 'bg-white/5');
+                imgBtn.classList.remove('text-white/40');
+                textBtn.classList.remove('text-brand-glow', 'border-b-2', 'border-brand-500', 'bg-white/5');
+                textBtn.classList.add('text-white/40');
+            }
+        };
+
+        // Text AI
+        let lastSelectedRange = null;
+        let lastAIText = "";
+
+        editor.addEventListener('mouseup', () => {
+            const sel = window.getSelection();
+            if (sel.rangeCount > 0) lastSelectedRange = sel.getRangeAt(0);
+        });
+
+        window.processAIText = async (action) => {
+            const selection = window.getSelection();
+            let text = selection.toString().trim();
+            if (!text && action !== 'custom') { alert("Sélectionnez du texte."); return; }
+
+            const outputContainer = document.getElementById('ai-text-response');
+            const outputBox = document.getElementById('ai-text-output');
+            outputContainer.classList.remove('hidden');
+            outputContainer.classList.add('flex');
+            outputBox.innerHTML = '<div class="ai-typing"><span></span><span></span><span></span></div>';
+
+            let prompt = "";
+            const customInput = document.getElementById('ai-custom-prompt').value;
+
+            switch(action) {
+                case 'titre': prompt = `Tu es WikiMind. Transforme ce texte en un titre de présentation PowerPoint très accrocheur (Max 6 mots) :\n"${text}"`; break;
+                case 'puces': prompt = `Tu es WikiMind. Résume ce texte sous forme de 3 bullet points concis pour une slide de présentation :\n"${text}"`; break;
+                case 'resumer': prompt = `Raccourcis ce texte pour qu'il soit lisible rapidement sur un écran :\n"${text}"`; break;
+                case 'custom': prompt = `${customInput} \nTexte de base : "${text}"`; break;
+            }
+
+            try {
+                const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${MISTRAL_API_KEY}` },
+                    body: JSON.stringify({ model: 'mistral-small-latest', messages: [{ role: 'user', content: prompt }] })
+                });
+                const data = await response.json();
+                lastAIText = data.choices[0].message.content.trim();
+                
+                // Format puces if requested
+                if(action === 'puces') {
+                    // Convert raw text bullets to HTML ul/li for easy insertion
+                    const items = lastAIText.split('\n').filter(i => i.trim().length > 0);
+                    lastAIText = "<ul>" + items.map(i => `<li>${i.replace(/^[-*•]\s*/, '')}</li>`).join('') + "</ul>";
+                }
+
+                outputBox.innerHTML = lastAIText; // Using innerHTML to render generated tags if any
+            } catch (error) { outputBox.innerHTML = "<span class='text-red-400'>Erreur IA.</span>"; }
+        };
+
+        window.replaceSelectionWithAI = () => {
+            if (!lastAIText || !lastSelectedRange) return;
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(lastSelectedRange);
+            document.execCommand('insertHTML', false, lastAIText);
+            triggerSave();
+        };
+
+        // Image AI (Pollinations)
+        let lastImageUrl = "";
+
+        window.generateAIImage = () => {
+            const prompt = document.getElementById('ai-image-prompt').value.trim();
+            if(!prompt) { alert("Veuillez décrire l'image."); return; }
+
+            const container = document.getElementById('ai-image-result-container');
+            const loader = document.getElementById('ai-image-loader');
+            const imgEl = document.getElementById('ai-generated-img');
+
+            container.classList.remove('hidden');
+            container.classList.add('flex');
+            loader.classList.remove('hidden');
+            imgEl.classList.add('hidden');
+
+            // Construct Pollinations URL (Seed prevents caching same image)
+            const seed = Math.floor(Math.random() * 100000);
+            const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=450&nologo=true&seed=${seed}`;
+
+            imgEl.onload = () => {
+                loader.classList.add('hidden');
+                imgEl.classList.remove('hidden');
+                lastImageUrl = url;
+            };
+            imgEl.onerror = () => {
+                loader.classList.add('hidden');
+                alert("Erreur lors de la génération de l'image.");
+            };
+
+            imgEl.src = url;
+        };
+
+        window.insertAIImage = () => {
+            if(!lastImageUrl) return;
+            editor.focus();
+            
+            // Append at the end if no specific range, or use execCommand
+            document.execCommand('insertImage', false, lastImageUrl);
+            triggerSave();
+        };
+
+        // AURORA BACKGROUND
+        const canvas = document.getElementById('aurora-bg');
+        if(canvas) {
+            const ctx = canvas.getContext('2d');
+            let width, height;
+            const orbs = [
+                { x: 0.3, y: 0.3, r: 0.5, color: 'rgba(249, 115, 22, 0.1)', vx: 0.0003, vy: 0.0004 }, // Orange
+                { x: 0.7, y: 0.6, r: 0.6, color: 'rgba(79, 70, 229, 0.08)', vx: -0.0004, vy: 0.0003 }
+            ];
+            function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, width, height);
+                orbs.forEach(orb => {
+                    orb.x += orb.vx; orb.y += orb.vy;
+                    if(orb.x < -0.2 || orb.x > 1.2) orb.vx *= -1;
+                    if(orb.y < -0.2 || orb.y > 1.2) orb.vy *= -1;
+                    const g = ctx.createRadialGradient(orb.x * width, orb.y * height, 0, orb.x * width, orb.y * height, orb.r * width);
+                    g.addColorStop(0, orb.color); g.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = g; ctx.fillRect(0, 0, width, height);
+                });
+                requestAnimationFrame(animate);
+            }
+            window.addEventListener('resize', resize); resize(); animate();
+        }
+
+    </script>
+</body>
+</html>
