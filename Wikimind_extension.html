@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiMind Extension | Anywhere</title>
+    
+    <!-- Google Analytics (Conservé de l'index) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-29XYBNJ2CB"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-29XYBNJ2CB');
+    </script>
+
+    <!-- JSZip pour générer le ZIP côté client -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
+                    colors: {
+                        glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
+                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' }
+                    },
+                    animation: { 'fade-in-up': 'fadeInUp 0.5s ease-out forwards', 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' },
+                    keyframes: { fadeInUp: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } } }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #050505; color: #ffffff; overflow-x: hidden; }
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+        .text-gradient { background: linear-gradient(135deg, #ffffff 0%, #a5a6f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .glow-button { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); transition: all 0.3s; }
+        .glow-button:hover { box-shadow: 0 0 30px rgba(99, 102, 241, 0.6); transform: translateY(-2px); }
+        
+        /* Steps for installation */
+        .step-number { font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }
+    </style>
+</head>
+<body class="selection:bg-brand-500 selection:text-white">
+
+    <!-- AURORA BG -->
+    <canvas id="aurora-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
+
+    <!-- NAVBAR -->
+    <nav class="fixed top-0 w-full z-50 px-6 py-6 transition-all duration-300">
+        <div class="max-w-7xl mx-auto flex justify-between items-center glass-panel rounded-full px-6 py-3">
+            <a href="index.html" class="flex items-center gap-3 group">
+                <div class="w-8 h-8 bg-gradient-to-tr from-white to-gray-400 rounded-lg flex items-center justify-center group-hover:scale-95 transition-transform">
+                    <i class="fa-solid fa-arrow-left text-black text-sm"></i>
+                </div>
+                <span class="font-display font-bold text-lg tracking-tight">Retour <span class="text-white/40 font-normal">au Hub</span></span>
+            </a>
+            <div class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full border border-brand-500/30 bg-brand-500/10 text-brand-glow text-[10px] uppercase font-bold tracking-[0.2em]">
+                <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span> v3.0 Ready
+            </div>
+        </div>
+    </nav>
+
+    <main class="relative pt-32 pb-20 px-4 md:px-6">
+
+        <!-- HERO SECTION -->
+        <section class="max-w-6xl mx-auto text-center mb-24">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-brand-600 to-black border border-white/20 text-4xl mb-8 shadow-2xl shadow-brand-500/20 animate-fade-in-up">
+                🧩
+            </div>
+            
+            <h1 class="text-5xl md:text-7xl font-display font-bold leading-tight mb-6 animate-fade-in-up" style="animation-delay: 0.1s;">
+                L'IA qui navigue <br>
+                <span class="text-gradient">avec vous.</span>
+            </h1>
+
+            <p class="text-lg text-white/60 max-w-2xl mx-auto mb-10 font-light animate-fade-in-up" style="animation-delay: 0.2s;">
+                WikiMind Extension s'intègre à votre navigateur Google Chrome. Analysez des pages, résumez des articles et obtenez des réponses contextuelles sans jamais changer d'onglet.
+            </p>
+
+            <div class="flex flex-col sm:flex-row justify-center items-center gap-4 animate-fade-in-up" style="animation-delay: 0.3s;">
+                <button onclick="downloadExtension()" class="group relative px-8 py-4 bg-white text-black rounded-xl font-display font-bold uppercase tracking-wider overflow-hidden glow-button">
+                    <div class="absolute inset-0 bg-brand-glow opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                    <span class="relative flex items-center gap-2">
+                        <i class="fa-brands fa-chrome text-lg"></i> Télécharger le Pack (.zip)
+                    </span>
+                </button>
+                <a href="#how-to-install" class="px-8 py-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition text-sm font-bold uppercase tracking-wider">
+                    Comment l'installer ?
+                </a>
+            </div>
+            <div id="download-feedback" class="h-6 mt-4 text-sm font-bold text-brand-glow opacity-0 transition-opacity"></div>
+        </section>
+
+        <!-- CAPABILITIES GRID -->
+        <section class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-24">
+            <!-- Feature 1 -->
+            <div class="glass-panel p-8 rounded-3xl group hover:border-brand-500/30 transition-colors">
+                <div class="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center text-2xl mb-4 text-brand-glow">👁️</div>
+                <h3 class="text-xl font-display font-bold mb-2">Analyse Contextuelle</h3>
+                <p class="text-white/50 text-sm leading-relaxed">
+                    L'extension "lit" la page sur laquelle vous êtes. Demandez "Résume cet article" ou "Explique-moi ce code", et elle répondra en utilisant le contenu visible.
+                </p>
+            </div>
+
+            <!-- Feature 2 -->
+            <div class="glass-panel p-8 rounded-3xl group hover:border-brand-500/30 transition-colors">
+                <div class="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center text-2xl mb-4 text-purple-400">🧠</div>
+                <h3 class="text-xl font-display font-bold mb-2">Mistral AI Inside</h3>
+                <p class="text-white/50 text-sm leading-relaxed">
+                    Propulsé par le modèle Mistral Small Latest. Une intelligence rapide, performante et capable de comprendre le français avec une grande précision.
+                </p>
+            </div>
+
+            <!-- Feature 3 -->
+            <div class="glass-panel p-8 rounded-3xl group hover:border-brand-500/30 transition-colors">
+                <div class="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center text-2xl mb-4 text-green-400">🔗</div>
+                <h3 class="text-xl font-display font-bold mb-2">Synchro WikiMind</h3>
+                <p class="text-white/50 text-sm leading-relaxed">
+                    L'extension détecte si vous êtes connecté sur le site WikiMind. Si oui, votre nom s'affiche. Une intégration fluide entre le Web et votre Espace.
+                </p>
+            </div>
+        </section>
+
+        <!-- INSTALLATION GUIDE -->
+        <section id="how-to-install" class="max-w-5xl mx-auto py-12 border-t border-white/5">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-display font-bold mb-4">Installation en 2 minutes</h2>
+                <p class="text-white/50">L'extension étant en version Beta privée, elle s'installe manuellement (Developer Mode).</p>
+            </div>
+
+            <div class="relative">
+                <!-- Connecting Line -->
+                <div class="absolute left-[28px] md:left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-brand-500 via-white/10 to-transparent md:-translate-x-1/2"></div>
+
+                <div class="space-y-12">
+                    
+                    <!-- Step 1 -->
+                    <div class="relative flex flex-col md:flex-row items-center md:justify-between gap-8 group">
+                        <div class="md:w-1/2 flex justify-start md:justify-end order-2 md:order-1">
+                            <div class="glass-panel p-6 rounded-2xl w-full max-w-md border-l-4 border-brand-500">
+                                <h4 class="font-bold text-lg mb-2 text-brand-glow">1. Télécharger & Extraire</h4>
+                                <p class="text-white/60 text-sm">Cliquez sur le bouton de téléchargement ci-dessus. Vous obtiendrez un fichier <code>WikiMind_Extension_v3.zip</code>. <br><strong class="text-white">Important :</strong> Faites clic-droit > "Extraire tout" dans un dossier de votre choix.</p>
+                            </div>
+                        </div>
+                        <div class="absolute left-0 md:left-1/2 w-14 h-14 rounded-full bg-black border-2 border-brand-500 flex items-center justify-center z-10 md:-translate-x-1/2 shadow-[0_0_20px_rgba(99,102,241,0.5)]">
+                            <span class="font-display font-bold text-xl">1</span>
+                        </div>
+                        <div class="md:w-1/2 order-3 md:order-3 pl-16 md:pl-0"></div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="relative flex flex-col md:flex-row items-center md:justify-between gap-8 group">
+                        <div class="md:w-1/2 order-2 md:order-1"></div>
+                        <div class="absolute left-0 md:left-1/2 w-14 h-14 rounded-full bg-black border border-white/20 flex items-center justify-center z-10 md:-translate-x-1/2 group-hover:border-brand-500 transition-colors">
+                            <span class="font-display font-bold text-xl">2</span>
+                        </div>
+                        <div class="md:w-1/2 flex justify-start order-3 md:order-3 pl-16 md:pl-0">
+                            <div class="glass-panel p-6 rounded-2xl w-full max-w-md">
+                                <h4 class="font-bold text-lg mb-2">2. Ouvrir les extensions Chrome</h4>
+                                <p class="text-white/60 text-sm">Dans votre navigateur, tapez <code>chrome://extensions</code> dans la barre d'adresse ou allez dans Menu > Extensions > Gérer les extensions.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="relative flex flex-col md:flex-row items-center md:justify-between gap-8 group">
+                        <div class="md:w-1/2 flex justify-start md:justify-end order-2 md:order-1">
+                            <div class="glass-panel p-6 rounded-2xl w-full max-w-md">
+                                <h4 class="font-bold text-lg mb-2">3. Activer le Mode Développeur</h4>
+                                <p class="text-white/60 text-sm">En haut à droite de la page des extensions, activez le petit interrupteur <strong>"Mode développeur"</strong>.</p>
+                            </div>
+                        </div>
+                        <div class="absolute left-0 md:left-1/2 w-14 h-14 rounded-full bg-black border border-white/20 flex items-center justify-center z-10 md:-translate-x-1/2 group-hover:border-brand-500 transition-colors">
+                            <span class="font-display font-bold text-xl">3</span>
+                        </div>
+                        <div class="md:w-1/2 order-3 md:order-3"></div>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="relative flex flex-col md:flex-row items-center md:justify-between gap-8 group">
+                        <div class="md:w-1/2 order-2 md:order-1"></div>
+                        <div class="absolute left-0 md:left-1/2 w-14 h-14 rounded-full bg-black border border-white/20 flex items-center justify-center z-10 md:-translate-x-1/2 group-hover:border-brand-500 transition-colors">
+                            <span class="font-display font-bold text-xl">4</span>
+                        </div>
+                        <div class="md:w-1/2 flex justify-start order-3 md:order-3 pl-16 md:pl-0">
+                            <div class="glass-panel p-6 rounded-2xl w-full max-w-md">
+                                <h4 class="font-bold text-lg mb-2">4. Charger l'extension</h4>
+                                <p class="text-white/60 text-sm">Cliquez sur le bouton <strong>"Charger l'extension non empaquetée"</strong> (Load unpacked) et sélectionnez le dossier que vous avez extrait à l'étape 1.</p>
+                                <div class="mt-3 text-brand-glow text-xs font-bold uppercase"><i class="fa-solid fa-check mr-1"></i> C'est terminé !</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- PROS & LIMITS -->
+        <section class="max-w-4xl mx-auto py-12 px-4">
+            <h3 class="text-xl font-display font-bold mb-8 text-center text-white/40 uppercase tracking-widest text-xs">Transparence Technique</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h4 class="text-green-400 font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-plus-circle"></i> Points Forts</h4>
+                    <ul class="space-y-3 text-sm text-white/70">
+                        <li class="flex items-start gap-2"><span class="text-white/20">01.</span> Ne ralentit pas votre navigation (Script dormant).</li>
+                        <li class="flex items-start gap-2"><span class="text-white/20">02.</span> Fenêtre "Draggable" : placez-la où vous voulez.</li>
+                        <li class="flex items-start gap-2"><span class="text-white/20">03.</span> Aucune donnée de navigation n'est stockée sur nos serveurs.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-red-400 font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-minus-circle"></i> Limitations Actuelles</h4>
+                    <ul class="space-y-3 text-sm text-white/70">
+                        <li class="flex items-start gap-2"><span class="text-white/20">01.</span> Fonctionne uniquement sur Chrome Desktop (Pas sur mobile).</li>
+                        <li class="flex items-start gap-2"><span class="text-white/20">02.</span> Nécessite de recharger les onglets déjà ouverts après installation.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-white/10 py-10 bg-black z-10 relative">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <div class="font-display font-bold uppercase tracking-tight text-sm text-white">WikiMind Project</div>
+            <div class="text-xs text-white/40 mt-1">© 2026 Tous droits réservés.</div>
+            <div class="mt-4">
+                <a href="index.html" class="text-xs text-brand-500 hover:text-white transition">Retour à l'accueil</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- SCRIPT DE GÉNÉRATION DU ZIP -->
+    <script>
+        // LES FICHIERS DE L'EXTENSION
+        // Ces constantes contiennent le code exact de l'extension
+        
+        const FILE_MANIFEST = `{
+  "manifest_version": 3,
+  "name": "WikiMind 3.0",
+  "version": "3.0",
+  "description": "L'intelligence WikiMind partout sur le web. Interface moderne et analyse contextuelle.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "WikiMind AI"
+  }
+}`;
+
+        const FILE_BACKGROUND = `// Clé API WikiMind 3.0
+const API_KEY = "SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9"; 
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === "askMistral") {
+        
+        const systemPrompt = \`Tu es WikiMind 3.0, une IA avancée intégrée directement au navigateur de l'utilisateur.
+        L'utilisateur est sur cette URL : \${request.url}
+        Voici le contenu de la page :
+        ---
+        \${request.context}
+        ---
+        Réponds de manière concise, directe, professionnelle et utile. Utilise le formatage Markdown (gras, listes) pour rendre ta réponse lisible.\`;
+
+        fetch("https://api.mistral.ai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": \`Bearer \${API_KEY}\`
+            },
+            body: JSON.stringify({
+                model: "mistral-small-latest",
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: request.query }
+                ],
+                temperature: 0.7,
+                max_tokens: 800
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.choices && data.choices.length > 0) {
+                sendResponse({ success: true, data: data.choices[0].message.content });
+            } else {
+                console.error("Erreur API:", data);
+                sendResponse({ success: false, error: "L'IA n'a pas répondu (Quota ou Erreur)." });
+            }
+        })
+        .catch(error => {
+            console.error("Erreur Fetch:", error);
+            sendResponse({ success: false, error: "Erreur de connexion internet." });
+        });
+
+        return true; 
+    }
+});`;
+
+        const FILE_CONTENT = `const initWikiMind = () => {
+    if (document.getElementById('wm-float-btn')) return;
+
+    // --- 1. Injection du DOM ---
+    const btn = document.createElement('div');
+    btn.id = 'wm-float-btn';
+    btn.innerHTML = '<span>W</span>';
+    document.body.appendChild(btn);
+
+    const chat = document.createElement('div');
+    chat.id = 'wm-chat-window';
+    chat.innerHTML = \`
+        <div class="wm-header">
+            <div class="wm-header-left">
+                <span class="wm-title">WikiMind 3.0</span>
+                <span class="wm-status" id="wm-auth-status">Vérification...</span>
+            </div>
+            <div class="wm-controls">
+                <button class="wm-icon-btn" id="wm-settings-btn" title="Position">⚙️</button>
+                <button class="wm-icon-btn" id="wm-close-btn" title="Fermer">✖</button>
+            </div>
+        </div>
+        
+        <div class="wm-settings-menu" id="wm-settings-menu">
+            <button data-pos="br">Bas Droite</button>
+            <button data-pos="bl">Bas Gauche</button>
+            <button data-pos="tr">Haut Droite</button>
+            <button data-pos="tl">Haut Gauche</button>
+            <button id="wm-hide-btn" style="color: #ff4444; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 5px; padding-top: 10px;">Masquer l'extension</button>
+        </div>
+
+        <div class="wm-messages" id="wm-messages">
+            <div class="wm-msg wm-bot">
+                <strong>WikiMind AI Prêt.</strong><br>
+                Je suis connecté à cette page. Que veux-tu savoir ?
+            </div>
+        </div>
+        <div class="wm-input-area">
+            <input type="text" id="wm-input" placeholder="Pose ta question..." autocomplete="off">
+            <button id="wm-send">↗</button>
+        </div>
+    \`;
+    document.body.appendChild(chat);
+
+    // --- 2. Éléments DOM ---
+    const messagesBox = document.getElementById('wm-messages');
+    const input = document.getElementById('wm-input');
+    const sendBtn = document.getElementById('wm-send');
+    const settingsBtn = document.getElementById('wm-settings-btn');
+    const settingsMenu = document.getElementById('wm-settings-menu');
+    const closeBtn = document.getElementById('wm-close-btn');
+    const authStatus = document.getElementById('wm-auth-status');
+    let pageContext = "";
+
+    // --- 3. Gestion de la Position ---
+    const applyPosition = (pos) => {
+        const offset = '25px';
+        const chatOffset = '85px';
+        btn.style.top = btn.style.bottom = btn.style.left = btn.style.right = 'auto';
+        chat.style.top = chat.style.bottom = chat.style.left = chat.style.right = 'auto';
+        chat.classList.remove('wm-pos-br', 'wm-pos-bl', 'wm-pos-tr', 'wm-pos-tl');
+
+        switch(pos) {
+            case 'tl': 
+                btn.style.top = offset; btn.style.left = offset; 
+                chat.style.top = chatOffset; chat.style.left = offset; 
+                chat.classList.add('wm-pos-tl'); break;
+            case 'tr': 
+                btn.style.top = offset; btn.style.right = offset; 
+                chat.style.top = chatOffset; chat.style.right = offset; 
+                chat.classList.add('wm-pos-tr'); break;
+            case 'bl': 
+                btn.style.bottom = offset; btn.style.left = offset; 
+                chat.style.bottom = chatOffset; chat.style.left = offset; 
+                chat.classList.add('wm-pos-bl'); break;
+            case 'br': 
+            default: 
+                btn.style.bottom = offset; btn.style.right = offset; 
+                chat.style.bottom = chatOffset; chat.style.right = offset; 
+                chat.classList.add('wm-pos-br'); break;
+        }
+    };
+
+    chrome.storage.local.get(['wmPosition'], (result) => {
+        applyPosition(result.wmPosition || 'br'); 
+    });
+
+    settingsBtn.addEventListener('click', () => settingsMenu.classList.toggle('wm-active'));
+    document.querySelectorAll('.wm-settings-menu button[data-pos]').forEach(b => {
+        b.addEventListener('click', (e) => {
+            const pos = e.target.getAttribute('data-pos');
+            chrome.storage.local.set({ wmPosition: pos });
+            applyPosition(pos);
+            settingsMenu.classList.remove('wm-active');
+        });
+    });
+
+    document.getElementById('wm-hide-btn').addEventListener('click', () => {
+        btn.style.display = 'none';
+        chat.classList.remove('wm-open');
+    });
+
+    // --- 4. Auth Check ---
+    const checkAuthentication = () => {
+        if (window.location.hostname.includes('chpalitom09-bot.github.io')) {
+            const userLoggedDiv = document.getElementById('user-logged');
+            const userNameDisplay = document.getElementById('user-name-display');
+            if (userLoggedDiv && !userLoggedDiv.classList.contains('hidden')) {
+                const username = userNameDisplay ? userNameDisplay.innerText : "Utilisateur";
+                authStatus.innerText = "Connecté : " + username;
+                authStatus.style.color = "#4ade80"; 
+            } else {
+                authStatus.innerText = "Non connecté au site";
+                authStatus.style.color = "#ff4444";
+            }
+        } else {
+            authStatus.innerText = "Mode Navigateur Libre";
+            authStatus.style.color = "#a855f7"; 
+        }
+    };
+
+    // --- 5. Logique du Chat ---
+    const getPageContent = () => {
+        let text = document.body.innerText || document.body.textContent;
+        return text.replace(/\\s+/g, ' ').trim().substring(0, 10000); 
+    };
+
+    const toggleChat = () => {
+        const isOpening = !chat.classList.contains('wm-open');
+        if (isOpening) {
+            checkAuthentication();
+            chat.classList.add('wm-open');
+            input.focus();
+            pageContext = getPageContent();
+        } else {
+            chat.classList.remove('wm-open');
+            settingsMenu.classList.remove('wm-active');
+        }
+    };
+
+    btn.addEventListener('click', toggleChat);
+    closeBtn.addEventListener('click', () => {
+        chat.classList.remove('wm-open');
+        settingsMenu.classList.remove('wm-active');
+    });
+
+    const addMessage = (text, type) => {
+        const div = document.createElement('div');
+        div.className = \`wm-msg wm-\${type}\`;
+        if(type === 'bot') {
+            let formattedText = text.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>');
+            formattedText = formattedText.replace(/\\n/g, '<br>');
+            div.innerHTML = formattedText;
+        } else {
+            div.innerText = text;
+        }
+        messagesBox.appendChild(div);
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+    };
+
+    const addSystemMessage = (text) => {
+        const id = "sys-" + Date.now();
+        const div = document.createElement('div');
+        div.id = id;
+        div.style.textAlign = "center"; div.style.fontSize = "12px"; div.style.color = "rgba(255,255,255,0.4)"; div.style.margin = "10px 0";
+        div.innerText = text;
+        messagesBox.appendChild(div);
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+        return id;
+    };
+
+    const sendMessage = () => {
+        const text = input.value.trim();
+        if (!text) return;
+        addMessage(text, 'user');
+        input.value = '';
+        const loadingId = addSystemMessage("Analyse en cours...");
+
+        chrome.runtime.sendMessage({
+            action: "askMistral",
+            context: pageContext,
+            query: text,
+            url: window.location.href
+        }, (response) => {
+            const loader = document.getElementById(loadingId);
+            if(loader) loader.remove();
+            if (chrome.runtime.lastError) {
+                 addMessage("Erreur extension. Rechargez la page.", 'bot');
+            } else if (response && response.success) {
+                addMessage(response.data, 'bot');
+            } else {
+                addMessage("Erreur : " + (response ? response.error : "Inconnue"), 'bot');
+            }
+        });
+    };
+
+    sendBtn.addEventListener('click', sendMessage);
+    input.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initWikiMind);
+} else {
+    initWikiMind();
+}`;
+
+        const FILE_CSS = `/* --- BOUTON FLOTTANT WIKIMIND --- */
+#wm-float-btn {
+    position: fixed; width: 50px; height: 50px;
+    background: linear-gradient(135deg, #1a1a1a 0%, #050505 100%);
+    color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 14px; cursor: pointer; z-index: 2147483647;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: 'Inter', sans-serif; user-select: none;
+    backdrop-filter: blur(10px);
+}
+#wm-float-btn:hover { transform: scale(1.08) rotate(-3deg); border-color: #6366f1; box-shadow: 0 0 20px rgba(99, 102, 241, 0.5); }
+#wm-float-btn span { font-size: 24px; font-weight: 800; }
+
+/* --- FENÊTRE DE CHAT --- */
+#wm-chat-window {
+    position: fixed; width: 380px; height: 500px; max-height: calc(100vh - 120px);
+    background: rgba(15, 15, 15, 0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px;
+    z-index: 2147483646;
+    display: flex; flex-direction: column;
+    visibility: hidden; opacity: 0; pointer-events: none;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    font-family: 'Inter', sans-serif; color: #fff; overflow: hidden;
+    transition: opacity 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), visibility 0.4s;
+}
+#wm-chat-window.wm-open { visibility: visible; opacity: 1; pointer-events: auto; transform: scale(1) translate(0, 0) !important; }
+
+/* Positions */
+#wm-chat-window.wm-pos-br { transform-origin: bottom right; transform: scale(0.5) translate(30px, 30px); }
+#wm-chat-window.wm-pos-bl { transform-origin: bottom left; transform: scale(0.5) translate(-30px, 30px); }
+#wm-chat-window.wm-pos-tr { transform-origin: top right; transform: scale(0.5) translate(30px, -30px); }
+#wm-chat-window.wm-pos-tl { transform-origin: top left; transform: scale(0.5) translate(-30px, -30px); }
+
+/* UI Elements */
+.wm-header { padding: 16px 20px; background: rgba(255, 255, 255, 0.03); border-bottom: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.wm-header-left { display: flex; flex-direction: column; gap: 2px; }
+.wm-title { font-weight: 700; font-size: 16px; letter-spacing: -0.5px; }
+.wm-status { font-size: 10px; color: #4ade80; }
+.wm-controls { display: flex; gap: 10px; }
+.wm-icon-btn { background: transparent; border: none; color: rgba(255,255,255,0.5); cursor: pointer; font-size: 16px; }
+.wm-icon-btn:hover { color: #fff; }
+
+.wm-settings-menu { display: none; position: absolute; top: 60px; right: 20px; background: rgba(30,30,30,0.95); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px; flex-direction: column; gap: 5px; z-index: 10; }
+.wm-settings-menu.wm-active { display: flex; animation: fadeIn 0.2s; }
+.wm-settings-menu button { background: transparent; border: none; color: #ccc; text-align: left; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+.wm-settings-menu button:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+.wm-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; font-size: 14px; scroll-behavior: smooth; }
+.wm-messages::-webkit-scrollbar { width: 6px; }
+.wm-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+.wm-msg { padding: 12px 16px; border-radius: 16px; max-width: 85%; line-height: 1.5; word-wrap: break-word; }
+.wm-user { align-self: flex-end; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #fff; border-bottom-right-radius: 4px; }
+.wm-bot { align-self: flex-start; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #e5e5e5; border-bottom-left-radius: 4px; }
+
+.wm-input-area { padding: 16px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; gap: 10px; background: rgba(0,0,0,0.2); flex-shrink: 0; }
+.wm-input-area input { flex: 1; padding: 12px 16px; border-radius: 99px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.03); color: white; font-size: 14px; outline: none; }
+.wm-input-area input:focus { border-color: #6366f1; background: rgba(255, 255, 255, 0.08); }
+.wm-input-area button { width: 44px; height: 44px; border-radius: 50%; background: #6366f1; color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.wm-input-area button:hover { background: #4f46e5; transform: scale(1.05); }`;
+
+        // FONCTION DE TÉLÉCHARGEMENT
+        function downloadExtension() {
+            const feedback = document.getElementById('download-feedback');
+            feedback.style.opacity = '1';
+            feedback.innerText = "Génération du package...";
+
+            const zip = new JSZip();
+            
+            // Ajout des fichiers au ZIP
+            zip.file("manifest.json", FILE_MANIFEST);
+            zip.file("background.js", FILE_BACKGROUND);
+            zip.file("content.js", FILE_CONTENT);
+            zip.file("styles.css", FILE_CSS);
+
+            // Génération et téléchargement
+            zip.generateAsync({type:"blob"})
+            .then(function(content) {
+                saveAs(content, "WikiMind_Extension_v3.zip");
+                feedback.innerText = "Téléchargement lancé !";
+                setTimeout(() => { feedback.style.opacity = '0'; }, 3000);
+            });
+        }
+
+        // AURORA ANIMATION (Idem Index)
+        const canvas = document.getElementById('aurora-bg');
+        if(canvas) {
+            const ctx = canvas.getContext('2d');
+            let width, height;
+            const orbs = [
+                { x: 0.2, y: 0.2, r: 0.4, color: 'rgba(79, 70, 229, 0.15)', vx: 0.0005, vy: 0.0005 },
+                { x: 0.8, y: 0.3, r: 0.5, color: 'rgba(168, 85, 247, 0.15)', vx: -0.0006, vy: 0.0004 }
+            ];
+            function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, width, height);
+                orbs.forEach(orb => {
+                    orb.x += orb.vx; orb.y += orb.vy;
+                    if(orb.x < -0.2 || orb.x > 1.2) orb.vx *= -1;
+                    if(orb.y < -0.2 || orb.y > 1.2) orb.vy *= -1;
+                    const g = ctx.createRadialGradient(orb.x * width, orb.y * height, 0, orb.x * width, orb.y * height, orb.r * width);
+                    g.addColorStop(0, orb.color); g.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = g; ctx.fillRect(0, 0, width, height);
+                });
+                requestAnimationFrame(animate);
+            }
+            window.addEventListener('resize', resize); resize(); animate();
+        }
+    </script>
+</body>
+</html>
