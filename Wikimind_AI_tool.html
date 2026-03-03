@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
     
-    <!-- Configuration Design (Identique Index) -->
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -45,11 +44,10 @@
         .percentage { fill: #fff; font-family: 'Space Grotesk', sans-serif; font-weight: bold; font-size: 0.5em; text-anchor: middle; }
         .label { fill: rgba(255,255,255,0.5); font-family: 'Inter', sans-serif; font-size: 0.2em; text-anchor: middle; }
 
-        /* Custom Scrollbar */
+        /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
     </style>
 </head>
 <body class="selection:bg-brand-500 selection:text-white">
@@ -201,7 +199,7 @@
         <section class="mt-12 animate-fade-in-up" style="animation-delay: 0.2s;">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-display font-bold">Historique</h2>
-                <span class="text-xs text-white/30">Sauvegardé sur le Cloud Firebase</span>
+                <span class="text-xs text-white/30">Stocké sur WikiMind Database</span>
             </div>
             <div class="glass-panel rounded-2xl overflow-hidden">
                 <table class="w-full text-left border-collapse">
@@ -225,14 +223,31 @@
 
     </main>
 
-    <!-- LOGIC FIREBASE & MISTRAL -->
+    <!-- DOUBLE FIREBASE CONNECTION LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
-        import { getDatabase, ref, push, onValue, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+        import { getDatabase, ref, push, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
 
-        // --- 1. FIREBASE CONFIG ---
-        const firebaseConfig = {
+        // ==========================================
+        // 1. CONFIG AUTH (Compte Utilisateur)
+        // ==========================================
+        const authConfig = {
+            apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+            authDomain: "wikimind-3-comments.firebaseapp.com",
+            projectId: "wikimind-3-comments",
+            storageBucket: "wikimind-3-comments.firebasestorage.app",
+            messagingSenderId: "137479541640",
+            appId: "1:137479541640:web:4ed2510a9908055052e03d"
+        };
+        // Initialisation de l'App pour l'AUTH
+        const authApp = initializeApp(authConfig, "authApp");
+        const auth = getAuth(authApp);
+
+        // ==========================================
+        // 2. CONFIG DATABASE (Stockage Historique)
+        // ==========================================
+        const dbConfig = {
             apiKey: "AIzaSyDncM_j7gCZQfIUKaBUzI1QDRXz78ANvAg",
             authDomain: "wikiminddatabase.firebaseapp.com",
             projectId: "wikiminddatabase",
@@ -240,15 +255,16 @@
             messagingSenderId: "938308326593",
             appId: "1:938308326593:web:93c162dc72b49dc8b7b040"
         };
+        // Initialisation de l'App pour la DB
+        const dbApp = initializeApp(dbConfig, "dbApp");
+        const db = getDatabase(dbApp);
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app);
-
-        // --- 2. GLOBAL STATE ---
+        // ==========================================
+        // 3. LOGIQUE GLOBALE
+        // ==========================================
         let currentMode = 'detect'; // 'detect' or 'humanize'
         let currentUser = null;
-        const MISTRAL_API_KEY = "SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9"; // ⚠️ Client-side exposed for demo
+        const MISTRAL_API_KEY = "SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9"; 
 
         // DOM Elements
         const inputText = document.getElementById('input-text');
@@ -261,14 +277,38 @@
         const historyList = document.getElementById('history-list');
         const outputHumanized = document.getElementById('output-humanized');
 
-        // --- 3. UI LOGIC ---
+        // --- AUTH LISTENER ---
+        // On écoute l'app "authApp" pour savoir si l'utilisateur est là
+        onAuthStateChanged(auth, (user) => {
+            const loginBtn = document.getElementById('login-btn');
+            const userLogged = document.getElementById('user-logged');
+            
+            if (user) {
+                // USER CONNECTÉ
+                currentUser = user;
+                loginBtn.classList.add('hidden');
+                userLogged.classList.remove('hidden');
+                userLogged.classList.add('flex');
+                
+                document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
+                document.getElementById('nav-avatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff`;
 
-        // Input Counter
+                // Charger l'historique depuis l'autre Database
+                loadHistoryFromDB();
+            } else {
+                // USER DÉCONNECTÉ
+                currentUser = null;
+                loginBtn.classList.remove('hidden');
+                userLogged.classList.add('hidden');
+                historyList.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-white/20">Connectez-vous pour sauvegarder votre historique.</td></tr>`;
+            }
+        });
+
+        // --- UI FUNCTIONS ---
         inputText.addEventListener('input', () => {
             charCount.innerText = inputText.value.length + " caractères";
         });
 
-        // Mode Switcher
         window.switchMode = (mode) => {
             currentMode = mode;
             const btnDetect = document.getElementById('btn-mode-detect');
@@ -276,7 +316,6 @@
             const btnActionText = actionBtn.querySelector('span');
             const btnActionIcon = actionBtn.querySelector('i');
 
-            // Reset UI View
             stateResultDetect.classList.add('hidden');
             stateResultHumanize.classList.add('hidden');
             stateEmpty.classList.remove('hidden');
@@ -293,7 +332,6 @@
                 btnDetect.className = "flex-1 py-3 rounded-lg font-bold text-sm text-white/50 hover:text-white transition-all";
                 btnActionText.innerText = "Humaniser";
                 btnActionIcon.className = "fa-solid fa-wand-magic-sparkles";
-                // Change color for humanizer
                 actionBtn.classList.remove('bg-brand-600', 'hover:bg-brand-500');
                 actionBtn.classList.add('bg-purple-600', 'hover:bg-purple-500');
             }
@@ -305,43 +343,11 @@
             alert("Texte copié !");
         };
 
-        // --- 4. AUTH LOGIC ---
-        onAuthStateChanged(auth, (user) => {
-            const loginBtn = document.getElementById('login-btn');
-            const userLogged = document.getElementById('user-logged');
-            
-            if (user) {
-                currentUser = user;
-                loginBtn.classList.add('hidden');
-                userLogged.classList.remove('hidden');
-                userLogged.classList.add('flex');
-                
-                document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
-                document.getElementById('nav-avatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff`;
-
-                loadHistory();
-            } else {
-                currentUser = null;
-                loginBtn.classList.remove('hidden');
-                userLogged.classList.add('hidden');
-                historyList.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-white/20">Connectez-vous pour sauvegarder votre historique.</td></tr>`;
-            }
-        });
-
-        // --- 5. CORE FUNCTIONALITY (API CALLS) ---
-
+        // --- CORE LOGIC ---
         actionBtn.addEventListener('click', async () => {
             const text = inputText.value.trim();
-            if (!text) {
-                alert("Veuillez entrer du texte.");
-                return;
-            }
-            if (text.length < 50) {
-                alert("Le texte est trop court pour une analyse fiable (min 50 caractères).");
-                return;
-            }
-
-            // UI Loading
+            if (!text) { alert("Veuillez entrer du texte."); return; }
+            
             stateEmpty.classList.add('hidden');
             stateResultDetect.classList.add('hidden');
             stateResultHumanize.classList.add('hidden');
@@ -361,18 +367,15 @@
             }
         });
 
+        // 1. DETECTOR ENGINE
         async function runDetector(text) {
-            // Prompting Mistral to act as a detector
             const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${MISTRAL_API_KEY}`
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${MISTRAL_API_KEY}` },
                 body: JSON.stringify({
-                    model: "mistral-small-latest", // Good balance of speed/intelligence
+                    model: "mistral-small-latest",
                     messages: [
-                        { role: "system", content: "You are an advanced AI detection engine. Analyze the following text for perplexity, burstiness, and repetitive patterns typical of LLMs. You MUST return a JSON object ONLY in this format: { \"score\": number (0-100, where 100 is definitely AI), \"verdict\": \"Human\" | \"Mixed\" | \"AI-Generated\", \"reasoning\": \"Short explanation in French\" }." },
+                        { role: "system", content: "You are an AI detection engine. Analyze the text. Return JSON ONLY: { \"score\": number (0-100, 100=AI), \"verdict\": \"Human\"|\"Mixed\"|\"AI-Generated\", \"reasoning\": \"Short explanation in French\" }." },
                         { role: "user", content: text }
                     ],
                     response_format: { type: "json_object" }
@@ -382,46 +385,37 @@
             const data = await response.json();
             const result = JSON.parse(data.choices[0].message.content);
 
-            // Update UI
             stateLoading.classList.add('hidden');
             stateResultDetect.classList.remove('hidden');
 
-            // Gauge Animation
             const circle = document.getElementById('gauge-circle');
             const scoreText = document.getElementById('score-text');
             const verdictText = document.getElementById('verdict-text');
             const reasoningText = document.getElementById('reasoning-text');
 
-            // Color logic
-            let color = "#10b981"; // Green (Human)
-            if (result.score > 40) color = "#f59e0b"; // Orange (Mixed)
-            if (result.score > 70) color = "#ef4444"; // Red (AI)
+            let color = "#10b981"; // Green
+            if (result.score > 40) color = "#f59e0b"; // Orange
+            if (result.score > 70) color = "#ef4444"; // Red
 
             circle.setAttribute('stroke', color);
-            // Dasharray calculation: (Score, 100)
             circle.setAttribute('stroke-dasharray', `${result.score}, 100`);
-            
             scoreText.textContent = result.score + "%";
             verdictText.textContent = result.verdict;
             verdictText.style.color = color;
             reasoningText.textContent = result.reasoning;
 
-            // Save to DB
-            saveToHistory("Détection", text.substring(0, 30) + "...", `${result.score}% AI`);
+            saveToDB("Détection", text.substring(0, 30) + "...", `${result.score}% AI`);
         }
 
+        // 2. HUMANIZER ENGINE (Hardcore Mode)
         async function runHumanizer(text) {
-            // Prompting Mistral to act as a Ghostwriter/Humanizer
             const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${MISTRAL_API_KEY}`
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${MISTRAL_API_KEY}` },
                 body: JSON.stringify({
-                    model: "mistral-medium-latest", // Smarter model for rewriting
+                    model: "mistral-medium-latest",
                     messages: [
-                        { role: "system", content: "You are a professional humanizer tool. Rewrite the user's text to make it completely undetectable by AI detectors. Method: Increase burstiness (vary sentence length significantly). Use emotional nuances, occasional colloquialisms, and slightly imperfect grammatical structures that feel more natural and less robotic. Keep the original meaning but change the structure completely. Output ONLY the rewritten text." },
+                        { role: "system", content: "You are a specialized Humanizer Tool. Your goal: Rewrite the text to bypass AI detectors (ZeroGPT, Turnitin). Techniques: 1. High Burstiness (mix very short and very long sentences). 2. High Perplexity (use unpredictable vocabulary). 3. Add personal nuances, idiomatic expressions, and minor imperfections that feel human. 4. Keep the original meaning but change the structure entirely. Output ONLY the rewritten text in French." },
                         { role: "user", content: text }
                     ]
                 })
@@ -430,20 +424,18 @@
             const data = await response.json();
             const rewrittenText = data.choices[0].message.content;
 
-            // Update UI
             stateLoading.classList.add('hidden');
             stateResultHumanize.classList.remove('hidden');
             outputHumanized.value = rewrittenText;
 
-            // Save to DB
-            saveToHistory("Humanisation", text.substring(0, 30) + "...", "Succès");
+            saveToDB("Humanisation", text.substring(0, 30) + "...", "Succès");
         }
 
-        // --- 6. DATABASE LOGIC ---
+        // --- DATABASE FUNCTIONS (Utilise "db" de WikimindDatabase) ---
 
-        function saveToHistory(type, excerpt, result) {
-            if (!currentUser) return; // Only save if logged in
-
+        function saveToDB(type, excerpt, result) {
+            if (!currentUser) return;
+            // On écrit dans la DB de stockage, mais on utilise l'ID de l'utilisateur de l'Auth
             const historyRef = ref(db, 'history/' + currentUser.uid);
             push(historyRef, {
                 type: type,
@@ -453,9 +445,10 @@
             });
         }
 
-        function loadHistory() {
+        function loadHistoryFromDB() {
             if (!currentUser) return;
-
+            
+            // On lit depuis la DB de stockage
             const historyRef = query(ref(db, 'history/' + currentUser.uid), limitToLast(10));
             onValue(historyRef, (snapshot) => {
                 historyList.innerHTML = '';
@@ -465,7 +458,6 @@
                 }
 
                 const data = snapshot.val();
-                // Convert object to array and reverse (newest first)
                 const items = Object.values(data).sort((a, b) => b.timestamp - a.timestamp);
 
                 items.forEach(item => {
@@ -488,7 +480,7 @@
             });
         }
 
-        // --- 7. ANIMATIONS BACKGROUND ---
+        // --- ANIMATION BG ---
         const canvas = document.getElementById('aurora-bg');
         if(canvas) {
             const ctx = canvas.getContext('2d');
