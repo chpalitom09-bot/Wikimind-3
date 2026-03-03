@@ -1,0 +1,520 @@
+<!-- START OF FILE Wikimind_images.html -->
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiMind Creator Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
+                    colors: {
+                        glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
+                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' }
+                    },
+                    animation: { 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #050505; color: #ffffff; overflow-x: hidden; }
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+        .text-gradient { background: linear-gradient(135deg, #ffffff 0%, #a5a6f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        /* Loader */
+        .loader { border: 3px solid rgba(255,255,255,0.1); border-radius: 50%; border-top: 3px solid #6366f1; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .tab-active { background: rgba(99, 102, 241, 0.2); border-color: #6366f1; color: white; }
+    </style>
+</head>
+<body class="selection:bg-brand-500 selection:text-white">
+
+    <!-- AURORA BG (Identique Index) -->
+    <canvas id="aurora-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
+
+    <!-- NAVBAR -->
+    <nav class="fixed top-0 w-full z-50 px-6 py-6 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto flex justify-between items-center glass-panel rounded-full px-6 py-3">
+            <a href="index.html" class="flex items-center gap-3 group">
+                <div class="w-8 h-8 bg-gradient-to-tr from-white to-gray-400 rounded-lg flex items-center justify-center">
+                    <span class="font-bold text-black text-xs">W</span>
+                </div>
+                <span class="font-display font-bold text-lg tracking-tight">WikiMind <span class="text-brand-glow font-normal">Creator</span></span>
+            </a>
+
+            <!-- Auth State -->
+            <div id="auth-container" class="flex items-center gap-4">
+                <a href="Wikimind_user.html" id="login-btn" class="px-5 py-2 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-gray-200 transition-colors">
+                    Connexion
+                </a>
+                <div id="user-logged" class="hidden flex items-center gap-3">
+                    <div class="text-right hidden md:block">
+                        <div id="user-name-display" class="text-xs font-bold text-white">Créateur</div>
+                        <div id="credits-display" class="text-[10px] text-brand-glow">Premium</div>
+                    </div>
+                    <img id="nav-avatar" src="" class="w-9 h-9 rounded-full border border-white/20 object-cover bg-gray-800">
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="relative pt-32 pb-20 px-4 md:px-6 max-w-7xl mx-auto">
+        
+        <!-- HEADER -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-display font-bold mb-4">Studio de <span class="text-gradient">Génération</span></h1>
+            <p class="text-white/60">Transformez vos idées en images et vidéos grâce à l'IA Pixazo.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- LEFT PANEL: CONTROLS -->
+            <div class="lg:col-span-4 space-y-6">
+                
+                <!-- TABS -->
+                <div class="glass-panel p-2 rounded-xl flex justify-between gap-2">
+                    <button onclick="switchTab('gen')" id="tab-gen" class="flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all tab-active border border-transparent">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>Image
+                    </button>
+                    <button onclick="switchTab('edit')" id="tab-edit" class="flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all text-white/50 border border-transparent hover:bg-white/5">
+                        <i class="fa-solid fa-paintbrush mr-2"></i>Edit
+                    </button>
+                    <button onclick="switchTab('video')" id="tab-video" class="flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all text-white/50 border border-transparent hover:bg-white/5">
+                        <i class="fa-solid fa-video mr-2"></i>Vidéo
+                    </button>
+                </div>
+
+                <!-- CONTROLS FORM -->
+                <div class="glass-panel rounded-2xl p-6 relative overflow-hidden">
+                    
+                    <!-- QUOTA ALERT -->
+                    <div id="quota-alert" class="hidden absolute inset-0 bg-black/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-center p-6">
+                        <i class="fa-solid fa-lock text-3xl text-brand-500 mb-4"></i>
+                        <h3 class="font-bold text-lg">Limite atteinte</h3>
+                        <p class="text-sm text-white/60 mb-4">Les invités sont limités à 3 images par jour.</p>
+                        <a href="Wikimind_user.html" class="px-6 py-2 bg-white text-black rounded-full font-bold text-xs uppercase">Se connecter</a>
+                    </div>
+
+                    <!-- IMAGE GEN CONTROLS -->
+                    <div id="panel-gen" class="space-y-4">
+                        <div>
+                            <label class="text-xs text-white/50 uppercase font-bold ml-1">Prompt</label>
+                            <textarea id="prompt-input" rows="4" placeholder="Un astronaute méditant sur Mars, style cyberpunk, 8k, détaillé..." class="w-full mt-2 bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand-500 focus:bg-white/10 transition-all resize-none"></textarea>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs text-white/50 uppercase font-bold ml-1">Format</label>
+                                <select id="aspect-ratio" class="w-full mt-2 bg-white/5 border border-white/10 rounded-xl p-2.5 text-sm text-white focus:outline-none">
+                                    <option value="1:1">Carré (1:1)</option>
+                                    <option value="16:9">Paysage (16:9)</option>
+                                    <option value="9:16">Portrait (9:16)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-xs text-white/50 uppercase font-bold ml-1">Style</label>
+                                <select id="style-preset" class="w-full mt-2 bg-white/5 border border-white/10 rounded-xl p-2.5 text-sm text-white focus:outline-none">
+                                    <option value="">Réaliste</option>
+                                    <option value="anime">Anime</option>
+                                    <option value="3d">3D Render</option>
+                                    <option value="painting">Peinture</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button onclick="generateImage()" id="btn-generate" class="w-full py-3 mt-2 bg-brand-600 hover:bg-brand-500 rounded-xl font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 group shadow-lg shadow-brand-500/20">
+                            <span>Générer</span>
+                            <i class="fa-solid fa-bolt group-hover:animate-pulse"></i>
+                        </button>
+                        <div class="text-center">
+                             <span id="quota-display" class="text-[10px] text-white/30">Quota invité : <span id="quota-count">0</span>/3 aujourd'hui</span>
+                        </div>
+                    </div>
+
+                    <!-- VIDEO CONTROLS -->
+                    <div id="panel-video" class="space-y-4 hidden">
+                        <div class="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-lg flex items-start gap-3">
+                            <i class="fa-solid fa-triangle-exclamation text-yellow-500 text-xs mt-1"></i>
+                            <p class="text-[10px] text-yellow-200/80">Génération vidéo très coûteuse en ressources. Limitée à 1 toutes les 6 heures par compte.</p>
+                        </div>
+
+                        <div>
+                            <label class="text-xs text-white/50 uppercase font-bold ml-1">Prompt Vidéo</label>
+                            <textarea id="video-prompt" rows="3" placeholder="Nuages qui bougent rapidement dans le ciel..." class="w-full mt-2 bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none"></textarea>
+                        </div>
+
+                        <button onclick="generateVideo()" id="btn-video" class="w-full py-3 bg-gradient-to-r from-purple-600 to-brand-600 rounded-xl font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2">
+                            <span>Créer Clip (3s)</span>
+                            <i class="fa-solid fa-video"></i>
+                        </button>
+                        <div id="video-timer" class="text-center text-xs text-red-400 hidden mt-2">
+                            Prochaine vidéo dans : <span id="time-remaining">00:00</span>
+                        </div>
+                    </div>
+
+                     <!-- EDIT CONTROLS (Placeholder) -->
+                     <div id="panel-edit" class="space-y-4 hidden">
+                        <div class="border-2 border-dashed border-white/20 rounded-xl p-8 text-center cursor-pointer hover:bg-white/5 transition-colors relative">
+                            <input type="file" id="upload-image" class="absolute inset-0 opacity-0 cursor-pointer" accept="image/*">
+                            <i class="fa-solid fa-cloud-upload-alt text-2xl text-white/40 mb-2"></i>
+                            <p class="text-xs text-white/60">Glisser ou cliquer pour uploader</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-white/50 uppercase font-bold ml-1">Modification</label>
+                            <input type="text" placeholder="Ajouter des lunettes de soleil..." class="w-full mt-2 bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none">
+                        </div>
+                        <button class="w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm uppercase transition-all">
+                            Appliquer (Bêta)
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL: PREVIEW -->
+            <div class="lg:col-span-8">
+                <div class="glass-panel rounded-2xl h-[500px] md:h-[600px] flex items-center justify-center relative p-4 group">
+                    
+                    <!-- Placeholder State -->
+                    <div id="preview-placeholder" class="text-center">
+                        <div class="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse-slow">
+                            <i class="fa-solid fa-image text-3xl text-white/20"></i>
+                        </div>
+                        <p class="text-white/40 text-sm">Votre création apparaîtra ici.</p>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="preview-loading" class="hidden absolute inset-0 bg-black/50 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-2xl">
+                        <div class="loader mb-4"></div>
+                        <p class="text-xs font-display uppercase tracking-widest animate-pulse">Création par Pixazo...</p>
+                    </div>
+
+                    <!-- Result Image -->
+                    <img id="result-image" src="" class="hidden max-h-full max-w-full rounded-lg shadow-2xl object-contain">
+                    
+                    <!-- Result Video -->
+                    <video id="result-video" src="" controls class="hidden max-h-full max-w-full rounded-lg shadow-2xl" loop></video>
+
+                    <!-- Action Buttons (Overlay) -->
+                    <div id="result-actions" class="hidden absolute bottom-6 right-6 flex gap-3">
+                        <a id="download-link" href="#" download="wikimind-creation.png" class="p-3 bg-white text-black rounded-full hover:bg-gray-200 transition-colors shadow-lg">
+                            <i class="fa-solid fa-download"></i>
+                        </a>
+                        <button class="p-3 bg-black/50 text-white backdrop-blur-md border border-white/20 rounded-full hover:bg-black/70 transition-colors">
+                            <i class="fa-solid fa-share-nodes"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- History Strip -->
+                <div class="mt-6 flex gap-4 overflow-x-auto pb-4 no-scrollbar opacity-50 hover:opacity-100 transition-opacity" id="history-container">
+                    <!-- Les images générées s'ajouteront ici -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        // CONFIG FIREBASE (Même que Index)
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+            authDomain: "wikimind-3-comments.firebaseapp.com",
+            projectId: "wikimind-3-comments",
+            appId: "1:137479541640:web:4ed2510a9908055052e03d"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // STATE
+        let currentUser = null;
+        let dailyCount = 0;
+        const MAX_DAILY_GUEST = 3;
+        const VIDEO_COOLDOWN = 6 * 60 * 60 * 1000; // 6 heures en ms
+        
+        // API KEY (Configuration)
+        // Note: Si tu as une URL spécifique pour "Pixazo", remplace-la dans les fonctions de fetch.
+        // Pour l'instant, j'utilise Pollinations (gratuit) pour garantir que la page fonctionne.
+        const PIXAZO_API_KEY = "70fb6018bcae4fd48a41764fead45145"; 
+
+        // DOM ELEMENTS
+        const loginBtn = document.getElementById('login-btn');
+        const userLogged = document.getElementById('user-logged');
+        const navAvatar = document.getElementById('nav-avatar');
+        const userNameDisplay = document.getElementById('user-name-display');
+        const quotaAlert = document.getElementById('quota-alert');
+        const quotaCountSpan = document.getElementById('quota-count');
+        
+        const imgEl = document.getElementById('result-image');
+        const vidEl = document.getElementById('result-video');
+        const placeholder = document.getElementById('preview-placeholder');
+        const loader = document.getElementById('preview-loading');
+        const actions = document.getElementById('result-actions');
+        const dlLink = document.getElementById('download-link');
+
+        // INIT
+        checkLocalStorage();
+
+        // AUTH LISTENER
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                loginBtn.classList.add('hidden');
+                userLogged.classList.remove('hidden');
+                userLogged.classList.add('flex');
+                
+                navAvatar.src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff`;
+                userNameDisplay.innerText = user.displayName || "Créateur";
+                
+                // Remove limits for logged users (or set higher limits)
+                quotaAlert.classList.add('hidden');
+                document.getElementById('quota-display').classList.add('hidden');
+            } else {
+                currentUser = null;
+                loginBtn.classList.remove('hidden');
+                userLogged.classList.add('hidden');
+                document.getElementById('quota-display').classList.remove('hidden');
+                checkQuotaUI();
+            }
+        });
+
+        // --- CORE FUNCTIONS ---
+
+        // 1. GENERATE IMAGE
+        window.generateImage = async function() {
+            // Check Quota for Guests
+            if (!currentUser) {
+                if (dailyCount >= MAX_DAILY_GUEST) {
+                    quotaAlert.classList.remove('hidden');
+                    return;
+                }
+            }
+
+            const prompt = document.getElementById('prompt-input').value;
+            const style = document.getElementById('style-preset').value;
+            const ratio = document.getElementById('aspect-ratio').value; // ex: 16:9
+
+            if (!prompt) return alert("Veuillez entrer une description.");
+
+            // UI Loading
+            loader.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+            imgEl.classList.add('hidden');
+            vidEl.classList.add('hidden');
+            actions.classList.add('hidden');
+
+            // Construct Final Prompt
+            let finalPrompt = prompt;
+            if(style) finalPrompt += `, ${style} style`;
+            if(ratio === '16:9') finalPrompt += ", wide shot, cinematic"; // Simple hack for ratio on basic APIs
+
+            try {
+                // --- API CALL ---
+                // NOTE: "Pixazo" n'ayant pas de doc publique standard, j'utilise ici Pollinations
+                // qui est gratuit et rapide pour simuler le résultat. 
+                // Si tu as l'endpoint réel, décommente la partie fetch ci-dessous.
+                
+                /* EXEMPLE FETCH SI API REST STANDARD :
+                const response = await fetch('https://api.pixazo.com/generate', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${PIXAZO_API_KEY}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: finalPrompt })
+                });
+                const data = await response.json();
+                const imageUrl = data.url; 
+                */
+
+                // UTILISATION POLLINATIONS (SECOURS FIABLE)
+                const seed = Math.floor(Math.random() * 10000);
+                // Encodage pour URL
+                const encodedPrompt = encodeURIComponent(finalPrompt);
+                // Pollinations génère directement une image via URL
+                const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?nologo=true&seed=${seed}`;
+
+                // Preload image to ensure it's ready
+                const imgObj = new Image();
+                imgObj.src = imageUrl;
+                
+                imgObj.onload = () => {
+                    loader.classList.add('hidden');
+                    imgEl.src = imageUrl;
+                    imgEl.classList.remove('hidden');
+                    actions.classList.remove('hidden');
+                    
+                    // Setup Download
+                    dlLink.href = imageUrl;
+                    
+                    // Update Quota (Guest)
+                    if (!currentUser) {
+                        dailyCount++;
+                        updateLocalStorage();
+                        checkQuotaUI();
+                    }
+
+                    addToHistory(imageUrl, 'image');
+                };
+
+            } catch (error) {
+                loader.classList.add('hidden');
+                alert("Erreur de génération: " + error.message);
+            }
+        };
+
+        // 2. GENERATE VIDEO
+        window.generateVideo = function() {
+            if (!currentUser) return alert("La vidéo est réservée aux membres connectés.");
+
+            const lastVideo = localStorage.getItem('wiki_last_video_time');
+            const now = Date.now();
+
+            if (lastVideo && (now - lastVideo < VIDEO_COOLDOWN)) {
+                const remaining = VIDEO_COOLDOWN - (now - lastVideo);
+                const hours = Math.floor(remaining / (1000 * 60 * 60));
+                const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+                alert(`Limite atteinte. Réessayez dans ${hours}h ${mins}m.`);
+                return;
+            }
+
+            const prompt = document.getElementById('video-prompt').value;
+            if(!prompt) return alert("Prompt vidéo requis.");
+
+            // UI Loading
+            loader.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+            imgEl.classList.add('hidden');
+
+            // SIMULATION VIDEO (Car les API vidéos gratuites temps réel sont rares)
+            // On va simuler un délai puis afficher une vidéo placeholder ou générer un GIF simple
+            setTimeout(() => {
+                loader.classList.add('hidden');
+                
+                // Pour la démo, on utilise un placeholder vidéo ou une API GIF
+                // Ici je mets une vidéo d'ambiance "Space" libre de droit pour simuler le résultat
+                const videoUrl = "https://cdn.pixabay.com/video/2020/04/18/36467-410326086_tiny.mp4"; 
+                
+                vidEl.src = videoUrl;
+                vidEl.classList.remove('hidden');
+                vidEl.play();
+                actions.classList.remove('hidden');
+
+                // Enregistrement Temps
+                localStorage.setItem('wiki_last_video_time', Date.now());
+
+            }, 3000);
+        };
+
+        // UTILS
+        function checkLocalStorage() {
+            const today = new Date().toISOString().split('T')[0];
+            const storedDate = localStorage.getItem('wiki_img_date');
+            
+            if (storedDate !== today) {
+                dailyCount = 0;
+                localStorage.setItem('wiki_img_date', today);
+                localStorage.setItem('wiki_img_count', 0);
+            } else {
+                dailyCount = parseInt(localStorage.getItem('wiki_img_count') || 0);
+            }
+            checkQuotaUI();
+        }
+
+        function updateLocalStorage() {
+            localStorage.setItem('wiki_img_count', dailyCount);
+        }
+
+        function checkQuotaUI() {
+            if(quotaCountSpan) quotaCountSpan.innerText = dailyCount;
+            if (dailyCount >= MAX_DAILY_GUEST && !currentUser) {
+                // Disable button visually maybe?
+            }
+        }
+
+        function addToHistory(url, type) {
+            const container = document.getElementById('history-container');
+            const div = document.createElement('div');
+            div.className = "flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-white/20 cursor-pointer hover:border-brand-500";
+            div.innerHTML = type === 'image' 
+                ? `<img src="${url}" class="w-full h-full object-cover">`
+                : `<video src="${url}" class="w-full h-full object-cover"></video>`;
+            
+            div.onclick = () => {
+                if(type === 'image') {
+                    imgEl.src = url; imgEl.classList.remove('hidden'); vidEl.classList.add('hidden');
+                }
+            };
+            container.prepend(div);
+        }
+
+        // TABS UI
+        window.switchTab = (tabName) => {
+            ['gen', 'edit', 'video'].forEach(t => {
+                document.getElementById(`panel-${t}`).classList.add('hidden');
+                const btn = document.getElementById(`tab-${t}`);
+                btn.classList.remove('tab-active', 'text-white');
+                btn.classList.add('text-white/50');
+            });
+
+            document.getElementById(`panel-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            activeBtn.classList.add('tab-active');
+            activeBtn.classList.remove('text-white/50');
+        };
+
+        // AURORA BG
+        const canvas = document.getElementById('aurora-bg');
+        if(canvas) {
+            const ctx = canvas.getContext('2d');
+            let width, height;
+            const orbs = [
+                { x: 0.2, y: 0.2, r: 0.4, color: 'rgba(79, 70, 229, 0.15)', vx: 0.0005, vy: 0.0005 },
+                { x: 0.8, y: 0.3, r: 0.5, color: 'rgba(168, 85, 247, 0.15)', vx: -0.0006, vy: 0.0004 }
+            ];
+            function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, width, height);
+                orbs.forEach(orb => {
+                    orb.x += orb.vx; orb.y += orb.vy;
+                    if(orb.x < -0.2 || orb.x > 1.2) orb.vx *= -1;
+                    if(orb.y < -0.2 || orb.y > 1.2) orb.vy *= -1;
+                    const g = ctx.createRadialGradient(orb.x * width, orb.y * height, 0, orb.x * width, orb.y * height, orb.r * width);
+                    g.addColorStop(0, orb.color); g.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = g; ctx.fillRect(0, 0, width, height);
+                });
+                requestAnimationFrame(animate);
+            }
+            window.addEventListener('resize', resize); resize(); animate();
+        }
+
+        // Upload Input simulation
+        const uploadInput = document.getElementById('upload-image');
+        if(uploadInput) {
+            uploadInput.addEventListener('change', (e) => {
+                if(e.target.files && e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        imgEl.src = e.target.result;
+                        imgEl.classList.remove('hidden');
+                        placeholder.classList.add('hidden');
+                    }
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
