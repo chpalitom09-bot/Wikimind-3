@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>WikiMind AI Tool - Detector & Humanizer</title>
     
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-29XYBNJ2CB"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-29XYBNJ2CB');
+    </script>
+
     <!-- Tailwind & Fonts -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -20,10 +29,7 @@
                         glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
                         brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8', danger: '#ef4444', success: '#10b981' }
                     },
-                    animation: { 
-                        'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-                    },
+                    animation: { 'fade-in-up': 'fadeInUp 0.5s ease-out forwards' },
                     keyframes: { fadeInUp: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } } }
                 }
             }
@@ -44,7 +50,7 @@
         .percentage { fill: #fff; font-family: 'Space Grotesk', sans-serif; font-weight: bold; font-size: 0.5em; text-anchor: middle; }
         .label { fill: rgba(255,255,255,0.5); font-family: 'Inter', sans-serif; font-size: 0.2em; text-anchor: middle; }
 
-        /* Scrollbar */
+        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
@@ -62,7 +68,7 @@
                 <div class="w-8 h-8 bg-gradient-to-tr from-white to-gray-400 rounded-lg flex items-center justify-center">
                     <span class="font-bold text-black text-xs">W</span>
                 </div>
-                <span class="font-display font-bold text-lg tracking-tight">WikiMind <span class="text-brand-glow font-normal">AI Tool</span></span>
+                <span class="font-display font-bold text-lg tracking-tight">WikiMind <span class="text-brand-glow font-normal">Tools</span></span>
             </a>
 
             <!-- Auth State -->
@@ -75,7 +81,9 @@
                         <div id="user-name-display" class="text-xs font-bold text-white">Utilisateur</div>
                         <div class="text-[10px] text-green-400">● En ligne</div>
                     </div>
-                    <img id="nav-avatar" src="" class="w-9 h-9 rounded-full border border-white/20 object-cover bg-gray-800">
+                    <a href="Wikimind_user.html" class="relative group">
+                        <img id="nav-avatar" src="" class="w-9 h-9 rounded-full border border-white/20 object-cover bg-gray-800">
+                    </a>
                 </div>
             </div>
         </div>
@@ -89,7 +97,8 @@
                 Détecteur & <span class="text-gradient">Humaniseur</span>
             </h1>
             <p class="text-white/50 max-w-2xl mx-auto">
-                Analysez vos textes pour détecter les traces d'IA ou reformulez-les pour les rendre indétectables et naturels.
+                Analysez vos textes pour détecter les traces d'IA ou reformulez-les pour les rendre indétectables.
+                <br><span class="text-xs text-white/30" id="storage-status">Chargement du statut de stockage...</span>
             </p>
         </div>
 
@@ -144,7 +153,7 @@
                     <!-- STATE: LOADING -->
                     <div id="state-loading" class="hidden text-center absolute inset-0 bg-black/50 backdrop-blur-md z-20 flex flex-col items-center justify-center rounded-3xl">
                         <div class="w-16 h-16 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                        <p class="font-display font-bold animate-pulse text-brand-glow">Traitement neuronal...</p>
+                        <p class="font-display font-bold animate-pulse text-brand-glow">Analyse neuronale en cours...</p>
                     </div>
 
                     <!-- STATE: DETECTOR RESULT -->
@@ -159,7 +168,6 @@
                                 <text x="18" y="20.35" class="percentage" id="score-text">0%</text>
                                 <text x="18" y="25" class="label">SCORE IA</text>
                             </svg>
-                            <!-- Glow effect behind -->
                             <div class="absolute w-32 h-32 bg-brand-500/20 blur-[50px] rounded-full -z-10"></div>
                         </div>
 
@@ -178,7 +186,7 @@
                     <!-- STATE: HUMANIZER RESULT -->
                     <div id="state-result-humanize" class="hidden w-full h-full flex flex-col">
                         <div class="flex justify-between items-center mb-4 border-b border-white/5 pb-4">
-                            <h3 class="text-lg font-bold"><i class="fa-solid fa-check-circle text-green-400 mr-2"></i>Humanisé</h3>
+                            <h3 class="text-lg font-bold"><i class="fa-solid fa-check-circle text-green-400 mr-2"></i>Texte Humanisé</h3>
                             <button onclick="copyToClipboard()" class="text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">
                                 <i class="fa-regular fa-copy mr-1"></i> Copier
                             </button>
@@ -199,7 +207,10 @@
         <section class="mt-12 animate-fade-in-up" style="animation-delay: 0.2s;">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-display font-bold">Historique</h2>
-                <span class="text-xs text-white/30">Stocké sur WikiMind Database</span>
+                <div class="flex items-center gap-2">
+                    <span id="history-source" class="text-xs uppercase bg-white/5 px-2 py-1 rounded text-white/40">...</span>
+                    <button onclick="clearLocalHistory()" id="btn-clear-local" class="hidden text-xs text-red-400 hover:text-red-300 underline">Effacer</button>
+                </div>
             </div>
             <div class="glass-panel rounded-2xl overflow-hidden">
                 <table class="w-full text-left border-collapse">
@@ -213,9 +224,6 @@
                     </thead>
                     <tbody id="history-list" class="text-sm text-white/70">
                         <!-- Items injectés par JS -->
-                        <tr>
-                            <td colspan="4" class="p-8 text-center text-white/20">Connectez-vous pour voir votre historique.</td>
-                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -223,7 +231,7 @@
 
     </main>
 
-    <!-- DOUBLE FIREBASE CONNECTION LOGIC -->
+    <!-- MAIN LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
@@ -240,7 +248,6 @@
             messagingSenderId: "137479541640",
             appId: "1:137479541640:web:4ed2510a9908055052e03d"
         };
-        // Initialisation de l'App pour l'AUTH
         const authApp = initializeApp(authConfig, "authApp");
         const auth = getAuth(authApp);
 
@@ -255,14 +262,13 @@
             messagingSenderId: "938308326593",
             appId: "1:938308326593:web:93c162dc72b49dc8b7b040"
         };
-        // Initialisation de l'App pour la DB
         const dbApp = initializeApp(dbConfig, "dbApp");
         const db = getDatabase(dbApp);
 
         // ==========================================
         // 3. LOGIQUE GLOBALE
         // ==========================================
-        let currentMode = 'detect'; // 'detect' or 'humanize'
+        let currentMode = 'detect'; 
         let currentUser = null;
         const MISTRAL_API_KEY = "SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9"; 
 
@@ -270,15 +276,12 @@
         const inputText = document.getElementById('input-text');
         const actionBtn = document.getElementById('action-btn');
         const charCount = document.getElementById('char-count');
-        const stateEmpty = document.getElementById('state-empty');
-        const stateLoading = document.getElementById('state-loading');
-        const stateResultDetect = document.getElementById('state-result-detect');
-        const stateResultHumanize = document.getElementById('state-result-humanize');
         const historyList = document.getElementById('history-list');
-        const outputHumanized = document.getElementById('output-humanized');
+        const storageStatus = document.getElementById('storage-status');
+        const historySource = document.getElementById('history-source');
+        const btnClearLocal = document.getElementById('btn-clear-local');
 
         // --- AUTH LISTENER ---
-        // On écoute l'app "authApp" pour savoir si l'utilisateur est là
         onAuthStateChanged(auth, (user) => {
             const loginBtn = document.getElementById('login-btn');
             const userLogged = document.getElementById('user-logged');
@@ -293,81 +296,84 @@
                 document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
                 document.getElementById('nav-avatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff`;
 
-                // Charger l'historique depuis l'autre Database
+                storageStatus.innerText = "Synchronisation Cloud activée";
+                storageStatus.classList.add('text-green-400');
+                historySource.innerText = "CLOUD DATABASE";
+                btnClearLocal.classList.add('hidden');
+
                 loadHistoryFromDB();
             } else {
                 // USER DÉCONNECTÉ
                 currentUser = null;
                 loginBtn.classList.remove('hidden');
                 userLogged.classList.add('hidden');
-                historyList.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-white/20">Connectez-vous pour sauvegarder votre historique.</td></tr>`;
+
+                storageStatus.innerText = "Mode Invité (Stockage local temporaire)";
+                storageStatus.classList.remove('text-green-400');
+                historySource.innerText = "LOCAL STORAGE (3 JOURS)";
+                btnClearLocal.classList.remove('hidden');
+
+                loadHistoryFromLocal();
             }
         });
 
-        // --- UI FUNCTIONS ---
-        inputText.addEventListener('input', () => {
-            charCount.innerText = inputText.value.length + " caractères";
-        });
-
+        // --- UI UTILS ---
+        inputText.addEventListener('input', () => { charCount.innerText = inputText.value.length + " caractères"; });
+        
         window.switchMode = (mode) => {
             currentMode = mode;
+            document.getElementById('state-result-detect').classList.add('hidden');
+            document.getElementById('state-result-humanize').classList.add('hidden');
+            document.getElementById('state-empty').classList.remove('hidden');
+
             const btnDetect = document.getElementById('btn-mode-detect');
             const btnHumanize = document.getElementById('btn-mode-humanize');
-            const btnActionText = actionBtn.querySelector('span');
-            const btnActionIcon = actionBtn.querySelector('i');
-
-            stateResultDetect.classList.add('hidden');
-            stateResultHumanize.classList.add('hidden');
-            stateEmpty.classList.remove('hidden');
+            const actionText = actionBtn.querySelector('span');
+            const actionIcon = actionBtn.querySelector('i');
 
             if (mode === 'detect') {
                 btnDetect.className = "flex-1 py-3 rounded-lg font-bold text-sm transition-all bg-white/10 text-white shadow-lg";
                 btnHumanize.className = "flex-1 py-3 rounded-lg font-bold text-sm text-white/50 hover:text-white transition-all";
-                btnActionText.innerText = "Analyser";
-                btnActionIcon.className = "fa-solid fa-magnifying-glass";
-                actionBtn.classList.remove('bg-purple-600', 'hover:bg-purple-500');
-                actionBtn.classList.add('bg-brand-600', 'hover:bg-brand-500');
+                actionText.innerText = "Analyser";
+                actionIcon.className = "fa-solid fa-magnifying-glass";
+                actionBtn.className = "px-8 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm uppercase tracking-wide shadow-lg shadow-brand-500/20 transition-all flex items-center gap-2";
             } else {
                 btnHumanize.className = "flex-1 py-3 rounded-lg font-bold text-sm transition-all bg-white/10 text-white shadow-lg";
                 btnDetect.className = "flex-1 py-3 rounded-lg font-bold text-sm text-white/50 hover:text-white transition-all";
-                btnActionText.innerText = "Humaniser";
-                btnActionIcon.className = "fa-solid fa-wand-magic-sparkles";
-                actionBtn.classList.remove('bg-brand-600', 'hover:bg-brand-500');
-                actionBtn.classList.add('bg-purple-600', 'hover:bg-purple-500');
+                actionText.innerText = "Humaniser";
+                actionIcon.className = "fa-solid fa-wand-magic-sparkles";
+                actionBtn.className = "px-8 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm uppercase tracking-wide shadow-lg shadow-purple-500/20 transition-all flex items-center gap-2";
             }
         };
 
         window.copyToClipboard = () => {
-            outputHumanized.select();
+            document.getElementById('output-humanized').select();
             document.execCommand('copy');
             alert("Texte copié !");
         };
 
-        // --- CORE LOGIC ---
+        // --- MISTRAL API LOGIC ---
         actionBtn.addEventListener('click', async () => {
             const text = inputText.value.trim();
             if (!text) { alert("Veuillez entrer du texte."); return; }
+            if (text.length < 50 && currentMode === 'detect') { alert("Texte trop court (min 50 caractères)."); return; }
             
-            stateEmpty.classList.add('hidden');
-            stateResultDetect.classList.add('hidden');
-            stateResultHumanize.classList.add('hidden');
-            stateLoading.classList.remove('hidden');
+            document.getElementById('state-empty').classList.add('hidden');
+            document.getElementById('state-result-detect').classList.add('hidden');
+            document.getElementById('state-result-humanize').classList.add('hidden');
+            document.getElementById('state-loading').classList.remove('hidden');
 
             try {
-                if (currentMode === 'detect') {
-                    await runDetector(text);
-                } else {
-                    await runHumanizer(text);
-                }
+                if (currentMode === 'detect') await runDetector(text);
+                else await runHumanizer(text);
             } catch (error) {
                 console.error(error);
                 alert("Erreur API: " + error.message);
-                stateLoading.classList.add('hidden');
-                stateEmpty.classList.remove('hidden');
+                document.getElementById('state-loading').classList.add('hidden');
+                document.getElementById('state-empty').classList.remove('hidden');
             }
         });
 
-        // 1. DETECTOR ENGINE
         async function runDetector(text) {
             const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
                 method: 'POST',
@@ -375,39 +381,33 @@
                 body: JSON.stringify({
                     model: "mistral-small-latest",
                     messages: [
-                        { role: "system", content: "You are an AI detection engine. Analyze the text. Return JSON ONLY: { \"score\": number (0-100, 100=AI), \"verdict\": \"Human\"|\"Mixed\"|\"AI-Generated\", \"reasoning\": \"Short explanation in French\" }." },
+                        { role: "system", content: "You are an AI detection engine. Analyze the text for patterns typical of LLMs (perplexity, burstiness). Return JSON ONLY: { \"score\": number (0-100, 100=AI), \"verdict\": \"Human\"|\"Mixed\"|\"AI-Generated\", \"reasoning\": \"Short explanation in French\" }." },
                         { role: "user", content: text }
                     ],
                     response_format: { type: "json_object" }
                 })
             });
-
             const data = await response.json();
             const result = JSON.parse(data.choices[0].message.content);
 
-            stateLoading.classList.add('hidden');
-            stateResultDetect.classList.remove('hidden');
+            document.getElementById('state-loading').classList.add('hidden');
+            document.getElementById('state-result-detect').classList.remove('hidden');
 
             const circle = document.getElementById('gauge-circle');
-            const scoreText = document.getElementById('score-text');
-            const verdictText = document.getElementById('verdict-text');
-            const reasoningText = document.getElementById('reasoning-text');
-
-            let color = "#10b981"; // Green
-            if (result.score > 40) color = "#f59e0b"; // Orange
-            if (result.score > 70) color = "#ef4444"; // Red
+            let color = "#10b981"; 
+            if (result.score > 40) color = "#f59e0b";
+            if (result.score > 70) color = "#ef4444";
 
             circle.setAttribute('stroke', color);
             circle.setAttribute('stroke-dasharray', `${result.score}, 100`);
-            scoreText.textContent = result.score + "%";
-            verdictText.textContent = result.verdict;
-            verdictText.style.color = color;
-            reasoningText.textContent = result.reasoning;
+            document.getElementById('score-text').textContent = result.score + "%";
+            const vText = document.getElementById('verdict-text');
+            vText.textContent = result.verdict; vText.style.color = color;
+            document.getElementById('reasoning-text').textContent = result.reasoning;
 
-            saveToDB("Détection", text.substring(0, 30) + "...", `${result.score}% AI`);
+            saveEntry("Détection", text.substring(0, 30) + "...", `${result.score}% AI`);
         }
 
-        // 2. HUMANIZER ENGINE (Hardcore Mode)
         async function runHumanizer(text) {
             const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
                 method: 'POST',
@@ -415,70 +415,105 @@
                 body: JSON.stringify({
                     model: "mistral-medium-latest",
                     messages: [
-                        { role: "system", content: "You are a specialized Humanizer Tool. Your goal: Rewrite the text to bypass AI detectors (ZeroGPT, Turnitin). Techniques: 1. High Burstiness (mix very short and very long sentences). 2. High Perplexity (use unpredictable vocabulary). 3. Add personal nuances, idiomatic expressions, and minor imperfections that feel human. 4. Keep the original meaning but change the structure entirely. Output ONLY the rewritten text in French." },
+                        { role: "system", content: "You are a specialized Humanizer. Rewrite the text to satisfy: High Burstiness, High Perplexity, Natural imperfection. Output ONLY the rewritten text in French." },
                         { role: "user", content: text }
                     ]
                 })
             });
-
             const data = await response.json();
-            const rewrittenText = data.choices[0].message.content;
+            const result = data.choices[0].message.content;
 
-            stateLoading.classList.add('hidden');
-            stateResultHumanize.classList.remove('hidden');
-            outputHumanized.value = rewrittenText;
+            document.getElementById('state-loading').classList.add('hidden');
+            document.getElementById('state-result-humanize').classList.remove('hidden');
+            document.getElementById('output-humanized').value = result;
 
-            saveToDB("Humanisation", text.substring(0, 30) + "...", "Succès");
+            saveEntry("Humanisation", text.substring(0, 30) + "...", "Succès");
         }
 
-        // --- DATABASE FUNCTIONS (Utilise "db" de WikimindDatabase) ---
+        // ==========================================
+        // 4. STORAGE LOGIC (HYBRID)
+        // ==========================================
 
-        function saveToDB(type, excerpt, result) {
-            if (!currentUser) return;
-            // On écrit dans la DB de stockage, mais on utilise l'ID de l'utilisateur de l'Auth
-            const historyRef = ref(db, 'history/' + currentUser.uid);
-            push(historyRef, {
-                type: type,
-                excerpt: excerpt,
-                result: result,
-                timestamp: Date.now()
-            });
+        function saveEntry(type, excerpt, result) {
+            const entry = { type, excerpt, result, timestamp: Date.now() };
+
+            if (currentUser) {
+                // Cloud Save
+                push(ref(db, 'history/' + currentUser.uid), entry);
+            } else {
+                // Local Save
+                let localData = JSON.parse(localStorage.getItem('wm_history') || '[]');
+                localData.push(entry);
+                localStorage.setItem('wm_history', JSON.stringify(localData));
+                loadHistoryFromLocal(); // Refresh UI
+            }
         }
 
+        // READ FROM DB (Logged In)
         function loadHistoryFromDB() {
             if (!currentUser) return;
-            
-            // On lit depuis la DB de stockage
             const historyRef = query(ref(db, 'history/' + currentUser.uid), limitToLast(10));
             onValue(historyRef, (snapshot) => {
-                historyList.innerHTML = '';
-                if (!snapshot.exists()) {
-                    historyList.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-white/30">Aucun historique récent.</td></tr>';
-                    return;
-                }
-
                 const data = snapshot.val();
-                const items = Object.values(data).sort((a, b) => b.timestamp - a.timestamp);
-
-                items.forEach(item => {
-                    const date = new Date(item.timestamp).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit' });
-                    
-                    let badgeClass = "bg-white/10 text-white";
-                    if(item.type === "Humanisation") badgeClass = "bg-purple-500/20 text-purple-300 border border-purple-500/30";
-                    if(item.type === "Détection") badgeClass = "bg-brand-500/20 text-brand-glow border border-brand-500/30";
-
-                    const row = `
-                        <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
-                            <td class="p-4"><span class="px-2 py-1 rounded text-xs font-bold ${badgeClass}">${item.type}</span></td>
-                            <td class="p-4 text-white/50 truncate max-w-[150px]">${item.excerpt}</td>
-                            <td class="p-4 font-bold text-white">${item.result}</td>
-                            <td class="p-4 text-right text-white/30 text-xs">${date}</td>
-                        </tr>
-                    `;
-                    historyList.innerHTML += row;
-                });
+                if (!data) {
+                    renderHistory([]);
+                } else {
+                    const items = Object.values(data).sort((a, b) => b.timestamp - a.timestamp);
+                    renderHistory(items);
+                }
             });
         }
+
+        // READ FROM LOCAL (Logged Out)
+        function loadHistoryFromLocal() {
+            let localData = JSON.parse(localStorage.getItem('wm_history') || '[]');
+            // Filter: Keep only last 3 days (3 * 24h * 60m * 60s * 1000ms)
+            const threeDaysAgo = Date.now() - (259200000);
+            const validData = localData.filter(item => item.timestamp > threeDaysAgo);
+            
+            // Update storage if items were removed
+            if (validData.length !== localData.length) {
+                localStorage.setItem('wm_history', JSON.stringify(validData));
+            }
+            
+            // Sort newest first
+            validData.sort((a, b) => b.timestamp - a.timestamp);
+            renderHistory(validData);
+        }
+
+        // UI RENDERER
+        function renderHistory(items) {
+            historyList.innerHTML = '';
+            if (items.length === 0) {
+                historyList.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-white/20">Aucun historique récent.</td></tr>';
+                return;
+            }
+
+            items.forEach(item => {
+                const date = new Date(item.timestamp).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit' });
+                
+                let badgeClass = "bg-white/10 text-white";
+                if(item.type === "Humanisation") badgeClass = "bg-purple-500/20 text-purple-300 border border-purple-500/30";
+                if(item.type === "Détection") badgeClass = "bg-brand-500/20 text-brand-glow border border-brand-500/30";
+
+                const row = `
+                    <tr class="border-b border-white/5 hover:bg-white/5 transition-colors animate-fade-in-up">
+                        <td class="p-4"><span class="px-2 py-1 rounded text-xs font-bold ${badgeClass}">${item.type}</span></td>
+                        <td class="p-4 text-white/50 truncate max-w-[150px]">${item.excerpt}</td>
+                        <td class="p-4 font-bold text-white">${item.result}</td>
+                        <td class="p-4 text-right text-white/30 text-xs">${date}</td>
+                    </tr>
+                `;
+                historyList.innerHTML += row;
+            });
+        }
+
+        window.clearLocalHistory = () => {
+            if(confirm("Effacer l'historique local ?")) {
+                localStorage.removeItem('wm_history');
+                loadHistoryFromLocal();
+            }
+        };
 
         // --- ANIMATION BG ---
         const canvas = document.getElementById('aurora-bg');
@@ -505,7 +540,6 @@
             }
             window.addEventListener('resize', resize); resize(); animate();
         }
-
     </script>
 </body>
 </html>
