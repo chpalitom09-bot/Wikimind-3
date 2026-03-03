@@ -73,9 +73,11 @@
 
             <!-- Auth State -->
             <div id="auth-container" class="flex items-center gap-4">
+                <!-- État déconnecté -->
                 <a href="Wikimind_user.html" id="login-btn" class="px-5 py-2 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-gray-200 transition-colors">
                     Connexion
                 </a>
+                <!-- État connecté -->
                 <div id="user-logged" class="hidden flex items-center gap-3">
                     <div class="text-right hidden md:block">
                         <div id="user-name-display" class="text-xs font-bold text-white">Utilisateur</div>
@@ -231,7 +233,7 @@
 
     </main>
 
-    <!-- MAIN LOGIC -->
+    <!-- MAIN LOGIC - VERSION 10.8.0 POUR MATCHING AVEC INDEX -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -240,6 +242,7 @@
         // ==========================================
         // 1. CONFIG AUTH (Compte Utilisateur)
         // ==========================================
+        // ATTENTION : On initialise SANS NOM ("default") pour partager la session de index.html
         const authConfig = {
             apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
             authDomain: "wikimind-3-comments.firebaseapp.com",
@@ -248,12 +251,13 @@
             messagingSenderId: "137479541640",
             appId: "1:137479541640:web:4ed2510a9908055052e03d"
         };
-        const authApp = initializeApp(authConfig, "authApp");
+        const authApp = initializeApp(authConfig); // PAS DE NOM ICI = DEFAULT APP
         const auth = getAuth(authApp);
 
         // ==========================================
         // 2. CONFIG DATABASE (Stockage Historique)
         // ==========================================
+        // Celle-ci doit avoir un nom pour ne pas entrer en conflit
         const dbConfig = {
             apiKey: "AIzaSyDncM_j7gCZQfIUKaBUzI1QDRXz78ANvAg",
             authDomain: "wikiminddatabase.firebaseapp.com",
@@ -262,8 +266,8 @@
             messagingSenderId: "938308326593",
             appId: "1:938308326593:web:93c162dc72b49dc8b7b040"
         };
-        const dbApp = initializeApp(dbConfig, "dbApp");
-        const db = getDatabase(dbApp);
+        const storageApp = initializeApp(dbConfig, "StorageApp");
+        const db = getDatabase(storageApp);
 
         // ==========================================
         // 3. LOGIQUE GLOBALE
@@ -289,13 +293,20 @@
             if (user) {
                 // USER CONNECTÉ
                 currentUser = user;
-                loginBtn.classList.add('hidden');
-                userLogged.classList.remove('hidden');
-                userLogged.classList.add('flex');
                 
+                // UI Toggle
+                if(loginBtn) loginBtn.classList.add('hidden');
+                if(userLogged) {
+                    userLogged.classList.remove('hidden');
+                    userLogged.classList.add('flex');
+                }
+                
+                // User Info
                 document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
-                document.getElementById('nav-avatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff`;
+                const photoUrl = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff&bold=true`;
+                document.getElementById('nav-avatar').src = photoUrl;
 
+                // Storage Info
                 storageStatus.innerText = "Synchronisation Cloud activée";
                 storageStatus.classList.add('text-green-400');
                 historySource.innerText = "CLOUD DATABASE";
@@ -305,9 +316,15 @@
             } else {
                 // USER DÉCONNECTÉ
                 currentUser = null;
-                loginBtn.classList.remove('hidden');
-                userLogged.classList.add('hidden');
+                
+                // UI Toggle
+                if(loginBtn) loginBtn.classList.remove('hidden');
+                if(userLogged) {
+                    userLogged.classList.add('hidden');
+                    userLogged.classList.remove('flex');
+                }
 
+                // Storage Info
                 storageStatus.innerText = "Mode Invité (Stockage local temporaire)";
                 storageStatus.classList.remove('text-green-400');
                 historySource.innerText = "LOCAL STORAGE (3 JOURS)";
@@ -438,7 +455,7 @@
             const entry = { type, excerpt, result, timestamp: Date.now() };
 
             if (currentUser) {
-                // Cloud Save
+                // Cloud Save (Uses 'db' which is StorageApp)
                 push(ref(db, 'history/' + currentUser.uid), entry);
             } else {
                 // Local Save
