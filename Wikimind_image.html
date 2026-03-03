@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WikiMind Creator - Flux Dev</title>
+    <title>WikiMind Creator - Flux</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
@@ -15,7 +15,6 @@
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
                     colors: {
-                        glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
                         brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' }
                     },
                     animation: { 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }
@@ -31,7 +30,7 @@
         }
         .text-gradient { background: linear-gradient(135deg, #ffffff 0%, #a5a6f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        /* Loader Spécifique Flux */
+        /* Loader */
         .flux-loader {
             width: 48px; height: 48px;
             border: 3px solid #FFF; border-radius: 50%;
@@ -45,16 +44,12 @@
         }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .tab-active { background: rgba(99, 102, 241, 0.2); border-color: #6366f1; color: white; }
-        
-        /* Gallery Scrollbar */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="selection:bg-brand-500 selection:text-white">
 
-    <!-- AURORA BG -->
     <canvas id="aurora-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
 
     <!-- NAVBAR -->
@@ -86,9 +81,9 @@
     <main class="relative pt-32 pb-20 px-4 md:px-6 max-w-7xl mx-auto">
         
         <!-- HEADER -->
-        <div class="text-center mb-12 animate-fade-in-up">
-            <h1 class="text-4xl md:text-5xl font-display font-bold mb-4">Moteur <span class="text-gradient">Flux Dev</span></h1>
-            <p class="text-white/60">Génération haute définition via l'API Pixazo. Sauvegarde locale 7 jours.</p>
+        <div class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-display font-bold mb-4">Générateur <span class="text-gradient">Flux Realism</span></h1>
+            <p class="text-white/60">Modèle Flux via Pollinations AI. Rapide, Gratuit, Illimité.</p>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -96,351 +91,227 @@
             <!-- LEFT PANEL: CONTROLS -->
             <div class="lg:col-span-4 space-y-6">
                 
-                <!-- TABS -->
-                <div class="glass-panel p-2 rounded-xl flex justify-between gap-2">
-                    <button onclick="switchTab('text')" id="tab-text" class="flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all tab-active border border-transparent">
-                        <i class="fa-solid fa-pen-nib mr-2"></i>Text
-                    </button>
-                    <button onclick="switchTab('img')" id="tab-img" class="flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all text-white/50 border border-transparent hover:bg-white/5">
-                        <i class="fa-solid fa-image mr-2"></i>Img2Img
-                    </button>
-                </div>
-
-                <!-- CONTROLS FORM -->
                 <div class="glass-panel rounded-2xl p-6 relative overflow-hidden">
                     
-                    <!-- QUOTA ALERT -->
+                    <!-- QUOTA ALERT (GUEST) -->
                     <div id="quota-alert" class="hidden absolute inset-0 bg-black/90 backdrop-blur-md z-20 flex flex-col items-center justify-center text-center p-6">
                         <i class="fa-solid fa-lock text-3xl text-brand-500 mb-4"></i>
                         <h3 class="font-bold text-lg text-white">Limite journalière atteinte</h3>
-                        <p class="text-sm text-white/60 mb-6">Connectez-vous pour débloquer plus de générations Flux.</p>
+                        <p class="text-sm text-white/60 mb-6">Connectez-vous pour continuer à créer.</p>
                         <a href="Wikimind_user.html" class="px-6 py-2 bg-white text-black rounded-full font-bold text-xs uppercase hover:bg-gray-200 transition">Se connecter</a>
                     </div>
 
                     <!-- TEXT TO IMAGE -->
                     <div id="panel-text" class="space-y-4">
                         <div>
-                            <label class="text-xs text-white/50 uppercase font-bold ml-1">Prompt (Anglais recommandé)</label>
-                            <textarea id="prompt-input" rows="4" placeholder="A futuristic city skyline at sunset with flying cars, cyberpunk style, 8k..." 
+                            <label class="text-xs text-white/50 uppercase font-bold ml-1">Prompt (Description)</label>
+                            <textarea id="prompt-input" rows="4" placeholder="Ex: A futuristic city skyline at sunset, cyberpunk style, hyperrealistic, 8k..." 
                                 class="w-full mt-2 bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand-500 focus:bg-white/10 transition-all resize-none"></textarea>
                         </div>
                         
-                        <div>
-                            <label class="text-xs text-white/50 uppercase font-bold ml-1">Format</label>
-                            <select id="image-size" class="w-full mt-2 bg-white/5 border border-white/10 rounded-xl p-2.5 text-sm text-white focus:outline-none">
-                                <option value="landscape_4_3">Paysage (4:3)</option>
-                                <option value="landscape_16_9">Cinéma (16:9)</option>
-                                <option value="square_1_1">Carré (1:1)</option>
-                                <option value="portrait_3_4">Portrait (3:4)</option>
-                                <option value="portrait_9_16">Story (9:16)</option>
-                            </select>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs text-white/50 uppercase font-bold ml-1">Largeur</label>
+                                <select id="width-sel" class="w-full mt-2 bg-white/5 border border-white/10 rounded-xl p-2.5 text-sm text-white focus:outline-none">
+                                    <option value="1024">1024 px</option>
+                                    <option value="1280">1280 px</option>
+                                    <option value="768">768 px</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-xs text-white/50 uppercase font-bold ml-1">Hauteur</label>
+                                <select id="height-sel" class="w-full mt-2 bg-white/5 border border-white/10 rounded-xl p-2.5 text-sm text-white focus:outline-none">
+                                    <option value="1024">1024 px</option>
+                                    <option value="720">720 px</option>
+                                    <option value="1280">1280 px</option>
+                                </select>
+                            </div>
                         </div>
 
-                        <button onclick="startGeneration('text')" id="btn-gen-text" class="w-full py-3 mt-2 bg-brand-600 hover:bg-brand-500 rounded-xl font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 group shadow-lg shadow-brand-500/20">
-                            <span>Générer avec Flux</span>
-                            <i class="fa-solid fa-wand-magic-sparkles"></i>
-                        </button>
-                    </div>
-
-                    <!-- IMG TO IMAGE -->
-                    <div id="panel-img" class="space-y-4 hidden">
-                        <div>
-                            <label class="text-xs text-white/50 uppercase font-bold ml-1">URL Image Source</label>
-                            <input type="text" id="img-url-input" placeholder="https://..." class="w-full mt-2 bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none mb-2">
-                            <p class="text-[10px] text-white/40"><i class="fa-solid fa-info-circle"></i> L'API nécessite une URL publique pour l'image source.</p>
+                        <div class="flex items-center gap-2 mt-2">
+                            <input type="checkbox" id="enhance-prompt" class="rounded bg-white/10 border-white/20 text-brand-500 focus:ring-brand-500">
+                            <label for="enhance-prompt" class="text-xs text-white/70">Améliorer le prompt (IA)</label>
                         </div>
 
-                        <div>
-                            <label class="text-xs text-white/50 uppercase font-bold ml-1">Prompt de modification</label>
-                            <textarea id="prompt-img-input" rows="3" placeholder="Make it look like a oil painting..." 
-                                class="w-full mt-2 bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none resize-none"></textarea>
-                        </div>
-
-                        <button onclick="startGeneration('img')" id="btn-gen-img" class="w-full py-3 mt-2 bg-brand-600 hover:bg-brand-500 rounded-xl font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 group shadow-lg shadow-brand-500/20">
-                            <span>Transformer</span>
-                            <i class="fa-solid fa-paintbrush"></i>
+                        <button onclick="generateFlux()" id="btn-gen" class="w-full py-3 mt-4 bg-brand-600 hover:bg-brand-500 rounded-xl font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 group shadow-lg shadow-brand-500/20">
+                            <span>Générer</span>
+                            <i class="fa-solid fa-bolt"></i>
                         </button>
                     </div>
 
                     <!-- QUOTA INFO -->
                     <div class="mt-4 text-center border-t border-white/5 pt-4">
-                         <span id="quota-display" class="text-[10px] text-white/30 uppercase tracking-widest">Compteur Invité : <span id="quota-count" class="text-white font-bold">0</span>/3</span>
+                         <span id="quota-display" class="text-[10px] text-white/30 uppercase tracking-widest">Invité : <span id="quota-count" class="text-white font-bold">0</span>/3</span>
                     </div>
-
                 </div>
             </div>
 
             <!-- RIGHT PANEL: PREVIEW & GALLERY -->
             <div class="lg:col-span-8 flex flex-col h-full">
                 <!-- MAIN PREVIEW -->
-                <div class="glass-panel rounded-2xl flex-1 min-h-[500px] flex items-center justify-center relative p-4 group overflow-hidden border-brand-500/0 transition-colors" id="preview-container">
+                <div class="glass-panel rounded-2xl flex-1 min-h-[500px] flex items-center justify-center relative p-4 group overflow-hidden" id="preview-container">
                     
-                    <!-- Placeholder State -->
+                    <!-- Placeholder -->
                     <div id="preview-placeholder" class="text-center">
                         <div class="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse-slow">
-                            <i class="fa-solid fa-cube text-4xl text-white/20"></i>
+                            <i class="fa-solid fa-paintbrush text-4xl text-white/20"></i>
                         </div>
                         <h3 class="text-xl font-display font-bold mb-2">Prêt à créer</h3>
-                        <p class="text-white/40 text-sm max-w-xs mx-auto">Flux Dev est un modèle puissant mais lent. Soyez patient lors de la génération.</p>
+                        <p class="text-white/40 text-sm">Le modèle Flux est optimisé pour le photoréalisme.</p>
                     </div>
 
-                    <!-- Loading State -->
+                    <!-- Loading -->
                     <div id="preview-loading" class="hidden absolute inset-0 bg-black/80 backdrop-blur-md z-30 flex flex-col items-center justify-center rounded-2xl">
                         <span class="flux-loader mb-6"></span>
-                        <h3 class="text-lg font-bold font-display animate-pulse">Création en cours...</h3>
-                        <p id="loading-status" class="text-xs text-brand-400 mt-2 font-mono">Initialisation...</p>
-                        <p class="text-[10px] text-white/30 mt-8 absolute bottom-10">Cela peut prendre jusqu'à 60 secondes.</p>
+                        <h3 class="text-lg font-bold font-display animate-pulse">Génération en cours...</h3>
+                        <p class="text-xs text-brand-400 mt-2 font-mono">Construction des pixels</p>
                     </div>
 
                     <!-- Result Image -->
                     <img id="result-image" src="" class="hidden max-h-full max-w-full rounded-lg shadow-2xl object-contain z-10">
 
-                    <!-- Action Buttons (Overlay) -->
+                    <!-- Actions -->
                     <div id="result-actions" class="hidden absolute bottom-6 right-6 flex gap-3 z-20">
-                        <a id="download-link" href="#" download="wikimind-flux.png" class="px-6 py-3 bg-white text-black rounded-full hover:bg-gray-200 transition-colors shadow-lg font-bold text-xs uppercase flex items-center gap-2">
-                            <i class="fa-solid fa-download"></i> Télécharger
+                        <a id="download-link" href="#" target="_blank" class="px-6 py-3 bg-white text-black rounded-full hover:bg-gray-200 transition-colors shadow-lg font-bold text-xs uppercase flex items-center gap-2">
+                            <i class="fa-solid fa-download"></i> HD
                         </a>
                     </div>
                 </div>
                 
-                <!-- LOCAL STORAGE GALLERY STRIP -->
+                <!-- LOCAL STORAGE HISTORY -->
                 <div class="mt-6">
                     <div class="flex justify-between items-end mb-3 px-2">
-                        <h4 class="text-sm font-bold text-white/60 uppercase tracking-widest">Historique Local (7 jours)</h4>
-                        <button onclick="clearHistory()" class="text-[10px] text-red-400 hover:text-red-300">Tout effacer</button>
+                        <h4 class="text-sm font-bold text-white/60 uppercase tracking-widest">Historique (7 jours)</h4>
+                        <button onclick="clearHistory()" class="text-[10px] text-red-400 hover:text-red-300">Effacer</button>
                     </div>
-                    <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar min-h-[100px]" id="history-container">
-                        <!-- Items injected via JS -->
-                        <div class="text-white/20 text-xs flex items-center justify-center w-full border border-dashed border-white/10 rounded-xl">
-                            Aucune image récente
-                        </div>
-                    </div>
+                    <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar min-h-[100px]" id="history-container"></div>
                 </div>
             </div>
         </div>
 
     </main>
 
-    <!-- FIREBASE & LOGIC -->
+    <!-- LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-        // 1. CONFIG
+        // CONFIG FIREBASE (User Auth Only)
         const firebaseConfig = {
             apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
             authDomain: "wikimind-3-comments.firebaseapp.com",
             projectId: "wikimind-3-comments",
-            appId: "1:137479541640:web:4ed2510a9908055052e03d",
-            storageBucket: "wikimind-3-comments.appspot.com" 
+            appId: "1:137479541640:web:4ed2510a9908055052e03d"
         };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-
-        // API CONFIG (PIXAZO)
-        const API_KEY = "70fb6018bcae4fd48a41764fead45145";
-        const ENDPOINT_TXT = "https://gateway.pixazo.ai/flux-dev/v1/dev/textToImage";
-        const ENDPOINT_IMG = "https://gateway.pixazo.ai/flux-dev/v1/dev/imageToImage";
-        // Endpoint déduit pour le polling (Standard REST convention)
-        // SI ERREUR 404: C'est ici qu'il faudra ajuster l'URL selon la doc spécifique Pixazo
-        const ENDPOINT_STATUS = "https://gateway.pixazo.ai/flux-dev/v1/dev/requests/"; 
 
         // STATE
         let currentUser = null;
         let dailyCount = 0;
         const MAX_DAILY_GUEST = 3;
 
-        // DOM
+        // DOM ELEMENTS
         const els = {
+            prompt: document.getElementById('prompt-input'),
+            width: document.getElementById('width-sel'),
+            height: document.getElementById('height-sel'),
+            enhance: document.getElementById('enhance-prompt'),
+            loader: document.getElementById('preview-loading'),
+            placeholder: document.getElementById('preview-placeholder'),
+            img: document.getElementById('result-image'),
+            actions: document.getElementById('result-actions'),
+            dlLink: document.getElementById('download-link'),
+            history: document.getElementById('history-container'),
+            quotaAlert: document.getElementById('quota-alert'),
+            quotaCount: document.getElementById('quota-count'),
             loginBtn: document.getElementById('login-btn'),
             userLogged: document.getElementById('user-logged'),
             navAvatar: document.getElementById('nav-avatar'),
-            userName: document.getElementById('user-name-display'),
-            quotaAlert: document.getElementById('quota-alert'),
-            quotaCount: document.getElementById('quota-count'),
-            quotaDisplay: document.getElementById('quota-display'),
-            
-            promptTxt: document.getElementById('prompt-input'),
-            sizeSel: document.getElementById('image-size'),
-            
-            promptImg: document.getElementById('prompt-img-input'),
-            urlImg: document.getElementById('img-url-input'),
-            
-            loader: document.getElementById('preview-loading'),
-            loadStatus: document.getElementById('loading-status'),
-            placeholder: document.getElementById('preview-placeholder'),
-            resultImg: document.getElementById('result-image'),
-            actions: document.getElementById('result-actions'),
-            download: document.getElementById('download-link'),
-            history: document.getElementById('history-container')
+            userName: document.getElementById('user-name-display')
         };
 
-        // 2. INIT
+        // INIT
         initLocalStorage();
         renderHistory();
 
-        // 3. AUTH
+        // AUTH CHECK
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
                 els.loginBtn.classList.add('hidden');
                 els.userLogged.classList.remove('hidden');
                 els.userLogged.classList.add('flex');
-                els.navAvatar.src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff`;
-                els.userName.innerText = user.displayName || "Créateur";
-                
-                // Cacher quota pour les membres
-                els.quotaDisplay.classList.add('opacity-0');
-                els.quotaAlert.classList.add('hidden');
+                els.navAvatar.src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1`;
+                els.userName.innerText = user.displayName || "Membre";
+                els.quotaAlert.classList.add('hidden'); // No limits for logged users
             } else {
                 currentUser = null;
                 els.loginBtn.classList.remove('hidden');
                 els.userLogged.classList.add('hidden');
-                els.quotaDisplay.classList.remove('opacity-0');
                 checkQuotaUI();
             }
         });
 
-        // 4. GENERATION LOGIC
-        window.startGeneration = async (type) => {
+        // GENERATION LOGIC (POLLINATIONS FLUX)
+        window.generateFlux = function() {
             // Check Quota
             if (!currentUser && dailyCount >= MAX_DAILY_GUEST) {
                 els.quotaAlert.classList.remove('hidden');
                 return;
             }
 
-            // Prep Data
-            let payload = {};
-            let endpoint = "";
+            const promptText = els.prompt.value.trim();
+            if (!promptText) return alert("Veuillez décrire l'image.");
 
-            if (type === 'text') {
-                const prompt = els.promptTxt.value.trim();
-                const size = els.sizeSel.value;
-                if (!prompt) return alert("Veuillez entrer un prompt.");
-                endpoint = ENDPOINT_TXT;
-                payload = { prompt: prompt, image_size: size };
-            } else {
-                const url = els.urlImg.value.trim();
-                const prompt = els.promptImg.value.trim();
-                if (!url || !prompt) return alert("URL et Prompt requis.");
-                endpoint = ENDPOINT_IMG;
-                payload = { image_url: url, prompt: prompt };
-            }
-
-            // UI Loading
+            // UI
             els.loader.classList.remove('hidden');
             els.placeholder.classList.add('hidden');
-            els.resultImg.classList.add('hidden');
+            els.img.classList.add('hidden');
             els.actions.classList.add('hidden');
-            els.loadStatus.innerText = "Envoi de la requête...";
 
-            try {
-                // STEP 1: POST REQUEST
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Ocp-Apim-Subscription-Key': API_KEY,
-                        'Cache-Control': 'no-cache'
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) throw new Error(`Erreur API: ${response.status}`);
-                const data = await response.json();
-                
-                if (!data.request_id) throw new Error("Pas de Request ID reçu.");
-                
-                // STEP 2: POLLING (Attendre le résultat)
-                pollResult(data.request_id, payload.prompt);
-
-            } catch (error) {
-                console.error(error);
-                alert("Erreur: " + error.message);
-                resetUI();
+            // Build URL (Pollinations API - No Key needed)
+            const seed = Math.floor(Math.random() * 100000);
+            const w = els.width.value;
+            const h = els.height.value;
+            let finalPrompt = encodeURIComponent(promptText);
+            
+            if(els.enhance.checked) {
+                finalPrompt += encodeURIComponent(", high quality, detailed, 8k, masterpiece, photorealistic");
             }
+
+            // URL Magique qui génère l'image directement
+            const imageUrl = `https://image.pollinations.ai/prompt/${finalPrompt}?model=flux&width=${w}&height=${h}&seed=${seed}&nologo=true`;
+
+            // Preload
+            const tempImg = new Image();
+            tempImg.onload = () => {
+                els.loader.classList.add('hidden');
+                els.img.src = imageUrl;
+                els.img.classList.remove('hidden');
+                els.actions.classList.remove('hidden');
+                els.dlLink.href = imageUrl;
+
+                // Save
+                saveToHistory(imageUrl, promptText);
+                if(!currentUser) {
+                    dailyCount++;
+                    updateLocalStorage();
+                    checkQuotaUI();
+                }
+            };
+            tempImg.onerror = () => {
+                els.loader.classList.add('hidden');
+                alert("Erreur de chargement de l'image. Le serveur est peut-être saturé.");
+            };
+            tempImg.src = imageUrl;
         };
 
-        async function pollResult(requestId, promptOriginal) {
-            let attempts = 0;
-            const maxAttempts = 60; // 2 minutes max (2s * 60)
-            
-            const interval = setInterval(async () => {
-                attempts++;
-                els.loadStatus.innerText = `Génération Flux en cours... (${attempts}s)`;
-
-                try {
-                    // NOTE: Endpoint deviné. Si 404, l'API utilise peut-être une autre structure.
-                    // Parfois c'est GET /requests/{id} ou GET /query/{id}
-                    const res = await fetch(`${ENDPOINT_STATUS}${requestId}`, {
-                        headers: { 'Ocp-Apim-Subscription-Key': API_KEY }
-                    });
-
-                    // Si l'API retourne directement l'image en binaire (peu probable pour du polling mais possible)
-                    // Ou JSON avec status
-                    if(res.ok) {
-                        const resultData = await res.json();
-                        
-                        // LOGIQUE DE REPONSE (A adapter selon le vrai retour JSON de Pixazo)
-                        // On suppose ici : { status: "completed", result: "url..." } ou similaire
-                        // Si le JSON contient "status": "processing", on continue.
-                        // Si l'API Pixazo (Flux) retourne directement l'URL quand c'est fini :
-                        
-                        if (resultData.status === 'completed' || resultData.output || resultData.image_url) {
-                            clearInterval(interval);
-                            const finalUrl = resultData.output || resultData.image_url || resultData.result; // Fallback properties
-                            showSuccess(finalUrl, promptOriginal);
-                        } else if (resultData.status === 'failed') {
-                            clearInterval(interval);
-                            alert("La génération a échoué côté serveur.");
-                            resetUI();
-                        }
-                    }
-                } catch (e) {
-                    // Ignorer les erreurs réseau temporaires pendant le polling
-                    console.log("Polling wait...", e);
-                }
-
-                if (attempts >= maxAttempts) {
-                    clearInterval(interval);
-                    alert("Délai d'attente dépassé (Timeout). Le serveur est surchargé.");
-                    resetUI();
-                }
-            }, 2000); // Check toutes les 2 secondes
-        }
-
-        // Simuler le succès pour la démo si l'API est capricieuse (DEBUG ONLY)
-        // Pour la prod, la fonction pollResult doit marcher.
-        // Ici, je force un succès visuel si l'API échoue pour te montrer l'interface
-        // showSuccess("https://replicate.delivery/pbxt/...", "Prompt demo");
-
-        function showSuccess(url, prompt) {
-            els.loader.classList.add('hidden');
-            els.resultImg.src = url;
-            els.resultImg.classList.remove('hidden');
-            els.actions.classList.remove('hidden');
-            els.download.href = url;
-
-            // Save & Quota
-            saveToHistory(url, prompt);
-            if (!currentUser) {
-                dailyCount++;
-                updateLocalStorage();
-                checkQuotaUI();
-            }
-        }
-
-        function resetUI() {
-            els.loader.classList.add('hidden');
-            els.placeholder.classList.remove('hidden');
-        }
-
-        // 5. LOCAL STORAGE & HISTORY LOGIC
+        // --- LOCAL STORAGE & HISTORY (Gardé de ta version précédente) ---
         function initLocalStorage() {
             const today = new Date().toISOString().split('T')[0];
             const storedDate = localStorage.getItem('wiki_flux_date');
             
-            // Reset daily count if new day
             if (storedDate !== today) {
                 dailyCount = 0;
                 localStorage.setItem('wiki_flux_date', today);
@@ -449,7 +320,7 @@
                 dailyCount = parseInt(localStorage.getItem('wiki_flux_count') || 0);
             }
             
-            // Cleanup Old Images (> 7 days)
+            // Cleanup > 7 days
             const history = JSON.parse(localStorage.getItem('wiki_flux_gallery') || "[]");
             const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
             const cleanHistory = history.filter(item => item.timestamp > sevenDaysAgo);
@@ -468,69 +339,43 @@
 
         function saveToHistory(url, prompt) {
             const history = JSON.parse(localStorage.getItem('wiki_flux_gallery') || "[]");
-            const newItem = {
-                id: Date.now(),
-                url: url,
-                prompt: prompt,
-                timestamp: Date.now()
-            };
-            history.unshift(newItem); // Add to beginning
-            // Limit to 20 items to save space
-            if(history.length > 20) history.pop();
-            
+            const newItem = { id: Date.now(), url: url, prompt: prompt, timestamp: Date.now() };
+            history.unshift(newItem);
+            if(history.length > 15) history.pop();
             localStorage.setItem('wiki_flux_gallery', JSON.stringify(history));
             renderHistory();
         }
 
         function renderHistory() {
             const history = JSON.parse(localStorage.getItem('wiki_flux_gallery') || "[]");
-            const container = els.history;
-            container.innerHTML = '';
-
+            els.history.innerHTML = '';
             if (history.length === 0) {
-                container.innerHTML = '<div class="text-white/20 text-xs flex items-center justify-center w-full py-4 border border-dashed border-white/10 rounded-xl">Aucune image récente</div>';
+                els.history.innerHTML = '<div class="text-white/20 text-xs w-full py-4 text-center border border-dashed border-white/10 rounded-xl">Historique vide</div>';
                 return;
             }
-
             history.forEach(item => {
                 const div = document.createElement('div');
-                div.className = "flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden border border-white/10 cursor-pointer hover:border-brand-500 relative group transition-all";
-                div.innerHTML = `
-                    <img src="${item.url}" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <i class="fa-solid fa-eye text-white"></i>
-                    </div>
-                `;
+                div.className = "flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden border border-white/10 cursor-pointer hover:border-brand-500 relative group";
+                div.innerHTML = `<img src="${item.url}" class="w-full h-full object-cover">`;
                 div.onclick = () => {
-                    els.resultImg.src = item.url;
-                    els.resultImg.classList.remove('hidden');
+                    els.img.src = item.url;
+                    els.img.classList.remove('hidden');
                     els.placeholder.classList.add('hidden');
                     els.actions.classList.remove('hidden');
-                    els.download.href = item.url;
+                    els.dlLink.href = item.url;
                 };
-                container.appendChild(div);
+                els.history.appendChild(div);
             });
         }
 
         window.clearHistory = () => {
-            if(confirm("Supprimer l'historique local ?")) {
+            if(confirm("Tout effacer ?")) {
                 localStorage.removeItem('wiki_flux_gallery');
                 renderHistory();
             }
         };
 
-        // UI TABS
-        window.switchTab = (tab) => {
-            document.getElementById('panel-text').classList.add('hidden');
-            document.getElementById('panel-img').classList.add('hidden');
-            document.getElementById('tab-text').classList.remove('tab-active');
-            document.getElementById('tab-img').classList.remove('tab-active');
-            
-            document.getElementById(`panel-${tab}`).classList.remove('hidden');
-            document.getElementById(`tab-${tab}`).classList.add('tab-active');
-        };
-
-        // AURORA FX
+        // Aurora FX
         const canvas = document.getElementById('aurora-bg');
         if(canvas) {
             const ctx = canvas.getContext('2d');
