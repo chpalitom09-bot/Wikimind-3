@@ -1,483 +1,599 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WikiMind OS • Centre de Contrôle</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
-    <!-- Chart.js pour les graphiques -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Toastify -->
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WikiMind OS • Espace Utilisateur</title>
     
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js pour les stats de stockage -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
-                    colors: { 
-                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8', dark: '#1e1b4b' },
-                        surface: { 100: 'rgba(255,255,255,0.03)', 200: 'rgba(255,255,255,0.07)' }
+                    colors: {
+                        glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
+                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8', gold: '#fbbf24' }
                     },
-                    animation: { 'fade-in': 'fadeIn 0.6s ease-out forwards', 'pulse-slow': 'pulse 3s infinite' },
-                    keyframes: { fadeIn: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } } }
+                    animation: { 'fade-in-up': 'fadeInUp 0.5s ease-out forwards', 'pulse-slow': 'pulse 3s infinite' },
+                    keyframes: { fadeInUp: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } } }
                 }
             }
         }
     </script>
     <style>
-        body { background-color: #030305; color: #ffffff; overflow: hidden; }
-        /* Glassmorphism Premium */
-        .glass-card {
-            background: rgba(20, 20, 25, 0.7);
-            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.3);
-            transition: transform 0.3s ease, border-color 0.3s;
+        body { background-color: #050505; color: #ffffff; overflow-x: hidden; }
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         }
-        .glass-card:hover { border-color: rgba(99, 102, 241, 0.4); }
+        .text-gradient { background: linear-gradient(135deg, #ffffff 0%, #a5a6f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .token-gradient { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        .login-input {
-            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
-            color: white; outline: none; transition: all 0.3s;
-        }
-        .login-input:focus { border-color: #6366f1; background: rgba(99, 102, 241, 0.05); box-shadow: 0 0 15px rgba(99,102,241,0.2); }
+        /* Modal */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 100; align-items: center; justify-content: center; }
+        .modal-content { max-width: 500px; width: 90%; }
         
-        /* Sidebar Active State */
-        .nav-item.active { background: rgba(99, 102, 241, 0.15); border-left: 3px solid #6366f1; color: white; }
-        
-        /* Scrollbar */
+        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #050505; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
     </style>
 </head>
-<body class="min-h-screen flex text-sm selection:bg-brand-500 selection:text-white">
+<body class="selection:bg-brand-500 selection:text-white">
 
-    <!-- AURORA BACKGROUND -->
-    <div class="fixed inset-0 z-0">
-        <div class="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-brand-600/20 rounded-full blur-[120px] animate-pulse-slow"></div>
-        <div class="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px] animate-pulse-slow" style="animation-delay: 1.5s;"></div>
-    </div>
+    <!-- AURORA BG -->
+    <canvas id="aurora-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
 
-    <!-- LOADING OVERLAY -->
-    <div id="loader" class="fixed inset-0 z-50 bg-[#030305] flex flex-col gap-4 items-center justify-center transition-opacity duration-500">
-        <div class="relative w-16 h-16">
-            <div class="absolute inset-0 border-4 border-brand-500/30 rounded-full"></div>
-            <div class="absolute inset-0 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+    <!-- UI TOAST -->
+    <div id="toast-container"></div>
+
+    <!-- NAVBAR SIMPLIFIÉE -->
+    <nav class="fixed top-0 w-full z-50 px-6 py-6">
+        <div class="max-w-7xl mx-auto flex justify-between items-center glass-panel rounded-full px-6 py-3">
+            <a href="index.html" class="flex items-center gap-3 group">
+                <div class="w-8 h-8 bg-gradient-to-tr from-white to-gray-400 rounded-lg flex items-center justify-center">
+                    <span class="font-bold text-black text-xs">W</span>
+                </div>
+                <span class="font-display font-bold text-lg tracking-tight">WikiMind <span class="text-white/40 font-normal">OS</span></span>
+            </a>
+            <div class="flex items-center gap-4">
+                 <button id="logout-btn" class="hidden text-xs font-bold text-red-400 hover:text-red-300 transition uppercase tracking-widest border border-red-500/20 px-4 py-2 rounded-full bg-red-500/10">
+                    <i class="fa-solid fa-power-off mr-2"></i> Déconnexion
+                </button>
+            </div>
         </div>
-        <div class="text-brand-glow font-display font-bold tracking-widest text-xs animate-pulse">INITIALISATION DU NOYAU...</div>
-    </div>
+    </nav>
 
-    <!-- === AUTH VIEW (NON CONNECTÉ) === -->
-    <div id="auth-view" class="relative z-10 hidden w-full h-screen flex flex-col items-center justify-center p-6">
-        <div class="glass-card w-full max-w-[420px] p-8 rounded-3xl animate-fade-in relative overflow-hidden">
-            <!-- Decorative line -->
-            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-500 to-transparent"></div>
+    <!-- LOGIN SCREEN -->
+    <section id="login-screen" class="min-h-screen flex items-center justify-center px-4 relative">
+        <div class="glass-panel p-8 md:p-12 rounded-3xl w-full max-w-md text-center animate-fade-in-up border-t border-white/20">
+            <div class="w-16 h-16 bg-brand-500/20 rounded-2xl mx-auto flex items-center justify-center mb-6 text-3xl">🔐</div>
+            <h1 class="text-3xl font-display font-bold mb-2">Identification</h1>
+            <p class="text-white/50 text-sm mb-8">Accédez à votre Neural Cloud et gérez vos tokens.</p>
 
-            <div class="text-center mb-10">
-                <h1 class="font-display font-bold text-3xl mb-1">WikiMind <span class="text-brand-glow">OS</span></h1>
-                <p class="text-white/40 text-xs uppercase tracking-widest">Portail d'accès sécurisé</p>
-            </div>
-
-            <div class="grid grid-cols-3 gap-3 mb-8">
-                <button id="btn-google" class="group flex items-center justify-center p-3 rounded-xl bg-surface-100 hover:bg-surface-200 border border-white/5 transition">
-                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5 group-hover:scale-110 transition">
-                </button>
-                <button id="btn-microsoft" class="group flex items-center justify-center p-3 rounded-xl bg-surface-100 hover:bg-surface-200 border border-white/5 transition">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" class="w-5 h-5 group-hover:scale-110 transition">
-                </button>
-                <button id="btn-facebook" class="group flex items-center justify-center p-3 rounded-xl bg-surface-100 hover:bg-surface-200 border border-white/5 transition">
-                    <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" class="w-5 h-5 group-hover:scale-110 transition">
-                </button>
-            </div>
-
-            <div class="relative flex py-2 items-center mb-6">
-                <div class="flex-grow border-t border-white/10"></div>
-                <span class="flex-shrink-0 mx-4 text-white/20 text-[10px] uppercase">Ou via protocole standard</span>
-                <div class="flex-grow border-t border-white/10"></div>
-            </div>
-
-            <form id="email-form" class="space-y-4">
-                <div class="group">
-                    <input type="email" id="email" placeholder="Identifiant Neuronal" class="login-input w-full p-3.5 rounded-xl text-sm" required>
-                </div>
-                <div class="group">
-                    <input type="password" id="password" placeholder="Clé d'accès" class="login-input w-full p-3.5 rounded-xl text-sm" required>
-                </div>
-                <button type="submit" class="w-full bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-bold py-3.5 rounded-xl transition-all shadow-[0_0_30px_-5px_rgba(99,102,241,0.5)] hover:shadow-[0_0_50px_-5px_rgba(99,102,241,0.7)] transform hover:-translate-y-0.5">
-                    Connexion Système
-                </button>
-            </form>
+            <button id="google-login-btn" class="w-full bg-white text-black font-bold py-3.5 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-200 transition mb-4">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5"> Continuer avec Google
+            </button>
             
-            <div class="mt-8 text-center">
-                <a href="index.html" class="text-xs text-white/30 hover:text-white transition flex items-center justify-center gap-2">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                    Retour à l'accueil
-                </a>
+            <div class="relative py-4">
+                <div class="absolute inset-0 flex items-center"><span class="w-full border-t border-white/10"></span></div>
+                <div class="relative flex justify-center text-xs uppercase"><span class="bg-black/50 px-2 text-white/30 backdrop-blur-sm">Sécurisé par Firebase</span></div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <!-- === DASHBOARD VIEW (CONNECTÉ) === -->
-    <div id="dashboard-view" class="hidden relative z-10 w-full h-screen flex bg-[#030305]">
+    <!-- DASHBOARD SCREEN (Hidden by default) -->
+    <section id="dashboard-screen" class="hidden pt-32 pb-20 px-4 md:px-6 max-w-7xl mx-auto min-h-screen">
         
-        <!-- SIDEBAR -->
-        <aside class="w-20 md:w-64 border-r border-white/5 bg-[#050507]/80 backdrop-blur-xl flex flex-col justify-between transition-all duration-300">
-            <div class="p-4 md:p-6">
-                <div class="flex items-center gap-3 mb-10 pl-1">
-                    <div class="w-8 h-8 bg-gradient-to-tr from-brand-500 to-purple-500 rounded-lg flex items-center justify-center font-bold text-white shadow-lg shadow-brand-500/20">W</div>
-                    <span class="font-display font-bold text-lg hidden md:block tracking-tight">WikiMind</span>
+        <!-- HEADER PROFILE -->
+        <div class="flex flex-col md:flex-row items-center md:items-end justify-between gap-6 mb-12 animate-fade-in-up">
+            <div class="flex items-center gap-6">
+                <div class="relative group cursor-pointer">
+                    <img id="user-avatar" src="" class="w-24 h-24 rounded-full border-2 border-white/20 object-cover bg-gray-800 shadow-[0_0_30px_rgba(99,102,241,0.3)]">
+                    <div class="absolute bottom-0 right-0 w-6 h-6 bg-green-500 border-4 border-[#050505] rounded-full" title="En ligne"></div>
                 </div>
-                
-                <nav class="space-y-2">
-                    <button class="nav-item active w-full px-4 py-3 rounded-xl text-left text-white/60 hover:text-white hover:bg-white/5 font-medium transition flex items-center gap-3 group">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-                        <span class="hidden md:block">Tableau de Bord</span>
-                    </button>
-                    <a href="index.html" class="nav-item w-full px-4 py-3 rounded-xl text-left text-white/60 hover:text-white hover:bg-white/5 font-medium transition flex items-center gap-3">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
-                        <span class="hidden md:block">Accès Réseau</span>
-                    </a>
-                </nav>
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <h1 id="user-name" class="text-3xl font-display font-bold">Utilisateur</h1>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-brand-500/20 text-brand-glow border border-brand-500/30 uppercase tracking-wide">Pro</span>
+                    </div>
+                    <p id="user-email" class="text-white/40 text-sm font-mono mb-2">user@example.com</p>
+                    <div class="flex gap-2 text-xs text-white/60">
+                        <span class="flex items-center gap-1"><i class="fa-solid fa-clock"></i> Inscrit : <span id="creation-date">...</span></span>
+                    </div>
+                </div>
             </div>
+            
+            <!-- MIND TOKEN CARD -->
+            <div class="glass-panel p-6 rounded-2xl border border-yellow-500/20 bg-yellow-500/5 relative overflow-hidden group w-full md:w-auto min-w-[300px]">
+                <div class="absolute -right-6 -top-6 w-24 h-24 bg-yellow-500/20 blur-[40px] rounded-full"></div>
+                
+                <div class="relative z-10">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-xs font-bold text-yellow-500 uppercase tracking-widest flex items-center gap-2">
+                            <i class="fa-solid fa-coins"></i> Mind Tokens
+                        </span>
+                        <span class="text-[10px] bg-yellow-500/20 text-yellow-200 px-2 py-1 rounded border border-yellow-500/30">v3.0</span>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <h2 id="token-balance" class="text-4xl font-display font-bold token-gradient">0</h2>
+                        <span class="text-sm text-white/40 font-bold">MT</span>
+                    </div>
+                    <div class="text-xs text-white/30 mt-1 mb-4">Valeur estimée : <span id="token-value" class="text-green-400">0.00 €</span></div>
+                    
+                    <button onclick="window.openTokenModal()" class="w-full py-2 rounded-lg bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-200 text-xs font-bold uppercase tracking-wide transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-hand-holding-dollar"></i> Demander des Tokens (IA)
+                    </button>
+                </div>
+            </div>
+        </div>
 
-            <div class="p-4 md:p-6 border-t border-white/5">
-                <div class="flex items-center gap-3 mb-4 cursor-pointer hover:bg-white/5 p-2 rounded-lg transition" id="user-profile-btn">
-                    <img id="user-avatar-small" class="w-9 h-9 rounded-full border border-white/10 bg-gray-800 object-cover">
-                    <div class="hidden md:block overflow-hidden">
-                        <div id="sidebar-name" class="font-bold truncate text-sm text-white">User</div>
-                        <div class="text-[10px] text-brand-glow flex items-center gap-1">
-                            <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Connecté
+        <!-- STATS GRID -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 animate-fade-in-up" style="animation-delay: 0.1s;">
+            
+            <!-- STORAGE CARD -->
+            <div class="glass-panel p-6 rounded-2xl relative">
+                <h3 class="font-display font-bold text-lg mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-server text-brand-glow"></i> Stockage Données
+                </h3>
+                
+                <!-- Chart -->
+                <div class="h-40 relative mb-4">
+                    <canvas id="storageChart"></canvas>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <span id="total-usage-percent" class="text-2xl font-bold">0%</span>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-white/60"><i class="fa-solid fa-hard-drive mr-1"></i> Local (Navigateur)</span>
+                            <span id="local-size" class="font-mono text-brand-glow">0 KB</span>
+                        </div>
+                        <div class="w-full bg-white/5 rounded-full h-1.5">
+                            <div id="local-bar" class="bg-brand-500 h-1.5 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-white/60"><i class="fa-solid fa-cloud mr-1"></i> Cloud (Firebase)</span>
+                            <span id="cloud-size" class="font-mono text-purple-400">Calcul...</span>
+                        </div>
+                        <div class="w-full bg-white/5 rounded-full h-1.5">
+                            <div id="cloud-bar" class="bg-purple-500 h-1.5 rounded-full transition-all duration-1000" style="width: 0%"></div>
                         </div>
                     </div>
                 </div>
-                <button id="logout-btn" class="w-full py-2 rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 hover:border-red-500/40 text-xs font-bold transition flex items-center justify-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                    <span class="hidden md:inline">Déconnexion</span>
+            </div>
+
+            <!-- COMMUNITY STATS -->
+            <div class="glass-panel p-6 rounded-2xl">
+                <h3 class="font-display font-bold text-lg mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-users text-green-400"></i> Activité Réseau
+                </h3>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white/5 p-4 rounded-xl border border-white/5">
+                        <div class="text-2xl font-bold mb-1" id="stat-comments">0</div>
+                        <div class="text-xs text-white/40 uppercase">Commentaires</div>
+                    </div>
+                    <div class="bg-white/5 p-4 rounded-xl border border-white/5">
+                        <div class="text-2xl font-bold mb-1" id="stat-likes">0</div>
+                        <div class="text-xs text-white/40 uppercase">J'aimes Reçus</div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 p-4 bg-orange-500/10 rounded-xl border border-orange-500/20">
+                    <div class="text-xs font-bold text-orange-400 mb-2"><i class="fa-solid fa-shield-halved"></i> Score de Réputation</div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-full bg-black/40 rounded-full h-2">
+                            <div class="bg-orange-500 h-2 rounded-full" style="width: 98%"></div>
+                        </div>
+                        <span class="text-xs font-mono">98/100</span>
+                    </div>
+                    <p class="text-[10px] text-white/40 mt-2">Basé sur l'analyse IA de vos messages.</p>
+                </div>
+            </div>
+
+            <!-- MODULES ACCESS -->
+            <div class="glass-panel p-6 rounded-2xl flex flex-col justify-between">
+                <div>
+                    <h3 class="font-display font-bold text-lg mb-6 flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-blue-400"></i> Mes Modules
+                    </h3>
+                    <div class="space-y-3">
+                        <a href="Wikimind_flash.html" class="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition group">
+                            <div class="w-8 h-8 rounded bg-brand-500/20 text-brand-glow flex items-center justify-center"><i class="fa-solid fa-bolt"></i></div>
+                            <div class="flex-1">
+                                <div class="text-sm font-bold">Flash Cards</div>
+                                <div class="text-[10px] text-white/40">Dernier accès: <span id="last-flash">Jamais</span></div>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-white/20 group-hover:text-white transition"></i>
+                        </a>
+                        <a href="Wikimind_AI_studio.html" class="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition group">
+                            <div class="w-8 h-8 rounded bg-purple-500/20 text-purple-300 flex items-center justify-center"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                            <div class="flex-1">
+                                <div class="text-sm font-bold">AI Studio</div>
+                                <div class="text-[10px] text-white/40">Créez du contenu</div>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-white/20 group-hover:text-white transition"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-white/5 text-center">
+                    <a href="index.html" class="text-xs text-white/40 hover:text-white transition">Voir tout le catalogue</a>
+                </div>
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- TOKEN REQUEST MODAL -->
+    <div id="token-modal" class="modal" onclick="window.closeTokenModal()">
+        <div class="modal-content glass-panel p-8 rounded-2xl border border-yellow-500/30 relative" onclick="event.stopPropagation()">
+            <div class="absolute top-0 right-0 p-4">
+                <button onclick="window.closeTokenModal()" class="text-white/40 hover:text-white"><i class="fa-solid fa-times"></i></button>
+            </div>
+            
+            <div class="flex items-center gap-4 mb-6">
+                <div class="w-12 h-12 rounded-full bg-yellow-500/20 text-yellow-400 flex items-center justify-center text-2xl">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold font-display">Banque IA WikiMind</h3>
+                    <p class="text-xs text-white/50">Gérée par Mistral AI</p>
+                </div>
+            </div>
+
+            <p class="text-sm text-white/80 mb-4 leading-relaxed">
+                Vous pouvez demander une recharge de <strong>50 Mind Tokens</strong>. L'Intelligence Artificielle va analyser votre raison. Soyez convaincant (usage éducatif, test, projet...).
+            </p>
+
+            <textarea id="token-reason" rows="4" placeholder="Ex: J'ai besoin de tokens pour générer un gros quiz de révision pour mon partiel de Droit..." class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-yellow-500 mb-6 resize-none placeholder-white/20"></textarea>
+
+            <div class="flex justify-end gap-3">
+                <button onclick="window.closeTokenModal()" class="px-5 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white text-xs font-bold transition">Annuler</button>
+                <button id="submit-token-request" class="px-6 py-2 rounded-lg bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-black text-xs font-bold transition shadow-lg shadow-yellow-500/20 flex items-center gap-2">
+                    <i class="fa-solid fa-paper-plane"></i> Envoyer la demande
                 </button>
             </div>
-        </aside>
-
-        <!-- MAIN CONTENT -->
-        <main class="flex-1 p-6 md:p-10 overflow-y-auto relative">
-            
-            <!-- HEADER -->
-            <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4 animate-fade-in">
-                <div>
-                    <h2 class="text-white/40 text-xs uppercase tracking-widest mb-1">Système Opérationnel v3.0</h2>
-                    <h1 class="text-4xl font-display font-bold text-white">Vue d'ensemble</h1>
-                </div>
-                <div class="flex gap-4">
-                    <div class="glass-card px-4 py-2 rounded-full flex items-center gap-3">
-                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                        <span class="text-xs font-mono text-white/80">LATENCE: <span class="text-green-400">18ms</span></span>
-                    </div>
-                </div>
-            </header>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 animate-fade-in" style="animation-delay: 0.1s;">
-                
-                <!-- MEMORY MONITOR (Graphique) -->
-                <div class="glass-card rounded-2xl p-6 md:col-span-1 lg:col-span-1 flex flex-col items-center justify-center relative">
-                    <h3 class="absolute top-6 left-6 text-sm font-bold text-white/80">Allocation Mémoire</h3>
-                    <div class="w-48 h-48 mt-6 relative">
-                        <canvas id="storageChart"></canvas>
-                        <!-- Center Text -->
-                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <span class="text-2xl font-bold font-display" id="total-storage-text">0%</span>
-                            <span class="text-[10px] text-white/40 uppercase">Utilisé</span>
-                        </div>
-                    </div>
-                    <div class="w-full mt-6 space-y-3">
-                        <div class="flex justify-between text-xs">
-                            <span class="flex items-center gap-2 text-white/60"><span class="w-2 h-2 rounded-full bg-brand-500"></span>Cloud (WikiMind)</span>
-                            <span class="font-mono text-white" id="cloud-usage-text">...</span>
-                        </div>
-                        <div class="flex justify-between text-xs">
-                            <span class="flex items-center gap-2 text-white/60"><span class="w-2 h-2 rounded-full bg-purple-500"></span>Local (Device)</span>
-                            <span class="font-mono text-white" id="local-usage-text">...</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- USER IDENTITY CARD -->
-                <div class="glass-card rounded-2xl p-6 md:col-span-2 lg:col-span-2 flex flex-col justify-between relative overflow-hidden">
-                    <div class="absolute right-0 top-0 w-64 h-64 bg-brand-500/10 blur-[80px] rounded-full -z-10"></div>
-                    
-                    <div class="flex justify-between items-start mb-6">
-                        <h3 class="text-sm font-bold text-white/80">Signature Numérique</h3>
-                        <span class="px-2 py-1 rounded bg-brand-500/20 text-brand-glow text-[10px] border border-brand-500/30">ENCRYPTED</span>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-6">
-                        <div>
-                            <div class="text-[10px] text-white/40 uppercase mb-1">UID</div>
-                            <div id="user-uid" class="font-mono text-xs text-white/80 break-all bg-black/20 p-2 rounded border border-white/5">Chargement...</div>
-                        </div>
-                        <div>
-                            <div class="text-[10px] text-white/40 uppercase mb-1">Fournisseur</div>
-                            <div id="provider-id" class="font-mono text-xs text-white/80 capitalize flex items-center gap-2">
-                                <span class="w-1.5 h-1.5 bg-white rounded-full"></span> ...
-                            </div>
-                        </div>
-                        <div class="col-span-2">
-                            <div class="text-[10px] text-white/40 uppercase mb-1">Email</div>
-                            <div id="user-email" class="font-mono text-sm text-white font-bold tracking-wide">...</div>
-                        </div>
-                    </div>
-
-                    <div class="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
-                        <div class="text-xs text-white/40">Session active depuis: <span class="text-white" id="last-login">À l'instant</span></div>
-                        <button class="text-xs text-brand-glow hover:text-white transition">Gérer les clés ></button>
-                    </div>
-                </div>
-
-                <!-- SYSTEM STATUS -->
-                <div class="glass-card rounded-2xl p-6 flex flex-col gap-4">
-                    <h3 class="text-sm font-bold text-white/80">État des Modules</h3>
-                    
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between group">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded bg-white/5 flex items-center justify-center text-lg group-hover:bg-brand-500/20 transition-colors">🧠</div>
-                                <div>
-                                    <div class="text-xs font-bold">Core AI</div>
-                                    <div class="text-[10px] text-green-400">Opérationnel</div>
-                                </div>
-                            </div>
-                            <div class="h-1.5 w-1.5 bg-green-500 rounded-full shadow-[0_0_8px_#22c55e]"></div>
-                        </div>
-
-                        <div class="flex items-center justify-between group">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded bg-white/5 flex items-center justify-center text-lg group-hover:bg-purple-500/20 transition-colors">🎨</div>
-                                <div>
-                                    <div class="text-xs font-bold">Studio</div>
-                                    <div class="text-[10px] text-green-400">Opérationnel</div>
-                                </div>
-                            </div>
-                            <div class="h-1.5 w-1.5 bg-green-500 rounded-full shadow-[0_0_8px_#22c55e]"></div>
-                        </div>
-
-                        <div class="flex items-center justify-between group">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded bg-white/5 flex items-center justify-center text-lg group-hover:bg-blue-500/20 transition-colors">🔒</div>
-                                <div>
-                                    <div class="text-xs font-bold">Vault</div>
-                                    <div class="text-[10px] text-white/40">Veille</div>
-                                </div>
-                            </div>
-                            <div class="h-1.5 w-1.5 bg-white/20 rounded-full"></div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- RECENT ACTIVITY (Fake Data for vibes) -->
-            <div class="mt-6 glass-card rounded-2xl p-6 animate-fade-in" style="animation-delay: 0.2s;">
-                <h3 class="text-sm font-bold text-white/80 mb-4">Flux de Données Récent</h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="text-[10px] text-white/30 uppercase border-b border-white/5">
-                                <th class="pb-3 pl-2">Type</th>
-                                <th class="pb-3">Source</th>
-                                <th class="pb-3">Statut</th>
-                                <th class="pb-3 text-right pr-2">Temps</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-xs">
-                            <tr class="border-b border-white/5 hover:bg-white/5 transition">
-                                <td class="py-3 pl-2 flex items-center gap-2"><span class="w-1 h-4 bg-brand-500 rounded-full"></span>Auth</td>
-                                <td class="text-white/60">Portail WikiMind</td>
-                                <td class="text-green-400">Vérifié</td>
-                                <td class="text-right pr-2 text-white/40 font-mono">00:00:01</td>
-                            </tr>
-                            <tr class="border-b border-white/5 hover:bg-white/5 transition">
-                                <td class="py-3 pl-2 flex items-center gap-2"><span class="w-1 h-4 bg-purple-500 rounded-full"></span>Sync</td>
-                                <td class="text-white/60">Base Neuronale</td>
-                                <td class="text-green-400">Complété</td>
-                                <td class="text-right pr-2 text-white/40 font-mono">00:00:05</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-        </main>
+        </div>
     </div>
 
-    <!-- FIREBASE LOGIC -->
+    <!-- LOGIQUE JAVASCRIPT -->
     <script type="module">
-        // IMPORT VERSION 10.8.0 (Version Stable et Consistante)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut, GoogleAuthProvider, FacebookAuthProvider, OAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import Toastify from "https://cdn.jsdelivr.net/npm/toastify-js/src/toastify-es.js";
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, onValue, set, get, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // CONFIG AUTH (WikiMind-3) - Doit être identique partout
-        const authConfig = {
+        // ==========================================
+        // UI HELPERS
+        // ==========================================
+        window.showToast = (message, type = 'info') => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-lg text-sm font-medium shadow-xl flex items-center gap-3 animate-fade-in-up backdrop-blur-md border ${
+                type === 'error' ? 'bg-red-500/20 text-red-200 border-red-500/30' : 
+                type === 'success' ? 'bg-green-500/20 text-green-200 border-green-500/30' : 
+                'bg-white/10 text-white border-white/10'
+            }`;
+            const icon = type === 'success' ? '<i class="fa-solid fa-check-circle"></i>' : '<i class="fa-solid fa-info-circle"></i>';
+            toast.innerHTML = `${icon} <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        };
+
+        window.openTokenModal = () => document.getElementById('token-modal').style.display = 'flex';
+        window.closeTokenModal = () => document.getElementById('token-modal').style.display = 'none';
+
+        // ==========================================
+        // 1. CONFIG FIREBASE PRINCIPALE (Auth + User Data)
+        // ==========================================
+        const mainConfig = {
             apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
             authDomain: "wikimind-3-comments.firebaseapp.com",
+            databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "wikimind-3-comments",
             appId: "1:137479541640:web:4ed2510a9908055052e03d"
         };
-        const app = initializeApp(authConfig);
-        const auth = getAuth(app);
+        const mainApp = initializeApp(mainConfig);
+        const auth = getAuth(mainApp);
+        const dbMain = getDatabase(mainApp);
 
-        // Force la persistance locale (Correction Bug Session)
-        setPersistence(auth, browserLocalPersistence)
-            .then(() => console.log("Persistance de session activée."))
-            .catch((error) => console.error("Erreur persistance:", error));
+        // ==========================================
+        // 2. CONFIG FIREBASE COMMUNAUTÉ (Stats)
+        // ==========================================
+        const commConfig = {
+            apiKey: "AIzaSyCn5IyWS4deyVRG7zYY2qLQiNE49aD8a-Y",
+            authDomain: "wikimind-communauty.firebaseapp.com",
+            databaseURL: "https://wikimind-communauty-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "wikimind-communauty"
+        };
+        // Initialiser avec un nom secondaire pour éviter les conflits
+        const commApp = initializeApp(commConfig, "community");
+        const dbComm = getDatabase(commApp);
 
-        // UI ELEMENTS
-        const loader = document.getElementById('loader');
-        const authView = document.getElementById('auth-view');
-        const dashboardView = document.getElementById('dashboard-view');
+        // ==========================================
+        // GESTION AUTHENTIFICATION
+        // ==========================================
+        let currentUser = null;
+        let storageChart = null;
 
-        // CHART VARIABLE
-        let storageChartInstance = null;
-        
-        // AUTH STATE LISTENER
         onAuthStateChanged(auth, (user) => {
-            // Effet de transition fluide
-            loader.style.opacity = '0';
-            setTimeout(() => { 
-                loader.style.display = 'none'; 
-                
-                if (user) {
-                    // USER CONNECTÉ
-                    authView.classList.add('hidden');
-                    dashboardView.classList.remove('hidden');
-                    dashboardView.classList.add('flex');
-                    
-                    updateDashboard(user);
-                } else {
-                    // USER DÉCONNECTÉ
-                    dashboardView.classList.add('hidden');
-                    dashboardView.classList.remove('flex');
-                    authView.classList.remove('hidden');
-                    authView.classList.add('flex');
-                }
-            }, 500);
+            if (user) {
+                // USER LOGGED IN
+                currentUser = user;
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('dashboard-screen').classList.remove('hidden');
+                document.getElementById('logout-btn').classList.remove('hidden');
+
+                // Update Profile
+                document.getElementById('user-name').innerText = user.displayName;
+                document.getElementById('user-email').innerText = user.email;
+                document.getElementById('user-avatar').src = user.photoURL;
+                document.getElementById('creation-date').innerText = new Date(user.metadata.creationTime).toLocaleDateString('fr-FR');
+
+                // Load Data
+                initTokenSystem(user.uid);
+                initStorageStats(user.uid);
+                initCommunityStats(user.uid);
+
+            } else {
+                // USER LOGGED OUT
+                currentUser = null;
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('dashboard-screen').classList.add('hidden');
+                document.getElementById('logout-btn').classList.add('hidden');
+            }
         });
 
-        // FONCTION MISE À JOUR DASHBOARD
-        function updateDashboard(user) {
-            // Textes basiques
-            document.getElementById('sidebar-name').textContent = user.displayName || "Utilisateur";
-            document.getElementById('user-email').textContent = user.email;
-            document.getElementById('user-uid').textContent = user.uid;
-            document.getElementById('user-avatar-small').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff&bold=true`;
-            document.getElementById('provider-id').innerHTML = `<span class="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span> ${user.providerData[0]?.providerId.split('.')[0] || 'password'}`;
+        // Login Google
+        document.getElementById('google-login-btn').addEventListener('click', () => {
+            const provider = new GoogleAuthProvider();
+            signInWithPopup(auth, provider).catch(err => window.showToast("Erreur Connexion: " + err.message, "error"));
+        });
 
-            // --- CALCULATEUR DE MÉMOIRE (SIMULATION + RÉEL) ---
-            initMemoryChart(user.uid);
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            signOut(auth).then(() => window.showToast("Déconnecté.", "success"));
+        });
+
+        // ==========================================
+        // SYSTEME MIND TOKENS
+        // ==========================================
+        function initTokenSystem(uid) {
+            const tokenRef = ref(dbMain, `users/${uid}/tokens`);
+            
+            // Écoute temps réel
+            onValue(tokenRef, (snapshot) => {
+                let balance = snapshot.val();
+                
+                // Bonus de bienvenue (100) si le compte est vide
+                if (balance === null) {
+                    balance = 100;
+                    set(tokenRef, 100);
+                    window.showToast("Bienvenue ! 100 Mind Tokens offerts.", "success");
+                }
+
+                // UI Update
+                animateValue("token-balance", parseInt(document.getElementById("token-balance").innerText), balance, 1000);
+                
+                // Valeur en Euro (1 MT = 1.16€)
+                const euroVal = (balance * 1.16).toFixed(2);
+                document.getElementById('token-value').innerText = `${euroVal} €`;
+            });
         }
 
-        function initMemoryChart(uid) {
-            // 1. Calcul du stockage Local (Réel)
-            let localSize = 0;
-            if(window.localStorage) {
-                for(let key in localStorage) {
-                    if(localStorage.hasOwnProperty(key)) localSize += ((localStorage[key].length * 2));
+        // Animation Chiffres
+        function animateValue(id, start, end, duration) {
+            if (start === end) return;
+            const range = end - start;
+            let current = start;
+            const increment = end > start ? 1 : -1;
+            const stepTime = Math.abs(Math.floor(duration / range));
+            const obj = document.getElementById(id);
+            const timer = setInterval(function() {
+                current += increment;
+                obj.innerHTML = current;
+                if (current == end) clearInterval(timer);
+            }, stepTime > 10 ? stepTime : 10); // Min 10ms
+        }
+
+        // ==========================================
+        // IA BANQUIER (MISTRAL API)
+        // ==========================================
+        const MISTRAL_API_KEY = "SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9";
+
+        document.getElementById('submit-token-request').addEventListener('click', async () => {
+            if (!currentUser) return;
+            const reason = document.getElementById('token-reason').value.trim();
+            if (reason.length < 10) {
+                window.showToast("Raison trop courte. Soyez plus précis.", "error");
+                return;
+            }
+
+            const btn = document.getElementById('submit-token-request');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Analyse IA...`;
+            btn.disabled = true;
+
+            try {
+                // Prompt IA "Banquier"
+                const prompt = `Tu es le banquier IA strict mais juste de WikiMind. 
+                L'utilisateur demande 50 tokens gratuits.
+                Sa raison : "${reason}".
+                
+                Règles :
+                - Accepte si c'est pour l'éducation, un projet scolaire, tester des bugs ou création créative.
+                - Refuse si c'est du spam, mendicité ("j'en veux"), ou inintelligible.
+                
+                Réponds UNIQUEMENT au format JSON :
+                {"approved": true/false, "message": "Ton message court de justification"}
+                `;
+
+                const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${MISTRAL_API_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: "mistral-small-latest",
+                        messages: [{ role: "user", content: prompt }],
+                        temperature: 0.2,
+                        response_format: { type: "json_object" }
+                    })
+                });
+
+                const data = await response.json();
+                const result = JSON.parse(data.choices[0].message.content);
+
+                window.closeTokenModal();
+                document.getElementById('token-reason').value = ""; // Reset
+
+                if (result.approved) {
+                    // Transaction Firebase Sécurisée
+                    const tokenRef = ref(dbMain, `users/${currentUser.uid}/tokens`);
+                    await runTransaction(tokenRef, (tokens) => (tokens || 0) + 50);
+                    
+                    window.showToast(`✅ Accordé : ${result.message}`, "success");
+                } else {
+                    window.showToast(`❌ Refusé : ${result.message}`, "error");
+                }
+
+            } catch (error) {
+                console.error(error);
+                window.showToast("Erreur IA. Réessayez.", "error");
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        });
+
+        // ==========================================
+        // STATS STOCKAGE RÉEL
+        // ==========================================
+        async function initStorageStats(uid) {
+            // 1. Calcul LocalStorage (Réel)
+            let localBytes = 0;
+            for (let key in localStorage) {
+                if (localStorage.hasOwnProperty(key)) {
+                    localBytes += (localStorage[key].length + key.length) * 2; // UTF-16 approx
                 }
             }
-            const localKB = (localSize / 1024).toFixed(2);
-            
-            // 2. Simulation du stockage Cloud (Basé sur longueur UID pour être constant mais "aléatoire")
-            // Donne un chiffre entre 10MB et 100MB
-            const seed = uid.charCodeAt(0) + uid.charCodeAt(uid.length - 1);
-            const cloudMB = (seed % 90) + 10; 
-            
-            // Textes
-            document.getElementById('local-usage-text').innerText = `${localKB} KB`;
-            document.getElementById('cloud-usage-text').innerText = `${cloudMB} MB`;
+            const localKB = (localBytes / 1024).toFixed(2);
+            document.getElementById('local-size').innerText = `${localKB} KB`;
+            document.getElementById('local-bar').style.width = Math.min((localBytes / 5000000) * 100, 100) + "%"; // Base 5MB quota
 
-            // Setup Chart.js
+            // 2. Estimation Cloud (Via JSON Tree fetch)
+            // On récupère tout le noeud user pour estimer la taille
+            const userSnapshot = await get(ref(dbMain, `users/${uid}`));
+            const userData = userSnapshot.val();
+            let cloudBytes = 0;
+            if (userData) {
+                cloudBytes = JSON.stringify(userData).length; // Estimation brute JSON text
+            }
+            const cloudKB = (cloudBytes / 1024).toFixed(2);
+            document.getElementById('cloud-size').innerText = `${cloudKB} KB`;
+            document.getElementById('cloud-bar').style.width = Math.min((cloudBytes / 1024000) * 100, 100) + "%"; // Base 1MB quota soft
+
+            // Chart
             const ctx = document.getElementById('storageChart').getContext('2d');
-            
-            if(storageChartInstance) storageChartInstance.destroy();
+            if (storageChart) storageChart.destroy();
 
-            storageChartInstance = new Chart(ctx, {
+            storageChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Cloud', 'Local', 'Libre'],
+                    labels: ['Local', 'Cloud', 'Libre'],
                     datasets: [{
-                        data: [cloudMB, (localKB/1024), 500 - cloudMB], // Supposons 500MB max
+                        data: [localBytes, cloudBytes, 5000000 - (localBytes + cloudBytes)], // 5MB total ref
                         backgroundColor: ['#6366f1', '#a855f7', 'rgba(255, 255, 255, 0.05)'],
                         borderWidth: 0,
                         hoverOffset: 4
                     }]
                 },
                 options: {
-                    cutout: '75%',
+                    cutout: '80%',
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false }, tooltip: { enabled: true } },
-                    animation: {
-                        animateScale: true,
-                        animateRotate: true
-                    }
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    animation: { animateScale: true }
                 }
             });
-
-            // Animation compteur pourcentage
-            const percent = Math.round((cloudMB / 500) * 100);
-            let current = 0;
-            const counter = setInterval(() => {
-                if(current >= percent) clearInterval(counter);
-                else {
-                    current++;
-                    document.getElementById('total-storage-text').innerText = current + "%";
-                }
-            }, 20);
+            
+            // Update Text Center
+            const totalPercent = ((localBytes + cloudBytes) / 5000000 * 100).toFixed(1);
+            document.getElementById('total-usage-percent').innerText = totalPercent + "%";
         }
 
-        // TOAST NOTIFICATIONS
-        const showError = (msg) => Toastify({ text: "⚠️ " + msg, duration: 3000, style: { background: "rgba(239, 68, 68, 0.9)", backdropFilter: "blur(10px)", boxShadow: "0 4px 12px rgba(0,0,0,0.3)" } }).showToast();
-        const showSuccess = (msg) => Toastify({ text: "✨ " + msg, duration: 3000, style: { background: "rgba(16, 185, 129, 0.9)", backdropFilter: "blur(10px)" } }).showToast();
+        // ==========================================
+        // STATS COMMUNAUTÉ (CONFIG 2)
+        // ==========================================
+        function initCommunityStats(uid) {
+            // Compter les commentaires où uid == currentUser.uid
+            // Firebase RTDB n'a pas de "COUNT", il faut fetch et filtrer (attention aux grosses DB, mais ok ici)
+            
+            const commentsRef = ref(dbComm, 'comments');
+            get(commentsRef).then((snapshot) => {
+                let myComments = 0;
+                let myLikes = 0;
 
-        // 1. PROVIDER LOGINS
-        document.getElementById('btn-google').addEventListener('click', () => signInWithPopup(auth, new GoogleAuthProvider()).catch(err => showError(err.message)));
-        document.getElementById('btn-facebook').addEventListener('click', () => signInWithPopup(auth, new FacebookAuthProvider()).catch(err => showError(err.message)));
-        document.getElementById('btn-microsoft').addEventListener('click', () => {
-            const provider = new OAuthProvider('microsoft.com');
-            provider.setCustomParameters({ prompt: 'select_account' });
-            signInWithPopup(auth, provider).catch(err => showError(err.message));
-        });
-
-        // 2. EMAIL/PASSWORD LOGIN
-        document.getElementById('email-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-
-            signInWithEmailAndPassword(auth, email, password)
-                .then(() => showSuccess("Authentification réussie"))
-                .catch((error) => {
-                    if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                        if(confirm("Identifiant inconnu. Initialiser un nouveau compte WikiMind ?")) {
-                            createUserWithEmailAndPassword(auth, email, password)
-                                .then((cred) => {
-                                    updateProfile(cred.user, { displayName: email.split('@')[0] });
-                                    showSuccess("Compte initialisé");
-                                })
-                                .catch(err => showError(err.message));
-                        }
-                    } else {
-                        showError(error.message);
+                snapshot.forEach((child) => {
+                    const comment = child.val();
+                    if (comment.uid === uid) {
+                        myComments++;
+                        myLikes += (comment.likes || 0);
+                    }
+                    // Check replies
+                    if (comment.replies) {
+                        Object.values(comment.replies).forEach(reply => {
+                            if (reply.uid === uid) myComments++;
+                        });
                     }
                 });
-        });
 
-        // LOGOUT
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            signOut(auth).then(() => showSuccess("Session terminée"));
-        });
+                animateValue("stat-comments", 0, myComments, 1500);
+                animateValue("stat-likes", 0, myLikes, 1500);
+            });
+        }
+
+        // ==========================================
+        // AURORA BG ANIMATION
+        // ==========================================
+        const canvas = document.getElementById('aurora-bg');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        const orbs = [
+            { x: 0.2, y: 0.2, r: 0.4, color: 'rgba(99, 102, 241, 0.15)', vx: 0.0005, vy: 0.0005 },
+            { x: 0.8, y: 0.3, r: 0.5, color: 'rgba(168, 85, 247, 0.15)', vx: -0.0006, vy: 0.0004 }
+        ];
+        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, width, height);
+            orbs.forEach(orb => {
+                orb.x += orb.vx; orb.y += orb.vy;
+                if(orb.x < -0.2 || orb.x > 1.2) orb.vx *= -1;
+                if(orb.y < -0.2 || orb.y > 1.2) orb.vy *= -1;
+                const g = ctx.createRadialGradient(orb.x * width, orb.y * height, 0, orb.x * width, orb.y * height, orb.r * width);
+                g.addColorStop(0, orb.color); g.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = g; ctx.fillRect(0, 0, width, height);
+            });
+            requestAnimationFrame(animate);
+        }
+        window.addEventListener('resize', resize); resize(); animate();
+
     </script>
 </body>
 </html>
