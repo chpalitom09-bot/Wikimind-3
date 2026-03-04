@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WikiMind Flash - Étude IA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
+                    colors: {
+                        glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
+                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' }
+                    },
+                    animation: { 'fade-in': 'fadeIn 0.5s ease-out forwards' },
+                    keyframes: { fadeIn: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } } }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #050505; color: #ffffff; overflow-x: hidden; }
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Flip Card Effect */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .card-inner { transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        .flipped .card-inner { transform: rotateY(180deg); }
+
+        /* Toast */
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+    </style>
+</head>
+<body class="selection:bg-brand-500 selection:text-white">
+
+    <!-- AURORA BG -->
+    <canvas id="aurora-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
+    
+    <!-- TOAST -->
+    <div id="toast-container"></div>
+
+    <!-- NAVBAR -->
+    <nav class="fixed top-0 w-full z-50 px-6 py-6">
+        <div class="max-w-7xl mx-auto flex justify-between items-center glass-panel rounded-full px-6 py-3">
+            <a href="index.html" class="flex items-center gap-3 group">
+                <div class="w-8 h-8 bg-gradient-to-tr from-white to-gray-400 rounded-lg flex items-center justify-center">
+                    <span class="font-bold text-black text-xs">W</span>
+                </div>
+                <span class="font-display font-bold text-lg tracking-tight">WikiMind <span class="text-brand-glow">Flash</span></span>
+            </a>
+            
+            <div id="auth-state" class="flex items-center gap-4">
+                <span id="storage-indicator" class="text-[10px] uppercase tracking-widest text-white/40 flex items-center gap-2">
+                    <i class="fa-solid fa-hard-drive"></i> Local (72h)
+                </span>
+                <div id="user-avatar" class="w-9 h-9 rounded-full bg-white/10 border border-white/20 overflow-hidden">
+                    <img src="https://ui-avatars.com/api/?name=Guest&background=333&color=fff" class="w-full h-full object-cover">
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="pt-32 pb-20 px-4 md:px-6 max-w-7xl mx-auto">
+
+        <!-- HEADER -->
+        <div class="text-center mb-12 animate-fade-in">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-brand-500/30 bg-brand-500/10 text-brand-glow text-[10px] uppercase font-bold tracking-[0.2em] mb-4">
+                <i class="fa-solid fa-bolt"></i> Apprentissage Accéléré
+            </div>
+            <h1 class="text-4xl md:text-6xl font-display font-bold mb-4">Transformez vos cours en <br><span class="text-brand-glow">Mémoire Active</span></h1>
+            <p class="text-white/60 max-w-xl mx-auto">Collez votre cours. L'IA génère des flashcards et des quiz interactifs. Sauvegarde auto.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- LEFT: INPUT & GENERATOR -->
+            <div class="lg:col-span-4 space-y-6 animate-fade-in" style="animation-delay: 0.1s;">
+                <div class="glass-panel p-6 rounded-3xl">
+                    <h3 class="font-display font-bold text-lg mb-4 flex items-center gap-2"><i class="fa-solid fa-pen-to-square"></i> Votre Cours</h3>
+                    <textarea id="course-input" rows="8" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-brand-500 resize-none transition-all placeholder-white/20" placeholder="Collez votre texte ici (histoire, sciences, langues...)..."></textarea>
+                    
+                    <div class="mt-4 flex gap-3">
+                        <button id="generate-btn" class="flex-1 bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg shadow-brand-500/20 flex justify-center items-center gap-2">
+                            <span>Générer avec l'IA</span> <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- LIBRARY (SAVED DECKS) -->
+                <div class="glass-panel p-6 rounded-3xl h-[400px] flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-display font-bold text-lg"><i class="fa-solid fa-layer-group"></i> Vos Decks</h3>
+                        <div id="community-toggle-container" class="hidden">
+                             <button onclick="window.switchTab('library')" class="text-xs text-brand-glow hover:text-white transition">Perso</button>
+                             <span class="text-white/20">|</span>
+                             <button onclick="window.switchTab('community')" class="text-xs text-white/60 hover:text-white transition">Communauté</button>
+                        </div>
+                    </div>
+                    <div id="decks-list" class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                        <!-- Decks will be injected here -->
+                        <div class="text-center text-white/30 text-xs mt-10">Aucun deck sauvegardé.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: PLAYER (FLASHCARDS / QUIZ) -->
+            <div class="lg:col-span-8 animate-fade-in" style="animation-delay: 0.2s;">
+                <div id="workspace-placeholder" class="glass-panel rounded-3xl p-12 flex flex-col items-center justify-center text-center h-full min-h-[500px] border-dashed border-2 border-white/10">
+                    <div class="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-4xl mb-6">🧠</div>
+                    <h3 class="text-2xl font-bold mb-2">Espace de travail vide</h3>
+                    <p class="text-white/40 max-w-md">Générez du contenu à gauche ou sélectionnez un deck existant pour commencer à réviser.</p>
+                </div>
+
+                <div id="workspace-active" class="hidden flex flex-col h-full">
+                    <!-- CONTROLS -->
+                    <div class="glass-panel rounded-t-3xl p-4 flex justify-between items-center border-b border-white/5">
+                        <h2 id="current-deck-title" class="font-display font-bold text-xl px-2">Titre du Deck</h2>
+                        <div class="flex gap-2">
+                             <!-- Switch View -->
+                            <div class="bg-white/5 rounded-lg p-1 flex">
+                                <button onclick="window.setView('flashcards')" id="btn-view-flash" class="px-4 py-1.5 rounded-md text-xs font-bold bg-brand-600 text-white transition">Flashcards</button>
+                                <button onclick="window.setView('quiz')" id="btn-view-quiz" class="px-4 py-1.5 rounded-md text-xs font-bold text-white/50 hover:text-white transition">Quiz</button>
+                            </div>
+                            <!-- Actions -->
+                            <div id="save-actions" class="flex gap-2 ml-4">
+                                <div class="relative group" id="privacy-toggle-wrapper">
+                                    <label class="flex items-center gap-2 cursor-pointer bg-white/5 px-3 py-1.5 rounded-lg border border-white/10 hover:border-brand-500/50 transition select-none">
+                                        <input type="checkbox" id="is-public-check" class="hidden">
+                                        <div class="w-3 h-3 rounded-full bg-white/20 transition-colors" id="public-dot"></div>
+                                        <span class="text-xs font-bold text-white/70" id="public-label">Privé</span>
+                                    </label>
+                                </div>
+                                <button onclick="window.saveCurrentDeck()" class="bg-green-600/20 text-green-400 border border-green-500/30 hover:bg-green-600 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                                    <i class="fa-solid fa-save"></i>
+                                </button>
+                                <button onclick="window.deleteCurrentDeck()" class="bg-red-600/20 text-red-400 border border-red-500/30 hover:bg-red-600 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FLASHCARD VIEW -->
+                    <div id="view-flashcards" class="flex-1 glass-panel rounded-b-3xl p-8 md:p-16 flex flex-col items-center justify-center relative min-h-[500px]">
+                        <div class="perspective-1000 w-full max-w-2xl h-[300px] cursor-pointer group" onclick="this.classList.toggle('flipped')">
+                            <div class="card-inner relative w-full h-full transform-style-3d shadow-2xl">
+                                <!-- FRONT -->
+                                <div class="flip-card-front absolute w-full h-full bg-gradient-to-br from-white/10 to-white/5 border border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center backface-hidden">
+                                    <span class="text-brand-glow text-xs uppercase tracking-widest font-bold mb-4">Question</span>
+                                    <p id="card-front-text" class="text-2xl font-display font-medium text-center">...</p>
+                                    <div class="absolute bottom-4 text-white/20 text-xs">Cliquez pour retourner</div>
+                                </div>
+                                <!-- BACK -->
+                                <div class="flip-card-back absolute w-full h-full bg-gradient-to-br from-brand-900/80 to-black border border-brand-500/30 rounded-2xl p-8 flex flex-col items-center justify-center rotate-y-180 backface-hidden">
+                                    <span class="text-green-400 text-xs uppercase tracking-widest font-bold mb-4">Réponse</span>
+                                    <p id="card-back-text" class="text-xl text-center leading-relaxed">...</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-6 mt-12">
+                            <button onclick="window.prevCard()" class="w-12 h-12 rounded-full bg-white/5 hover:bg-white/20 flex items-center justify-center transition border border-white/10"><i class="fa-solid fa-arrow-left"></i></button>
+                            <span id="card-counter" class="font-display font-bold text-xl w-16 text-center">1 / 5</span>
+                            <button onclick="window.nextCard()" class="w-12 h-12 rounded-full bg-white/5 hover:bg-white/20 flex items-center justify-center transition border border-white/10"><i class="fa-solid fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- QUIZ VIEW -->
+                    <div id="view-quiz" class="hidden flex-1 glass-panel rounded-b-3xl p-8 flex flex-col items-center min-h-[500px]">
+                        <div class="w-full max-w-2xl mt-8">
+                            <div class="mb-8">
+                                <span class="text-brand-glow text-xs uppercase tracking-widest font-bold">Quiz Mode</span>
+                                <h3 id="quiz-question" class="text-2xl font-bold mt-2">...</h3>
+                            </div>
+                            <div id="quiz-options" class="space-y-3">
+                                <!-- Options generated by JS -->
+                            </div>
+                            <div id="quiz-feedback" class="mt-6 p-4 rounded-xl hidden text-center font-bold text-sm"></div>
+                            
+                            <button onclick="window.nextQuizQuestion()" id="next-quiz-btn" class="hidden mt-6 bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-lg text-sm font-bold mx-auto transition">Question Suivante <i class="fa-solid fa-arrow-right ml-2"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- LOGIQUE JAVASCRIPT -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, set, push, onValue, remove, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // --- FIREBASE CONFIG ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+            authDomain: "wikimind-3-comments.firebaseapp.com",
+            databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "wikimind-3-comments",
+            storageBucket: "wikimind-3-comments.firebasestorage.app",
+            messagingSenderId: "137479541640",
+            appId: "1:137479541640:web:4ed2510a9908055052e03d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        
+        // --- MISTRAL CONFIG ---
+        const MISTRAL_API_KEY = "SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9";
+
+        // --- STATE VARIABLES ---
+        let currentUser = null;
+        let decks = []; // Liste des decks
+        let currentDeck = null;
+        let currentCardIndex = 0;
+        let currentQuizIndex = 0;
+        let showingPublicDecks = false;
+
+        // --- UI FUNCTIONS (TOASTS) ---
+        window.showToast = (message, type = 'info') => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-lg text-sm font-medium shadow-xl flex items-center gap-3 animate-fade-in backdrop-blur-md border ${
+                type === 'error' ? 'bg-red-500/20 text-red-200 border-red-500/30' : 
+                type === 'success' ? 'bg-green-500/20 text-green-200 border-green-500/30' : 
+                'bg-white/10 text-white border-white/10'
+            }`;
+            toast.innerHTML = type === 'success' ? `<i class="fa-solid fa-check"></i> ${message}` : `<span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        };
+
+        // --- AUTH & STORAGE LOGIC ---
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            const avatarDiv = document.getElementById('user-avatar');
+            const storageInd = document.getElementById('storage-indicator');
+            const privacyWrapper = document.getElementById('privacy-toggle-wrapper');
+
+            if (user) {
+                // Mode Connecté
+                avatarDiv.innerHTML = `<img src="${user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || 'User'}&background=6366f1&color=fff`}" class="w-full h-full object-cover">`;
+                storageInd.innerHTML = '<i class="fa-solid fa-cloud text-brand-500"></i> Cloud Sync';
+                storageInd.classList.replace('text-white/40', 'text-brand-glow');
+                privacyWrapper.classList.remove('hidden'); // Peut partager
+                document.getElementById('community-toggle-container').classList.remove('hidden');
+                
+                loadDecksFromFirebase();
+            } else {
+                // Mode Anonyme (Local)
+                avatarDiv.innerHTML = `<img src="https://ui-avatars.com/api/?name=Guest&background=333&color=fff" class="w-full h-full object-cover">`;
+                storageInd.innerHTML = '<i class="fa-solid fa-hard-drive"></i> Local (72h)';
+                privacyWrapper.classList.add('hidden'); // Pas de partage sans compte
+                document.getElementById('community-toggle-container').classList.add('hidden');
+                
+                loadDecksFromLocal();
+            }
+        });
+
+        // --- LOAD DATA ---
+        function loadDecksFromLocal() {
+            const stored = localStorage.getItem('wikimind_flash_local');
+            if (stored) {
+                const data = JSON.parse(stored);
+                // Vérif 72h (72 * 60 * 60 * 1000 = 259200000 ms)
+                if (Date.now() - data.timestamp > 259200000) {
+                    localStorage.removeItem('wikimind_flash_local');
+                    decks = [];
+                } else {
+                    decks = data.decks || [];
+                }
+            } else {
+                decks = [];
+            }
+            renderDecksList();
+        }
+
+        function loadDecksFromFirebase() {
+            if (!currentUser) return;
+            const userDecksRef = ref(db, `users/${currentUser.uid}/decks`);
+            onValue(userDecksRef, (snapshot) => {
+                const data = snapshot.val();
+                decks = [];
+                if (data) {
+                    Object.keys(data).forEach(key => {
+                        decks.push({ id: key, ...data[key], isOwner: true });
+                    });
+                }
+                renderDecksList();
+            });
+        }
+
+        // Pour charger les decks publics (Community)
+        window.switchTab = (tab) => {
+            if(tab === 'library') {
+                showingPublicDecks = false;
+                loadDecksFromFirebase(); // Retour aux decks perso
+            } else {
+                showingPublicDecks = true;
+                const publicRef = ref(db, 'public_decks');
+                get(publicRef).then((snapshot) => {
+                    const data = snapshot.val();
+                    decks = [];
+                    if(data) {
+                        Object.keys(data).forEach(key => {
+                            decks.push({ id: key, ...data[key], isOwner: false }); // isOwner false car c'est public
+                        });
+                    }
+                    renderDecksList();
+                });
+            }
+        };
+
+        function renderDecksList() {
+            const container = document.getElementById('decks-list');
+            container.innerHTML = '';
+
+            if (decks.length === 0) {
+                container.innerHTML = `<div class="text-center text-white/30 text-xs mt-10">Aucun deck ${showingPublicDecks ? 'public' : 'sauvegardé'}.</div>`;
+                return;
+            }
+
+            decks.forEach((deck, index) => {
+                const el = document.createElement('div');
+                el.className = `p-3 rounded-xl border cursor-pointer transition flex justify-between items-center group ${
+                    currentDeck && currentDeck.id === deck.id ? 'bg-brand-600/20 border-brand-500' : 'bg-white/5 border-white/10 hover:border-white/30'
+                }`;
+                el.onclick = () => loadDeckIntoWorkspace(deck);
+                
+                // Icone Public/Privé
+                const icon = deck.isPublic 
+                    ? '<i class="fa-solid fa-globe text-xs text-blue-400" title="Public"></i>' 
+                    : '<i class="fa-solid fa-lock text-xs text-white/30" title="Privé"></i>';
+
+                el.innerHTML = `
+                    <div class="flex-1 overflow-hidden">
+                        <div class="font-bold text-sm truncate text-white">${deck.title}</div>
+                        <div class="text-[10px] text-white/40 flex items-center gap-2">
+                            ${icon}
+                            <span>${deck.cards.length} cartes</span>
+                            ${deck.authorName ? `<span class="text-brand-glow">• ${deck.authorName}</span>` : ''}
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-white/20 group-hover:text-white transition"></i>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        // --- AI GENERATION ---
+        document.getElementById('generate-btn').addEventListener('click', async () => {
+            const text = document.getElementById('course-input').value.trim();
+            if (text.length < 50) {
+                window.showToast("Texte trop court. Veuillez coller un cours complet.", "error");
+                return;
+            }
+
+            const btn = document.getElementById('generate-btn');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Analyse IA en cours...`;
+            btn.disabled = true;
+
+            try {
+                const prompt = `
+                Tu es un expert pédagogique. Analyse le texte suivant et crée un set d'étude.
+                Texte : "${text.substring(0, 3000)}" (tronqué si trop long)
+                
+                Tâche : Génère une réponse au format JSON STRICT (sans markdown, sans intro).
+                Structure attendue :
+                {
+                    "title": "Titre court du sujet (ex: Histoire de France)",
+                    "cards": [
+                        {"front": "Question ou Concept", "back": "Réponse ou Définition"}
+                    ],
+                    "quiz": [
+                        {"question": "Question ?", "options": ["A", "B", "C"], "answerIndex": 0}
+                    ]
+                }
+                Crée environ 5 à 10 flashcards et 5 questions de quiz. Langue: Français.
+                `;
+
+                const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${MISTRAL_API_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: "mistral-small-latest",
+                        messages: [{ role: "user", content: prompt }],
+                        temperature: 0.5,
+                        response_format: { type: "json_object" } 
+                    })
+                });
+
+                const data = await response.json();
+                const content = JSON.parse(data.choices[0].message.content);
+
+                // Création du Deck Object
+                const newDeck = {
+                    id: Date.now().toString(),
+                    title: content.title || "Nouveau Deck",
+                    cards: content.cards || [],
+                    quiz: content.quiz || [],
+                    timestamp: Date.now(),
+                    isPublic: false,
+                    authorName: currentUser ? (currentUser.displayName || "Utilisateur") : "Anonyme",
+                    uid: currentUser ? currentUser.uid : null
+                };
+
+                // Sauvegarde immédiate
+                if (currentUser) {
+                    await set(ref(db, `users/${currentUser.uid}/decks/${newDeck.id}`), newDeck);
+                    window.showToast("Deck généré et sauvegardé sur le Cloud !", "success");
+                } else {
+                    decks.unshift(newDeck);
+                    saveLocal();
+                    renderDecksList();
+                    window.showToast("Deck généré (Sauvegarde Locale 72h).", "success");
+                }
+
+                loadDeckIntoWorkspace(newDeck);
+
+            } catch (error) {
+                console.error(error);
+                window.showToast("Erreur IA : Réessayez ou vérifiez le texte.", "error");
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        });
+
+        function saveLocal() {
+            const data = { decks: decks, timestamp: Date.now() };
+            localStorage.setItem('wikimind_flash_local', JSON.stringify(data));
+        }
+
+        // --- WORKSPACE LOGIC ---
+        function loadDeckIntoWorkspace(deck) {
+            currentDeck = deck;
+            currentCardIndex = 0;
+            currentQuizIndex = 0;
+
+            document.getElementById('workspace-placeholder').classList.add('hidden');
+            document.getElementById('workspace-active').classList.remove('hidden');
+            
+            document.getElementById('current-deck-title').innerText = deck.title;
+            
+            // Checkbox Public/Privé
+            const pubCheck = document.getElementById('is-public-check');
+            const pubLabel = document.getElementById('public-label');
+            const pubDot = document.getElementById('public-dot');
+
+            pubCheck.checked = deck.isPublic || false;
+            updatePrivacyVisuals();
+            
+            // Event listener change
+            pubCheck.onchange = () => {
+                if(!currentUser) {
+                    window.showToast("Connectez-vous pour partager.", "error");
+                    pubCheck.checked = false;
+                    return;
+                }
+                deck.isPublic = pubCheck.checked;
+                updatePrivacyVisuals();
+                window.saveCurrentDeck(); // Auto save change
+            };
+
+            window.setView('flashcards'); // Default view
+        }
+
+        function updatePrivacyVisuals() {
+            const checked = document.getElementById('is-public-check').checked;
+            const label = document.getElementById('public-label');
+            const dot = document.getElementById('public-dot');
+            if(checked) {
+                label.innerText = "Public";
+                label.classList.add('text-brand-glow');
+                dot.classList.remove('bg-white/20');
+                dot.classList.add('bg-green-400', 'shadow-[0_0_10px_#4ade80]');
+            } else {
+                label.innerText = "Privé";
+                label.classList.remove('text-brand-glow');
+                dot.classList.add('bg-white/20');
+                dot.classList.remove('bg-green-400', 'shadow-[0_0_10px_#4ade80]');
+            }
+        }
+
+        // --- FLASHCARD PLAYER ---
+        window.setView = (view) => {
+            const btnFlash = document.getElementById('btn-view-flash');
+            const btnQuiz = document.getElementById('btn-view-quiz');
+            const divFlash = document.getElementById('view-flashcards');
+            const divQuiz = document.getElementById('view-quiz');
+
+            if (view === 'flashcards') {
+                btnFlash.className = "px-4 py-1.5 rounded-md text-xs font-bold bg-brand-600 text-white transition";
+                btnQuiz.className = "px-4 py-1.5 rounded-md text-xs font-bold text-white/50 hover:text-white transition";
+                divFlash.classList.remove('hidden');
+                divQuiz.classList.add('hidden');
+                renderCard();
+            } else {
+                btnFlash.className = "px-4 py-1.5 rounded-md text-xs font-bold text-white/50 hover:text-white transition";
+                btnQuiz.className = "px-4 py-1.5 rounded-md text-xs font-bold bg-brand-600 text-white transition";
+                divFlash.classList.add('hidden');
+                divQuiz.classList.remove('hidden');
+                renderQuiz();
+            }
+        };
+
+        function renderCard() {
+            if (!currentDeck || !currentDeck.cards.length) return;
+            const card = currentDeck.cards[currentCardIndex];
+            
+            // Reset flip
+            document.querySelector('.perspective-1000').classList.remove('flipped');
+            
+            setTimeout(() => {
+                document.getElementById('card-front-text').innerText = card.front;
+                document.getElementById('card-back-text').innerText = card.back;
+                document.getElementById('card-counter').innerText = `${currentCardIndex + 1} / ${currentDeck.cards.length}`;
+            }, 200);
+        }
+
+        window.nextCard = () => {
+            if (currentCardIndex < currentDeck.cards.length - 1) {
+                currentCardIndex++;
+                renderCard();
+            }
+        };
+        window.prevCard = () => {
+            if (currentCardIndex > 0) {
+                currentCardIndex--;
+                renderCard();
+            }
+        };
+
+        // --- QUIZ PLAYER ---
+        function renderQuiz() {
+            if (!currentDeck || !currentDeck.quiz.length) {
+                document.getElementById('quiz-question').innerText = "Pas de quiz disponible pour ce cours.";
+                return;
+            }
+            if (currentQuizIndex >= currentDeck.quiz.length) {
+                // Fin du quiz
+                document.getElementById('quiz-question').innerText = "Quiz Terminé ! 👏";
+                document.getElementById('quiz-options').innerHTML = `<button onclick="window.setView('flashcards')" class="bg-brand-600 px-6 py-3 rounded-xl font-bold">Retour aux cartes</button>`;
+                document.getElementById('next-quiz-btn').classList.add('hidden');
+                document.getElementById('quiz-feedback').classList.add('hidden');
+                return;
+            }
+
+            const q = currentDeck.quiz[currentQuizIndex];
+            document.getElementById('quiz-question').innerText = q.question;
+            const optsContainer = document.getElementById('quiz-options');
+            optsContainer.innerHTML = '';
+            
+            document.getElementById('quiz-feedback').classList.add('hidden');
+            document.getElementById('next-quiz-btn').classList.add('hidden');
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition flex items-center gap-3";
+                btn.innerHTML = `<div class="w-6 h-6 rounded-full border border-white/30 flex items-center justify-center text-xs font-bold">${String.fromCharCode(65 + idx)}</div> <span>${opt}</span>`;
+                btn.onclick = () => checkAnswer(idx, q.answerIndex, btn);
+                optsContainer.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selected, correct, btnElement) {
+            const feedback = document.getElementById('quiz-feedback');
+            const allBtns = document.getElementById('quiz-options').children;
+            
+            Array.from(allBtns).forEach(b => b.disabled = true); // Lock
+
+            feedback.classList.remove('hidden');
+            if (selected === correct) {
+                btnElement.classList.replace('bg-white/5', 'bg-green-500/20');
+                btnElement.classList.replace('border-white/10', 'border-green-500');
+                feedback.className = "mt-6 p-4 rounded-xl text-center font-bold text-sm bg-green-500/20 text-green-300 border border-green-500/30";
+                feedback.innerHTML = "Bonne réponse ! 🎉";
+            } else {
+                btnElement.classList.replace('bg-white/5', 'bg-red-500/20');
+                btnElement.classList.replace('border-white/10', 'border-red-500');
+                
+                // Show correct
+                const correctBtn = allBtns[correct];
+                correctBtn.classList.replace('bg-white/5', 'bg-green-500/20');
+                correctBtn.classList.replace('border-white/10', 'border-green-500');
+
+                feedback.className = "mt-6 p-4 rounded-xl text-center font-bold text-sm bg-red-500/20 text-red-300 border border-red-500/30";
+                feedback.innerHTML = "Mauvaise réponse.";
+            }
+
+            document.getElementById('next-quiz-btn').classList.remove('hidden');
+        }
+
+        window.nextQuizQuestion = () => {
+            currentQuizIndex++;
+            renderQuiz();
+        };
+
+        // --- CRUD ACTIONS ---
+        window.saveCurrentDeck = async () => {
+            if (!currentDeck) return;
+
+            if (currentUser) {
+                // Sauvegarde Cloud
+                const updates = {};
+                // User path
+                updates[`users/${currentUser.uid}/decks/${currentDeck.id}`] = currentDeck;
+                
+                // Public path (si activé)
+                if (currentDeck.isPublic) {
+                    updates[`public_decks/${currentDeck.id}`] = currentDeck;
+                } else {
+                    // Si on passe de public à privé, il faut supprimer du path public
+                    await remove(ref(db, `public_decks/${currentDeck.id}`));
+                }
+
+                await ref(db).update(updates);
+                window.showToast("Sauvegardé et synchronisé.", "success");
+            } else {
+                // Sauvegarde Local
+                const idx = decks.findIndex(d => d.id === currentDeck.id);
+                if(idx !== -1) decks[idx] = currentDeck;
+                saveLocal();
+                renderDecksList();
+                window.showToast("Sauvegardé localement.", "success");
+            }
+        };
+
+        window.deleteCurrentDeck = () => {
+            if (!confirm("Supprimer ce deck ?")) return;
+            
+            if (currentUser) {
+                remove(ref(db, `users/${currentUser.uid}/decks/${currentDeck.id}`));
+                if(currentDeck.isPublic) remove(ref(db, `public_decks/${currentDeck.id}`));
+            } else {
+                decks = decks.filter(d => d.id !== currentDeck.id);
+                saveLocal();
+            }
+            
+            document.getElementById('workspace-placeholder').classList.remove('hidden');
+            document.getElementById('workspace-active').classList.add('hidden');
+            renderDecksList();
+            window.showToast("Deck supprimé.", "info");
+        };
+
+        // --- AURORA BACKGROUND ---
+        const canvas = document.getElementById('aurora-bg');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        const orbs = [
+            { x: 0.2, y: 0.2, r: 0.4, color: 'rgba(99, 102, 241, 0.15)', vx: 0.0005, vy: 0.0005 },
+            { x: 0.8, y: 0.3, r: 0.5, color: 'rgba(168, 85, 247, 0.15)', vx: -0.0006, vy: 0.0004 }
+        ];
+        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, width, height);
+            orbs.forEach(orb => {
+                orb.x += orb.vx; orb.y += orb.vy;
+                if(orb.x < -0.2 || orb.x > 1.2) orb.vx *= -1;
+                if(orb.y < -0.2 || orb.y > 1.2) orb.vy *= -1;
+                const g = ctx.createRadialGradient(orb.x * width, orb.y * height, 0, orb.x * width, orb.y * height, orb.r * width);
+                g.addColorStop(0, orb.color); g.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = g; ctx.fillRect(0, 0, width, height);
+            });
+            requestAnimationFrame(animate);
+        }
+        window.addEventListener('resize', resize); resize(); animate();
+
+    </script>
+</body>
+</html>
