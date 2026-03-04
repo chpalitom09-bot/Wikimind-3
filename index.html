@@ -83,7 +83,7 @@
     <!-- UI TOAST CONTAINER -->
     <div id="toast-container"></div>
 
-    <!-- UI CUSTOM CONFIRM MODAL -->
+    <!-- UI CUSTOM CONFIRM MODAL (Suppression classique) -->
     <div id="custom-confirm-modal" class="modal" onclick="window.closeConfirm()">
         <div class="modal-content glass-panel p-6 rounded-2xl border border-white/10" onclick="event.stopPropagation()">
             <div class="flex items-center gap-4 mb-4">
@@ -96,6 +96,28 @@
             <div class="flex justify-end gap-3">
                 <button onclick="window.closeConfirm()" class="px-5 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white text-xs font-bold transition">Annuler</button>
                 <button id="confirm-btn-action" class="px-5 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition shadow-lg shadow-brand-500/20">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI CUSTOM REPORT MODAL (Signalement avec raison) -->
+    <div id="report-modal" class="modal" onclick="window.closeReportModal()">
+        <div class="modal-content glass-panel p-6 rounded-2xl border border-white/10" onclick="event.stopPropagation()">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-10 h-10 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <h3 class="text-xl font-bold font-display">Signaler à l'IA</h3>
+            </div>
+            <p class="text-white/70 text-sm mb-4">L'IA de modération va lire et analyser ce commentaire. Vous pouvez préciser pourquoi vous le signalez.</p>
+            
+            <textarea id="report-reason" rows="3" placeholder="Raison (facultative) : ex: C'est un bot, pub pour des rencontres, arnaque..." class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand-500 mb-6 resize-none"></textarea>
+            
+            <div class="flex justify-end gap-3">
+                <button onclick="window.closeReportModal()" class="px-5 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white text-xs font-bold transition">Annuler</button>
+                <button id="confirm-report-btn" class="px-5 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold transition shadow-lg shadow-orange-500/20 flex items-center gap-2">
+                    <i class="fa-solid fa-paper-plane"></i> Analyser
+                </button>
             </div>
         </div>
     </div>
@@ -168,7 +190,7 @@
                 </button>
             </div>
 
-            <!-- Mini Chat IA Container (Hidden by default) -->
+            <!-- Mini Chat IA Container -->
             <div id="minichat-container" class="hidden w-full max-w-2xl mx-auto mt-8 glass-panel rounded-2xl overflow-hidden border border-brand-500/30 animate-fade-in-up text-left flex-col h-[400px]">
                 <div class="bg-brand-500/10 px-4 py-3 border-b border-white/10 flex justify-between items-center">
                     <span class="font-bold font-display text-sm flex items-center gap-2">
@@ -468,7 +490,6 @@
             document.getElementById('confirm-icon').className = iconClass;
             const btn = document.getElementById('confirm-btn-action');
             
-            // Retrait de l'ancien event listener
             const newBtn = btn.cloneNode(true);
             btn.parentNode.replaceChild(newBtn, btn);
             
@@ -479,13 +500,56 @@
             document.getElementById('custom-confirm-modal').style.display = 'flex';
         };
 
+        // UI SIGNALEMENT AVEC RAISON
+        let currentReportPathId = null;
+
+        window.closeReportModal = () => {
+            document.getElementById('report-modal').style.display = 'none';
+            currentReportPathId = null;
+        };
+
+        window.reportComment = (pathId) => {
+            currentReportPathId = pathId;
+            document.getElementById('report-reason').value = ''; // Reset champ
+            document.getElementById('report-modal').style.display = 'flex';
+        };
+
+        // Traitement du bouton "Analyser" dans le modal de signalement
+        document.getElementById('confirm-report-btn').addEventListener('click', async () => {
+            if(!currentReportPathId) return;
+            
+            const pathId = currentReportPathId;
+            const userReason = document.getElementById('report-reason').value.trim();
+            const textToAnalyze = window.commentTexts[pathId];
+            
+            window.closeReportModal();
+
+            if(!textToAnalyze) return;
+
+            window.showToast("L'IA examine le commentaire signalé...", "info");
+            
+            const isBad = await window.moderateText(textToAnalyze, userReason);
+            
+            if(isBad) {
+                try {
+                    await remove(ref(db, `comments/${pathId}`));
+                    window.showToast("L'IA a jugé ce commentaire indésirable et l'a supprimé !", "success");
+                } catch(err) {
+                    window.showToast("L'IA a confirmé l'infraction. Masqué localement.", "info");
+                    const id = pathId.split('/').pop();
+                    const el = document.getElementById(`comment-${id}`);
+                    if(el) el.remove();
+                }
+            } else {
+                window.showToast("L'IA a jugé ce commentaire acceptable.", "info");
+            }
+        });
+
         // ==========================================
         // MISTRAL API IA
         // ==========================================
-        // Clé Mistral non obfusquée comme demandé
         const MISTRAL_API_KEY = "SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9";
 
-        // Fonction centralisée appel Mistral API - Prise en charge des tokens et température
         window.callMistralAI = async (messages, model = "mistral-small-latest", temp = 0.7, maxTokens = 1024) => {
             try {
                 const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
@@ -497,7 +561,6 @@
                     body: JSON.stringify({ model: model, messages: messages, temperature: temp, max_tokens: maxTokens })
                 });
                 
-                // Contrôle strict si la réponse HTTP n'est pas OK (ex: 401, 429...)
                 if (!response.ok) {
                     console.error("Mistral HTTP Error:", response.status, response.statusText);
                     return null;
@@ -505,7 +568,6 @@
 
                 const data = await response.json();
                 
-                // Prévention des plantages si data ou choices est manquant
                 if(data && data.choices && data.choices.length > 0 && data.choices[0].message) {
                     return data.choices[0].message.content;
                 }
@@ -516,17 +578,29 @@
             }
         };
 
-        // Fonction de modération IA robuste (via Mistral)
-        window.moderateText = async (text) => {
-            // Prompt fermé pour empêcher la créativité de l'IA.
-            const prompt = `Agis comme un modérateur strict. Le texte suivant est-il haineux, insultant, toxique, raciste ou est-ce du spam évident ? Réponds EXACTEMENT ET UNIQUEMENT par le mot OUI ou par le mot NON. Ne fais aucune phrase. Ne rajoute pas de ponctuation. Texte: "${text}"`;
+        // Fonction de modération IA robuste (Smart prompt avec raison utilisateur)
+        window.moderateText = async (text, userReason = "") => {
             
-            // Température très basse et max 5 tokens pour obliger à une réponse binaire pure.
+            let prompt = `Agis comme un modérateur strict d'une plateforme communautaire publique. 
+Ta mission est d'identifier et de filtrer absolument :
+1. Le spam, la publicité non sollicitée, les arnaques.
+2. Les bots de rencontre (ex: "femme près de chez moi", "cliquez sur mon profil pour discuter", "rencontre coquine").
+3. Les insultes, la haine, la violence, le racisme et le harcèlement.
+4. Les liens malveillants ou le phishing.
+
+Voici le commentaire à analyser : "${text}"`;
+
+            if (userReason) {
+                prompt += `\n\nAttention, un utilisateur a signalé ce commentaire en donnant cette raison : "${userReason}". Prends en compte cette remarque dans ton évaluation.`;
+            }
+
+            prompt += `\n\nEst-ce que ce commentaire enfreint les règles (spam, bot, haine, etc.) et doit être supprimé ?
+Réponds EXACTEMENT ET UNIQUEMENT par le mot OUI (s'il doit être supprimé et bloqué) ou par le mot NON (s'il est totalement inoffensif et naturel). Ne fais aucune phrase, aucune justification.`;
+            
             const response = await window.callMistralAI([{ role: "user", content: prompt }], "mistral-small-latest", 0.1, 5);
             
-            if (!response) return false; // Par défaut on laisse passer si l'API est down (fail-safe)
+            if (!response) return false;
             
-            // Nettoyage impitoyable de la chaîne retournée pour valider EXACTEMENT le mot voulu
             const cleanResponse = response.trim().toUpperCase().replace(/[^A-Z]/g, '');
             return cleanResponse === 'OUI';
         };
@@ -610,10 +684,11 @@
                 submitBtn.innerHTML = '<i class="fa-solid fa-shield-halved fa-beat-fade"></i> Scan IA...';
                 submitBtn.disabled = true;
 
+                // Modération avant publication (sans raison utilisateur)
                 const isBad = await window.moderateText(text);
                 
                 if (isBad) {
-                    window.showToast("Commentaire rejeté : Contenu inapproprié détecté par l'IA.", "error");
+                    window.showToast("Commentaire rejeté : Contenu non conforme détecté par l'IA.", "error");
                     submitBtn.innerHTML = originalHtml;
                     submitBtn.disabled = false;
                     return;
@@ -642,7 +717,6 @@
         const commentsList = document.getElementById('comments-list');
         const commentsRef = ref(db, 'comments');
         
-        // Retrait propre des états de chargement
         function removeEmptyOrLoaderState() {
             const loader = document.getElementById('comments-loader');
             const emptyMsg = document.getElementById('empty-comments-msg');
@@ -669,37 +743,31 @@
         });
 
         onChildRemoved(commentsRef, (snapshot) => {
-            // Suppression du parent complet
             const el = document.getElementById(`comment-${snapshot.key}`);
             if (el) el.remove();
         });
 
         onChildChanged(commentsRef, (snapshot) => {
-            // Ce trigger gère à la fois les likes ET les suppressions/ajouts de replies dans un post
             const data = snapshot.val();
             const parentId = snapshot.key;
             
             const parentEl = document.getElementById(`comment-${parentId}`);
             if(!parentEl) return;
 
-            // 1. Mise à jour du compteur de likes du parent
             const likeCountEl = parentEl.querySelector('.like-count');
             if (likeCountEl) likeCountEl.innerText = data.likes || 0;
 
-            // 2. Synchronisation des Replies
             const repliesContainer = document.getElementById(`replies-${parentId}`);
             if (repliesContainer) {
                 const currentReplies = data.replies || {};
                 
-                // Suppression des DOM replies qui n'existent plus dans Firebase
                 Array.from(repliesContainer.children).forEach(child => {
                     const replyId = child.id.replace('comment-', '');
                     if (!currentReplies[replyId]) {
-                        child.remove(); // Evite la désynchronisation
+                        child.remove(); 
                     }
                 });
 
-                // Ajout des nouvelles replies (sécurité)
                 Object.keys(currentReplies).forEach(replyId => {
                     if (!document.getElementById(`comment-${replyId}`)) {
                         renderComment(replyId, currentReplies[replyId], true, parentId);
@@ -778,7 +846,7 @@
 
             const isBad = await window.moderateText(text);
             if (isBad) {
-                window.showToast("Réponse rejetée : Contenu inapproprié.", "error");
+                window.showToast("Réponse rejetée : Contenu non conforme.", "error");
                 btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i>';
                 btn.disabled = false;
                 return;
@@ -817,40 +885,7 @@
                 () => {
                     remove(ref(db, `comments/${path}`)).then(() => {
                         window.showToast("Message supprimé.", "success");
-                        // Suppression locale inutile car gérée dynamiquement par Firebase onChildChanged / onChildRemoved
                     }).catch(err => window.showToast("Erreur: " + err.message, "error"));
-                }
-            );
-        };
-
-        // SIGNALEMENT MODERATION IA CUSTOM UI
-        window.reportComment = (pathId) => {
-            window.showConfirm(
-                "Modération IA", 
-                "Demander à l'IA d'analyser et potentiellement censurer ce message ?", 
-                "fa-solid fa-robot text-brand-glow", 
-                async () => {
-                    const textToAnalyze = window.commentTexts[pathId];
-                    if(!textToAnalyze) return;
-
-                    window.showToast("L'IA examine le commentaire...", "info");
-                    
-                    const isBad = await window.moderateText(textToAnalyze);
-                    
-                    if(isBad) {
-                        try {
-                            await remove(ref(db, `comments/${pathId}`));
-                            window.showToast("L'IA a supprimé ce commentaire toxique !", "success");
-                            // La suppression DOM de la vue en cours sera gérée par les listener Firebase automatiquement
-                        } catch(err) {
-                            window.showToast("L'IA a confirmé l'infraction. Masqué localement.", "info");
-                            const id = pathId.split('/').pop();
-                            const el = document.getElementById(`comment-${id}`);
-                            if(el) el.remove();
-                        }
-                    } else {
-                        window.showToast("L'IA juge ce commentaire correct.", "info");
-                    }
                 }
             );
         };
@@ -894,7 +929,6 @@
             minichatMessages.scrollTop = minichatMessages.scrollHeight;
             minichatHistory.push({ role: "user", content: text });
 
-            // Restriction de l'historique pour éviter l'overflow de Tokens API (Garde le système + 10 messages max)
             if (minichatHistory.length > 11) {
                 minichatHistory = [minichatHistory[0], ...minichatHistory.slice(-10)];
             }
@@ -904,7 +938,6 @@
             loadDiv.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Réflexion...';
             minichatMessages.appendChild(loadDiv);
 
-            // Appel API normal avec tokens standards
             const aiResponse = await window.callMistralAI(minichatHistory, "mistral-small-latest", 0.7, 1024);
 
             minichatMessages.querySelectorAll('.minichat-loading').forEach(l => l.remove());
