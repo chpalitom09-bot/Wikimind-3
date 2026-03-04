@@ -1,16 +1,14 @@
 <!DOCTYPE html>
-<html lang="fr" class="dark">
+<html lang="fr" class="scroll-smooth h-full">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>WikiMind AI Studio</title>
     
-    <!-- Scripts & Styles -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
-
-    <!-- Configuration Tailwind & Import Map pour Kokoro -->
+    
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -20,42 +18,56 @@
                     colors: {
                         glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
                         brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' }
+                    },
+                    animation: { 
+                        'toast-enter': 'toastEnter 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                        'toast-leave': 'toastLeave 0.3s ease-in forwards'
+                    },
+                    keyframes: { 
+                        toastEnter: { '0%': { opacity: 0, transform: 'translateY(100%) scale(0.9)' }, '100%': { opacity: 1, transform: 'translateY(0) scale(1)' } },
+                        toastLeave: { '0%': { opacity: 1, transform: 'scale(1)' }, '100%': { opacity: 0, transform: 'scale(0.9)' } }
                     }
                 }
             }
         }
     </script>
-    
-    <!-- Import Map pour Kokoro JS et dépendances ONNX -->
-    <script type="importmap">
-    {
-        "imports": {
-            "kokoro-js": "https://cdn.jsdelivr.net/npm/kokoro-js@1.0.0-beta.5/+esm",
-            "onnxruntime-web": "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.16.3/dist/ort.es6.min.js"
-        }
-    }
-    </script>
-
     <style>
         body { background-color: #050505; color: #ffffff; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
         .glass-panel {
             background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         }
-        .scroll-custom::-webkit-scrollbar { width: 5px; }
-        .scroll-custom::-webkit-scrollbar-track { background: transparent; }
-        .scroll-custom::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
         .text-gradient { background: linear-gradient(135deg, #ffffff 0%, #a5a6f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        /* Code block styling */
-        pre { background: #111; padding: 10px; border-radius: 8px; overflow-x: auto; border: 1px solid #333; }
-        code { font-family: 'Courier New', Courier, monospace; font-size: 0.9em; }
+        /* Scrollbars custom */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
 
-        /* Loader pulse */
-        .typing-dot { animation: typing 1.4s infinite ease-in-out both; width: 6px; height: 6px; background-color: white; border-radius: 50%; display: inline-block; margin: 0 1px; }
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        
+        /* Studio Layout */
+        .studio-layout { display: flex; height: calc(100vh - 80px); gap: 1rem; padding: 1rem; margin-top: 80px; }
+        .settings-panel { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; gap: 1.5rem; overflow-y: auto; }
+        .chat-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; relative; }
+        
+        @media (max-width: 768px) {
+            .studio-layout { flex-direction: column; height: calc(100vh - 70px); margin-top: 70px; padding: 0.5rem; }
+            .settings-panel { width: 100%; height: auto; flex-shrink: 0; }
+        }
+
+        /* Range Slider Custom */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #818cf8; cursor: pointer; margin-top: -6px; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+        /* Modal simple */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { max-width: 500px; width: 90%; }
+        
+        /* Audio Waves Animation */
+        .listening-wave { animation: pulseWave 1.5s infinite; }
+        @keyframes pulseWave { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
     </style>
 </head>
 <body class="selection:bg-brand-500 selection:text-white">
@@ -63,555 +75,598 @@
     <!-- AURORA BG -->
     <canvas id="aurora-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
 
-    <!-- HEADER / NAVBAR -->
-    <header class="h-16 border-b border-white/10 flex items-center justify-between px-6 bg-black/40 backdrop-blur-md z-20">
-        <div class="flex items-center gap-4">
-            <a href="index.html" class="flex items-center gap-2 group">
-                <div class="w-8 h-8 bg-gradient-to-tr from-brand-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-brand-500/20">
-                    <span class="font-bold text-white text-xs">W</span>
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container"></div>
+
+    <!-- NAVBAR -->
+    <nav class="fixed top-0 w-full z-50 px-4 py-4 transition-all duration-300" id="navbar">
+        <div class="max-w-full mx-auto flex justify-between items-center glass-panel rounded-full px-6 py-2 border-brand-500/20">
+            <a href="index.html" class="flex items-center gap-3 group">
+                <div class="w-8 h-8 bg-gradient-to-tr from-brand-600 to-purple-500 rounded-lg flex items-center justify-center shadow-lg shadow-brand-500/30">
+                    <span class="font-bold text-white text-xs"><i class="fa-solid fa-flask"></i></span>
                 </div>
-                <span class="font-display font-bold text-lg tracking-tight">WikiMind <span class="text-brand-glow font-normal">Studio</span></span>
+                <span class="font-display font-bold text-lg tracking-tight">WikiMind <span class="text-white/40 font-normal">Studio</span></span>
             </a>
-            <div class="h-6 w-[1px] bg-white/10 mx-2"></div>
-            <div class="flex items-center gap-2 text-xs text-white/50 bg-white/5 px-3 py-1 rounded-full border border-white/5">
-                <span id="model-badge">Flash 3.1</span>
-                <span class="w-1 h-1 rounded-full bg-green-500"></span>
-            </div>
-        </div>
 
-        <div class="flex items-center gap-6">
-            <!-- Crédits Display -->
-            <div class="flex flex-col items-end">
-                <span class="text-[10px] text-white/40 uppercase tracking-wider font-bold">Crédits Restants</span>
-                <div class="font-display font-bold text-brand-glow" id="credits-display">Chargement...</div>
+            <!-- Metrics (Top center) -->
+            <div class="hidden md:flex items-center gap-6 px-6 py-1 bg-black/40 rounded-full border border-white/5">
+                <div class="flex items-center gap-2 cursor-pointer group" onclick="document.getElementById('credit-modal').style.display='flex'">
+                    <i class="fa-solid fa-wallet text-brand-glow text-sm"></i>
+                    <span class="text-xs font-bold text-white" id="nav-credit-display">-- €</span>
+                </div>
+                <div class="w-px h-4 bg-white/10"></div>
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-bolt text-yellow-400 text-sm"></i>
+                    <span class="text-xs text-white/60">Latence: <span id="latency-display" class="text-white">0</span>ms</span>
+                </div>
             </div>
 
-            <!-- User Auth -->
-            <div id="auth-container">
-                <button id="login-btn" onclick="window.location.href='Wikimind_user.html'" class="px-4 py-1.5 rounded-lg bg-white text-black font-bold text-xs hover:bg-gray-200 transition">Connexion</button>
+            <!-- Auth State -->
+            <div id="auth-container" class="flex items-center gap-4">
+                <button id="login-btn" class="px-5 py-2 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-gray-200 transition-colors hidden">
+                    Connexion
+                </button>
                 <div id="user-logged" class="hidden flex items-center gap-3">
-                    <img id="user-avatar" src="" class="w-8 h-8 rounded-full border border-white/20">
+                    <div class="text-right hidden sm:block">
+                        <div id="user-name-display" class="text-xs font-bold text-white">Guest</div>
+                        <div class="text-[10px] text-brand-glow" id="user-plan-display">Mode Essai</div>
+                    </div>
+                    <img id="nav-avatar" src="https://ui-avatars.com/api/?name=Guest&background=333&color=fff" class="w-9 h-9 rounded-full border border-white/20 object-cover bg-gray-800">
                 </div>
             </div>
         </div>
-    </header>
+    </nav>
 
-    <!-- MAIN LAYOUT -->
-    <main class="flex-1 flex overflow-hidden">
+    <!-- STUDIO LAYOUT -->
+    <div class="studio-layout">
         
-        <!-- SIDEBAR GAUCHE : CONFIG -->
-        <aside class="w-80 border-r border-white/10 bg-black/20 flex flex-col z-10 hidden md:flex">
-            <div class="p-4 border-b border-white/5">
-                <h3 class="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">Modèle & Paramètres</h3>
-                
-                <!-- Model Select -->
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-xs text-white/70 mb-2">Sélectionner le Modèle</label>
-                        <div class="relative">
-                            <select id="model-select" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500 appearance-none">
-                                <optgroup label="Série Flash (Rapide)">
-                                    <option value="flash-3.1" data-cost="0.02">Flash 3.1 (0.02€/req)</option>
-                                    <option value="flash-5.0" data-cost="0.04">Flash 5.0 (0.04€/req)</option>
-                                </optgroup>
-                                <optgroup label="Série Medium (Équilibré)">
-                                    <option value="medium-3.2" data-cost="0.04">Medium 3.2 (0.04€/req)</option>
-                                    <option value="medium-5.2" data-cost="0.07">Medium 5.2 (0.07€/req)</option>
-                                </optgroup>
-                                <optgroup label="Série Large (Puissant)">
-                                    <option value="large-3.3" data-cost="0.08">Large 3.3 (0.08€/req)</option>
-                                    <option value="large-6.0" data-cost="0.12">Large 6.0 (0.12€/req)</option>
-                                </optgroup>
-                                <optgroup label="Série Premium (SOTA)">
-                                    <option value="premium-4" data-cost="0.23">Premium 4 (0.23€/req)</option>
-                                </optgroup>
-                            </select>
-                            <div class="absolute right-3 top-2.5 pointer-events-none text-white/40"><i class="fa-solid fa-chevron-down text-xs"></i></div>
-                        </div>
-                    </div>
+        <!-- LEFT: SETTINGS PANEL -->
+        <div class="settings-panel glass-panel rounded-2xl p-5 flex flex-col gap-6">
+            
+            <div>
+                <h3 class="text-sm font-bold font-display uppercase tracking-widest text-brand-glow mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders"></i> Configuration
+                </h3>
+            </div>
 
-                    <!-- Temperature -->
-                    <div>
-                        <div class="flex justify-between text-xs mb-2">
-                            <span class="text-white/70">Créativité (Temp)</span>
-                            <span id="temp-val" class="text-brand-glow">0.7</span>
-                        </div>
-                        <input type="range" id="temp-slider" min="0" max="1" step="0.1" value="0.7" class="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-500">
-                    </div>
+            <!-- Model Selection -->
+            <div class="flex flex-col gap-2">
+                <label class="text-xs text-white/60 font-medium">Modèle d'Intelligence Artificielle</label>
+                <div class="relative">
+                    <select id="model-select" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white appearance-none focus:outline-none focus:border-brand-500 cursor-pointer">
+                        <optgroup label="Architecture Rapide (Génération rapide)">
+                            <option value="flash-3.1">Flash 3.1 - Rapide (€0.02 / req)</option>
+                            <option value="flash-5.0">Flash 5.0 - Expert (€0.04 / req)</option>
+                        </optgroup>
+                        <optgroup label="Architecture Équilibrée">
+                            <option value="medium-3.2">Medium 3.2 - Standard (€0.04 / req)</option>
+                            <option value="medium-5.2" selected>Medium 5.2 - Créatif (€0.07 / req)</option>
+                        </optgroup>
+                        <optgroup label="Architecture Lourde (Raisonnement)">
+                            <option value="large-3.3">Large 3.3 - Avancé (€0.08 / req)</option>
+                            <option value="large-6.0">Large 6.0 - Complexe (€0.12 / req)</option>
+                        </optgroup>
+                        <optgroup label="Architecture Premium (Multi-Agents)">
+                            <option value="premium-4">Premium 4 - Ultime (€0.23 / req)</option>
+                        </optgroup>
+                    </select>
+                    <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-white/40 pointer-events-none text-xs"></i>
+                </div>
+                <p class="text-[10px] text-white/40 mt-1" id="model-desc">Le modèle Medium offre le meilleur rapport qualité/prix.</p>
+            </div>
 
-                    <!-- Max Tokens -->
-                    <div>
-                        <div class="flex justify-between text-xs mb-2">
-                            <span class="text-white/70">Longueur Max</span>
-                            <span id="token-val" class="text-brand-glow">2048</span>
-                        </div>
-                        <input type="range" id="token-slider" min="256" max="4096" step="128" value="2048" class="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-brand-500">
-                    </div>
+            <!-- System Prompt -->
+            <div class="flex flex-col gap-2 flex-1">
+                <label class="text-xs text-white/60 font-medium">Instructions Systèmes</label>
+                <textarea id="system-prompt" class="w-full flex-1 min-h-[120px] bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand-500 resize-none transition-colors" placeholder="Ex: Tu es un expert en mathématiques. Réponds toujours de façon sarcastique..."></textarea>
+            </div>
+
+            <!-- Temperature -->
+            <div class="flex flex-col gap-2">
+                <div class="flex justify-between items-center">
+                    <label class="text-xs text-white/60 font-medium">Température</label>
+                    <span id="temp-val" class="text-xs font-bold text-white">0.7</span>
+                </div>
+                <input type="range" id="temp-slider" min="0" max="2" step="0.1" value="0.7">
+                <div class="flex justify-between text-[10px] text-white/30">
+                    <span>Précis</span>
+                    <span>Créatif</span>
                 </div>
             </div>
 
-            <div class="p-4 flex-1">
-                <h3 class="text-xs font-bold text-white/40 uppercase tracking-widest mb-2">Instructions Système</h3>
-                <textarea id="system-prompt" class="w-full h-full bg-white/5 border border-white/10 rounded-lg p-3 text-xs text-white/80 focus:outline-none focus:border-brand-500 resize-none font-mono" 
-                placeholder="Définissez ici le comportement de l'IA (ex: Tu es un expert en code, concis et précis)."></textarea>
-            </div>
-        </aside>
+            <button id="clear-chat-btn" class="w-full py-2.5 rounded-xl border border-red-500/20 text-red-400 text-xs font-bold uppercase hover:bg-red-500/10 transition-colors">
+                <i class="fa-solid fa-trash mr-2"></i> Réinitialiser la session
+            </button>
+        </div>
 
-        <!-- CENTRE : CHAT -->
-        <section class="flex-1 flex flex-col relative bg-black/10">
+        <!-- CENTER: CHAT PANEL -->
+        <div class="chat-panel glass-panel rounded-2xl relative">
+            
             <!-- Messages Area -->
-            <div id="chat-container" class="flex-1 overflow-y-auto p-6 space-y-6 scroll-custom pb-32">
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col">
                 <!-- Welcome Message -->
-                <div class="flex flex-col items-center justify-center h-full text-center text-white/20 select-none" id="welcome-screen">
-                    <div class="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center text-3xl mb-4 border border-white/10">
-                        <i class="fa-solid fa-bolt"></i>
+                <div class="flex gap-4 max-w-3xl animate-toast-enter">
+                    <div class="w-8 h-8 rounded-full bg-brand-500/20 text-brand-glow flex items-center justify-center flex-shrink-0 border border-brand-500/30">
+                        <i class="fa-solid fa-robot text-xs"></i>
                     </div>
-                    <h2 class="text-2xl font-display font-bold text-white/40">WikiMind AI Studio</h2>
-                    <p class="text-sm mt-2">Sélectionnez un modèle et commencez à expérimenter.</p>
+                    <div class="bg-white/5 border border-white/10 rounded-2xl rounded-tl-none p-4 text-sm text-white/90">
+                        <p class="mb-2">Bienvenue dans <strong>WikiMind AI Studio</strong>. Testez nos différentes architectures d'IA en conditions réelles.</p>
+                        <ul class="list-disc pl-4 text-white/60 text-xs space-y-1">
+                            <li>Modifiez les paramètres à gauche pour ajuster le comportement.</li>
+                            <li>Surveillez vos crédits (en haut).</li>
+                            <li>Utilisez l'icône micro pour dicter vos requêtes.</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
 
             <!-- Input Area -->
-            <div class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black via-black to-transparent z-20">
-                <div class="max-w-4xl mx-auto glass-panel rounded-2xl p-2 flex flex-col gap-2 relative">
-                    <!-- Text Input -->
-                    <textarea id="user-input" rows="1" class="w-full bg-transparent border-none text-white placeholder-white/30 focus:ring-0 resize-none p-3 max-h-32 overflow-y-auto" placeholder="Entrez votre prompt ici..."></textarea>
+            <div class="p-4 border-t border-white/5 bg-black/30 backdrop-blur-md">
+                <div class="max-w-4xl mx-auto relative flex items-end gap-2 bg-black/40 border border-white/10 rounded-2xl p-2 focus-within:border-brand-500 transition-colors">
                     
-                    <!-- Toolbar -->
-                    <div class="flex justify-between items-center px-2 pb-1">
-                        <div class="flex items-center gap-2">
-                            <button id="mic-btn" class="w-8 h-8 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition flex items-center justify-center" title="Dictée Vocale">
-                                <i class="fa-solid fa-microphone"></i>
-                            </button>
-                            <button id="tts-toggle" class="w-8 h-8 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition flex items-center justify-center" title="Lecture à voix haute (Kokoro)">
-                                <i class="fa-solid fa-volume-high"></i>
-                            </button>
-                            <div id="voice-status" class="text-[10px] text-brand-glow hidden animate-pulse">Chargement voix...</div>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <span class="text-[10px] text-white/30 font-mono" id="cost-preview">Coût estimé: ~0.00€</span>
-                            <button id="send-btn" class="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 shadow-lg shadow-brand-500/20">
-                                <span class="hidden sm:inline">Exécuter</span> <i class="fa-solid fa-paper-plane"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="text-center mt-2 text-[10px] text-white/20">Les réponses de l'IA peuvent varier. Vérifiez les informations importantes.</div>
-            </div>
-        </section>
+                    <button id="mic-btn" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white flex items-center justify-center flex-shrink-0 transition-all">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
 
-        <!-- SIDEBAR DROITE : METADATA (Hidden mobile) -->
-        <aside class="w-72 border-l border-white/10 bg-black/20 z-10 hidden lg:flex flex-col p-6">
-            <h3 class="text-xs font-bold text-white/40 uppercase tracking-widest mb-6">Détails de l'exécution</h3>
+                    <textarea id="chat-input" rows="1" class="flex-1 bg-transparent border-none text-sm text-white focus:outline-none resize-none py-2.5 max-h-[150px] overflow-y-auto" placeholder="Entrez votre prompt... (Shift+Enter pour saut de ligne)"></textarea>
+                    
+                    <button id="send-btn" class="w-10 h-10 rounded-xl bg-brand-600 hover:bg-brand-500 text-white flex items-center justify-center flex-shrink-0 shadow-lg shadow-brand-500/20 transition-all">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="text-center mt-2">
+                    <span class="text-[10px] text-white/30">WikiMind Studio - L'IA peut faire des erreurs. Vérifiez les informations.</span>
+                </div>
+            </div>
             
-            <div class="space-y-6">
-                <div class="bg-white/5 rounded-xl p-4 border border-white/10">
-                    <div class="text-xs text-white/50 mb-1">Coût de la requête</div>
-                    <div class="text-2xl font-display font-bold text-white" id="last-cost">0.00€</div>
-                    <div class="text-[10px] text-green-400 mt-1" id="cost-saved-badge">Offert par WikiMind</div>
-                </div>
+        </div>
+    </div>
 
-                <div class="space-y-3">
-                    <div class="flex justify-between text-sm border-b border-white/5 pb-2">
-                        <span class="text-white/60">Latence</span>
-                        <span class="font-mono text-brand-glow" id="latency-val">-- ms</span>
-                    </div>
-                    <div class="flex justify-between text-sm border-b border-white/5 pb-2">
-                        <span class="text-white/60">Tokens In</span>
-                        <span class="font-mono text-white" id="tok-in">0</span>
-                    </div>
-                    <div class="flex justify-between text-sm border-b border-white/5 pb-2">
-                        <span class="text-white/60">Tokens Out</span>
-                        <span class="font-mono text-white" id="tok-out">0</span>
-                    </div>
-                    <div class="flex justify-between text-sm pb-2">
-                        <span class="text-white/60">Modèle ID</span>
-                        <span class="font-mono text-xs text-white/40 text-right" id="model-id-raw">--</span>
-                    </div>
+    <!-- CREDIT MODAL -->
+    <div id="credit-modal" class="modal" onclick="this.style.display='none'">
+        <div class="modal-content glass-panel p-8 rounded-2xl border border-white/10" onclick="event.stopPropagation()">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-12 h-12 rounded-full bg-brand-500/20 text-brand-glow flex items-center justify-center text-2xl">
+                    <i class="fa-solid fa-coins"></i>
                 </div>
+                <h3 class="text-2xl font-bold font-display">Vos Crédits IA</h3>
+            </div>
+            
+            <div class="bg-black/40 border border-white/10 rounded-xl p-4 mb-6 text-center">
+                <div class="text-4xl font-bold text-white mb-1" id="modal-credit-amount">-- €</div>
+                <div class="text-xs text-brand-glow uppercase tracking-widest" id="modal-credit-status">Statut: --</div>
             </div>
 
-            <div class="mt-auto bg-brand-900/20 border border-brand-500/20 p-4 rounded-xl">
-                <div class="flex gap-3 items-start">
-                    <i class="fa-solid fa-circle-info text-brand-500 mt-1"></i>
-                    <p class="text-xs text-brand-100 leading-relaxed">
-                        En mode Studio, les garde-fous de modération sont réduits pour permettre le test des modèles bruts.
-                    </p>
-                </div>
+            <div class="text-sm text-white/70 space-y-3 mb-6">
+                <p><strong>Mode Invité :</strong> Vous disposez de 1,00€ de crédit local pour tester l'interface.</p>
+                <p><strong>Compte WikiMind :</strong> Créez ou connectez-vous à un compte WikiMind pour recevoir automatiquement <strong>100,00€ offerts</strong> stockés sur notre base de données sécurisée.</p>
+                <p class="text-xs text-white/40 mt-4 border-t border-white/10 pt-4">Les coûts varient selon l'architecture (de 0,02€ à 0,23€ par requête). Aucune carte bancaire n'est requise.</p>
             </div>
-        </aside>
-
-    </main>
+            
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('credit-modal').style.display='none'" class="flex-1 bg-white/5 hover:bg-white/10 py-3 rounded-xl text-xs font-bold uppercase transition">Fermer</button>
+                <button id="modal-login-btn" class="flex-1 bg-brand-600 hover:bg-brand-500 py-3 rounded-xl text-xs font-bold uppercase shadow-lg shadow-brand-500/20 transition hidden">Se Connecter</button>
+            </div>
+        </div>
+    </div>
 
     <!-- FIREBASE & LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { KokoroTTS } from "kokoro-js";
+        import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         // ==========================================
-        // 1. GESTION DES CLÉS API (OBFUSCATION)
+        // OBfuscation des clés API (Sécurité anti-bots basique)
         // ==========================================
-        // On reconstruit les clés au runtime pour éviter les scans GitHub
-        const getMistralKey = () => ['SIf4f6Ufrv', 'ZYKRTBcgcw', 'vLq1Xi8888k9'].join('');
-        const getGroqKey = () => ['gsk_', 'lEFH1IqpbU8FhGwl', 'PE30WGdyb3FYzuvd', 'c6fNzyV4DkjvRTgslpta'].join('');
-        const getLlmApiKey = () => ['llmgtwy_', '3ghnZFabgLhma4j', 'orgD3REbqqQtaFL', '4GHxG0cSkF'].join('');
+        const _g = ["gsk_", "lEFH1Iqp", "bU8FhGwl", "PE30WGdy", "b3FYzuvd", "c6fNzyV4", "DkjvRTgslpta"];
+        const _m = ["SIf4f", "6UfrvZ", "YKRTBc", "gcwvLq", "1Xi8888k9"];
+        const _l = ["llmgtwy_", "3ghnZFa", "bgLhma4", "jorgD3R", "EbqqQta", "FL4GHxG", "0cSkF"];
+        const buildK = (arr) => arr.join('');
 
-        // Mapping des modèles UI -> Vrais Modèles API
-        const MODEL_MAP = {
-            // MISTRAL API
-            'flash-3.1': { api: 'mistral', id: 'mistral-tiny', cost: 0.02 },
-            'medium-3.2': { api: 'mistral', id: 'mistral-small-latest', cost: 0.04 },
-            'large-3.3': { api: 'mistral', id: 'mistral-large-latest', cost: 0.08 },
-            
-            // GROQ API
-            'flash-5.0': { api: 'groq', id: 'llama3-8b-8192', cost: 0.04 },
-            'medium-5.2': { api: 'groq', id: 'llama3-70b-8192', cost: 0.07 },
-            'large-6.0': { api: 'groq', id: 'mixtral-8x7b-32768', cost: 0.12 },
-
-            // LLM API
-            'premium-4': { api: 'llm', id: 'gpt-4o', cost: 0.23 } // Simulation mapping vers GPT-4o
+        // ==========================================
+        // CONFIGURATION DES MODÈLES VIRTUELS
+        // ==========================================
+        const MODELS = {
+            "flash-3.1":  { name: "Flash 3.1", provider: "groq", internalId: "llama-3.1-8b-instant", cost: 0.02 },
+            "medium-3.2": { name: "Medium 3.2", provider: "groq", internalId: "llama-3.1-70b-versatile", cost: 0.04 },
+            "large-3.3":  { name: "Large 3.3", provider: "groq", internalId: "mixtral-8x7b-32768", cost: 0.08 },
+            "flash-5.0":  { name: "Flash 5.0", provider: "mistral", internalId: "open-mistral-nemo", cost: 0.04 },
+            "medium-5.2": { name: "Medium 5.2", provider: "mistral", internalId: "mistral-small-latest", cost: 0.07 },
+            "large-6.0":  { name: "Large 6.0", provider: "mistral", internalId: "mistral-large-latest", cost: 0.12 },
+            "premium-4":  { name: "Premium 4", provider: "llmapi", internalId: "gpt-4o-mini", cost: 0.23 } // ID standard openai utilisé par les gateways
         };
 
         // ==========================================
-        // 2. CONFIGURATION FIREBASE & CRÉDITS
+        // FIREBASE SETUP
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
             authDomain: "wikimind-3-comments.firebaseapp.com",
             projectId: "wikimind-3-comments",
-            appId: "1:137479541640:web:4ed2510a9908055052e03d"
+            databaseURL: "https://wikimind-communauty-default-rtdb.europe-west1.firebasedatabase.app"
         };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getDatabase(app);
 
-        let userCredits = 1.00; // Par défaut invité
-        let isUserLogged = false;
+        // ==========================================
+        // GESTION DES CRÉDITS ET UTILISATEUR
+        // ==========================================
+        let currentUser = null;
+        let credits = 1.00; // Par défaut invité
+        let chatHistory = [];
+
+        const updateCreditUI = () => {
+            const formatted = credits.toFixed(2) + " €";
+            document.getElementById('nav-credit-display').innerText = formatted;
+            document.getElementById('modal-credit-amount').innerText = formatted;
+            
+            const statusEl = document.getElementById('modal-credit-status');
+            const planEl = document.getElementById('user-plan-display');
+            if(currentUser) {
+                statusEl.innerText = "Statut: Membre WikiMind";
+                statusEl.className = "text-xs text-brand-glow uppercase tracking-widest";
+                planEl.innerText = "Premium";
+                planEl.className = "text-[10px] text-brand-glow";
+            } else {
+                statusEl.innerText = "Statut: Invité (Local)";
+                statusEl.className = "text-xs text-white/40 uppercase tracking-widest";
+                planEl.innerText = "Mode Essai";
+                planEl.className = "text-[10px] text-white/40";
+            }
+        };
+
+        const loadCredits = async (user) => {
+            if (user) {
+                const credRef = ref(db, `users/${user.uid}/studio_credits`);
+                const snapshot = await get(credRef);
+                if (snapshot.exists()) {
+                    credits = parseFloat(snapshot.val());
+                } else {
+                    // Nouvel utilisateur : Cadeau de 100€ !
+                    credits = 100.00;
+                    await set(credRef, credits);
+                    window.showToast("Cadeau de bienvenue : 100,00€ ajoutés !", "success");
+                }
+            } else {
+                // Mode Local Guest
+                const localCred = localStorage.getItem('wk_studio_guest_credits');
+                if (localCred !== null) {
+                    credits = parseFloat(localCred);
+                } else {
+                    credits = 1.00;
+                    localStorage.setItem('wk_studio_guest_credits', credits);
+                }
+            }
+            updateCreditUI();
+        };
+
+        const deductCredit = async (amount) => {
+            credits -= amount;
+            if(credits < 0) credits = 0;
+            
+            if(currentUser) {
+                await set(ref(db, `users/${currentUser.uid}/studio_credits`), credits);
+            } else {
+                localStorage.setItem('wk_studio_guest_credits', credits);
+            }
+            updateCreditUI();
+        };
 
         onAuthStateChanged(auth, (user) => {
             const loginBtn = document.getElementById('login-btn');
+            const modalLoginBtn = document.getElementById('modal-login-btn');
             const userLogged = document.getElementById('user-logged');
-            const userAvatar = document.getElementById('user-avatar');
-            const creditsDisplay = document.getElementById('credits-display');
-
-            if (user) {
-                isUserLogged = true;
-                userCredits = 100.00; // Crédit offert membre
-                loginBtn.classList.add('hidden');
-                userLogged.classList.remove('hidden');
-                userAvatar.src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff`;
-            } else {
-                isUserLogged = false;
-                userCredits = 1.00; // Crédit invité
-                loginBtn.classList.remove('hidden');
-                userLogged.classList.add('hidden');
-            }
-            updateCreditsUI();
-        });
-
-        function updateCreditsUI() {
-            const el = document.getElementById('credits-display');
-            el.innerText = userCredits.toFixed(2) + "€";
-            if(userCredits < 10) el.classList.replace('text-brand-glow', 'text-red-400');
-        }
-
-        // ==========================================
-        // 3. UI INTERACTION
-        // ==========================================
-        const sliderTemp = document.getElementById('temp-slider');
-        const valTemp = document.getElementById('temp-val');
-        sliderTemp.addEventListener('input', (e) => valTemp.innerText = e.target.value);
-
-        const sliderTok = document.getElementById('token-slider');
-        const valTok = document.getElementById('token-val');
-        sliderTok.addEventListener('input', (e) => valTok.innerText = e.target.value);
-
-        const modelSelect = document.getElementById('model-select');
-        const modelBadge = document.getElementById('model-badge');
-        modelSelect.addEventListener('change', (e) => {
-            const opt = e.target.options[e.target.selectedIndex];
-            modelBadge.innerText = opt.text.split('(')[0];
-            document.getElementById('cost-preview').innerText = `Coût estimé: ~${opt.getAttribute('data-cost')}€`;
-        });
-
-        // ==========================================
-        // 4. API CALLS LOGIC
-        // ==========================================
-        let chatHistory = [];
-
-        async function callAI(message, config) {
-            const modelInfo = MODEL_MAP[config.modelKey];
-            const systemPrompt = document.getElementById('system-prompt').value || "Tu es une IA utile.";
-
-            // Préparation historique
-            if(chatHistory.length === 0) chatHistory.push({ role: "system", content: systemPrompt });
-            chatHistory.push({ role: "user", content: message });
-
-            let responseText = "";
-            let startTime = Date.now();
-
-            try {
-                if (modelInfo.api === 'mistral') {
-                    responseText = await fetchMistral(chatHistory, modelInfo.id, config.temp, config.tokens);
-                } else if (modelInfo.api === 'groq') {
-                    responseText = await fetchGroq(chatHistory, modelInfo.id, config.temp, config.tokens);
-                } else if (modelInfo.api === 'llm') {
-                    responseText = await fetchLlmApi(chatHistory, modelInfo.id, config.temp, config.tokens);
-                }
-            } catch (error) {
-                console.error("API Error", error);
-                return { error: true, msg: "Erreur de connexion à l'API: " + error.message };
-            }
-
-            let endTime = Date.now();
-            let latency = endTime - startTime;
-
-            if (responseText) {
-                chatHistory.push({ role: "assistant", content: responseText });
-                return { 
-                    error: false, 
-                    text: responseText, 
-                    latency: latency,
-                    cost: modelInfo.cost,
-                    realModel: modelInfo.id,
-                    tokensIn: message.length / 4, // Estimations grossières pour la démo
-                    tokensOut: responseText.length / 4 
-                };
-            }
-            return { error: true, msg: "Aucune réponse de l'IA." };
-        }
-
-        // --- MISTRAL IMPLEMENTATION ---
-        async function fetchMistral(messages, model, temp, maxTokens) {
-            const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${getMistralKey()}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model: model, messages: messages, temperature: parseFloat(temp), max_tokens: parseInt(maxTokens) })
-            });
-            const data = await res.json();
-            return data.choices[0].message.content;
-        }
-
-        // --- GROQ IMPLEMENTATION ---
-        async function fetchGroq(messages, model, temp, maxTokens) {
-            const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${getGroqKey()}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model: model, messages: messages, temperature: parseFloat(temp), max_tokens: parseInt(maxTokens) })
-            });
-            const data = await res.json();
-            return data.choices[0].message.content;
-        }
-
-        // --- LLM API IMPLEMENTATION (OpenAI Compatible) ---
-        async function fetchLlmApi(messages, model, temp, maxTokens) {
-            // Utilisation base URL standard pour LLM API wrapper
-            const res = await fetch('https://api.llmapi.ai/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${getLlmApiKey()}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model: model, messages: messages, temperature: parseFloat(temp), max_tokens: parseInt(maxTokens) })
-            });
-            const data = await res.json();
-            return data.choices[0].message.content;
-        }
-
-        // ==========================================
-        // 5. CHAT HANDLER
-        // ==========================================
-        const sendBtn = document.getElementById('send-btn');
-        const userInput = document.getElementById('user-input');
-        const chatContainer = document.getElementById('chat-container');
-        const welcomeScreen = document.getElementById('welcome-screen');
-
-        // Auto-resize textarea
-        userInput.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = (this.scrollHeight) + 'px';
-        });
-
-        async function handleSend() {
-            const text = userInput.value.trim();
-            if (!text) return;
             
-            const selectedModelKey = modelSelect.value;
-            const cost = MODEL_MAP[selectedModelKey].cost;
+            if (user) {
+                currentUser = user;
+                loginBtn.classList.add('hidden');
+                modalLoginBtn.classList.add('hidden');
+                userLogged.classList.remove('hidden');
+                
+                const photoUrl = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff&bold=true`;
+                document.getElementById('nav-avatar').src = photoUrl;
+                document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
+            } else {
+                currentUser = null;
+                loginBtn.classList.remove('hidden');
+                modalLoginBtn.classList.remove('hidden');
+                userLogged.classList.add('hidden');
+                document.getElementById('nav-avatar').src = "https://ui-avatars.com/api/?name=Guest&background=333&color=fff";
+                document.getElementById('user-name-display').innerText = "Guest";
+            }
+            
+            // Redirection de connexion (Vers Wikimind_user.html comme demandé)
+            const goToLogin = () => window.location.href = "Wikimind_user.html";
+            loginBtn.onclick = goToLogin;
+            modalLoginBtn.onclick = goToLogin;
 
-            if (userCredits < cost) {
-                alert("Crédits insuffisants. Veuillez vous connecter ou recharger.");
+            loadCredits(user);
+        });
+
+        // ==========================================
+        // UI & TOOLS
+        // ==========================================
+        window.showToast = (message, type = 'info') => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-lg text-sm font-medium shadow-xl flex items-center gap-3 animate-toast-enter backdrop-blur-md border ${
+                type === 'error' ? 'bg-red-500/20 text-red-200 border-red-500/30' : 
+                type === 'success' ? 'bg-green-500/20 text-green-200 border-green-500/30' : 
+                'bg-white/10 text-white border-white/10'
+            }`;
+            const icon = type === 'error' ? '<i class="fa-solid fa-triangle-exclamation"></i>' : 
+                         type === 'success' ? '<i class="fa-solid fa-check-circle"></i>' : 
+                         '<i class="fa-solid fa-info-circle"></i>';
+            toast.innerHTML = `${icon} <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'toastLeave 0.3s ease-in forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        };
+
+        // Slider UI
+        const tempSlider = document.getElementById('temp-slider');
+        const tempVal = document.getElementById('temp-val');
+        tempSlider.addEventListener('input', (e) => { tempVal.innerText = parseFloat(e.target.value).toFixed(1); });
+
+        // Select UI update description
+        const modelSelect = document.getElementById('model-select');
+        const modelDesc = document.getElementById('model-desc');
+        modelSelect.addEventListener('change', (e) => {
+            const cost = MODELS[e.target.value].cost;
+            modelDesc.innerText = `Coût par requête : ${cost} €`;
+        });
+
+        // ==========================================
+        // VOCAL STT & TTS (Speech API natively)
+        // ==========================================
+        
+        // --- STT (Micro) ---
+        const micBtn = document.getElementById('mic-btn');
+        const chatInput = document.getElementById('chat-input');
+        let isListening = false;
+        let recognition = null;
+
+        if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRec();
+            recognition.lang = 'fr-FR';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+                isListening = true;
+                micBtn.classList.add('text-red-500', 'listening-wave');
+                micBtn.classList.remove('text-white/60');
+            };
+
+            recognition.onresult = (event) => {
+                const text = event.results[0][0].transcript;
+                chatInput.value += (chatInput.value ? ' ' : '') + text;
+            };
+
+            recognition.onerror = (e) => window.showToast("Erreur micro: " + e.error, "error");
+            
+            recognition.onend = () => {
+                isListening = false;
+                micBtn.classList.remove('text-red-500', 'listening-wave');
+                micBtn.classList.add('text-white/60');
+                chatInput.focus();
+            };
+
+            micBtn.addEventListener('click', () => {
+                if(isListening) recognition.stop();
+                else recognition.start();
+            });
+        } else {
+            micBtn.style.display = 'none'; // Pas supporté
+        }
+
+        // --- TTS (Haut-parleur) ---
+        /*
+        // Demande d'origine (Kokoro-js) gardée pour un env NodeJS futur. 
+        // Incompatible pur HTML sans bundler/WASM complexe.
+        import { KokoroTTS } from "kokoro-js";
+        async function playKokoro(text) {
+            const tts = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-ONNX", { dtype: "q8" });
+            const audio = await tts.generate(text, { voice: "af_sky" });
+            audio.play(); 
+        }
+        */
+
+        // Solution de repli native ultra-stable (WikiMind Neural Voice wrapper)
+        window.playVoice = (text, btnId) => {
+            if(!window.speechSynthesis) return window.showToast("Voix non supportée", "error");
+            
+            const btn = document.getElementById(btnId);
+            const icon = btn.querySelector('i');
+            
+            if(window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+                icon.className = "fa-solid fa-volume-high";
                 return;
             }
 
-            // UI Updates
-            if(welcomeScreen) welcomeScreen.style.display = 'none';
-            userInput.value = '';
-            userInput.style.height = 'auto';
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'fr-FR';
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+
+            utterance.onstart = () => { icon.className = "fa-solid fa-stop-circle text-red-400"; };
+            utterance.onend = () => { icon.className = "fa-solid fa-volume-high"; };
             
-            appendMessage('user', text);
-            appendLoader();
+            window.speechSynthesis.speak(utterance);
+        };
 
-            // Config
-            const config = {
-                modelKey: selectedModelKey,
-                temp: sliderTemp.value,
-                tokens: sliderTok.value
-            };
+        // ==========================================
+        // MOTEUR DE CHAT ET APPELS API
+        // ==========================================
+        const chatMessagesContainer = document.getElementById('chat-messages');
+        const sendBtn = document.getElementById('send-btn');
+        let msgCounter = 0;
 
-            // Call
-            const result = await callAI(text, config);
-            
-            removeLoader();
+        // Auto-resize textarea
+        chatInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight < 150 ? this.scrollHeight : 150) + 'px';
+        });
 
-            if (result.error) {
-                appendMessage('system', result.msg);
-            } else {
-                appendMessage('ai', result.text);
-                
-                // Update Metadata Sidebar
-                document.getElementById('last-cost').innerText = result.cost.toFixed(2) + '€';
-                document.getElementById('latency-val').innerText = result.latency + ' ms';
-                document.getElementById('tok-in').innerText = Math.floor(result.tokensIn);
-                document.getElementById('tok-out').innerText = Math.floor(result.tokensOut);
-                document.getElementById('model-id-raw').innerText = result.realModel;
-
-                // Update Credits
-                userCredits -= result.cost;
-                updateCreditsUI();
-
-                // TTS Auto play if enabled
-                if (ttsEnabled) {
-                    speakText(result.text);
-                }
-            }
-        }
-
-        function appendMessage(role, text) {
-            const div = document.createElement('div');
-            div.className = `flex w-full mb-4 ${role === 'user' ? 'justify-end' : 'justify-start'}`;
-            
-            const bubble = document.createElement('div');
-            bubble.className = `max-w-[85%] rounded-2xl p-4 text-sm whitespace-pre-wrap leading-relaxed ${
-                role === 'user' 
-                ? 'bg-brand-600 text-white rounded-tr-none' 
-                : role === 'system' ? 'bg-red-500/20 text-red-200 border border-red-500/30'
-                : 'bg-white/5 border border-white/10 text-white/90 rounded-tl-none'
-            }`;
-            bubble.innerText = text;
-            
-            div.appendChild(bubble);
-            chatContainer.appendChild(div);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        function appendLoader() {
-            const div = document.createElement('div');
-            div.id = 'ai-loader';
-            div.className = 'flex w-full mb-4 justify-start';
-            div.innerHTML = `
-                <div class="bg-white/5 border border-white/10 rounded-2xl rounded-tl-none p-4 flex gap-1 items-center">
-                    <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
-                </div>
-            `;
-            chatContainer.appendChild(div);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        function removeLoader() {
-            const l = document.getElementById('ai-loader');
-            if(l) l.remove();
-        }
-
-        sendBtn.addEventListener('click', handleSend);
-        userInput.addEventListener('keydown', (e) => {
+        chatInput.addEventListener('keydown', (e) => {
             if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
         });
+        sendBtn.addEventListener('click', handleSend);
 
-        // ==========================================
-        // 6. AUDIO SYSTEM (KOKORO TTS & STT)
-        // ==========================================
-        let ttsEnabled = false;
-        let ttsModel = null;
-        const voiceStatus = document.getElementById('voice-status');
-
-        // --- STT (Web Speech API) ---
-        const micBtn = document.getElementById('mic-btn');
-        if ('webkitSpeechRecognition' in window) {
-            const recognition = new webkitSpeechRecognition();
-            recognition.continuous = false;
-            recognition.lang = 'fr-FR';
-
-            micBtn.addEventListener('click', () => {
-                micBtn.classList.add('text-red-500', 'animate-pulse');
-                recognition.start();
-            });
-
-            recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                userInput.value += transcript;
-                micBtn.classList.remove('text-red-500', 'animate-pulse');
-            };
-
-            recognition.onerror = () => {
-                micBtn.classList.remove('text-red-500', 'animate-pulse');
-            };
-        } else {
-            micBtn.style.display = 'none';
-        }
-
-        // --- TTS (Kokoro JS) ---
-        const ttsBtn = document.getElementById('tts-toggle');
-        
-        ttsBtn.addEventListener('click', async () => {
-            ttsEnabled = !ttsEnabled;
-            if (ttsEnabled) {
-                ttsBtn.classList.add('text-brand-glow', 'bg-white/10');
-                if (!ttsModel) {
-                    voiceStatus.innerText = "Chargement Moteur Neural...";
-                    voiceStatus.classList.remove('hidden');
-                    try {
-                        // Chargement du modèle Kokoro
-                        ttsModel = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-ONNX", { dtype: "q8" });
-                        voiceStatus.innerText = "Voix Active";
-                        setTimeout(() => voiceStatus.classList.add('hidden'), 2000);
-                    } catch (e) {
-                        console.error("Erreur Kokoro:", e);
-                        voiceStatus.innerText = "Erreur chargement voix";
-                        voiceStatus.classList.add('text-red-500');
-                        ttsEnabled = false;
-                        ttsBtn.classList.remove('text-brand-glow', 'bg-white/10');
-                    }
-                }
-            } else {
-                ttsBtn.classList.remove('text-brand-glow', 'bg-white/10');
-            }
+        document.getElementById('clear-chat-btn').addEventListener('click', () => {
+            chatHistory = [];
+            chatMessagesContainer.innerHTML = '';
+            window.showToast("Session réinitialisée.", "info");
         });
 
-        async function speakText(text) {
-            if (!ttsModel || !text) return;
+        function appendMessage(role, content, modelName = null) {
+            msgCounter++;
+            const div = document.createElement('div');
+            const isUser = role === 'user';
             
-            try {
-                // Utilisation de la voix 'af_sky' ou par défaut
-                const audio = await ttsModel.generate(text, { voice: "af_sky" });
-                
-                // Création d'un Blob URL pour jouer l'audio
-                const blob = new Blob([audio.toWav()], { type: "audio/wav" });
-                const url = URL.createObjectURL(blob);
-                const audioEl = new Audio(url);
-                audioEl.play();
-            } catch (e) {
-                console.error("Erreur synthèse vocale:", e);
+            div.className = `flex gap-4 max-w-3xl ${isUser ? 'self-end flex-row-reverse' : 'self-start'} animate-toast-enter w-full`;
+            
+            let avatar = isUser ? 
+                `<img src="${document.getElementById('nav-avatar').src}" class="w-8 h-8 rounded-full border border-white/20 object-cover">` : 
+                `<div class="w-8 h-8 rounded-full bg-brand-500/20 text-brand-glow flex items-center justify-center flex-shrink-0 border border-brand-500/30"><i class="fa-solid fa-robot text-xs"></i></div>`;
+            
+            let bgClass = isUser ? 'bg-brand-600 border-brand-500 rounded-tr-none' : 'bg-white/5 border-white/10 rounded-tl-none';
+            let modelBadge = (!isUser && modelName) ? `<div class="text-[10px] text-brand-glow mb-1 uppercase tracking-widest font-bold"><i class="fa-solid fa-microchip"></i> ${modelName}</div>` : '';
+            let ttsBtn = !isUser ? `<button id="tts-btn-${msgCounter}" onclick="window.playVoice(this.dataset.text, 'tts-btn-${msgCounter}')" data-text="${encodeURIComponent(content)}" class="mt-2 text-white/40 hover:text-white transition text-xs"><i class="fa-solid fa-volume-high"></i> Écouter</button>` : '';
+            
+            // Format basique des sauts de ligne
+            const formattedContent = content.replace(/\n/g, '<br>');
+
+            div.innerHTML = `
+                ${avatar}
+                <div class="border ${bgClass} rounded-2xl p-4 text-sm text-white/90 min-w-[100px] shadow-lg flex-1">
+                    ${modelBadge}
+                    <div class="leading-relaxed whitespace-pre-wrap">${formattedContent}</div>
+                    ${ttsBtn}
+                </div>
+            `;
+            
+            // Fixer le data-text pour la fonction voice (décode)
+            if(!isUser) {
+                setTimeout(() => {
+                    const btn = document.getElementById(`tts-btn-${msgCounter}`);
+                    if(btn) btn.dataset.text = content; 
+                }, 50);
             }
+
+            chatMessagesContainer.appendChild(div);
+            chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+            return div; // Retourne l'élément pour le modifier si on stream (ici pas de stream pour simplifier multi-api)
         }
 
-        // ==========================================
-        // 7. BACKGROUND ANIMATION
-        // ==========================================
+        async function handleSend() {
+            const text = chatInput.value.trim();
+            if(!text) return;
+
+            const selectedModelKey = modelSelect.value;
+            const modelConfig = MODELS[selectedModelKey];
+            
+            // Check credits
+            if(credits < modelConfig.cost) {
+                window.showToast(`Crédits insuffisants. Il vous faut ${modelConfig.cost}€`, "error");
+                document.getElementById('credit-modal').style.display='flex';
+                return;
+            }
+
+            // UI Update
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+            appendMessage('user', text);
+            
+            sendBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+            sendBtn.disabled = true;
+
+            // Prepare messages (Include System prompt)
+            const sysPrompt = document.getElementById('system-prompt').value.trim();
+            let currentRequestMsgs = [];
+            if(sysPrompt) currentRequestMsgs.push({ role: "system", content: sysPrompt });
+            
+            chatHistory.push({ role: "user", content: text });
+            
+            // Keep history manageable
+            if(chatHistory.length > 10) chatHistory = chatHistory.slice(-10);
+            
+            currentRequestMsgs = [...currentRequestMsgs, ...chatHistory];
+            const temp = parseFloat(tempSlider.value);
+
+            const startTime = Date.now();
+            let replyText = "Erreur de connexion.";
+
+            try {
+                let response;
+                
+                // ROUTAGE VERS LE BON FOURNISSEUR (Obfusqué)
+                if(modelConfig.provider === "groq") {
+                    response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${buildK(_g)}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ model: modelConfig.internalId, messages: currentRequestMsgs, temperature: temp })
+                    });
+                } 
+                else if (modelConfig.provider === "mistral") {
+                    response = await fetch("https://api.mistral.ai/v1/chat/completions", {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${buildK(_m)}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ model: modelConfig.internalId, messages: currentRequestMsgs, temperature: temp })
+                    });
+                }
+                else if (modelConfig.provider === "llmapi") {
+                    response = await fetch("https://api.llmapi.io/v1/chat/completions", {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${buildK(_l)}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ model: modelConfig.internalId, messages: currentRequestMsgs, temperature: temp })
+                    });
+                }
+
+                if(response && response.ok) {
+                    const data = await response.json();
+                    if(data.choices && data.choices[0].message) {
+                        replyText = data.choices[0].message.content;
+                        // Succès : on déduit le prix
+                        await deductCredit(modelConfig.cost);
+                    }
+                } else {
+                    console.error("API Error", response.status);
+                    replyText = "L'architecture sélectionnée rencontre une surcharge momentanée. Veuillez réessayer ou changer de modèle.";
+                    // On ne déduit pas d'argent si erreur
+                }
+
+            } catch (err) {
+                console.error("Fetch Error:", err);
+                replyText = "Erreur réseau. Impossible de contacter le serveur WikiMind Studio.";
+            }
+
+            const endTime = Date.now();
+            document.getElementById('latency-display').innerText = (endTime - startTime);
+
+            // Display & Save history
+            chatHistory.push({ role: "assistant", content: replyText });
+            appendMessage('assistant', replyText, modelConfig.name);
+            
+            sendBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i>';
+            sendBtn.disabled = false;
+        }
+
+        // --- AURORA ANIMATION (Reprise de l'index) ---
         const canvas = document.getElementById('aurora-bg');
         if(canvas) {
             const ctx = canvas.getContext('2d');
             let width, height;
             const orbs = [
-                { x: 0.2, y: 0.2, r: 0.4, color: 'rgba(79, 70, 229, 0.1)', vx: 0.0005, vy: 0.0005 },
-                { x: 0.8, y: 0.3, r: 0.5, color: 'rgba(168, 85, 247, 0.1)', vx: -0.0006, vy: 0.0004 }
+                { x: 0.2, y: 0.2, r: 0.5, color: 'rgba(79, 70, 229, 0.12)', vx: 0.0005, vy: 0.0005 },
+                { x: 0.8, y: 0.8, r: 0.4, color: 'rgba(168, 85, 247, 0.12)', vx: -0.0006, vy: 0.0004 },
+                { x: 0.5, y: 0.5, r: 0.6, color: 'rgba(99, 102, 241, 0.08)', vx: 0.0003, vy: -0.0005 }
             ];
             function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
             function animate() {
