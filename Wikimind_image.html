@@ -83,13 +83,13 @@
     <main class="relative pt-32 pb-20 px-4 md:px-6 max-w-7xl mx-auto">
         
         <!-- HEADER -->
-        <div class="text-center mb-12">
+        <div class="text-center mb-12 animate-fade-in-up">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-brand-500/30 bg-brand-500/10 text-brand-glow text-[10px] uppercase font-bold tracking-[0.2em] mb-4">
                 <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                 API Powered
+                 Free Access
             </div>
             <h1 class="text-4xl md:text-5xl font-display font-bold mb-4">Studio de <span class="text-gradient">Génération</span></h1>
-            <p class="text-white/60">Créez des visuels époustouflants grâce aux modèles Flux & Turbo.</p>
+            <p class="text-white/60">Génération d'images IA gratuite via Pollinations Public Mesh.</p>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -111,7 +111,7 @@
                     <div class="space-y-4">
                         <div>
                             <label class="text-xs text-white/50 uppercase font-bold ml-1">Prompt (Description)</label>
-                            <textarea id="prompt-input" rows="4" placeholder="Ex: Un astronaute qui fait du skate sur les anneaux de Saturne, style cyberpunk, 8k..." 
+                            <textarea id="prompt-input" rows="4" placeholder="Ex: A futuristic city skyline at sunset, cyberpunk style, 8k..." 
                                 class="w-full mt-2 bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand-500 focus:bg-white/10 transition-all resize-none"></textarea>
                         </div>
                         
@@ -122,7 +122,6 @@
                                     <option value="1024x1024">Carré (1:1)</option>
                                     <option value="1280x720">Paysage (16:9)</option>
                                     <option value="720x1280">Portrait (9:16)</option>
-                                    <option value="1920x1080">Cinéma HD</option>
                                 </select>
                             </div>
                             <div>
@@ -130,14 +129,15 @@
                                 <select id="model-sel" class="w-full mt-2 bg-white/5 border border-white/10 rounded-xl p-2.5 text-sm text-white focus:outline-none">
                                     <option value="flux">Flux (Réaliste)</option>
                                     <option value="turbo">Turbo (Rapide)</option>
-                                    <option value="unity">Anime / 3D</option>
+                                    <option value="midjourney">Style MJ</option>
+                                    <option value="anime">Anime</option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="flex items-center gap-2 mt-2">
                             <input type="checkbox" id="enhance-prompt" class="rounded bg-white/10 border-white/20 text-brand-500 focus:ring-brand-500" checked>
-                            <label for="enhance-prompt" class="text-xs text-white/70">Améliorer le prompt (IA Magic)</label>
+                            <label for="enhance-prompt" class="text-xs text-white/70">Boost Qualité (IA)</label>
                         </div>
 
                         <button onclick="generateImage()" id="btn-gen" class="w-full py-3 mt-4 bg-brand-600 hover:bg-brand-500 rounded-xl font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 group shadow-lg shadow-brand-500/20">
@@ -166,7 +166,7 @@
                             <i class="fa-solid fa-paintbrush text-4xl text-white/20"></i>
                         </div>
                         <h3 class="text-xl font-display font-bold mb-2">Prêt à créer</h3>
-                        <p class="text-white/40 text-sm">Le modèle Flux est optimisé pour le photoréalisme.<br>La génération peut prendre 10-20 secondes.</p>
+                        <p class="text-white/40 text-sm">Sélectionnez un modèle et lancez la magie.<br>Pas de clé requise.</p>
                     </div>
 
                     <!-- Loading -->
@@ -177,7 +177,7 @@
                     </div>
 
                     <!-- Result Image -->
-                    <img id="result-image" src="" class="hidden max-h-full max-w-full rounded-lg shadow-2xl object-contain z-10">
+                    <img id="result-image" src="" class="hidden max-h-full max-w-full rounded-lg shadow-2xl object-contain z-10" crossorigin="anonymous">
 
                     <!-- Actions -->
                     <div id="result-actions" class="hidden absolute bottom-6 right-6 flex gap-3 z-20">
@@ -214,9 +214,6 @@
         };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-
-        // API KEY POLLINATIONS (Fournie)
-        const POLLINATIONS_KEY = "pk_izJk3r9fHrk5HGkQ";
 
         // STATE
         let currentUser = null;
@@ -258,8 +255,6 @@
                 els.userLogged.classList.add('flex');
                 els.navAvatar.src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1`;
                 els.userName.innerText = user.displayName || "Membre";
-                
-                // Masquer les alertes de quota pour les membres
                 els.quotaAlert.classList.add('hidden'); 
                 els.quotaDisplay.classList.add('opacity-0');
             } else {
@@ -271,8 +266,8 @@
             }
         });
 
-        // GENERATION LOGIC
-        window.generateImage = function() {
+        // --- CORE GENERATION LOGIC (CORRECTED) ---
+        window.generateImage = async function() {
             // Check Quota
             if (!currentUser && dailyCount >= MAX_DAILY_GUEST) {
                 els.quotaAlert.classList.remove('hidden');
@@ -282,67 +277,75 @@
             const promptText = els.prompt.value.trim();
             if (!promptText) return alert("Veuillez décrire l'image.");
 
-            // UI Setup
+            // UI Reset
             els.loader.classList.remove('hidden');
             els.placeholder.classList.add('hidden');
             els.img.classList.add('hidden');
             els.actions.classList.add('hidden');
             
             // Random Loading Messages
-            const messages = ["Tissage des pixels...", "Appel de l'IA...", "Colorisation...", "Rendu HD..."];
+            const messages = ["Connexion au neurone...", "Synthèse des pixels...", "Application du style...", "Rendu haute définition..."];
             let msgIdx = 0;
             els.loadText.innerText = messages[0];
             const msgInterval = setInterval(() => {
                 msgIdx = (msgIdx + 1) % messages.length;
                 els.loadText.innerText = messages[msgIdx];
-            }, 2000);
+            }, 1500);
 
-            // Params
+            // Params Construction
             const seed = Math.floor(Math.random() * 1000000);
             const [w, h] = els.ratio.value.split('x');
             const model = els.model.value;
             let finalPrompt = encodeURIComponent(promptText);
             
             if(els.enhance.checked) {
-                finalPrompt += encodeURIComponent(", highly detailed, 8k, masterpiece, sharp focus, professional photography");
+                finalPrompt += encodeURIComponent(", highly detailed, 8k, masterpiece, sharp focus, vibrant colors");
             }
 
-            // URL Construction (Pollinations API)
-            // On ajoute la clé API si le plan l'exige, mais l'URL publique fonctionne souvent aussi.
-            // On l'ajoute en query param pour être sûr.
-            const imageUrl = `https://image.pollinations.ai/prompt/${finalPrompt}?width=${w}&height=${h}&seed=${seed}&model=${model}&nologo=true&api_key=${POLLINATIONS_KEY}`;
+            // URL PUBLIC (SANS CLÉ API QUI BLOQUE)
+            // On ajoute 'nologo=true' au cas où, mais Pollinations le gère comme il veut.
+            // On ajoute le 'seed' pour éviter le cache navigateur.
+            const imageUrl = `https://image.pollinations.ai/prompt/${finalPrompt}?width=${w}&height=${h}&seed=${seed}&model=${model}&nologo=true`;
 
-            // Image Preload
-            const tempImg = new Image();
-            
-            tempImg.onload = () => {
+            console.log("Tentative URL:", imageUrl);
+
+            try {
+                // Utilisation de FETCH pour vérifier si l'image existe avant de l'afficher
+                const response = await fetch(imageUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`Erreur API: ${response.status}`);
+                }
+
+                // Si c'est bon, on convertit en Blob pour l'afficher (plus sûr pour le navigateur)
+                const blob = await response.blob();
+                const objectUrl = URL.createObjectURL(blob);
+
                 clearInterval(msgInterval);
                 els.loader.classList.add('hidden');
-                els.img.src = imageUrl;
+                
+                els.img.src = objectUrl;
                 els.img.classList.remove('hidden');
                 els.actions.classList.remove('hidden');
-                els.dlLink.href = imageUrl;
+                els.dlLink.href = imageUrl; // Lien direct pour le téléchargement
 
                 // Save
                 saveToHistory(imageUrl, promptText);
                 
-                // Increment Guest Quota
+                // Quota
                 if(!currentUser) {
                     dailyCount++;
                     updateLocalStorage();
                     checkQuotaUI();
                 }
-            };
 
-            tempImg.onerror = () => {
+            } catch (error) {
                 clearInterval(msgInterval);
+                console.error(error);
                 els.loader.classList.add('hidden');
                 els.placeholder.classList.remove('hidden');
-                alert("Erreur de génération. Essayez un prompt plus simple ou changez de modèle.");
-            };
-
-            // Trigger loading
-            tempImg.src = imageUrl;
+                alert("Désolé, le serveur est saturé ou le prompt est censuré par le filtre de sécurité. Essayez un autre prompt.");
+            }
         };
 
         // --- LOCAL STORAGE LOGIC ---
@@ -357,13 +360,7 @@
             } else {
                 dailyCount = parseInt(localStorage.getItem('wiki_poll_count') || 0);
             }
-            
-            // Cleanup > 7 days
             const history = JSON.parse(localStorage.getItem('wiki_poll_gallery') || "[]");
-            const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-            const cleanHistory = history.filter(item => item.timestamp > sevenDaysAgo);
-            localStorage.setItem('wiki_poll_gallery', JSON.stringify(cleanHistory));
-            
             checkQuotaUI();
         }
 
@@ -379,7 +376,7 @@
             const history = JSON.parse(localStorage.getItem('wiki_poll_gallery') || "[]");
             const newItem = { id: Date.now(), url: url, prompt: prompt, timestamp: Date.now() };
             history.unshift(newItem);
-            if(history.length > 20) history.pop(); // Keep last 20
+            if(history.length > 20) history.pop();
             localStorage.setItem('wiki_poll_gallery', JSON.stringify(history));
             renderHistory();
         }
