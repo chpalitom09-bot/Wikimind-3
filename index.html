@@ -180,7 +180,7 @@
                 </div>
                 <div id="minichat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 text-sm flex flex-col">
                     <div class="bg-white/5 border border-white/10 rounded-xl rounded-tl-none p-3 max-w-[80%] self-start text-white/80">
-                        Bonjour ! Je suis l'IA WikiMind connectée via l'API. Posez-moi une question !
+                        Bonjour ! Je suis l'IA WikiMind propulsée par Mistral. Posez-moi une question !
                     </div>
                 </div>
                 <div class="p-3 border-t border-white/10 bg-black/40 flex gap-2 items-center">
@@ -200,7 +200,7 @@
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-fr" id="modules-container">
-                <!-- Modules (conservés intacts) -->
+                <!-- Modules -->
                 <a href="Wikimind_AI.html" class="module-card md:col-span-2 glass-panel rounded-3xl p-8 relative overflow-hidden group cursor-pointer hover:border-brand-500/50 transition-all duration-300" data-name="wikimind core chat ai gpt llama">
                     <div class="absolute top-0 right-0 p-32 bg-brand-500/10 blur-[80px] rounded-full group-hover:bg-brand-500/20 transition-all"></div>
                     <div class="relative z-10 h-full flex flex-col justify-between min-h-[200px]">
@@ -480,18 +480,18 @@
         };
 
         // ==========================================
-        // GROQ API IA (Clé décomposée & Obfusquée)
+        // MISTRAL API IA
         // ==========================================
-        const _k = ["gsk_pjt", "azapsFrht", "EembR2js", "WGdyb3FY", "iT0KLBuv", "7N7pw3c1", "6sNUt19s"];
-        const getGroqKey = () => _k.join("");
+        // Clé Mistral non obfusquée comme demandé
+        const MISTRAL_API_KEY = "SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9";
 
-        // Fonction centralisée appel Groq API - Prise en charge des tokens et température
-        window.callGroqAI = async (messages, model = "llama3-8b-8192", temp = 0.7, maxTokens = 1024) => {
+        // Fonction centralisée appel Mistral API - Prise en charge des tokens et température
+        window.callMistralAI = async (messages, model = "mistral-small-latest", temp = 0.7, maxTokens = 1024) => {
             try {
-                const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${getGroqKey()}`,
+                        'Authorization': `Bearer ${MISTRAL_API_KEY}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ model: model, messages: messages, temperature: temp, max_tokens: maxTokens })
@@ -499,7 +499,7 @@
                 
                 // Contrôle strict si la réponse HTTP n'est pas OK (ex: 401, 429...)
                 if (!response.ok) {
-                    console.error("Groq HTTP Error:", response.status, response.statusText);
+                    console.error("Mistral HTTP Error:", response.status, response.statusText);
                     return null;
                 }
 
@@ -511,18 +511,18 @@
                 }
                 return null;
             } catch (error) {
-                console.error("Erreur réseau IA:", error);
+                console.error("Erreur réseau IA Mistral:", error);
                 return null;
             }
         };
 
-        // Fonction de modération IA robuste
+        // Fonction de modération IA robuste (via Mistral)
         window.moderateText = async (text) => {
             // Prompt fermé pour empêcher la créativité de l'IA.
             const prompt = `Agis comme un modérateur strict. Le texte suivant est-il haineux, insultant, toxique, raciste ou est-ce du spam évident ? Réponds EXACTEMENT ET UNIQUEMENT par le mot OUI ou par le mot NON. Ne fais aucune phrase. Ne rajoute pas de ponctuation. Texte: "${text}"`;
             
             // Température très basse et max 5 tokens pour obliger à une réponse binaire pure.
-            const response = await window.callGroqAI([{ role: "user", content: prompt }], "llama3-8b-8192", 0.1, 5);
+            const response = await window.callMistralAI([{ role: "user", content: prompt }], "mistral-small-latest", 0.1, 5);
             
             if (!response) return false; // Par défaut on laisse passer si l'API est down (fail-safe)
             
@@ -695,7 +695,7 @@
                 Array.from(repliesContainer.children).forEach(child => {
                     const replyId = child.id.replace('comment-', '');
                     if (!currentReplies[replyId]) {
-                        child.remove(); // Evite la désynchronisation pointée par le prompt
+                        child.remove(); // Evite la désynchronisation
                     }
                 });
 
@@ -904,8 +904,8 @@
             loadDiv.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Réflexion...';
             minichatMessages.appendChild(loadDiv);
 
-            // Appel API normal avec tokens standards (différent de la modération)
-            const aiResponse = await window.callGroqAI(minichatHistory, "llama3-8b-8192", 0.7, 1024);
+            // Appel API normal avec tokens standards
+            const aiResponse = await window.callMistralAI(minichatHistory, "mistral-small-latest", 0.7, 1024);
 
             minichatMessages.querySelectorAll('.minichat-loading').forEach(l => l.remove());
 
@@ -925,7 +925,6 @@
         }
 
         if(minichatSendBtn) minichatSendBtn.addEventListener('click', handleMinichatSend);
-        // Correctif : Remplacement de keypress par keydown
         if(minichatInput) minichatInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') handleMinichatSend(); });
 
         // --- SEARCH BAR ---
