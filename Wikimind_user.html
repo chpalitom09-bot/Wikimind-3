@@ -3,13 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WikiMind OS • Espace Utilisateur</title>
+    <title>WikiMind OS • Centre de Contrôle</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
-    
-    <!-- Chart.js pour les stats de stockage -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
@@ -20,9 +18,10 @@
                     fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
                     colors: {
                         glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
-                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8', gold: '#fbbf24' }
+                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8', gold: '#fbbf24' },
+                        admin: { 500: '#ef4444', 900: '#7f1d1d' }
                     },
-                    animation: { 'fade-in-up': 'fadeInUp 0.5s ease-out forwards', 'pulse-slow': 'pulse 3s infinite' },
+                    animation: { 'fade-in-up': 'fadeInUp 0.5s ease-out forwards' },
                     keyframes: { fadeInUp: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } } }
                 }
             }
@@ -37,26 +36,20 @@
         .text-gradient { background: linear-gradient(135deg, #ffffff 0%, #a5a6f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .token-gradient { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        /* Modal */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 100; align-items: center; justify-content: center; }
         .modal-content { max-width: 500px; width: 90%; }
         
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
-
         #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
     </style>
 </head>
 <body class="selection:bg-brand-500 selection:text-white">
 
-    <!-- AURORA BG -->
     <canvas id="aurora-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
-
-    <!-- UI TOAST -->
     <div id="toast-container"></div>
 
-    <!-- NAVBAR SIMPLIFIÉE -->
+    <!-- NAVBAR -->
     <nav class="fixed top-0 w-full z-50 px-6 py-6">
         <div class="max-w-7xl mx-auto flex justify-between items-center glass-panel rounded-full px-6 py-3">
             <a href="index.html" class="flex items-center gap-3 group">
@@ -66,7 +59,11 @@
                 <span class="font-display font-bold text-lg tracking-tight">WikiMind <span class="text-white/40 font-normal">OS</span></span>
             </a>
             <div class="flex items-center gap-4">
-                 <button id="logout-btn" class="hidden text-xs font-bold text-red-400 hover:text-red-300 transition uppercase tracking-widest border border-red-500/20 px-4 py-2 rounded-full bg-red-500/10">
+                 <!-- BOUTON ADMIN SECRET -->
+                 <button id="admin-switch-btn" class="hidden text-xs font-bold text-red-400 border border-red-500/20 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 transition animate-pulse">
+                    <i class="fa-solid fa-user-secret"></i> DEV MODE
+                </button>
+                 <button id="logout-btn" class="hidden text-xs font-bold text-white/60 hover:text-white transition uppercase tracking-widest px-4 py-2">
                     <i class="fa-solid fa-power-off mr-2"></i> Déconnexion
                 </button>
             </div>
@@ -80,18 +77,34 @@
             <h1 class="text-3xl font-display font-bold mb-2">Identification</h1>
             <p class="text-white/50 text-sm mb-8">Accédez à votre Neural Cloud et gérez vos tokens.</p>
 
-            <button id="google-login-btn" class="w-full bg-white text-black font-bold py-3.5 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-200 transition mb-4">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5"> Continuer avec Google
-            </button>
+            <div class="space-y-3 mb-6">
+                <button id="google-login-btn" class="w-full bg-white text-black font-bold py-3 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-200 transition">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5"> Google
+                </button>
+                <div class="grid grid-cols-2 gap-3">
+                    <button id="ms-login-btn" class="w-full bg-[#050505] border border-white/20 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-3 hover:bg-white/10 transition">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" class="w-5 h-5"> Microsoft
+                    </button>
+                    <button id="fb-login-btn" class="w-full bg-[#1877F2] text-white font-bold py-3 rounded-xl flex items-center justify-center gap-3 hover:bg-blue-600 transition">
+                        <i class="fa-brands fa-facebook text-xl"></i> Facebook
+                    </button>
+                </div>
+            </div>
             
             <div class="relative py-4">
                 <div class="absolute inset-0 flex items-center"><span class="w-full border-t border-white/10"></span></div>
-                <div class="relative flex justify-center text-xs uppercase"><span class="bg-black/50 px-2 text-white/30 backdrop-blur-sm">Sécurisé par Firebase</span></div>
+                <div class="relative flex justify-center text-xs uppercase"><span class="bg-black/50 px-2 text-white/30 backdrop-blur-sm">Ou par email</span></div>
             </div>
+
+            <form id="email-login-form" class="space-y-3 text-left">
+                <input type="email" id="email-input" placeholder="Email" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-500">
+                <input type="password" id="password-input" placeholder="Mot de passe" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-500">
+                <button type="submit" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-brand-500/20">Connexion / Inscription</button>
+            </form>
         </div>
     </section>
 
-    <!-- DASHBOARD SCREEN (Hidden by default) -->
+    <!-- DASHBOARD SCREEN -->
     <section id="dashboard-screen" class="hidden pt-32 pb-20 px-4 md:px-6 max-w-7xl mx-auto min-h-screen">
         
         <!-- HEADER PROFILE -->
@@ -99,39 +112,43 @@
             <div class="flex items-center gap-6">
                 <div class="relative group cursor-pointer">
                     <img id="user-avatar" src="" class="w-24 h-24 rounded-full border-2 border-white/20 object-cover bg-gray-800 shadow-[0_0_30px_rgba(99,102,241,0.3)]">
-                    <div class="absolute bottom-0 right-0 w-6 h-6 bg-green-500 border-4 border-[#050505] rounded-full" title="En ligne"></div>
+                    <div class="absolute bottom-0 right-0 w-6 h-6 bg-green-500 border-4 border-[#050505] rounded-full"></div>
                 </div>
                 <div>
-                    <div class="flex items-center gap-2 mb-1">
-                        <h1 id="user-name" class="text-3xl font-display font-bold">Utilisateur</h1>
-                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-brand-500/20 text-brand-glow border border-brand-500/30 uppercase tracking-wide">Pro</span>
-                    </div>
+                    <h1 id="user-name" class="text-3xl font-display font-bold">Utilisateur</h1>
                     <p id="user-email" class="text-white/40 text-sm font-mono mb-2">user@example.com</p>
                     <div class="flex gap-2 text-xs text-white/60">
-                        <span class="flex items-center gap-1"><i class="fa-solid fa-clock"></i> Inscrit : <span id="creation-date">...</span></span>
+                        <span class="flex items-center gap-1"><i class="fa-solid fa-id-badge"></i> UID: <span id="user-uid-display" class="font-mono">...</span></span>
                     </div>
                 </div>
             </div>
             
             <!-- MIND TOKEN CARD -->
-            <div class="glass-panel p-6 rounded-2xl border border-yellow-500/20 bg-yellow-500/5 relative overflow-hidden group w-full md:w-auto min-w-[300px]">
-                <div class="absolute -right-6 -top-6 w-24 h-24 bg-yellow-500/20 blur-[40px] rounded-full"></div>
-                
+            <div class="glass-panel p-6 rounded-2xl border border-yellow-500/20 bg-gradient-to-br from-yellow-900/10 to-transparent relative overflow-hidden w-full md:w-auto min-w-[320px]">
+                <div class="absolute -right-6 -top-6 w-24 h-24 bg-yellow-500/10 blur-[40px] rounded-full"></div>
                 <div class="relative z-10">
                     <div class="flex justify-between items-start mb-2">
                         <span class="text-xs font-bold text-yellow-500 uppercase tracking-widest flex items-center gap-2">
                             <i class="fa-solid fa-coins"></i> Mind Tokens
                         </span>
-                        <span class="text-[10px] bg-yellow-500/20 text-yellow-200 px-2 py-1 rounded border border-yellow-500/30">v3.0</span>
+                        <div class="group relative">
+                            <i class="fa-solid fa-circle-info text-white/30 hover:text-white cursor-help"></i>
+                            <div class="absolute right-0 w-48 p-2 bg-black border border-white/20 rounded text-[10px] text-white/70 hidden group-hover:block z-50">
+                                Monnaie virtuelle pour payer les services IA de Wikimind (Génération, Flashcards illimités, Humanizer...).
+                            </div>
+                        </div>
                     </div>
                     <div class="flex items-baseline gap-2">
-                        <h2 id="token-balance" class="text-4xl font-display font-bold token-gradient">0</h2>
+                        <h2 id="token-balance" class="text-5xl font-display font-bold token-gradient">0</h2>
                         <span class="text-sm text-white/40 font-bold">MT</span>
                     </div>
-                    <div class="text-xs text-white/30 mt-1 mb-4">Valeur estimée : <span id="token-value" class="text-green-400">0.00 €</span></div>
+                    <div class="text-xs text-white/30 mt-1 mb-4 flex justify-between">
+                        <span>Valeur : <span id="token-value" class="text-green-400">0.00 €</span></span>
+                        <span>1 MT ≈ 1.16€</span>
+                    </div>
                     
-                    <button onclick="window.openTokenModal()" class="w-full py-2 rounded-lg bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-500/50 text-yellow-200 text-xs font-bold uppercase tracking-wide transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-hand-holding-dollar"></i> Demander des Tokens (IA)
+                    <button onclick="window.openTokenModal()" class="w-full py-2.5 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-black text-xs font-bold uppercase tracking-wide transition flex items-center justify-center gap-2 shadow-lg shadow-yellow-500/20">
+                        <i class="fa-solid fa-plus"></i> Recharger (Gratuit)
                     </button>
                 </div>
             </div>
@@ -139,263 +156,522 @@
 
         <!-- STATS GRID -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 animate-fade-in-up" style="animation-delay: 0.1s;">
-            
             <!-- STORAGE CARD -->
             <div class="glass-panel p-6 rounded-2xl relative">
-                <h3 class="font-display font-bold text-lg mb-6 flex items-center gap-2">
-                    <i class="fa-solid fa-server text-brand-glow"></i> Stockage Données
-                </h3>
-                
-                <!-- Chart -->
+                <h3 class="font-display font-bold text-lg mb-6 flex items-center gap-2"><i class="fa-solid fa-server text-brand-glow"></i> Stockage</h3>
                 <div class="h-40 relative mb-4">
                     <canvas id="storageChart"></canvas>
                     <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                         <span id="total-usage-percent" class="text-2xl font-bold">0%</span>
                     </div>
                 </div>
-
                 <div class="space-y-4">
                     <div>
-                        <div class="flex justify-between text-xs mb-1">
-                            <span class="text-white/60"><i class="fa-solid fa-hard-drive mr-1"></i> Local (Navigateur)</span>
-                            <span id="local-size" class="font-mono text-brand-glow">0 KB</span>
-                        </div>
-                        <div class="w-full bg-white/5 rounded-full h-1.5">
-                            <div id="local-bar" class="bg-brand-500 h-1.5 rounded-full transition-all duration-1000" style="width: 0%"></div>
-                        </div>
+                        <div class="flex justify-between text-xs mb-1"><span class="text-white/60">Local</span><span id="local-size" class="font-mono text-brand-glow">0 KB</span></div>
+                        <div class="w-full bg-white/5 rounded-full h-1"><div id="local-bar" class="bg-brand-500 h-1 rounded-full transition-all" style="width: 0%"></div></div>
                     </div>
                     <div>
-                        <div class="flex justify-between text-xs mb-1">
-                            <span class="text-white/60"><i class="fa-solid fa-cloud mr-1"></i> Cloud (Firebase)</span>
-                            <span id="cloud-size" class="font-mono text-purple-400">Calcul...</span>
-                        </div>
-                        <div class="w-full bg-white/5 rounded-full h-1.5">
-                            <div id="cloud-bar" class="bg-purple-500 h-1.5 rounded-full transition-all duration-1000" style="width: 0%"></div>
-                        </div>
+                        <div class="flex justify-between text-xs mb-1"><span class="text-white/60">Cloud</span><span id="cloud-size" class="font-mono text-purple-400">...</span></div>
+                        <div class="w-full bg-white/5 rounded-full h-1"><div id="cloud-bar" class="bg-purple-500 h-1 rounded-full transition-all" style="width: 0%"></div></div>
                     </div>
                 </div>
             </div>
 
             <!-- COMMUNITY STATS -->
             <div class="glass-panel p-6 rounded-2xl">
-                <h3 class="font-display font-bold text-lg mb-6 flex items-center gap-2">
-                    <i class="fa-solid fa-users text-green-400"></i> Activité Réseau
-                </h3>
-                
+                <h3 class="font-display font-bold text-lg mb-6 flex items-center gap-2"><i class="fa-solid fa-globe text-green-400"></i> Communauté</h3>
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-white/5 p-4 rounded-xl border border-white/5">
+                    <div class="bg-white/5 p-4 rounded-xl border border-white/5 text-center">
                         <div class="text-2xl font-bold mb-1" id="stat-comments">0</div>
-                        <div class="text-xs text-white/40 uppercase">Commentaires</div>
+                        <div class="text-[10px] text-white/40 uppercase">Messages</div>
                     </div>
-                    <div class="bg-white/5 p-4 rounded-xl border border-white/5">
+                    <div class="bg-white/5 p-4 rounded-xl border border-white/5 text-center">
                         <div class="text-2xl font-bold mb-1" id="stat-likes">0</div>
-                        <div class="text-xs text-white/40 uppercase">J'aimes Reçus</div>
+                        <div class="text-[10px] text-white/40 uppercase">Likes</div>
                     </div>
                 </div>
-                
-                <div class="mt-6 p-4 bg-orange-500/10 rounded-xl border border-orange-500/20">
-                    <div class="text-xs font-bold text-orange-400 mb-2"><i class="fa-solid fa-shield-halved"></i> Score de Réputation</div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-full bg-black/40 rounded-full h-2">
-                            <div class="bg-orange-500 h-2 rounded-full" style="width: 98%"></div>
+                <div class="mt-6 p-4 bg-white/5 rounded-xl border border-white/10 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center"><i class="fa-solid fa-share-nodes"></i></div>
+                    <div>
+                        <div class="text-xs font-bold">Decks Publics</div>
+                        <div class="text-[10px] text-white/50">Vous partagez <span id="public-deck-count" class="text-white font-bold">0</span> decks</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODULES ACTIVITY -->
+            <div class="glass-panel p-6 rounded-2xl flex flex-col">
+                <h3 class="font-display font-bold text-lg mb-6 flex items-center gap-2"><i class="fa-solid fa-layer-group text-blue-400"></i> Activité Modules</h3>
+                <div class="space-y-3 flex-1">
+                    <a href="Wikimind_flash.html" class="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition group">
+                        <div class="w-8 h-8 rounded bg-brand-500/20 text-brand-glow flex items-center justify-center"><i class="fa-solid fa-bolt"></i></div>
+                        <div class="flex-1">
+                            <div class="text-sm font-bold">Flash Cards</div>
+                            <div class="text-[10px] text-white/40"><span id="deck-count" class="text-brand-glow font-bold">0</span> Decks créés</div>
                         </div>
-                        <span class="text-xs font-mono">98/100</span>
-                    </div>
-                    <p class="text-[10px] text-white/40 mt-2">Basé sur l'analyse IA de vos messages.</p>
+                        <i class="fa-solid fa-chevron-right text-white/20 group-hover:text-white transition"></i>
+                    </a>
+                    <a href="Wikimind_AI_studio.html" class="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition group">
+                        <div class="w-8 h-8 rounded bg-purple-500/20 text-purple-300 flex items-center justify-center"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                        <div class="flex-1">
+                            <div class="text-sm font-bold">AI Studio</div>
+                            <div class="text-[10px] text-white/40">Générer du contenu</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-white/20 group-hover:text-white transition"></i>
+                    </a>
                 </div>
             </div>
+        </div>
+    </section>
 
-            <!-- MODULES ACCESS -->
-            <div class="glass-panel p-6 rounded-2xl flex flex-col justify-between">
-                <div>
-                    <h3 class="font-display font-bold text-lg mb-6 flex items-center gap-2">
-                        <i class="fa-solid fa-layer-group text-blue-400"></i> Mes Modules
-                    </h3>
-                    <div class="space-y-3">
-                        <a href="Wikimind_flash.html" class="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition group">
-                            <div class="w-8 h-8 rounded bg-brand-500/20 text-brand-glow flex items-center justify-center"><i class="fa-solid fa-bolt"></i></div>
-                            <div class="flex-1">
-                                <div class="text-sm font-bold">Flash Cards</div>
-                                <div class="text-[10px] text-white/40">Dernier accès: <span id="last-flash">Jamais</span></div>
-                            </div>
-                            <i class="fa-solid fa-chevron-right text-white/20 group-hover:text-white transition"></i>
-                        </a>
-                        <a href="Wikimind_AI_studio.html" class="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition group">
-                            <div class="w-8 h-8 rounded bg-purple-500/20 text-purple-300 flex items-center justify-center"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-                            <div class="flex-1">
-                                <div class="text-sm font-bold">AI Studio</div>
-                                <div class="text-[10px] text-white/40">Créez du contenu</div>
-                            </div>
-                            <i class="fa-solid fa-chevron-right text-white/20 group-hover:text-white transition"></i>
-                        </a>
-                    </div>
-                </div>
-                <div class="mt-4 pt-4 border-t border-white/5 text-center">
-                    <a href="index.html" class="text-xs text-white/40 hover:text-white transition">Voir tout le catalogue</a>
-                </div>
+    <!-- ADMIN DASHBOARD (SECRET) -->
+    <section id="admin-panel" class="hidden pt-20 pb-20 px-4 md:px-6 max-w-7xl mx-auto min-h-screen bg-[#0a0505]">
+        <div class="border-b border-red-500/30 pb-6 mb-8 flex justify-between items-end">
+            <div>
+                <h1 class="text-4xl font-display font-bold text-red-500">ADMIN CONSOLE</h1>
+                <p class="text-red-400/50 text-xs font-mono uppercase tracking-widest">Niveau d'accréditation : ROOT</p>
             </div>
-
+            <button id="exit-admin" class="text-xs font-bold text-white/40 hover:text-white border border-white/10 px-4 py-2 rounded uppercase">Quitter</button>
         </div>
 
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- USERS LIST -->
+            <div class="glass-panel p-6 rounded-xl border border-red-900/30">
+                <h3 class="text-red-400 font-bold mb-4 uppercase text-xs tracking-widest"><i class="fa-solid fa-users"></i> Base Utilisateurs</h3>
+                <div class="overflow-y-auto max-h-[400px] space-y-2" id="admin-users-list">
+                    <!-- Injected via JS -->
+                    <div class="text-white/20 text-center text-xs py-10">Chargement de la matrice...</div>
+                </div>
+            </div>
+
+            <!-- REQUESTS & LOGS -->
+            <div class="space-y-6">
+                <!-- Human Requests -->
+                <div class="glass-panel p-6 rounded-xl border border-red-900/30">
+                    <h3 class="text-orange-400 font-bold mb-4 uppercase text-xs tracking-widest"><i class="fa-solid fa-hand-paper"></i> Demandes (Humaines)</h3>
+                    <div class="overflow-y-auto max-h-[200px] space-y-2" id="admin-requests-list">
+                        <div class="text-white/20 text-center text-xs">Aucune demande en attente.</div>
+                    </div>
+                </div>
+                
+                <!-- AI Transactions Log -->
+                <div class="glass-panel p-6 rounded-xl border border-red-900/30">
+                    <h3 class="text-purple-400 font-bold mb-4 uppercase text-xs tracking-widest"><i class="fa-solid fa-robot"></i> Logs Transactions IA</h3>
+                    <div class="overflow-y-auto max-h-[200px] space-y-2" id="admin-transactions-list">
+                        <!-- Injected -->
+                    </div>
+                </div>
+            </div>
+        </div>
     </section>
 
     <!-- TOKEN REQUEST MODAL -->
     <div id="token-modal" class="modal" onclick="window.closeTokenModal()">
         <div class="modal-content glass-panel p-8 rounded-2xl border border-yellow-500/30 relative" onclick="event.stopPropagation()">
-            <div class="absolute top-0 right-0 p-4">
-                <button onclick="window.closeTokenModal()" class="text-white/40 hover:text-white"><i class="fa-solid fa-times"></i></button>
-            </div>
+            <button onclick="window.closeTokenModal()" class="absolute top-4 right-4 text-white/40 hover:text-white"><i class="fa-solid fa-times"></i></button>
             
-            <div class="flex items-center gap-4 mb-6">
-                <div class="w-12 h-12 rounded-full bg-yellow-500/20 text-yellow-400 flex items-center justify-center text-2xl">
-                    <i class="fa-solid fa-robot"></i>
-                </div>
-                <div>
-                    <h3 class="text-xl font-bold font-display">Banque IA WikiMind</h3>
-                    <p class="text-xs text-white/50">Gérée par Mistral AI</p>
-                </div>
-            </div>
+            <h3 class="text-xl font-bold font-display mb-2">Recharger mon compte</h3>
+            <p class="text-xs text-white/50 mb-6">Choisissez votre méthode de rechargement.</p>
 
-            <p class="text-sm text-white/80 mb-4 leading-relaxed">
-                Vous pouvez demander une recharge de <strong>50 Mind Tokens</strong>. L'Intelligence Artificielle va analyser votre raison. Soyez convaincant (usage éducatif, test, projet...).
-            </p>
-
-            <textarea id="token-reason" rows="4" placeholder="Ex: J'ai besoin de tokens pour générer un gros quiz de révision pour mon partiel de Droit..." class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-yellow-500 mb-6 resize-none placeholder-white/20"></textarea>
-
-            <div class="flex justify-end gap-3">
-                <button onclick="window.closeTokenModal()" class="px-5 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white text-xs font-bold transition">Annuler</button>
-                <button id="submit-token-request" class="px-6 py-2 rounded-lg bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-black text-xs font-bold transition shadow-lg shadow-yellow-500/20 flex items-center gap-2">
-                    <i class="fa-solid fa-paper-plane"></i> Envoyer la demande
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <!-- Method AI -->
+                <button onclick="window.selectMethod('ai')" id="btn-method-ai" class="p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-brand-500/10 hover:border-brand-500 transition text-left group">
+                    <div class="text-2xl mb-2 group-hover:scale-110 transition">🤖</div>
+                    <div class="font-bold text-sm text-brand-glow">Négocier avec l'IA</div>
+                    <div class="text-[10px] text-white/40 mt-1">Réponse immédiate. Max 50 MT.</div>
+                </button>
+                <!-- Method Dev -->
+                <button onclick="window.selectMethod('dev')" id="btn-method-dev" class="p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-orange-500/10 hover:border-orange-500 transition text-left group">
+                    <div class="text-2xl mb-2 group-hover:scale-110 transition">👨‍💻</div>
+                    <div class="font-bold text-sm text-orange-400">Demander au Staff</div>
+                    <div class="text-[10px] text-white/40 mt-1">Validation manuelle (24h). Max 500 MT.</div>
                 </button>
             </div>
+
+            <textarea id="token-reason" rows="3" placeholder="Justifiez votre demande..." class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-yellow-500 mb-4 resize-none hidden"></textarea>
+
+            <button id="submit-token-request" class="w-full py-3 rounded-lg bg-white text-black font-bold text-xs uppercase tracking-wide transition hidden">
+                Envoyer la demande
+            </button>
         </div>
     </div>
 
     <!-- LOGIQUE JAVASCRIPT -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, onValue, set, get, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, FacebookAuthProvider, OAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, onValue, set, get, push, update, remove, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // ==========================================
-        // UI HELPERS
-        // ==========================================
-        window.showToast = (message, type = 'info') => {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `px-4 py-3 rounded-lg text-sm font-medium shadow-xl flex items-center gap-3 animate-fade-in-up backdrop-blur-md border ${
-                type === 'error' ? 'bg-red-500/20 text-red-200 border-red-500/30' : 
-                type === 'success' ? 'bg-green-500/20 text-green-200 border-green-500/30' : 
-                'bg-white/10 text-white border-white/10'
-            }`;
-            const icon = type === 'success' ? '<i class="fa-solid fa-check-circle"></i>' : '<i class="fa-solid fa-info-circle"></i>';
-            toast.innerHTML = `${icon} <span>${message}</span>`;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
-        };
-
-        window.openTokenModal = () => document.getElementById('token-modal').style.display = 'flex';
-        window.closeTokenModal = () => document.getElementById('token-modal').style.display = 'none';
-
-        // ==========================================
-        // 1. CONFIG FIREBASE PRINCIPALE (Auth + User Data)
-        // ==========================================
-        const mainConfig = {
+        // CONFIG FIREBASE MAIN
+        const mainApp = initializeApp({
             apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
             authDomain: "wikimind-3-comments.firebaseapp.com",
             databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "wikimind-3-comments",
             appId: "1:137479541640:web:4ed2510a9908055052e03d"
-        };
-        const mainApp = initializeApp(mainConfig);
+        });
         const auth = getAuth(mainApp);
         const dbMain = getDatabase(mainApp);
 
-        // ==========================================
-        // 2. CONFIG FIREBASE COMMUNAUTÉ (Stats)
-        // ==========================================
-        const commConfig = {
+        // CONFIG FIREBASE COMMUNITY (Read Only for Stats)
+        const commApp = initializeApp({
             apiKey: "AIzaSyCn5IyWS4deyVRG7zYY2qLQiNE49aD8a-Y",
             authDomain: "wikimind-communauty.firebaseapp.com",
             databaseURL: "https://wikimind-communauty-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "wikimind-communauty"
-        };
-        // Initialiser avec un nom secondaire pour éviter les conflits
-        const commApp = initializeApp(commConfig, "community");
+        }, "community");
         const dbComm = getDatabase(commApp);
 
-        // ==========================================
-        // GESTION AUTHENTIFICATION
-        // ==========================================
+        // CONFIG MISTRAL & ADMINS
+        const MISTRAL_API_KEY = "SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9";
+        const ADMIN_UIDS = ["vbpNViPUq8e8zhmyKYNMDSx4HEF3", "ynYjIJbIoJZIsleuzsWZRFXrGxs1"];
+
         let currentUser = null;
         let storageChart = null;
+        let selectedMethod = null;
 
+        // UI HELPERS
+        window.showToast = (msg, type = 'info') => {
+            const t = document.createElement('div');
+            t.className = `px-4 py-3 rounded-lg text-sm font-bold shadow-xl border backdrop-blur-md animate-fade-in-up flex items-center gap-2 ${type==='error'?'bg-red-500/20 border-red-500 text-red-200':type==='success'?'bg-green-500/20 border-green-500 text-green-200':'bg-white/10 border-white/20 text-white'}`;
+            t.innerHTML = (type==='success'?'<i class="fa-solid fa-check"></i> ':type==='error'?'<i class="fa-solid fa-triangle-exclamation"></i> ':'') + msg;
+            document.getElementById('toast-container').appendChild(t);
+            setTimeout(()=>t.remove(), 4000);
+        };
+        window.openTokenModal = () => { document.getElementById('token-modal').style.display='flex'; resetModal(); }
+        window.closeTokenModal = () => document.getElementById('token-modal').style.display='none';
+        
+        function resetModal() {
+            document.getElementById('token-reason').classList.add('hidden');
+            document.getElementById('submit-token-request').classList.add('hidden');
+            document.getElementById('btn-method-ai').classList.remove('border-brand-500', 'bg-brand-500/10');
+            document.getElementById('btn-method-dev').classList.remove('border-orange-500', 'bg-orange-500/10');
+            selectedMethod = null;
+        }
+
+        window.selectMethod = (m) => {
+            selectedMethod = m;
+            document.getElementById('token-reason').classList.remove('hidden');
+            document.getElementById('submit-token-request').classList.remove('hidden');
+            
+            // Visual selection
+            if(m === 'ai') {
+                document.getElementById('btn-method-ai').classList.add('border-brand-500', 'bg-brand-500/10');
+                document.getElementById('btn-method-dev').classList.remove('border-orange-500', 'bg-orange-500/10');
+                document.getElementById('submit-token-request').innerText = "Demander à l'IA";
+                document.getElementById('submit-token-request').className = "w-full py-3 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs uppercase tracking-wide transition";
+            } else {
+                document.getElementById('btn-method-dev').classList.add('border-orange-500', 'bg-orange-500/10');
+                document.getElementById('btn-method-ai').classList.remove('border-brand-500', 'bg-brand-500/10');
+                document.getElementById('submit-token-request').innerText = "Envoyer aux Développeurs";
+                document.getElementById('submit-token-request').className = "w-full py-3 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs uppercase tracking-wide transition";
+            }
+        };
+
+        // --- AUTH LOGIC ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // USER LOGGED IN
                 currentUser = user;
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('dashboard-screen').classList.remove('hidden');
                 document.getElementById('logout-btn').classList.remove('hidden');
-
-                // Update Profile
-                document.getElementById('user-name').innerText = user.displayName;
+                
+                // Update basic UI
+                document.getElementById('user-name').innerText = user.displayName || user.email.split('@')[0];
                 document.getElementById('user-email').innerText = user.email;
-                document.getElementById('user-avatar').src = user.photoURL;
-                document.getElementById('creation-date').innerText = new Date(user.metadata.creationTime).toLocaleDateString('fr-FR');
+                document.getElementById('user-uid-display').innerText = user.uid;
+                document.getElementById('user-avatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff`;
+
+                // Update User Node in DB (For Admin Listing)
+                update(ref(dbMain, `users/${user.uid}/info`), {
+                    email: user.email,
+                    displayName: user.displayName || "Anonyme",
+                    lastLogin: Date.now(),
+                    avatar: user.photoURL || null
+                });
+
+                // Check Admin
+                if (ADMIN_UIDS.includes(user.uid)) {
+                    document.getElementById('admin-switch-btn').classList.remove('hidden');
+                    initAdminPanel();
+                }
 
                 // Load Data
-                initTokenSystem(user.uid);
-                initStorageStats(user.uid);
-                initCommunityStats(user.uid);
+                loadUserData(user.uid);
 
             } else {
-                // USER LOGGED OUT
                 currentUser = null;
                 document.getElementById('login-screen').classList.remove('hidden');
                 document.getElementById('dashboard-screen').classList.add('hidden');
+                document.getElementById('admin-switch-btn').classList.add('hidden');
                 document.getElementById('logout-btn').classList.add('hidden');
             }
         });
 
-        // Login Google
-        document.getElementById('google-login-btn').addEventListener('click', () => {
-            const provider = new GoogleAuthProvider();
-            signInWithPopup(auth, provider).catch(err => window.showToast("Erreur Connexion: " + err.message, "error"));
-        });
+        // Login Providers
+        document.getElementById('google-login-btn').onclick = () => signInWithPopup(auth, new GoogleAuthProvider()).catch(e => showToast(e.message, 'error'));
+        document.getElementById('fb-login-btn').onclick = () => signInWithPopup(auth, new FacebookAuthProvider()).catch(e => showToast(e.message, 'error'));
+        document.getElementById('ms-login-btn').onclick = () => {
+            const p = new OAuthProvider('microsoft.com');
+            p.setCustomParameters({prompt: 'select_account'});
+            signInWithPopup(auth, p).catch(e => showToast(e.message, 'error'));
+        };
+        
+        // Email Login/Register
+        document.getElementById('email-login-form').onsubmit = (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email-input').value;
+            const pass = document.getElementById('password-input').value;
+            signInWithEmailAndPassword(auth, email, pass).catch(err => {
+                if(err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+                    if(confirm("Créer un nouveau compte ?")) {
+                        createUserWithEmailAndPassword(auth, email, pass).then(cred => {
+                            updateProfile(cred.user, {displayName: email.split('@')[0]});
+                            showToast("Compte créé !", "success");
+                        }).catch(e => showToast(e.message, 'error'));
+                    }
+                } else showToast(err.message, 'error');
+            });
+        };
+        
+        document.getElementById('logout-btn').onclick = () => signOut(auth);
 
-        // Logout
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            signOut(auth).then(() => window.showToast("Déconnecté.", "success"));
-        });
-
-        // ==========================================
-        // SYSTEME MIND TOKENS
-        // ==========================================
-        function initTokenSystem(uid) {
+        // --- USER DATA LOADING ---
+        function loadUserData(uid) {
+            // Tokens
             const tokenRef = ref(dbMain, `users/${uid}/tokens`);
-            
-            // Écoute temps réel
-            onValue(tokenRef, (snapshot) => {
-                let balance = snapshot.val();
-                
-                // Bonus de bienvenue (100) si le compte est vide
-                if (balance === null) {
-                    balance = 100;
-                    set(tokenRef, 100);
-                    window.showToast("Bienvenue ! 100 Mind Tokens offerts.", "success");
-                }
+            onValue(tokenRef, (snap) => {
+                let bal = snap.val();
+                if(bal === null) { bal = 100; set(tokenRef, 100); }
+                animateValue("token-balance", parseInt(document.getElementById("token-balance").innerText), bal, 1000);
+                document.getElementById('token-value').innerText = (bal * 1.16).toFixed(2) + " €";
+            });
 
-                // UI Update
-                animateValue("token-balance", parseInt(document.getElementById("token-balance").innerText), balance, 1000);
-                
-                // Valeur en Euro (1 MT = 1.16€)
-                const euroVal = (balance * 1.16).toFixed(2);
-                document.getElementById('token-value').innerText = `${euroVal} €`;
+            // Real Modules Stats
+            // 1. Flashcards (Decks)
+            onValue(ref(dbMain, `users/${uid}/decks`), (snap) => {
+                const count = snap.size;
+                document.getElementById('deck-count').innerText = count;
+            });
+
+            // Storage Stats
+            initStorageStats(uid);
+            
+            // Community Stats
+            initCommunityStats(uid);
+        }
+
+        // --- TOKEN REQUEST LOGIC ---
+        document.getElementById('submit-token-request').onclick = async () => {
+            const reason = document.getElementById('token-reason').value.trim();
+            if(reason.length < 5) return showToast("Motif trop court.", "error");
+            
+            const btn = document.getElementById('submit-token-request');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Traitement...';
+            btn.disabled = true;
+
+            if (selectedMethod === 'ai') {
+                // AI LOGIC
+                try {
+                    const prompt = `Tu es l'IA trésorière de WikiMind. Un utilisateur demande des tokens gratuits (Max 50).
+                    Raison: "${reason}".
+                    Règles: Accepte si éducatif, créatif ou bug report. Refuse si spam ou mendicité.
+                    Réponds JSON: {"approved": true/false, "amount": 10-50, "msg": "Court message"}`;
+
+                    const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {'Authorization': `Bearer ${MISTRAL_API_KEY}`, 'Content-Type': 'application/json'},
+                        body: JSON.stringify({model: "mistral-small-latest", messages: [{role: "user", content: prompt}], response_format: {type: "json_object"}})
+                    });
+                    const data = await res.json();
+                    const result = JSON.parse(data.choices[0].message.content);
+
+                    window.closeTokenModal();
+                    if(result.approved) {
+                        await runTransaction(ref(dbMain, `users/${currentUser.uid}/tokens`), (c) => (c||0) + result.amount);
+                        // Log Transaction for Admin
+                        push(ref(dbMain, `transactions`), {
+                            uid: currentUser.uid, amount: result.amount, reason: reason, type: 'AI_GRANT', timestamp: Date.now(), ai_msg: result.msg
+                        });
+                        showToast(`✅ +${result.amount} MT: ${result.msg}`, "success");
+                    } else {
+                        showToast(`❌ Refusé: ${result.msg}`, "error");
+                    }
+                } catch(e) { showToast("Erreur IA", "error"); }
+            } else {
+                // DEV LOGIC
+                try {
+                    await push(ref(dbMain, `token_requests`), {
+                        uid: currentUser.uid,
+                        email: currentUser.email,
+                        reason: reason,
+                        timestamp: Date.now(),
+                        status: 'pending'
+                    });
+                    window.closeTokenModal();
+                    showToast("Demande envoyée à l'équipe Admin.", "success");
+                } catch(e) { showToast("Erreur d'envoi", "error"); }
+            }
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        };
+
+        // --- STATS FUNCTIONS ---
+        async function initStorageStats(uid) {
+            let localBytes = 0;
+            for(let key in localStorage) localBytes += localStorage[key].length * 2;
+            document.getElementById('local-size').innerText = (localBytes/1024).toFixed(2) + " KB";
+            document.getElementById('local-bar').style.width = Math.min((localBytes/5000000)*100, 100) + "%";
+            
+            const snap = await get(ref(dbMain, `users/${uid}`));
+            const cloudBytes = JSON.stringify(snap.val() || {}).length;
+            document.getElementById('cloud-size').innerText = (cloudBytes/1024).toFixed(2) + " KB";
+            document.getElementById('cloud-bar').style.width = Math.min((cloudBytes/1024000)*100, 100) + "%";
+
+            if(storageChart) storageChart.destroy();
+            storageChart = new Chart(document.getElementById('storageChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Local', 'Cloud', 'Libre'],
+                    datasets: [{ data: [localBytes, cloudBytes, 5000000-(localBytes+cloudBytes)], backgroundColor: ['#6366f1', '#a855f7', 'rgba(255,255,255,0.05)'], borderWidth: 0 }]
+                },
+                options: { cutout: '80%', plugins: { legend: {display: false}, tooltip: {enabled: false} } }
+            });
+            document.getElementById('total-usage-percent').innerText = ((localBytes+cloudBytes)/5000000*100).toFixed(1) + "%";
+        }
+
+        function initCommunityStats(uid) {
+            get(ref(dbComm, 'comments')).then(snap => {
+                let msgs = 0, likes = 0;
+                snap.forEach(c => {
+                    if(c.val().uid === uid) { msgs++; likes += (c.val().likes||0); }
+                    if(c.val().replies) Object.values(c.val().replies).forEach(r => { if(r.uid === uid) msgs++; });
+                });
+                animateValue("stat-comments", 0, msgs, 1500);
+                animateValue("stat-likes", 0, likes, 1500);
+            });
+            
+            // Public Decks count
+            get(ref(dbMain, `public_decks`)).then(snap => {
+                let count = 0;
+                snap.forEach(d => { if(d.val().uid === uid) count++; });
+                document.getElementById('public-deck-count').innerText = count;
             });
         }
 
-        // Animation Chiffres
+        // --- ADMIN PANEL LOGIC ---
+        const btnAdmin = document.getElementById('admin-switch-btn');
+        const adminPanel = document.getElementById('admin-panel');
+        const dashScreen = document.getElementById('dashboard-screen');
+
+        btnAdmin.onclick = () => {
+            dashScreen.classList.add('hidden');
+            adminPanel.classList.remove('hidden');
+            loadAdminData();
+        };
+
+        document.getElementById('exit-admin').onclick = () => {
+            adminPanel.classList.add('hidden');
+            dashScreen.classList.remove('hidden');
+        };
+
+        function loadAdminData() {
+            // 1. Users List
+            onValue(ref(dbMain, 'users'), (snap) => {
+                const list = document.getElementById('admin-users-list');
+                list.innerHTML = '';
+                snap.forEach(userSnap => {
+                    const u = userSnap.val();
+                    const info = u.info || {};
+                    const tokens = u.tokens || 0;
+                    
+                    const div = document.createElement('div');
+                    div.className = "flex justify-between items-center bg-white/5 p-3 rounded border border-white/5";
+                    div.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <img src="${info.avatar || 'https://ui-avatars.com/api/?background=random'}" class="w-8 h-8 rounded-full">
+                            <div>
+                                <div class="text-xs font-bold text-white">${info.email}</div>
+                                <div class="text-[10px] text-white/40 font-mono">${userSnap.key}</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="number" value="${tokens}" class="w-16 bg-black border border-white/20 rounded text-xs p-1 text-center" onchange="window.updateUserToken('${userSnap.key}', this.value)">
+                            <button onclick="window.deleteUserDB('${userSnap.key}')" class="text-red-500 hover:text-red-400"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
+            });
+
+            // 2. Requests
+            onValue(ref(dbMain, 'token_requests'), (snap) => {
+                const list = document.getElementById('admin-requests-list');
+                list.innerHTML = '';
+                if(!snap.exists()) { list.innerHTML = '<div class="text-white/20 text-center text-xs">Aucune demande.</div>'; return; }
+                
+                snap.forEach(reqSnap => {
+                    const r = reqSnap.val();
+                    if(r.status !== 'pending') return;
+                    
+                    const div = document.createElement('div');
+                    div.className = "bg-orange-900/10 border border-orange-500/20 p-3 rounded text-xs";
+                    div.innerHTML = `
+                        <div class="flex justify-between font-bold mb-1 text-orange-200">
+                            <span>${r.email}</span>
+                            <span>${new Date(r.timestamp).toLocaleDateString()}</span>
+                        </div>
+                        <div class="text-white/70 italic mb-2">"${r.reason}"</div>
+                        <div class="flex gap-2 justify-end">
+                            <button onclick="window.handleRequest('${reqSnap.key}', '${r.uid}', false)" class="px-2 py-1 bg-red-500/20 text-red-300 rounded hover:bg-red-500/40">Refuser</button>
+                            <button onclick="window.handleRequest('${reqSnap.key}', '${r.uid}', true)" class="px-2 py-1 bg-green-500/20 text-green-300 rounded hover:bg-green-500/40">Accorder 100 MT</button>
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
+            });
+
+            // 3. Transactions
+            onValue(ref(dbMain, 'transactions'), (snap) => {
+                const list = document.getElementById('admin-transactions-list');
+                list.innerHTML = '';
+                const arr = [];
+                snap.forEach(t => arr.push({key: t.key, ...t.val()}));
+                arr.reverse().slice(0, 20).forEach(t => {
+                    const div = document.createElement('div');
+                    div.className = "text-xs border-b border-white/5 py-2 flex justify-between";
+                    div.innerHTML = `
+                        <div>
+                            <span class="text-purple-400 font-bold">${t.type}</span> 
+                            <span class="text-white/60">UID:${t.uid.substring(0,5)}...</span>
+                            <span class="text-green-400">+${t.amount}MT</span>
+                        </div>
+                        <button onclick="window.revertTx('${t.key}', '${t.uid}', ${t.amount})" class="text-red-400 hover:text-white underline">Annuler</button>
+                    `;
+                    list.appendChild(div);
+                });
+            });
+        }
+
+        // GLOBAL ADMIN FUNCTIONS
+        window.updateUserToken = (uid, val) => set(ref(dbMain, `users/${uid}/tokens`), parseInt(val));
+        window.deleteUserDB = (uid) => { if(confirm("Supprimer data user ?")) remove(ref(dbMain, `users/${uid}`)); };
+        window.handleRequest = async (key, uid, approved) => {
+            if(approved) {
+                await runTransaction(ref(dbMain, `users/${uid}/tokens`), c => (c||0)+100);
+                showToast("Accordé (+100)", "success");
+            }
+            update(ref(dbMain, `token_requests/${key}`), { status: approved ? 'approved' : 'rejected' });
+        };
+        window.revertTx = async (key, uid, amount) => {
+            if(confirm("Annuler cette transaction et retirer les tokens ?")) {
+                await runTransaction(ref(dbMain, `users/${uid}/tokens`), c => (c||0)-amount);
+                remove(ref(dbMain, `transactions/${key}`));
+                showToast("Transaction annulée", "success");
+            }
+        };
+
         function animateValue(id, start, end, duration) {
             if (start === end) return;
             const range = end - start;
@@ -407,192 +683,23 @@
                 current += increment;
                 obj.innerHTML = current;
                 if (current == end) clearInterval(timer);
-            }, stepTime > 10 ? stepTime : 10); // Min 10ms
+            }, stepTime > 10 ? stepTime : 10);
         }
 
-        // ==========================================
-        // IA BANQUIER (MISTRAL API)
-        // ==========================================
-        const MISTRAL_API_KEY = "SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9";
-
-        document.getElementById('submit-token-request').addEventListener('click', async () => {
-            if (!currentUser) return;
-            const reason = document.getElementById('token-reason').value.trim();
-            if (reason.length < 10) {
-                window.showToast("Raison trop courte. Soyez plus précis.", "error");
-                return;
-            }
-
-            const btn = document.getElementById('submit-token-request');
-            const originalHtml = btn.innerHTML;
-            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Analyse IA...`;
-            btn.disabled = true;
-
-            try {
-                // Prompt IA "Banquier"
-                const prompt = `Tu es le banquier IA strict mais juste de WikiMind. 
-                L'utilisateur demande 50 tokens gratuits.
-                Sa raison : "${reason}".
-                
-                Règles :
-                - Accepte si c'est pour l'éducation, un projet scolaire, tester des bugs ou création créative.
-                - Refuse si c'est du spam, mendicité ("j'en veux"), ou inintelligible.
-                
-                Réponds UNIQUEMENT au format JSON :
-                {"approved": true/false, "message": "Ton message court de justification"}
-                `;
-
-                const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${MISTRAL_API_KEY}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        model: "mistral-small-latest",
-                        messages: [{ role: "user", content: prompt }],
-                        temperature: 0.2,
-                        response_format: { type: "json_object" }
-                    })
-                });
-
-                const data = await response.json();
-                const result = JSON.parse(data.choices[0].message.content);
-
-                window.closeTokenModal();
-                document.getElementById('token-reason').value = ""; // Reset
-
-                if (result.approved) {
-                    // Transaction Firebase Sécurisée
-                    const tokenRef = ref(dbMain, `users/${currentUser.uid}/tokens`);
-                    await runTransaction(tokenRef, (tokens) => (tokens || 0) + 50);
-                    
-                    window.showToast(`✅ Accordé : ${result.message}`, "success");
-                } else {
-                    window.showToast(`❌ Refusé : ${result.message}`, "error");
-                }
-
-            } catch (error) {
-                console.error(error);
-                window.showToast("Erreur IA. Réessayez.", "error");
-            } finally {
-                btn.innerHTML = originalHtml;
-                btn.disabled = false;
-            }
-        });
-
-        // ==========================================
-        // STATS STOCKAGE RÉEL
-        // ==========================================
-        async function initStorageStats(uid) {
-            // 1. Calcul LocalStorage (Réel)
-            let localBytes = 0;
-            for (let key in localStorage) {
-                if (localStorage.hasOwnProperty(key)) {
-                    localBytes += (localStorage[key].length + key.length) * 2; // UTF-16 approx
-                }
-            }
-            const localKB = (localBytes / 1024).toFixed(2);
-            document.getElementById('local-size').innerText = `${localKB} KB`;
-            document.getElementById('local-bar').style.width = Math.min((localBytes / 5000000) * 100, 100) + "%"; // Base 5MB quota
-
-            // 2. Estimation Cloud (Via JSON Tree fetch)
-            // On récupère tout le noeud user pour estimer la taille
-            const userSnapshot = await get(ref(dbMain, `users/${uid}`));
-            const userData = userSnapshot.val();
-            let cloudBytes = 0;
-            if (userData) {
-                cloudBytes = JSON.stringify(userData).length; // Estimation brute JSON text
-            }
-            const cloudKB = (cloudBytes / 1024).toFixed(2);
-            document.getElementById('cloud-size').innerText = `${cloudKB} KB`;
-            document.getElementById('cloud-bar').style.width = Math.min((cloudBytes / 1024000) * 100, 100) + "%"; // Base 1MB quota soft
-
-            // Chart
-            const ctx = document.getElementById('storageChart').getContext('2d');
-            if (storageChart) storageChart.destroy();
-
-            storageChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Local', 'Cloud', 'Libre'],
-                    datasets: [{
-                        data: [localBytes, cloudBytes, 5000000 - (localBytes + cloudBytes)], // 5MB total ref
-                        backgroundColor: ['#6366f1', '#a855f7', 'rgba(255, 255, 255, 0.05)'],
-                        borderWidth: 0,
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    cutout: '80%',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
-                    animation: { animateScale: true }
-                }
-            });
-            
-            // Update Text Center
-            const totalPercent = ((localBytes + cloudBytes) / 5000000 * 100).toFixed(1);
-            document.getElementById('total-usage-percent').innerText = totalPercent + "%";
-        }
-
-        // ==========================================
-        // STATS COMMUNAUTÉ (CONFIG 2)
-        // ==========================================
-        function initCommunityStats(uid) {
-            // Compter les commentaires où uid == currentUser.uid
-            // Firebase RTDB n'a pas de "COUNT", il faut fetch et filtrer (attention aux grosses DB, mais ok ici)
-            
-            const commentsRef = ref(dbComm, 'comments');
-            get(commentsRef).then((snapshot) => {
-                let myComments = 0;
-                let myLikes = 0;
-
-                snapshot.forEach((child) => {
-                    const comment = child.val();
-                    if (comment.uid === uid) {
-                        myComments++;
-                        myLikes += (comment.likes || 0);
-                    }
-                    // Check replies
-                    if (comment.replies) {
-                        Object.values(comment.replies).forEach(reply => {
-                            if (reply.uid === uid) myComments++;
-                        });
-                    }
-                });
-
-                animateValue("stat-comments", 0, myComments, 1500);
-                animateValue("stat-likes", 0, myLikes, 1500);
-            });
-        }
-
-        // ==========================================
-        // AURORA BG ANIMATION
-        // ==========================================
+        // Aurora BG
         const canvas = document.getElementById('aurora-bg');
         const ctx = canvas.getContext('2d');
         let width, height;
-        const orbs = [
-            { x: 0.2, y: 0.2, r: 0.4, color: 'rgba(99, 102, 241, 0.15)', vx: 0.0005, vy: 0.0005 },
-            { x: 0.8, y: 0.3, r: 0.5, color: 'rgba(168, 85, 247, 0.15)', vx: -0.0006, vy: 0.0004 }
-        ];
-        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+        const orbs = [{x:0.2,y:0.2,r:0.4,color:'rgba(99,102,241,0.15)',vx:0.0005,vy:0.0005}, {x:0.8,y:0.3,r:0.5,color:'rgba(168,85,247,0.15)',vx:-0.0006,vy:0.0004}];
+        function resize() { width=canvas.width=window.innerWidth; height=canvas.height=window.innerHeight; }
         function animate() {
-            ctx.clearRect(0, 0, width, height);
-            ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, width, height);
-            orbs.forEach(orb => {
-                orb.x += orb.vx; orb.y += orb.vy;
-                if(orb.x < -0.2 || orb.x > 1.2) orb.vx *= -1;
-                if(orb.y < -0.2 || orb.y > 1.2) orb.vy *= -1;
-                const g = ctx.createRadialGradient(orb.x * width, orb.y * height, 0, orb.x * width, orb.y * height, orb.r * width);
-                g.addColorStop(0, orb.color); g.addColorStop(1, 'rgba(0,0,0,0)');
-                ctx.fillStyle = g; ctx.fillRect(0, 0, width, height);
-            });
-            requestAnimationFrame(animate);
+            ctx.clearRect(0,0,width,height); ctx.fillStyle='#050505'; ctx.fillRect(0,0,width,height);
+            orbs.forEach(o=>{ o.x+=o.vx; o.y+=o.vy; if(o.x<0||o.x>1)o.vx*=-1; if(o.y<0||o.y>1)o.vy*=-1;
+                const g=ctx.createRadialGradient(o.x*width,o.y*height,0,o.x*width,o.y*height,o.r*width);
+                g.addColorStop(0,o.color); g.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=g; ctx.fillRect(0,0,width,height);
+            }); requestAnimationFrame(animate);
         }
-        window.addEventListener('resize', resize); resize(); animate();
+        window.onresize=resize; resize(); animate();
 
     </script>
 </body>
