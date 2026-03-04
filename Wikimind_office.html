@@ -19,7 +19,6 @@
                     colors: {
                         glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
                         brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' },
-                        // Couleurs Office (utilisées uniquement pour les icônes maintenant)
                         office: {
                             writer: '#3b82f6', 
                             calc: '#22c55e',   
@@ -40,7 +39,6 @@
             border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         }
         
-        /* NOUVEAU STYLE CARTE MODERNE */
         .app-card {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.05);
@@ -53,15 +51,21 @@
             box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
         }
         
-        /* Modal */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 100; align-items: center; justify-content: center; }
         .modal.active { display: flex; }
+
+        /* Pour les notifications Toasts */
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast-msg { pointer-events: auto; }
     </style>
 </head>
 <body class="selection:bg-brand-500 selection:text-white">
 
     <!-- AURORA BG -->
     <canvas id="aurora-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container"></div>
 
     <!-- NAVBAR -->
     <nav class="fixed top-0 w-full z-50 px-6 py-6 transition-all duration-300">
@@ -73,10 +77,18 @@
                 <span class="font-display font-bold text-lg tracking-tight">WikiMind <span class="text-white/40 font-normal">Office</span></span>
             </a>
 
-            <!-- Status de Stockage -->
-            <div id="storage-status" class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] uppercase tracking-wider">
-                <span class="w-2 h-2 rounded-full bg-gray-500" id="status-dot"></span>
-                <span id="status-text">Mode Invité (Local)</span>
+            <!-- Affichage Dynamique (Tokens + Stockage) -->
+            <div class="hidden md:flex items-center gap-3">
+                <!-- COMPTEUR DE TOKENS (Discret) -->
+                <a href="Wikimind_user.html" id="token-display" class="hidden items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-[10px] text-yellow-500 uppercase tracking-widest font-bold hover:bg-yellow-500/20 transition-colors">
+                    <i class="fa-solid fa-coins"></i> <span id="token-balance">...</span> MT
+                </a>
+
+                <!-- Status de Stockage -->
+                <div id="storage-status" class="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] uppercase tracking-wider">
+                    <span class="w-2 h-2 rounded-full bg-gray-500" id="status-dot"></span>
+                    <span id="status-text">Mode Invité (Local)</span>
+                </div>
             </div>
 
             <!-- Auth State -->
@@ -99,7 +111,7 @@
         <div class="mb-12 animate-fade-in-up">
             <h1 class="text-4xl md:text-5xl font-display font-bold mb-4">Espace de travail</h1>
             <p class="text-white/60 max-w-2xl text-lg">Suite bureautique cloud & locale. <br>
-                <span id="guest-warning" class="text-yellow-400/80 text-sm hidden">⚠️ Mode Invité : Fichiers conservés 3 jours uniquement.</span>
+                <span id="guest-warning" class="text-yellow-400/80 text-sm hidden">⚠️ Mode Invité : Création gratuite mais fichiers conservés 3 jours uniquement.</span>
             </p>
         </div>
 
@@ -169,12 +181,17 @@
                 <i class="fa-solid fa-xmark"></i>
             </button>
             
-            <h3 class="text-xl font-bold mb-6 flex items-center gap-3">
+            <h3 class="text-xl font-bold mb-2 flex items-center gap-3">
                 <span id="modal-icon" class="text-brand-500"></span>
                 Nouveau Document
             </h3>
+            
+            <!-- Mention du coût (cachée pour les invités) -->
+            <p id="token-cost-warning" class="text-xs text-yellow-500 mb-6 hidden">
+                <i class="fa-solid fa-coins"></i> Coût de création : 1 MT
+            </p>
 
-            <div class="mb-4">
+            <div class="mb-4 mt-2">
                 <label class="text-xs text-white/40 uppercase font-bold tracking-wider mb-2 block">Nom du fichier</label>
                 <input type="text" id="new-filename" placeholder="Ex: Rapport 2024" 
                     class="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-brand-500 focus:bg-white/5 transition-all">
@@ -184,7 +201,7 @@
 
             <div class="flex justify-end gap-3 mt-8">
                 <button onclick="closeCreateModal()" class="px-4 py-2 rounded-lg text-white/60 hover:bg-white/5 text-sm transition-colors">Annuler</button>
-                <button onclick="createNewFile()" class="px-6 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm shadow-lg shadow-brand-500/20 transition-all transform hover:scale-105">
+                <button id="btn-confirm-create" onclick="createNewFile()" class="px-6 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm shadow-lg shadow-brand-500/20 transition-all transform hover:scale-105">
                     Créer & Ouvrir
                 </button>
             </div>
@@ -195,7 +212,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, push, onValue, set, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, push, onValue, set, remove, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         // CONFIG USER
         const firebaseConfig = {
@@ -214,6 +231,7 @@
 
         // STATE
         let currentUser = null;
+        let currentTokens = 0; // Stocke la valeur locale des tokens
         const filesContainer = document.getElementById('files-container');
 
         // UI ELEMENTS
@@ -223,6 +241,22 @@
         const statusDot = document.getElementById('status-dot');
         const statusText = document.getElementById('status-text');
         const guestWarning = document.getElementById('guest-warning');
+        const tokenDisplay = document.getElementById('token-display');
+        const tokenBalance = document.getElementById('token-balance');
+        const tokenCostWarning = document.getElementById('token-cost-warning');
+
+        // --- TOASTS UI ---
+        window.showToast = (msg, type = 'info') => {
+            const t = document.createElement('div');
+            t.className = `toast-msg px-4 py-3 rounded-lg text-sm font-bold shadow-xl border backdrop-blur-md animate-fade-in-up flex items-center gap-2 
+            ${type==='error'?'bg-red-500/20 border-red-500 text-red-200':
+              type==='success'?'bg-green-500/20 border-green-500 text-green-200':
+              'bg-white/10 border-white/20 text-white'}`;
+            t.innerHTML = (type==='success'?'<i class="fa-solid fa-check"></i> ':
+                           type==='error'?'<i class="fa-solid fa-triangle-exclamation"></i> ':'') + msg;
+            document.getElementById('toast-container').appendChild(t);
+            setTimeout(()=>t.remove(), 4000);
+        };
 
         // --- AUTH & LOAD LOGIC ---
         onAuthStateChanged(auth, (user) => {
@@ -231,6 +265,7 @@
                 currentUser = user;
                 updateUIState(true);
                 loadFilesFromFirebase(user.uid);
+                loadUserTokens(user.uid);
             } else {
                 // GUEST
                 currentUser = null;
@@ -251,6 +286,10 @@
                 statusDot.classList.replace('bg-gray-500', 'bg-green-400');
                 statusText.innerText = "Cloud Sécurisé";
                 guestWarning.classList.add('hidden');
+                
+                tokenDisplay.classList.remove('hidden');
+                tokenDisplay.classList.add('flex');
+                tokenCostWarning.classList.remove('hidden');
             } else {
                 loginBtn.classList.remove('hidden');
                 userLogged.classList.add('hidden');
@@ -258,11 +297,35 @@
                 statusDot.classList.replace('bg-green-400', 'bg-yellow-400');
                 statusText.innerText = "Mode Invité (Local)";
                 guestWarning.classList.remove('hidden');
+                
+                tokenDisplay.classList.add('hidden');
+                tokenDisplay.classList.remove('flex');
+                tokenCostWarning.classList.add('hidden');
             }
         }
 
-        // --- FILE MANAGEMENT ---
+        // --- TOKEN MANAGEMENT ---
+        function loadUserTokens(uid) {
+            const tokenRef = ref(db, `users/${uid}/tokens`);
+            onValue(tokenRef, (snap) => {
+                let bal = snap.val();
+                if (bal === null) {
+                    bal = 100;
+                    set(tokenRef, bal);
+                }
+                currentTokens = bal;
+                tokenBalance.innerText = bal;
+                
+                // Coloration dynamique selon le solde
+                if(bal < 0) {
+                    tokenDisplay.className = "flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-[10px] text-red-500 uppercase tracking-widest font-bold mr-4";
+                } else {
+                    tokenDisplay.className = "flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-[10px] text-yellow-500 uppercase tracking-widest font-bold mr-4 hover:bg-yellow-500/20 transition-colors";
+                }
+            });
+        }
 
+        // --- FILE MANAGEMENT ---
         function loadFilesFromFirebase(uid) {
             const userFilesRef = ref(db, `users/${uid}/files`);
             onValue(userFilesRef, (snapshot) => {
@@ -362,18 +425,29 @@
 
         window.closeCreateModal = () => {
             document.getElementById('create-modal').classList.remove('active');
+            // Reset button si annulé
+            const btn = document.getElementById('btn-confirm-create');
+            btn.innerHTML = 'Créer & Ouvrir';
+            btn.disabled = false;
         };
 
         window.createNewFile = async () => {
+            // VERIFICATION DES TOKENS POUR LES UTILISATEURS CONNECTES
+            if (currentUser && currentTokens < 0) {
+                window.showToast("Fonds insuffisants ! Vous avez atteint le découvert autorisé (-1 MT).", "error");
+                closeCreateModal();
+                return;
+            }
+
             const nameInput = document.getElementById('new-filename');
             const name = nameInput.value.trim() || "Sans titre";
             const type = document.getElementById('selected-app-type').value;
             const timestamp = Date.now();
             
-            // Animation chargement bouton
-            const btn = document.querySelector('#create-modal button:last-child');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Création...';
+            // Animation chargement bouton & anti double-clic
+            const btn = document.getElementById('btn-confirm-create');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Traitement...';
 
             const fileData = {
                 name: name,
@@ -388,12 +462,28 @@
 
             if (currentUser) {
                 // FIREBASE CREATE
-                const newRef = push(ref(db, `users/${currentUser.uid}/files`));
-                await set(newRef, fileData);
-                fileId = newRef.key;
-                source = "firebase";
+                try {
+                    // DEDUCTION DU TOKEN (-1 MT)
+                    await runTransaction(ref(db, `users/${currentUser.uid}/tokens`), (bal) => {
+                        return (bal || 0) - 1;
+                    });
+                    
+                    window.showToast("-1 MT prélevé.", "success");
+
+                    // CREATION DU FICHIER
+                    const newRef = push(ref(db, `users/${currentUser.uid}/files`));
+                    await set(newRef, fileData);
+                    fileId = newRef.key;
+                    source = "firebase";
+                } catch(error) {
+                    console.error(error);
+                    window.showToast("Erreur lors de la création.", "error");
+                    btn.disabled = false;
+                    btn.innerHTML = 'Créer & Ouvrir';
+                    return;
+                }
             } else {
-                // LOCAL CREATE
+                // LOCAL CREATE (Gratuit)
                 fileId = "local_" + timestamp;
                 source = "local";
                 const raw = localStorage.getItem('wikimind_guest_files');
@@ -407,16 +497,18 @@
         };
 
         window.deleteFile = (id, source) => {
-            if (!confirm("Supprimer ce fichier définitivement ?")) return;
+            if (!confirm("Supprimer ce fichier définitivement ? (Les tokens dépensés ne seront pas remboursés)")) return;
 
             if (source === 'firebase' && currentUser) {
                 remove(ref(db, `users/${currentUser.uid}/files/${id}`));
+                window.showToast("Fichier supprimé.", "success");
             } else if (source === 'local') {
                 const raw = localStorage.getItem('wikimind_guest_files');
                 let files = raw ? JSON.parse(raw) : {};
                 delete files[id];
                 localStorage.setItem('wikimind_guest_files', JSON.stringify(files));
                 loadFilesFromLocal();
+                window.showToast("Fichier local supprimé.", "success");
             }
         };
 
@@ -430,7 +522,7 @@
             
             // Mapping des noms de fichiers
             switch(type) {
-                case 'writer': page = "Wikimind_writter.html"; break; // Orthographe demandée
+                case 'writer': page = "Wikimind_writter.html"; break; 
                 case 'calc': page = "Wikimind_calc.html"; break;
                 case 'impress': page = "Wikimind_impress.html"; break;
                 case 'draw': page = "Wikimind_draw.html"; break;
@@ -438,8 +530,7 @@
             }
 
             // Construction de l'URL avec paramètres
-            const url = `${page}?id=${id}&source=${source}`;
-            window.location.href = url;
+            window.location.href = `${page}?id=${id}&source=${source}`;
         }
 
         // Helpers Visuels
