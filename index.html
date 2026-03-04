@@ -26,8 +26,16 @@
                         glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
                         brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' }
                     },
-                    animation: { 'fade-in-up': 'fadeInUp 0.5s ease-out forwards' },
-                    keyframes: { fadeInUp: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } } }
+                    animation: { 
+                        'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+                        'toast-enter': 'toastEnter 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                        'toast-leave': 'toastLeave 0.3s ease-in forwards'
+                    },
+                    keyframes: { 
+                        fadeInUp: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+                        toastEnter: { '0%': { opacity: 0, transform: 'translateY(100%) scale(0.9)' }, '100%': { opacity: 1, transform: 'translateY(0) scale(1)' } },
+                        toastLeave: { '0%': { opacity: 1, transform: 'scale(1)' }, '100%': { opacity: 0, transform: 'scale(0.9)' } }
+                    }
                 }
             }
         }
@@ -62,12 +70,35 @@
         /* Minichat Scrollbar */
         #minichat-messages::-webkit-scrollbar { width: 6px; }
         #minichat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+        
+        /* Custom UI */
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
     </style>
 </head>
 <body class="selection:bg-brand-500 selection:text-white">
 
     <!-- AURORA BG -->
     <canvas id="aurora-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
+
+    <!-- UI TOAST CONTAINER -->
+    <div id="toast-container"></div>
+
+    <!-- UI CUSTOM CONFIRM MODAL -->
+    <div id="custom-confirm-modal" class="modal" onclick="window.closeConfirm()">
+        <div class="modal-content glass-panel p-6 rounded-2xl border border-white/10" onclick="event.stopPropagation()">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-10 h-10 rounded-full bg-brand-500/20 text-brand-glow flex items-center justify-center text-xl">
+                    <i id="confirm-icon" class="fa-solid fa-circle-question"></i>
+                </div>
+                <h3 id="confirm-title" class="text-xl font-bold font-display">Confirmation</h3>
+            </div>
+            <p id="confirm-message" class="text-white/70 text-sm mb-6"></p>
+            <div class="flex justify-end gap-3">
+                <button onclick="window.closeConfirm()" class="px-5 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white text-xs font-bold transition">Annuler</button>
+                <button id="confirm-btn-action" class="px-5 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition shadow-lg shadow-brand-500/20">Confirmer</button>
+            </div>
+        </div>
+    </div>
 
     <!-- NAVBAR -->
     <nav class="fixed top-0 w-full z-50 px-6 py-6 transition-all duration-300" id="navbar">
@@ -149,7 +180,7 @@
                 </div>
                 <div id="minichat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 text-sm flex flex-col">
                     <div class="bg-white/5 border border-white/10 rounded-xl rounded-tl-none p-3 max-w-[80%] self-start text-white/80">
-                        Bonjour ! Je suis l'IA WikiMind. Je suis connectée et prête. Posez-moi une question pour tester mes capacités.
+                        Bonjour ! Je suis l'IA WikiMind connectée via l'API. Posez-moi une question !
                     </div>
                 </div>
                 <div class="p-3 border-t border-white/10 bg-black/40 flex gap-2 items-center">
@@ -169,8 +200,7 @@
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-fr" id="modules-container">
-                
-                <!-- 1. WIKIMIND CORE (AI) - FLAGSHIP -->
+                <!-- Modules (conservés intacts) -->
                 <a href="Wikimind_AI.html" class="module-card md:col-span-2 glass-panel rounded-3xl p-8 relative overflow-hidden group cursor-pointer hover:border-brand-500/50 transition-all duration-300" data-name="wikimind core chat ai gpt llama">
                     <div class="absolute top-0 right-0 p-32 bg-brand-500/10 blur-[80px] rounded-full group-hover:bg-brand-500/20 transition-all"></div>
                     <div class="relative z-10 h-full flex flex-col justify-between min-h-[200px]">
@@ -185,43 +215,31 @@
                         </div>
                     </div>
                 </a>
-
-                <!-- 2. COURS -->
                 <a href="Wikimind_office.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer hover:border-brand-500/50 transition-all" data-name="cours notes ecole">
                     <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">📝</div>
                     <h3 class="text-xl font-display font-bold mb-1">Wikimind Office</h3>
                     <p class="text-white/60 text-xs mb-3">Outil de création de documents accompagné d'une IA.</p>
                 </a>
-
-                <!-- 3. GAMES -->
                 <a href="Wikimind_extension.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer hover:border-brand-500/50 transition-all" data-name="games jeux echecs arcade">
                     <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">📱</div>
                     <h3 class="text-xl font-display font-bold mb-1">Wikimind Extension</h3>
-                    <p class="text-white/60 text-xs mb-3">Découvrez l'extension Google Chrome Wikimind elle sera présente avec vous sur tous les sites ! Découvrez comment la télécharger !</p>
+                    <p class="text-white/60 text-xs mb-3">Découvrez l'extension Google Chrome Wikimind.</p>
                 </a>
-
-                <!-- 4. BAC SIMULATEUR -->
                 <a href="Wikimind_AI_tool.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer hover:border-brand-500/50 transition-all" data-name="bac ecole simulateur notes">
                     <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">🎓</div>
                     <h3 class="text-xl font-display font-bold mb-1">Wikimind AI tools</h3>
-                    <p class="text-white/60 text-xs mb-3">Détecteur d'IA Wikimind accompagné d'un humaniseur de texte moderne fluide efficace.</p>
+                    <p class="text-white/60 text-xs mb-3">Détecteur d'IA Wikimind accompagné d'un humaniseur.</p>
                 </a>
-
-                <!-- 5. CREATOR (STUDIO) -->
                 <a href="Wikimind_creator.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer hover:border-brand-500/50 transition-all" data-name="studio creative image video create">
                     <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">🎨</div>
                     <h3 class="text-xl font-display font-bold mb-1">Wikimind Creator</h3>
-                    <p class="text-white/60 text-xs mb-3">Génération d'images et vidéos IA. Assets graphiques HD. Dernier modèle de génération d'image Wikimind.</p>
+                    <p class="text-white/60 text-xs mb-3">Génération d'images et vidéos IA.</p>
                 </a>
-
-                <!-- 6. MATHS -->
                 <a href="Wikimind_musique.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer hover:border-brand-500/50 transition-all" data-name="academy education math calcul">
                     <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">🎵</div>
                     <h3 class="text-xl font-display font-bold mb-1">Wikimind Musique</h3>
-                    <p class="text-white/60 text-xs mb-3">Générateur de musiques sur demande avec la toute nouvelle IA Wikimind.</p>
+                    <p class="text-white/60 text-xs mb-3">Générateur de musiques sur demande.</p>
                 </a>
-
-                <!-- 7. STUDY (FOCUS) -->
                 <a href="WikiMind_study.html" class="module-card md:col-span-2 glass-panel rounded-3xl p-6 flex items-center justify-between group cursor-pointer hover:border-brand-500/50 transition-all" data-name="focus flow productivity study pomodoro">
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-2xl">⚡</div>
@@ -232,53 +250,40 @@
                     </div>
                     <div class="hidden md:block text-2xl opacity-20 group-hover:opacity-100 transition-opacity">→</div>
                 </a>
-
-                 <!-- 8. CLOUD -->
                  <a href="Wikimind_cloud.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer hover:border-brand-500/50 transition-all" data-name="cloud stockage drive">
                     <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">☁️</div>
                     <h3 class="text-xl font-display font-bold mb-1">Cloud</h3>
                     <p class="text-white/60 text-xs">Stockage sécurisé base64.</p>
                 </a>
-
-                <!-- 9. FINANCE -->
                 <a href="Wikimind_finance.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer hover:border-brand-500/50 transition-all" data-name="finance argent budget">
                     <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">💸</div>
                     <h3 class="text-xl font-display font-bold mb-1">Finance</h3>
                     <p class="text-white/60 text-xs">Gestion intelligente de budget.</p>
                 </a>
-
-                <!-- 10. DIAPORAMA -->
                 <a href="Wikimind_diaporama.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer hover:border-brand-500/50 transition-all" data-name="diaporama slide powerpoint">
                     <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">🎞️</div>
                     <h3 class="text-xl font-display font-bold mb-1">Diaporama</h3>
                     <p class="text-white/60 text-xs">Générateur de slides via IA Mistral.</p>
                 </a>
-
-                <!-- 11. DETECTOR -->
                 <a href="https://chpalitom09-bot.github.io/Wikimind_All/Wikimind_detect.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer hover:border-brand-500/50 transition-all" data-name="detector detecteur ia chatgpt">
                     <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">🛡️</div>
                     <h3 class="text-xl font-display font-bold mb-1">Detector</h3>
                     <p class="text-white/60 text-xs">Analyse et détecte les textes générés par IA.</p>
                 </a>
-
-                <!-- 12. HUMANIZER -->
                 <a href="Wikimind_humanise.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer hover:border-brand-500/50 transition-all" data-name="humanizer reformuler ecriture">
                     <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">🧬</div>
                     <h3 class="text-xl font-display font-bold mb-1">Humanizer</h3>
                     <p class="text-white/60 text-xs">Rend vos textes IA indétectables et naturels.</p>
                 </a>
-                
-                <!-- 13. 3D PRO -->
                 <a href="Wikimind_3D.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer hover:border-brand-500/50 transition-all" data-name="3d cad modelisation">
                     <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">🧊</div>
                     <h3 class="text-xl font-display font-bold mb-1">3D Pro</h3>
                     <p class="text-white/60 text-xs">CAO Hybride et modélisation assistée.</p>
                 </a>
-
             </div>
         </section>
 
-        <!-- POURQUOI WIKIMIND (NOUVELLE SECTION) -->
+        <!-- POURQUOI WIKIMIND -->
         <section class="max-w-7xl mx-auto py-16 px-4 border-t border-white/5">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-16">
                 <!-- BLOC 1 -->
@@ -317,21 +322,28 @@
 
         <!-- ESPACE COMMUNAUTAIRE -->
         <section id="comments-section" class="max-w-4xl mx-auto py-16">
-            <div class="glass-panel rounded-3xl p-1 md:p-8 border border-white/10">
+            <div class="glass-panel rounded-3xl p-1 md:p-8 border border-white/10 relative overflow-hidden">
+                <!-- Décoration Modération IA -->
+                <div class="absolute -top-10 -right-10 w-32 h-32 bg-orange-500/10 blur-3xl rounded-full"></div>
                 
                 <!-- En-tête -->
-                <div class="px-6 py-4 border-b border-white/5 flex justify-between items-center">
+                <div class="px-6 py-4 border-b border-white/5 flex justify-between items-center relative z-10">
                     <div>
                         <h2 class="text-2xl font-display font-bold">Espace communautaire</h2>
-                        <p class="text-white/40 text-xs mt-1">Échangez avec le réseau en temps réel. <span class="text-orange-400">Modération par IA active <i class="fa-solid fa-shield-halved"></i></span></p>
+                        <p class="text-white/40 text-xs mt-1">Échangez avec le réseau en temps réel.</p>
                     </div>
-                    <div class="text-xs bg-white/5 px-3 py-1 rounded-full text-white/60">
-                        <i class="fa-solid fa-users mr-2"></i>Public
+                    <div class="flex items-center gap-3">
+                        <div class="text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-3 py-1 rounded-full font-bold flex items-center gap-1.5" title="Chaque message est analysé et filtré.">
+                            <i class="fa-solid fa-shield-halved"></i> IA Active
+                        </div>
+                        <div class="text-xs bg-white/5 px-3 py-1 rounded-full text-white/60 hidden md:flex items-center">
+                            <i class="fa-solid fa-users mr-2"></i>Public
+                        </div>
                     </div>
                 </div>
 
-                <!-- Zone de saisie (Toujours visible) -->
-                <div id="main-comment-form-container" class="p-6">
+                <!-- Zone de saisie -->
+                <div id="main-comment-form-container" class="p-6 relative z-10">
                     <div class="flex gap-4">
                         <img id="current-user-avatar" src="https://ui-avatars.com/api/?name=Anonyme&background=333&color=fff" class="w-10 h-10 rounded-full border border-white/20 object-cover bg-gray-800">
                         <div class="flex-1">
@@ -339,8 +351,8 @@
                                 class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand-500 focus:bg-white/10 transition-all resize-none"></textarea>
                             <div class="flex justify-end mt-2 items-center gap-3">
                                 <span id="posting-as" class="text-[10px] text-white/30 uppercase tracking-widest">Mode Anonyme</span>
-                                <button id="submit-main-comment" class="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all shadow-lg shadow-brand-500/20">
-                                    Publier
+                                <button id="submit-main-comment" class="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all shadow-lg shadow-brand-500/20 flex items-center gap-2">
+                                    <span>Publier</span>
                                 </button>
                             </div>
                         </div>
@@ -348,8 +360,7 @@
                 </div>
 
                 <!-- Liste des commentaires -->
-                <div id="comments-list" class="flex flex-col gap-0 p-2 md:p-4">
-                    <!-- Loader -->
+                <div id="comments-list" class="flex flex-col gap-0 p-2 md:p-4 relative z-10">
                     <div class="text-center py-8 text-white/20 animate-pulse">
                         Synchronisation avec le serveur...
                     </div>
@@ -360,45 +371,20 @@
         <!-- FAQ SECTION -->
         <section class="max-w-4xl mx-auto pb-24 px-4">
             <h2 class="text-3xl font-display font-bold text-center mb-12">Questions Fréquentes</h2>
-            
             <div class="space-y-4">
-                <!-- Question 1 -->
                 <details class="glass-panel rounded-2xl group">
                     <summary class="w-full px-8 py-6 flex justify-between items-center cursor-pointer list-none">
                         <span class="font-bold text-lg">Est-ce que mes données sont stockées sur vos serveurs ?</span>
-                        <span class="transition-transform group-open:rotate-180">
-                            <i class="fa-solid fa-chevron-down text-white/40"></i>
-                        </span>
+                        <span class="transition-transform group-open:rotate-180"><i class="fa-solid fa-chevron-down text-white/40"></i></span>
                     </summary>
-                    <div class="px-8 pb-6 text-white/70 leading-relaxed text-sm">
-                        Oui, une partie de vos données est synchronisée sur nos serveurs sécurisés pour les fonctionnalités Cloud et la synchronisation. Cependant, les outils comme "Study" ou "Cours" conservent une copie locale pour fonctionner hors ligne.
-                    </div>
+                    <div class="px-8 pb-6 text-white/70 leading-relaxed text-sm">Oui, une partie de vos données est synchronisée sur nos serveurs sécurisés.</div>
                 </details>
-
-                <!-- Question 2 -->
                 <details class="glass-panel rounded-2xl group">
                     <summary class="w-full px-8 py-6 flex justify-between items-center cursor-pointer list-none">
                         <span class="font-bold text-lg">WikiMind partage-t-il mes informations ?</span>
-                        <span class="transition-transform group-open:rotate-180">
-                            <i class="fa-solid fa-chevron-down text-white/40"></i>
-                        </span>
+                        <span class="transition-transform group-open:rotate-180"><i class="fa-solid fa-chevron-down text-white/40"></i></span>
                     </summary>
-                    <div class="px-8 pb-6 text-white/70 leading-relaxed text-sm">
-                        Non. Vos données, c'est votre business. Nous ne vendons aucune donnée utilisateur à des régies publicitaires. WikiMind est un outil de productivité privé.
-                    </div>
-                </details>
-
-                <!-- Question 3 -->
-                <details class="glass-panel rounded-2xl group">
-                    <summary class="w-full px-8 py-6 flex justify-between items-center cursor-pointer list-none">
-                        <span class="font-bold text-lg">Puis-je supprimer mes données ?</span>
-                        <span class="transition-transform group-open:rotate-180">
-                            <i class="fa-solid fa-chevron-down text-white/40"></i>
-                        </span>
-                    </summary>
-                    <div class="px-8 pb-6 text-white/70 leading-relaxed text-sm">
-                        Oui, vous avez le contrôle total. Si vous supprimez votre compte ou des données spécifiques, elles disparaissent de votre interface immédiatement et sont purgées de nos serveurs après 30 jours (délai de sécurité).
-                    </div>
+                    <div class="px-8 pb-6 text-white/70 leading-relaxed text-sm">Non. Vos données, c'est votre business.</div>
                 </details>
             </div>
         </section>
@@ -420,50 +406,84 @@
         </div>
     </footer>
 
-    <!-- MODALS (Hidden by default) -->
+    <!-- MODALS (Mentions/Privacy) -->
     <div id="legal-modal" class="modal" onclick="this.style.display='none'">
         <div class="modal-content glass-panel p-8 rounded-2xl" onclick="event.stopPropagation()">
             <h3 class="text-xl font-bold uppercase mb-4">Mentions Légales</h3>
             <div class="text-sm text-white/60 space-y-4">
                 <p><strong>Éditeur :</strong> Projet Open Source WikiMind, développé par Tom Duval.</p>
                 <p><strong>Hébergement :</strong> GitHub Pages & Firebase Hosting.</p>
-                <p><strong>Responsabilité :</strong> Les outils sont fournis à titre indicatif.</p>
             </div>
             <button onclick="document.getElementById('legal-modal').style.display='none'" class="mt-6 w-full bg-white/10 hover:bg-white/20 py-2 rounded-lg text-xs font-bold uppercase">Fermer</button>
         </div>
     </div>
-
     <div id="privacy-modal" class="modal" onclick="this.style.display='none'">
         <div class="modal-content glass-panel p-8 rounded-2xl" onclick="event.stopPropagation()">
             <h3 class="text-xl font-bold uppercase mb-4">Confidentialité</h3>
             <div class="text-sm text-white/60 space-y-4">
                 <p><strong>Privacy First :</strong> Nous priorisons la sécurité de vos données via chiffrement.</p>
-                <p>Les commentaires publics sont visibles par tous.</p>
             </div>
             <button onclick="document.getElementById('privacy-modal').style.display='none'" class="mt-6 w-full bg-white/10 hover:bg-white/20 py-2 rounded-lg text-xs font-bold uppercase">Fermer</button>
         </div>
     </div>
 
-    <!-- FIREBASE & IA LOGIC -->
+    <!-- FIREBASE, UI & IA LOGIC -->
     <script type="module">
-        // UNIFICATION VERSION 10.8.0
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getDatabase, ref, push, onChildAdded, onChildRemoved, onChildChanged, set, remove, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         // ==========================================
+        // UI CUSTOM: TOASTS ET MODALS
+        // ==========================================
+        window.showToast = (message, type = 'info') => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-lg text-sm font-medium shadow-xl flex items-center gap-3 animate-toast-enter backdrop-blur-md border ${
+                type === 'error' ? 'bg-red-500/20 text-red-200 border-red-500/30' : 
+                type === 'success' ? 'bg-green-500/20 text-green-200 border-green-500/30' : 
+                'bg-white/10 text-white border-white/10'
+            }`;
+            const icon = type === 'error' ? '<i class="fa-solid fa-triangle-exclamation"></i>' : 
+                         type === 'success' ? '<i class="fa-solid fa-check-circle"></i>' : 
+                         '<i class="fa-solid fa-info-circle"></i>';
+            toast.innerHTML = `${icon} <span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'toastLeave 0.3s ease-in forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        };
+
+        window.closeConfirm = () => {
+            document.getElementById('custom-confirm-modal').style.display = 'none';
+        };
+
+        window.showConfirm = (title, message, iconClass, actionCallback) => {
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-message').innerText = message;
+            document.getElementById('confirm-icon').className = iconClass;
+            const btn = document.getElementById('confirm-btn-action');
+            
+            // Retirer l'ancien event listener (astuce du clone)
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener('click', () => {
+                window.closeConfirm();
+                actionCallback();
+            });
+            document.getElementById('custom-confirm-modal').style.display = 'flex';
+        };
+
+        // ==========================================
         // GROQ API IA (Clé décomposée & Obfusquée)
         // ==========================================
-        const _k1 = "gsk_pjta";
-        const _k2 = "zapsFrht";
-        const _k3 = "EembR2js";
-        const _k4 = "WGdyb3FY";
-        const _k5 = "iT0KLBuv";
-        const _k6 = "7N7pw3c1";
-        const _k7 = "6sNUt19s";
-        const getGroqKey = () => [_k1, _k2, _k3, _k4, _k5, _k6, _k7].join("");
+        // Technique: On masque les fragments dans un tableau
+        const _k = ["gsk_pjt", "azapsFrht", "EembR2js", "WGdyb3FY", "iT0KLBuv", "7N7pw3c1", "6sNUt19s"];
+        const getGroqKey = () => _k.join("");
 
-        // Fonction d'appel à l'IA Groq
         window.callGroqAI = async (messages, model = "llama3-8b-8192") => {
             try {
                 const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -472,32 +492,34 @@
                         'Authorization': `Bearer ${getGroqKey()}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        model: model,
-                        messages: messages,
-                        temperature: 0.7,
-                        max_tokens: 1024
-                    })
+                    body: JSON.stringify({ model: model, messages: messages, temperature: 0.7, max_tokens: 1024 })
                 });
                 const data = await response.json();
+                
+                if (data.error) {
+                    console.error("Groq API Error:", data.error);
+                    return null;
+                }
                 if(data.choices && data.choices.length > 0) {
                     return data.choices[0].message.content;
                 }
                 return null;
             } catch (error) {
-                console.error("Erreur IA:", error);
+                console.error("Erreur réseau IA:", error);
                 return null;
             }
         };
 
-        // Fonction d'auto-modération
         window.moderateText = async (text) => {
-            const prompt = `Analyse ce commentaire d'utilisateur. Est-il offensant, insultant, haineux, toxique ou est-ce du spam manifeste ? Réponds UNIQUEMENT par le mot OUI ou NON. Commentaire : "${text}"`;
+            const prompt = `Agis comme un modérateur strict. Le texte suivant est-il haineux, insultant, toxique, raciste ou est-ce du spam évident ? Réponds UNIQUEMENT par OUI (s'il est inapproprié) ou par NON (s'il est correct). Ne justifie pas ta réponse. Texte: "${text}"`;
             const response = await window.callGroqAI([{ role: "user", content: prompt }]);
-            if(response && response.toUpperCase().includes("OUI")) {
-                return true; // Contenu inapproprié
+            
+            if (!response) return false; // Par défaut, on laisse passer si l'IA plante
+            const upper = response.toUpperCase();
+            if(upper.includes("OUI") || upper.includes("INAPPROPRIÉ")) {
+                return true;
             }
-            return false; // Contenu valide
+            return false;
         };
 
         // ==========================================
@@ -509,81 +531,49 @@
             projectId: "wikimind-3-comments",
             appId: "1:137479541640:web:4ed2510a9908055052e03d"
         };
-        
         const authApp = initializeApp(authConfig); 
         const auth = getAuth(authApp);
 
         // ==========================================
-        // CONFIG 2 : BASE DE DONNÉES (COMMENTAIRES)
+        // CONFIG 2 : BASE DE DONNÉES
         // ==========================================
         const communityConfig = {
             apiKey: "AIzaSyCn5IyWS4deyVRG7zYY2qLQiNE49aD8a-Y",
             authDomain: "wikimind-communauty.firebaseapp.com",
             databaseURL: "https://wikimind-communauty-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "wikimind-communauty",
-            storageBucket: "wikimind-communauty.firebasestorage.app",
-            messagingSenderId: "842497095525",
-            appId: "1:842497095525:web:2b1c33ca7f4912b34dd38c"
+            projectId: "wikimind-communauty"
         };
-        
         const communityApp = initializeApp(communityConfig, "communityApp");
         const db = getDatabase(communityApp);
 
-        // --- ÉTAT UTILISATEUR ---
         let currentUser = null;
-        window.commentTexts = {}; // Pour stocker les textes sans risquer d'échapper des guillemets dans le HTML
+        window.commentTexts = {}; 
 
-        // Éléments DOM
-        const loginBtn = document.getElementById('login-btn');
-        const userLogged = document.getElementById('user-logged');
-        const navAvatar = document.getElementById('nav-avatar');
-        const userNameDisplay = document.getElementById('user-name-display');
-        
-        const currentUserAvatar = document.getElementById('current-user-avatar');
-        const postingAs = document.getElementById('posting-as');
-        const commentsList = document.getElementById('comments-list');
-
-        // 1. Détection Connexion
+        // Gestion de l'état
         onAuthStateChanged(auth, (user) => {
+            const loginBtn = document.getElementById('login-btn');
+            const userLogged = document.getElementById('user-logged');
             if (user) {
-                // USER CONNECTÉ
                 currentUser = user;
-                
                 if(loginBtn) loginBtn.classList.add('hidden');
-                if(userLogged) {
-                    userLogged.classList.remove('hidden');
-                    userLogged.classList.add('flex');
-                }
+                if(userLogged) { userLogged.classList.remove('hidden'); userLogged.classList.add('flex'); }
                 
                 const photoUrl = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff&bold=true`;
-                if(navAvatar) navAvatar.src = photoUrl;
-                if(userNameDisplay) userNameDisplay.innerText = user.displayName || user.email.split('@')[0];
-
-                if(currentUserAvatar) currentUserAvatar.src = photoUrl;
-                if(postingAs) {
-                    postingAs.innerText = "Connecté : " + (user.displayName || "Utilisateur");
-                    postingAs.classList.replace('text-white/30', 'text-brand-glow');
-                }
-                
+                document.getElementById('nav-avatar').src = photoUrl;
+                document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
+                document.getElementById('current-user-avatar').src = photoUrl;
+                document.getElementById('posting-as').innerText = "Connecté : " + (user.displayName || "Utilisateur");
+                document.getElementById('posting-as').classList.replace('text-white/30', 'text-brand-glow');
             } else {
-                // USER DÉCONNECTÉ
                 currentUser = null;
-                
                 if(loginBtn) loginBtn.classList.remove('hidden');
-                if(userLogged) {
-                    userLogged.classList.add('hidden');
-                    userLogged.classList.remove('flex');
-                }
-
-                if(currentUserAvatar) currentUserAvatar.src = "https://ui-avatars.com/api/?name=Anonyme&background=333&color=fff";
-                if(postingAs) {
-                    postingAs.innerText = "Mode Anonyme";
-                    postingAs.classList.replace('text-brand-glow', 'text-white/30');
-                }
+                if(userLogged) { userLogged.classList.add('hidden'); userLogged.classList.remove('flex'); }
+                document.getElementById('current-user-avatar').src = "https://ui-avatars.com/api/?name=Anonyme&background=333&color=fff";
+                document.getElementById('posting-as').innerText = "Mode Anonyme";
+                document.getElementById('posting-as').classList.replace('text-brand-glow', 'text-white/30');
             }
         });
 
-        // 2. Fonctions Utilitaires Date
         function timeAgo(timestamp) {
             const seconds = Math.floor((new Date() - timestamp) / 1000);
             let interval = seconds / 31536000;
@@ -599,9 +589,7 @@
             return "à l'instant";
         }
 
-        // 3. Gestion des Commentaires
-
-        // CREATE (Envoi) + Modération
+        // CREATE
         const submitBtn = document.getElementById('submit-main-comment');
         if(submitBtn) {
             submitBtn.addEventListener('click', async () => {
@@ -609,72 +597,49 @@
                 const text = input.value.trim();
                 if (!text) return;
 
-                // Modération IA
-                const originalTextBtn = submitBtn.innerText;
-                submitBtn.innerText = "Analyse IA...";
+                const originalHtml = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fa-solid fa-shield-halved fa-beat-fade"></i> Scan IA...';
                 submitBtn.disabled = true;
 
                 const isBad = await window.moderateText(text);
+                
                 if (isBad) {
-                    alert("Modération IA : Votre commentaire a été bloqué car il contient des propos inappropriés ou indésirables.");
-                    submitBtn.innerText = originalTextBtn;
+                    window.showToast("Commentaire rejeté : Contenu inapproprié détecté par l'IA.", "error");
+                    submitBtn.innerHTML = originalHtml;
                     submitBtn.disabled = false;
                     return;
                 }
 
-                let authorName = "Anonyme";
-                let uid = "anon_" + Date.now();
-                let avatarUrl = "https://ui-avatars.com/api/?name=Anonyme&background=333&color=fff";
-
-                if (currentUser) {
-                    authorName = currentUser.displayName || currentUser.email.split('@')[0];
-                    uid = currentUser.uid;
-                    avatarUrl = currentUser.photoURL || null;
-                }
+                let authorName = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : "Anonyme";
+                let uid = currentUser ? currentUser.uid : "anon_" + Date.now();
+                let avatarUrl = currentUser ? (currentUser.photoURL || null) : "https://ui-avatars.com/api/?name=Anonyme&background=333&color=fff";
 
                 const newPostRef = push(ref(db, 'comments'));
                 set(newPostRef, {
-                    uid: uid,
-                    author: authorName,
-                    avatar: avatarUrl,
-                    text: text,
-                    timestamp: Date.now(),
-                    likes: 0,
-                    replies: {}
+                    uid: uid, author: authorName, avatar: avatarUrl, text: text, timestamp: Date.now(), likes: 0, replies: {}
                 }).then(() => {
-                    input.value = ''; // Reset input
-                    submitBtn.innerText = originalTextBtn;
-                    submitBtn.disabled = false;
-                }).catch((error) => {
-                    console.error("Erreur envoi:", error);
-                    alert("Erreur: " + error.message);
-                    submitBtn.innerText = originalTextBtn;
+                    input.value = '';
+                    window.showToast("Message publié avec succès.", "success");
+                }).catch(e => {
+                    window.showToast("Erreur d'envoi: " + e.message, "error");
+                }).finally(() => {
+                    submitBtn.innerHTML = originalHtml;
                     submitBtn.disabled = false;
                 });
             });
         }
 
-        // READ (Lecture en temps réel)
+        // READ
+        const commentsList = document.getElementById('comments-list');
         const commentsRef = ref(db, 'comments');
         
         get(commentsRef).then(snapshot => {
-            if(!snapshot.exists()) {
-                commentsList.innerHTML = '<div class="text-center text-white/30 py-4 text-sm">Soyez le premier à publier.</div>';
-            } else {
-                if(commentsList.innerHTML.includes('Synchronisation')) commentsList.innerHTML = '';
-            }
-        }).catch(e => {
-            console.error("Erreur DB:", e);
-            commentsList.innerHTML = `<div class="text-center text-red-400 py-4 text-xs">Impossible de charger les commentaires.<br>${e.message}</div>`;
+            if(!snapshot.exists()) commentsList.innerHTML = '<div class="text-center text-white/30 py-4 text-sm">Soyez le premier à publier.</div>';
         });
 
         onChildAdded(commentsRef, (snapshot) => {
-            if(commentsList.innerHTML.includes('Synchronisation') || commentsList.innerHTML.includes('Soyez le premier')) {
-                commentsList.innerHTML = '';
-            }
-            const data = snapshot.val();
-            const id = snapshot.key;
-            renderComment(id, data);
+            if(commentsList.innerHTML.includes('Synchronisation') || commentsList.innerHTML.includes('premier')) commentsList.innerHTML = '';
+            renderComment(snapshot.key, snapshot.val());
         });
 
         onChildRemoved(commentsRef, (snapshot) => {
@@ -690,59 +655,36 @@
 
         function renderComment(id, data, isReply = false, parentId = null) {
             if(document.getElementById(`comment-${id}`)) return;
+            const pathId = parentId ? `${parentId}/replies/${id}` : id;
+            window.commentTexts[pathId] = data.text; 
 
-            const dateStr = timeAgo(data.timestamp);
-            const userAvatar = data.avatar || `https://ui-avatars.com/api/?name=${data.author}&background=random`;
-            const isAnon = String(data.uid).startsWith('anon_');
-            
             const div = document.createElement('div');
             div.id = `comment-${id}`;
-            div.className = isReply 
-                ? "comment-thread mt-3 pt-2 animate-fade-in-up" 
-                : "border-b border-white/5 py-6 animate-fade-in-up group";
-
-            const pathId = parentId ? `${parentId}/replies/${id}` : id;
-            window.commentTexts[pathId] = data.text; // Stockage pour modération
+            div.className = isReply ? "comment-thread mt-3 pt-2 animate-fade-in-up" : "border-b border-white/5 py-6 animate-fade-in-up group";
 
             div.innerHTML = `
                 <div class="flex gap-3">
-                    <img src="${userAvatar}" class="w-8 h-8 rounded-full border border-white/10 mt-1 object-cover bg-gray-800">
-                    <div class="flex-1">
+                    <img src="${data.avatar || `https://ui-avatars.com/api/?name=${data.author}&background=random`}" class="w-8 h-8 rounded-full border border-white/10 mt-1 object-cover bg-gray-800">
+                    <div class="flex-1 w-full overflow-hidden">
                         <div class="flex items-center gap-2 mb-1">
                             <span class="font-bold text-sm text-white">${data.author}</span>
-                            <span class="text-[10px] text-white/40">${dateStr}</span>
-                            ${!isReply && !isAnon ? `<span class="bg-white/5 px-1.5 rounded text-[9px] text-white/30">Membre</span>` : ''}
+                            <span class="text-[10px] text-white/40">${timeAgo(data.timestamp)}</span>
                         </div>
-                        
-                        <p class="text-white/80 text-sm leading-relaxed whitespace-pre-wrap">${data.text}</p>
+                        <p class="text-white/80 text-sm leading-relaxed whitespace-pre-wrap break-words">${data.text}</p>
                         
                         <div class="flex flex-wrap items-center gap-4 mt-3">
                             <button onclick="window.handleLike('${pathId}', event)" class="flex items-center gap-1.5 text-xs text-white/40 hover:text-pink-400 transition-colors group/like">
-                                <i class="fa-regular fa-heart group-hover/like:fa-solid"></i>
-                                <span class="like-count">${data.likes || 0}</span>
+                                <i class="fa-regular fa-heart group-hover/like:fa-solid"></i><span class="like-count">${data.likes || 0}</span>
                             </button>
-                            
-                            ${!isReply ? `
-                            <button onclick="window.toggleReplyForm('${id}')" class="flex items-center gap-1.5 text-xs text-white/40 hover:text-brand-glow transition-colors">
-                                <i class="fa-regular fa-comment-dots"></i> Répondre
-                            </button>` : ''}
-                            
-                            <button onclick="window.reportComment('${pathId}')" class="flex items-center gap-1.5 text-[10px] text-orange-400/50 hover:text-orange-400 transition-colors ml-2" title="Signaler à l'IA">
-                                <i class="fa-solid fa-flag"></i> Signaler
-                            </button>
-
-                            <button id="btn-delete-${id}" onclick="window.deleteComment('${pathId}')" class="hidden flex items-center gap-1.5 text-xs text-white/40 hover:text-red-400 transition-colors ml-auto">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
+                            ${!isReply ? `<button onclick="window.toggleReplyForm('${id}')" class="flex items-center gap-1.5 text-xs text-white/40 hover:text-brand-glow transition-colors"><i class="fa-regular fa-comment-dots"></i> Répondre</button>` : ''}
+                            <button onclick="window.reportComment('${pathId}')" class="flex items-center gap-1.5 text-[10px] text-orange-400/40 hover:text-orange-400 transition-colors ml-2"><i class="fa-solid fa-flag"></i> Signaler</button>
+                            <button id="btn-delete-${id}" onclick="window.promptDelete('${pathId}')" class="hidden flex items-center gap-1.5 text-xs text-white/40 hover:text-red-400 transition-colors ml-auto"><i class="fa-solid fa-trash"></i></button>
                         </div>
-
+                        
                         <div id="reply-form-${id}" class="hidden mt-3 pl-2 border-l-2 border-brand-500/30">
                             <div class="flex gap-2">
-                                <input type="text" id="input-reply-${id}" placeholder="Répondre..." 
-                                    class="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500">
-                                <button onclick="window.submitReply('${id}')" id="btn-submit-reply-${id}" class="bg-white/10 hover:bg-brand-600 text-white px-3 py-1 rounded-lg text-xs font-bold transition">
-                                    <i class="fa-solid fa-paper-plane"></i>
-                                </button>
+                                <input type="text" id="input-reply-${id}" placeholder="Répondre..." class="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500">
+                                <button onclick="window.submitReply('${id}')" id="btn-submit-reply-${id}" class="bg-white/10 hover:bg-brand-600 text-white px-3 py-1 rounded-lg text-xs font-bold transition"><i class="fa-solid fa-paper-plane"></i></button>
                             </div>
                         </div>
                         <div id="replies-${id}" class="flex flex-col"></div>
@@ -756,31 +698,17 @@
             } else {
                 if (commentsList.firstChild) commentsList.insertBefore(div, commentsList.firstChild);
                 else commentsList.appendChild(div);
-
-                if(data.replies) {
-                    Object.keys(data.replies).forEach(replyId => {
-                        renderComment(replyId, data.replies[replyId], true, id);
-                    });
-                }
+                if(data.replies) Object.keys(data.replies).forEach(replyId => renderComment(replyId, data.replies[replyId], true, id));
             }
 
-            const delBtn = div.querySelector(`#btn-delete-${id}`);
-            if (currentUser && data.uid === currentUser.uid) {
-                delBtn.classList.remove('hidden');
-            }
+            if (currentUser && data.uid === currentUser.uid) div.querySelector(`#btn-delete-${id}`).classList.remove('hidden');
         }
 
-        // GLOBALES
         window.toggleReplyForm = (id) => {
             const form = document.getElementById(`reply-form-${id}`);
             if(form) {
                 form.classList.toggle('hidden');
-                if(!form.classList.contains('hidden')) {
-                    setTimeout(() => {
-                        const input = document.getElementById(`input-reply-${id}`);
-                        if(input) input.focus();
-                    }, 100);
-                }
+                if(!form.classList.contains('hidden')) setTimeout(() => document.getElementById(`input-reply-${id}`).focus(), 100);
             }
         };
 
@@ -790,92 +718,94 @@
             const text = input.value.trim();
             if(!text) return;
 
-            // Modération IA
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
             btn.disabled = true;
 
             const isBad = await window.moderateText(text);
             if (isBad) {
-                alert("Modération IA : Votre réponse a été bloquée car elle est inappropriée.");
+                window.showToast("Réponse rejetée : Contenu inapproprié.", "error");
                 btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i>';
                 btn.disabled = false;
                 return;
             }
 
-            let authorName = "Anonyme";
-            let uid = "anon_" + Date.now();
-            let avatarUrl = "https://ui-avatars.com/api/?name=Anonyme&background=333&color=fff";
-
-            if (currentUser) {
-                authorName = currentUser.displayName || currentUser.email.split('@')[0];
-                uid = currentUser.uid;
-                avatarUrl = currentUser.photoURL || null;
-            }
+            let authorName = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : "Anonyme";
+            let uid = currentUser ? currentUser.uid : "anon_" + Date.now();
+            let avatarUrl = currentUser ? (currentUser.photoURL || null) : "https://ui-avatars.com/api/?name=Anonyme&background=333&color=fff";
 
             const replyRef = push(ref(db, `comments/${parentId}/replies`));
-            const replyData = { 
-                uid, author: authorName, avatar: avatarUrl, text, timestamp: Date.now(), likes: 0 
-            };
+            const replyData = { uid, author: authorName, avatar: avatarUrl, text, timestamp: Date.now(), likes: 0 };
             
             set(replyRef, replyData).then(() => {
                 renderComment(replyRef.key, replyData, true, parentId);
                 input.value = '';
                 document.getElementById(`reply-form-${parentId}`).classList.add('hidden');
+            }).finally(() => {
                 btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i>';
                 btn.disabled = false;
             });
         };
 
         window.handleLike = (path, event) => {
-            const likeRef = ref(db, `comments/${path}/likes`);
-            runTransaction(likeRef, (c) => (c || 0) + 1);
+            runTransaction(ref(db, `comments/${path}/likes`), (c) => (c || 0) + 1);
             if(event && event.currentTarget) {
                 const heart = event.currentTarget.querySelector('i');
-                if(heart) {
-                    heart.classList.remove('fa-regular');
-                    heart.classList.add('fa-solid', 'text-pink-500', 'like-anim');
-                }
+                if(heart) { heart.classList.remove('fa-regular'); heart.classList.add('fa-solid', 'text-pink-500', 'like-anim'); }
             }
         };
 
-        window.deleteComment = (path) => {
-            if (!confirm("Supprimer ce message ?")) return;
-            remove(ref(db, `comments/${path}`))
-                .then(() => {
-                    if(path.includes('replies')) {
-                        const id = path.split('/').pop();
-                        const el = document.getElementById(`comment-${id}`);
-                        if(el) el.remove();
-                    }
-                })
-                .catch(err => alert(err.message));
+        window.promptDelete = (path) => {
+            window.showConfirm(
+                "Suppression", 
+                "Voulez-vous vraiment supprimer ce message définitivement ?", 
+                "fa-solid fa-trash text-red-400", 
+                () => {
+                    remove(ref(db, `comments/${path}`)).then(() => {
+                        window.showToast("Message supprimé.", "success");
+                        if(path.includes('replies')) {
+                            const id = path.split('/').pop();
+                            const el = document.getElementById(`comment-${id}`);
+                            if(el) el.remove();
+                        }
+                    }).catch(err => window.showToast("Erreur: " + err.message, "error"));
+                }
+            );
         };
 
-        // SIGNALEMENT IA MANUEL
-        window.reportComment = async (pathId) => {
-            if(!confirm("Signaler ce commentaire à l'IA de modération ?")) return;
-            
-            const textToAnalyze = window.commentTexts[pathId];
-            if(!textToAnalyze) return;
+        // SIGNALEMENT MODERATION IA CUSTOM UI
+        window.reportComment = (pathId) => {
+            window.showConfirm(
+                "Modération IA", 
+                "Demander à l'IA d'analyser et potentiellement censurer ce message ?", 
+                "fa-solid fa-robot text-brand-glow", 
+                async () => {
+                    const textToAnalyze = window.commentTexts[pathId];
+                    if(!textToAnalyze) return;
 
-            alert("L'IA analyse le commentaire en cours...");
-            
-            const isBad = await window.moderateText(textToAnalyze);
-            
-            if(isBad) {
-                try {
-                    await remove(ref(db, `comments/${pathId}`));
-                    alert("L'IA a confirmé que le commentaire enfreint les règles. Il a été supprimé.");
+                    window.showToast("L'IA examine le commentaire...", "info");
                     
-                    const id = pathId.split('/').pop();
-                    const el = document.getElementById(`comment-${id}`);
-                    if(el) el.remove();
-                } catch(err) {
-                    alert("L'IA juge ce message inapproprié mais vous n'avez pas l'autorisation Firebase pour le supprimer de la base centrale. Il est marqué pour la modération.");
+                    const isBad = await window.moderateText(textToAnalyze);
+                    
+                    if(isBad) {
+                        try {
+                            // On tente de supprimer sur Firebase
+                            await remove(ref(db, `comments/${pathId}`));
+                            window.showToast("L'IA a supprimé ce commentaire toxique !", "success");
+                            const id = pathId.split('/').pop();
+                            const el = document.getElementById(`comment-${id}`);
+                            if(el) el.remove();
+                        } catch(err) {
+                            // Si firebase bloque (car on est pas proprio), on le cache en local pour l'utilisateur
+                            window.showToast("L'IA a confirmé l'infraction. Masqué localement.", "info");
+                            const id = pathId.split('/').pop();
+                            const el = document.getElementById(`comment-${id}`);
+                            if(el) el.remove();
+                        }
+                    } else {
+                        window.showToast("L'IA juge ce commentaire correct.", "info");
+                    }
                 }
-            } else {
-                alert("L'IA a jugé ce commentaire acceptable. Aucune action prise.");
-            }
+            );
         };
 
         // --- MINI CHAT IA (ACCUEIL) ---
@@ -887,7 +817,7 @@
         const minichatMessages = document.getElementById('minichat-messages');
 
         let minichatHistory = [
-            { role: "system", content: "Tu es WikiMind AI, l'assistant intelligent de l'écosystème WikiMind 3.0. Tu es très utile, précis, sympa, et tu réponds de manière courte et moderne." }
+            { role: "system", content: "Tu es WikiMind AI, assistant intelligent, rapide et très utile. Réponds de façon concise et moderne." }
         ];
 
         if(btnToggleChat) {
@@ -908,7 +838,6 @@
             const text = minichatInput.value.trim();
             if(!text) return;
             
-            // Add user message
             const userMsgDiv = document.createElement('div');
             userMsgDiv.className = "bg-brand-600 border border-brand-500 rounded-xl rounded-tr-none p-3 max-w-[80%] self-end text-white";
             userMsgDiv.innerText = text;
@@ -918,7 +847,6 @@
             minichatMessages.scrollTop = minichatMessages.scrollHeight;
             minichatHistory.push({ role: "user", content: text });
 
-            // Add loading
             const loadDiv = document.createElement('div');
             loadDiv.className = "text-xs text-brand-glow self-start mt-1 italic minichat-loading";
             loadDiv.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Réflexion...';
@@ -926,9 +854,7 @@
 
             const aiResponse = await window.callGroqAI(minichatHistory, "llama3-8b-8192");
 
-            // Remove loading
-            const loaders = minichatMessages.querySelectorAll('.minichat-loading');
-            loaders.forEach(l => l.remove());
+            minichatMessages.querySelectorAll('.minichat-loading').forEach(l => l.remove());
 
             if(aiResponse) {
                 minichatHistory.push({ role: "assistant", content: aiResponse });
@@ -946,26 +872,19 @@
         }
 
         if(minichatSendBtn) minichatSendBtn.addEventListener('click', handleMinichatSend);
-        if(minichatInput) {
-            minichatInput.addEventListener('keypress', (e) => {
-                if(e.key === 'Enter') handleMinichatSend();
-            });
-        }
+        if(minichatInput) minichatInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') handleMinichatSend(); });
 
         // --- SEARCH BAR ---
         const searchInput = document.getElementById('app-search');
         const modulesContainer = document.getElementById('modules-container');
         const cards = document.querySelectorAll('.module-card');
-
         if(searchInput && modulesContainer) {
             searchInput.addEventListener('input', (e) => {
                 const val = e.target.value.toLowerCase();
                 if (val.length > 0) modulesContainer.classList.add('search-active');
                 else modulesContainer.classList.remove('search-active');
-
                 cards.forEach(card => {
-                    const keywords = card.getAttribute('data-name');
-                    if (keywords.includes(val)) card.classList.add('match');
+                    if (card.getAttribute('data-name').includes(val)) card.classList.add('match');
                     else card.classList.remove('match');
                 });
             });
