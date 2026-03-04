@@ -523,11 +523,18 @@
             sendBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
             sendBtn.disabled = true;
 
-            // Ajout du message à l'historique
+            // Ajout sécurisé du message utilisateur à l'historique
             chatHistory.push({ role: "user", content: text });
             
-            // On limite l'historique pour ne pas saturer la requête
-            if(chatHistory.length > 16) chatHistory = chatHistory.slice(-16);
+            // Limitation stricte de l'historique (10 messages max pour la stabilité)
+            if(chatHistory.length > 10) {
+                chatHistory = chatHistory.slice(-10);
+            }
+            // IMPORTANT : S'assurer que le premier message de l'historique n'est pas "assistant"
+            // (Groq et Mistral bloquent immédiatement si c'est le cas)
+            while (chatHistory.length > 0 && chatHistory[0].role !== "user" && chatHistory[0].role !== "system") {
+                chatHistory.shift();
+            }
 
             const startTime = Date.now();
             let replyText = "";
@@ -547,16 +554,22 @@
                     apiKey = buildK(_m);
                 }
                 else if (modelConfig.provider === "llmapi") {
-                    // Correction de l'URL LLM API
-                    url = "https://api.llmapi.ai/v1/chat/completions"; 
+                    // Endpoint officiel et universel pour les gateway OpenAI-like
+                    url = "https://api.llmapi.io/v1/chat/completions"; 
                     apiKey = buildK(_l);
                 }
 
-                // Payload pur et dur sans température ni system prompt (source de bugs fréquents)
+                // Payload strict, sans variables risquées, compatible 100% standard OpenAI
                 const payload = {
                     model: modelConfig.internalId,
-                    messages: chatHistory
+                    messages: chatHistory,
+                    temperature: 0.7,
+                    max_tokens: 2048
                 };
+
+                console.log(`[API Debug] Provider: ${modelConfig.provider.toUpperCase()} | Model: ${modelConfig.internalId}`);
+                console.log(`[API Debug] URL: ${url}`);
+                console.log(`[API Debug] Payload envoyé:`, payload);
 
                 const response = await fetch(url, {
                     method: 'POST',
@@ -569,31 +582,47 @@
 
                 if(response.ok) {
                     const data = await response.json();
-                    if(data.choices && data.choices[0].message) {
+                    console.log(`[API Debug] Succès. Réponse reçue:`, data);
+                    
+                    // Vérification stricte de la structure JSON retournée
+                    if(data && data.choices && data.choices.length > 0 && data.choices[0].message && data.choices[0].message.content) {
                         replyText = data.choices[0].message.content;
                         apiSuccess = true;
+                    } else {
+                        throw new Error("Structure de réponse inattendue renvoyée par l'API.");
                     }
                 } else {
+                    // Capture et affichage des erreurs précises renvoyées par le serveur
                     const errDetail = await response.text();
-                    console.error("API Error:", response.status, errDetail);
-                    replyText = `❌ Erreur du serveur IA (Code ${response.status}). Modèle potentiellement surchargé. Essayez une autre architecture.`;
+                    console.error(`[API Error] HTTP ${response.status}:`, errDetail);
+                    
+                    let errorMsg = `Code ${response.status}`;
+                    try {
+                        const parsedErr = JSON.parse(errDetail);
+                        if(parsedErr.error && parsedErr.error.message) {
+                            errorMsg = parsedErr.error.message;
+                        }
+                    } catch(e) {} // Si ce n'est pas du JSON, on garde le code HTTP simple
+                    
+                    throw new Error(errorMsg);
                 }
 
             } catch (err) {
-                console.error("Fetch Error:", err);
-                replyText = "❌ Erreur de réseau ou de sécurité (CORS). Le serveur IA n'a pas pu être contacté.";
+                console.error("[API Catch Error]:", err);
+                replyText = `❌ Échec de la communication avec l'IA. \nCause probable : ${err.message}`;
             }
 
             const endTime = Date.now();
             document.getElementById('latency-display').innerText = (endTime - startTime);
 
-            // Gestion de l'affichage et de la facturation
+            // Gestion de l'historique et des crédits en fonction du résultat
             if (apiSuccess) {
                 chatHistory.push({ role: "assistant", content: replyText });
                 await deductCredit(modelConfig.cost);
             } else {
-                // On supprime la question de l'historique en cas d'échec pour ne pas le bloquer
-                chatHistory.pop();
+                // On retire la question de l'utilisateur de l'historique si ça a failé 
+                // pour ne pas corrompre les futures requêtes
+                if(chatHistory.length > 0) chatHistory.pop();
             }
 
             appendMessage('assistant', replyText, modelConfig.name);
