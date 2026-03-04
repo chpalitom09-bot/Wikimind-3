@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WikiMind Creator - Flux</title>
+    <title>WikiMind Creator - Studio</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
@@ -15,6 +15,7 @@
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
                     colors: {
+                        glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
                         brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' }
                     },
                     animation: { 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }
@@ -31,13 +32,13 @@
         .text-gradient { background: linear-gradient(135deg, #ffffff 0%, #a5a6f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
         /* Loader */
-        .flux-loader {
+        .magic-loader {
             width: 48px; height: 48px;
             border: 3px solid #FFF; border-radius: 50%;
             display: inline-block; position: relative; box-sizing: border-box;
             animation: rotation 1s linear infinite;
         }
-        .flux-loader::after {
+        .magic-loader::after {
             content: ''; box-sizing: border-box; position: absolute; left: 50%; top: 50%;
             transform: translate(-50%, -50%); width: 40px; height: 40px;
             border-radius: 50%; border: 3px solid transparent; border-bottom-color: #6366f1;
@@ -50,6 +51,7 @@
 </head>
 <body class="selection:bg-brand-500 selection:text-white">
 
+    <!-- AURORA BG -->
     <canvas id="aurora-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
 
     <!-- NAVBAR -->
@@ -59,7 +61,7 @@
                 <div class="w-8 h-8 bg-gradient-to-tr from-white to-gray-400 rounded-lg flex items-center justify-center">
                     <span class="font-bold text-black text-xs">W</span>
                 </div>
-                <span class="font-display font-bold text-lg tracking-tight">WikiMind <span class="text-brand-glow font-normal">Flux</span></span>
+                <span class="font-display font-bold text-lg tracking-tight">WikiMind <span class="text-brand-glow font-normal">Creator</span></span>
             </a>
 
             <!-- Auth State -->
@@ -69,8 +71,8 @@
                 </a>
                 <div id="user-logged" class="hidden flex items-center gap-3">
                     <div class="text-right hidden md:block">
-                        <div id="user-name-display" class="text-xs font-bold text-white">Artiste</div>
-                        <div class="text-[10px] text-green-400">● En ligne</div>
+                        <div id="user-name-display" class="text-xs font-bold text-white">Créateur</div>
+                        <div class="text-[10px] text-green-400">● Premium</div>
                     </div>
                     <img id="nav-avatar" src="" class="w-9 h-9 rounded-full border border-white/20 object-cover bg-gray-800">
                 </div>
@@ -82,8 +84,12 @@
         
         <!-- HEADER -->
         <div class="text-center mb-12">
-            <h1 class="text-4xl md:text-5xl font-display font-bold mb-4">Générateur <span class="text-gradient">Flux Realism</span></h1>
-            <p class="text-white/60">Modèle Flux via Pollinations AI. Rapide, Gratuit, Illimité.</p>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-brand-500/30 bg-brand-500/10 text-brand-glow text-[10px] uppercase font-bold tracking-[0.2em] mb-4">
+                <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+                 API Powered
+            </div>
+            <h1 class="text-4xl md:text-5xl font-display font-bold mb-4">Studio de <span class="text-gradient">Génération</span></h1>
+            <p class="text-white/60">Créez des visuels époustouflants grâce aux modèles Flux & Turbo.</p>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -93,55 +99,58 @@
                 
                 <div class="glass-panel rounded-2xl p-6 relative overflow-hidden">
                     
-                    <!-- QUOTA ALERT (GUEST) -->
+                    <!-- QUOTA ALERT (GUEST ONLY) -->
                     <div id="quota-alert" class="hidden absolute inset-0 bg-black/90 backdrop-blur-md z-20 flex flex-col items-center justify-center text-center p-6">
                         <i class="fa-solid fa-lock text-3xl text-brand-500 mb-4"></i>
                         <h3 class="font-bold text-lg text-white">Limite journalière atteinte</h3>
-                        <p class="text-sm text-white/60 mb-6">Connectez-vous pour continuer à créer.</p>
+                        <p class="text-sm text-white/60 mb-6">Connectez-vous pour débloquer l'accès illimité.</p>
                         <a href="Wikimind_user.html" class="px-6 py-2 bg-white text-black rounded-full font-bold text-xs uppercase hover:bg-gray-200 transition">Se connecter</a>
                     </div>
 
-                    <!-- TEXT TO IMAGE -->
-                    <div id="panel-text" class="space-y-4">
+                    <!-- FORM -->
+                    <div class="space-y-4">
                         <div>
                             <label class="text-xs text-white/50 uppercase font-bold ml-1">Prompt (Description)</label>
-                            <textarea id="prompt-input" rows="4" placeholder="Ex: A futuristic city skyline at sunset, cyberpunk style, hyperrealistic, 8k..." 
+                            <textarea id="prompt-input" rows="4" placeholder="Ex: Un astronaute qui fait du skate sur les anneaux de Saturne, style cyberpunk, 8k..." 
                                 class="w-full mt-2 bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand-500 focus:bg-white/10 transition-all resize-none"></textarea>
                         </div>
                         
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="text-xs text-white/50 uppercase font-bold ml-1">Largeur</label>
-                                <select id="width-sel" class="w-full mt-2 bg-white/5 border border-white/10 rounded-xl p-2.5 text-sm text-white focus:outline-none">
-                                    <option value="1024">1024 px</option>
-                                    <option value="1280">1280 px</option>
-                                    <option value="768">768 px</option>
+                                <label class="text-xs text-white/50 uppercase font-bold ml-1">Format</label>
+                                <select id="ratio-sel" class="w-full mt-2 bg-white/5 border border-white/10 rounded-xl p-2.5 text-sm text-white focus:outline-none">
+                                    <option value="1024x1024">Carré (1:1)</option>
+                                    <option value="1280x720">Paysage (16:9)</option>
+                                    <option value="720x1280">Portrait (9:16)</option>
+                                    <option value="1920x1080">Cinéma HD</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="text-xs text-white/50 uppercase font-bold ml-1">Hauteur</label>
-                                <select id="height-sel" class="w-full mt-2 bg-white/5 border border-white/10 rounded-xl p-2.5 text-sm text-white focus:outline-none">
-                                    <option value="1024">1024 px</option>
-                                    <option value="720">720 px</option>
-                                    <option value="1280">1280 px</option>
+                                <label class="text-xs text-white/50 uppercase font-bold ml-1">Modèle</label>
+                                <select id="model-sel" class="w-full mt-2 bg-white/5 border border-white/10 rounded-xl p-2.5 text-sm text-white focus:outline-none">
+                                    <option value="flux">Flux (Réaliste)</option>
+                                    <option value="turbo">Turbo (Rapide)</option>
+                                    <option value="unity">Anime / 3D</option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="flex items-center gap-2 mt-2">
-                            <input type="checkbox" id="enhance-prompt" class="rounded bg-white/10 border-white/20 text-brand-500 focus:ring-brand-500">
-                            <label for="enhance-prompt" class="text-xs text-white/70">Améliorer le prompt (IA)</label>
+                            <input type="checkbox" id="enhance-prompt" class="rounded bg-white/10 border-white/20 text-brand-500 focus:ring-brand-500" checked>
+                            <label for="enhance-prompt" class="text-xs text-white/70">Améliorer le prompt (IA Magic)</label>
                         </div>
 
-                        <button onclick="generateFlux()" id="btn-gen" class="w-full py-3 mt-4 bg-brand-600 hover:bg-brand-500 rounded-xl font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 group shadow-lg shadow-brand-500/20">
+                        <button onclick="generateImage()" id="btn-gen" class="w-full py-3 mt-4 bg-brand-600 hover:bg-brand-500 rounded-xl font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 group shadow-lg shadow-brand-500/20">
                             <span>Générer</span>
-                            <i class="fa-solid fa-bolt"></i>
+                            <i class="fa-solid fa-wand-magic-sparkles group-hover:animate-pulse"></i>
                         </button>
                     </div>
 
                     <!-- QUOTA INFO -->
                     <div class="mt-4 text-center border-t border-white/5 pt-4">
-                         <span id="quota-display" class="text-[10px] text-white/30 uppercase tracking-widest">Invité : <span id="quota-count" class="text-white font-bold">0</span>/3</span>
+                         <span id="quota-display" class="text-[10px] text-white/30 uppercase tracking-widest">
+                            <i class="fa-solid fa-user-clock mr-1"></i>Invité : <span id="quota-count" class="text-white font-bold">0</span>/3
+                         </span>
                     </div>
                 </div>
             </div>
@@ -157,14 +166,14 @@
                             <i class="fa-solid fa-paintbrush text-4xl text-white/20"></i>
                         </div>
                         <h3 class="text-xl font-display font-bold mb-2">Prêt à créer</h3>
-                        <p class="text-white/40 text-sm">Le modèle Flux est optimisé pour le photoréalisme.</p>
+                        <p class="text-white/40 text-sm">Le modèle Flux est optimisé pour le photoréalisme.<br>La génération peut prendre 10-20 secondes.</p>
                     </div>
 
                     <!-- Loading -->
                     <div id="preview-loading" class="hidden absolute inset-0 bg-black/80 backdrop-blur-md z-30 flex flex-col items-center justify-center rounded-2xl">
-                        <span class="flux-loader mb-6"></span>
-                        <h3 class="text-lg font-bold font-display animate-pulse">Génération en cours...</h3>
-                        <p class="text-xs text-brand-400 mt-2 font-mono">Construction des pixels</p>
+                        <span class="magic-loader mb-6"></span>
+                        <h3 class="text-lg font-bold font-display animate-pulse">Magie en cours...</h3>
+                        <p class="text-xs text-brand-400 mt-2 font-mono" id="loading-text">Initialisation...</p>
                     </div>
 
                     <!-- Result Image -->
@@ -182,7 +191,7 @@
                 <div class="mt-6">
                     <div class="flex justify-between items-end mb-3 px-2">
                         <h4 class="text-sm font-bold text-white/60 uppercase tracking-widest">Historique (7 jours)</h4>
-                        <button onclick="clearHistory()" class="text-[10px] text-red-400 hover:text-red-300">Effacer</button>
+                        <button onclick="clearHistory()" class="text-[10px] text-red-400 hover:text-red-300">Tout effacer</button>
                     </div>
                     <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar min-h-[100px]" id="history-container"></div>
                 </div>
@@ -196,7 +205,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-        // CONFIG FIREBASE (User Auth Only)
+        // CONFIG FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
             authDomain: "wikimind-3-comments.firebaseapp.com",
@@ -206,6 +215,9 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
 
+        // API KEY POLLINATIONS (Fournie)
+        const POLLINATIONS_KEY = "pk_izJk3r9fHrk5HGkQ";
+
         // STATE
         let currentUser = null;
         let dailyCount = 0;
@@ -214,10 +226,11 @@
         // DOM ELEMENTS
         const els = {
             prompt: document.getElementById('prompt-input'),
-            width: document.getElementById('width-sel'),
-            height: document.getElementById('height-sel'),
+            ratio: document.getElementById('ratio-sel'),
+            model: document.getElementById('model-sel'),
             enhance: document.getElementById('enhance-prompt'),
             loader: document.getElementById('preview-loading'),
+            loadText: document.getElementById('loading-text'),
             placeholder: document.getElementById('preview-placeholder'),
             img: document.getElementById('result-image'),
             actions: document.getElementById('result-actions'),
@@ -225,6 +238,7 @@
             history: document.getElementById('history-container'),
             quotaAlert: document.getElementById('quota-alert'),
             quotaCount: document.getElementById('quota-count'),
+            quotaDisplay: document.getElementById('quota-display'),
             loginBtn: document.getElementById('login-btn'),
             userLogged: document.getElementById('user-logged'),
             navAvatar: document.getElementById('nav-avatar'),
@@ -244,17 +258,21 @@
                 els.userLogged.classList.add('flex');
                 els.navAvatar.src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1`;
                 els.userName.innerText = user.displayName || "Membre";
-                els.quotaAlert.classList.add('hidden'); // No limits for logged users
+                
+                // Masquer les alertes de quota pour les membres
+                els.quotaAlert.classList.add('hidden'); 
+                els.quotaDisplay.classList.add('opacity-0');
             } else {
                 currentUser = null;
                 els.loginBtn.classList.remove('hidden');
                 els.userLogged.classList.add('hidden');
+                els.quotaDisplay.classList.remove('opacity-0');
                 checkQuotaUI();
             }
         });
 
-        // GENERATION LOGIC (POLLINATIONS FLUX)
-        window.generateFlux = function() {
+        // GENERATION LOGIC
+        window.generateImage = function() {
             // Check Quota
             if (!currentUser && dailyCount >= MAX_DAILY_GUEST) {
                 els.quotaAlert.classList.remove('hidden');
@@ -264,28 +282,41 @@
             const promptText = els.prompt.value.trim();
             if (!promptText) return alert("Veuillez décrire l'image.");
 
-            // UI
+            // UI Setup
             els.loader.classList.remove('hidden');
             els.placeholder.classList.add('hidden');
             els.img.classList.add('hidden');
             els.actions.classList.add('hidden');
+            
+            // Random Loading Messages
+            const messages = ["Tissage des pixels...", "Appel de l'IA...", "Colorisation...", "Rendu HD..."];
+            let msgIdx = 0;
+            els.loadText.innerText = messages[0];
+            const msgInterval = setInterval(() => {
+                msgIdx = (msgIdx + 1) % messages.length;
+                els.loadText.innerText = messages[msgIdx];
+            }, 2000);
 
-            // Build URL (Pollinations API - No Key needed)
-            const seed = Math.floor(Math.random() * 100000);
-            const w = els.width.value;
-            const h = els.height.value;
+            // Params
+            const seed = Math.floor(Math.random() * 1000000);
+            const [w, h] = els.ratio.value.split('x');
+            const model = els.model.value;
             let finalPrompt = encodeURIComponent(promptText);
             
             if(els.enhance.checked) {
-                finalPrompt += encodeURIComponent(", high quality, detailed, 8k, masterpiece, photorealistic");
+                finalPrompt += encodeURIComponent(", highly detailed, 8k, masterpiece, sharp focus, professional photography");
             }
 
-            // URL Magique qui génère l'image directement
-            const imageUrl = `https://image.pollinations.ai/prompt/${finalPrompt}?model=flux&width=${w}&height=${h}&seed=${seed}&nologo=true`;
+            // URL Construction (Pollinations API)
+            // On ajoute la clé API si le plan l'exige, mais l'URL publique fonctionne souvent aussi.
+            // On l'ajoute en query param pour être sûr.
+            const imageUrl = `https://image.pollinations.ai/prompt/${finalPrompt}?width=${w}&height=${h}&seed=${seed}&model=${model}&nologo=true&api_key=${POLLINATIONS_KEY}`;
 
-            // Preload
+            // Image Preload
             const tempImg = new Image();
+            
             tempImg.onload = () => {
+                clearInterval(msgInterval);
                 els.loader.classList.add('hidden');
                 els.img.src = imageUrl;
                 els.img.classList.remove('hidden');
@@ -294,43 +325,50 @@
 
                 // Save
                 saveToHistory(imageUrl, promptText);
+                
+                // Increment Guest Quota
                 if(!currentUser) {
                     dailyCount++;
                     updateLocalStorage();
                     checkQuotaUI();
                 }
             };
+
             tempImg.onerror = () => {
+                clearInterval(msgInterval);
                 els.loader.classList.add('hidden');
-                alert("Erreur de chargement de l'image. Le serveur est peut-être saturé.");
+                els.placeholder.classList.remove('hidden');
+                alert("Erreur de génération. Essayez un prompt plus simple ou changez de modèle.");
             };
+
+            // Trigger loading
             tempImg.src = imageUrl;
         };
 
-        // --- LOCAL STORAGE & HISTORY (Gardé de ta version précédente) ---
+        // --- LOCAL STORAGE LOGIC ---
         function initLocalStorage() {
             const today = new Date().toISOString().split('T')[0];
-            const storedDate = localStorage.getItem('wiki_flux_date');
+            const storedDate = localStorage.getItem('wiki_poll_date');
             
             if (storedDate !== today) {
                 dailyCount = 0;
-                localStorage.setItem('wiki_flux_date', today);
-                localStorage.setItem('wiki_flux_count', 0);
+                localStorage.setItem('wiki_poll_date', today);
+                localStorage.setItem('wiki_poll_count', 0);
             } else {
-                dailyCount = parseInt(localStorage.getItem('wiki_flux_count') || 0);
+                dailyCount = parseInt(localStorage.getItem('wiki_poll_count') || 0);
             }
             
             // Cleanup > 7 days
-            const history = JSON.parse(localStorage.getItem('wiki_flux_gallery') || "[]");
+            const history = JSON.parse(localStorage.getItem('wiki_poll_gallery') || "[]");
             const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
             const cleanHistory = history.filter(item => item.timestamp > sevenDaysAgo);
-            localStorage.setItem('wiki_flux_gallery', JSON.stringify(cleanHistory));
+            localStorage.setItem('wiki_poll_gallery', JSON.stringify(cleanHistory));
             
             checkQuotaUI();
         }
 
         function updateLocalStorage() {
-            localStorage.setItem('wiki_flux_count', dailyCount);
+            localStorage.setItem('wiki_poll_count', dailyCount);
         }
 
         function checkQuotaUI() {
@@ -338,16 +376,16 @@
         }
 
         function saveToHistory(url, prompt) {
-            const history = JSON.parse(localStorage.getItem('wiki_flux_gallery') || "[]");
+            const history = JSON.parse(localStorage.getItem('wiki_poll_gallery') || "[]");
             const newItem = { id: Date.now(), url: url, prompt: prompt, timestamp: Date.now() };
             history.unshift(newItem);
-            if(history.length > 15) history.pop();
-            localStorage.setItem('wiki_flux_gallery', JSON.stringify(history));
+            if(history.length > 20) history.pop(); // Keep last 20
+            localStorage.setItem('wiki_poll_gallery', JSON.stringify(history));
             renderHistory();
         }
 
         function renderHistory() {
-            const history = JSON.parse(localStorage.getItem('wiki_flux_gallery') || "[]");
+            const history = JSON.parse(localStorage.getItem('wiki_poll_gallery') || "[]");
             els.history.innerHTML = '';
             if (history.length === 0) {
                 els.history.innerHTML = '<div class="text-white/20 text-xs w-full py-4 text-center border border-dashed border-white/10 rounded-xl">Historique vide</div>';
@@ -355,8 +393,13 @@
             }
             history.forEach(item => {
                 const div = document.createElement('div');
-                div.className = "flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden border border-white/10 cursor-pointer hover:border-brand-500 relative group";
-                div.innerHTML = `<img src="${item.url}" class="w-full h-full object-cover">`;
+                div.className = "flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden border border-white/10 cursor-pointer hover:border-brand-500 relative group transition-all";
+                div.innerHTML = `
+                    <img src="${item.url}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <i class="fa-solid fa-eye text-white"></i>
+                    </div>
+                `;
                 div.onclick = () => {
                     els.img.src = item.url;
                     els.img.classList.remove('hidden');
@@ -369,8 +412,8 @@
         }
 
         window.clearHistory = () => {
-            if(confirm("Tout effacer ?")) {
-                localStorage.removeItem('wiki_flux_gallery');
+            if(confirm("Supprimer l'historique local ?")) {
+                localStorage.removeItem('wiki_poll_gallery');
                 renderHistory();
             }
         };
