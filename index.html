@@ -361,7 +361,7 @@
 
                 <!-- Liste des commentaires -->
                 <div id="comments-list" class="flex flex-col gap-0 p-2 md:p-4 relative z-10">
-                    <div class="text-center py-8 text-white/20 animate-pulse">
+                    <div id="comments-loader" class="text-center py-8 text-white/20 animate-pulse">
                         Synchronisation avec le serveur...
                     </div>
                 </div>
@@ -438,6 +438,7 @@
         // ==========================================
         window.showToast = (message, type = 'info') => {
             const container = document.getElementById('toast-container');
+            if(!container) return;
             const toast = document.createElement('div');
             toast.className = `px-4 py-3 rounded-lg text-sm font-medium shadow-xl flex items-center gap-3 animate-toast-enter backdrop-blur-md border ${
                 type === 'error' ? 'bg-red-500/20 text-red-200 border-red-500/30' : 
@@ -457,7 +458,8 @@
         };
 
         window.closeConfirm = () => {
-            document.getElementById('custom-confirm-modal').style.display = 'none';
+            const modal = document.getElementById('custom-confirm-modal');
+            if(modal) modal.style.display = 'none';
         };
 
         window.showConfirm = (title, message, iconClass, actionCallback) => {
@@ -466,7 +468,7 @@
             document.getElementById('confirm-icon').className = iconClass;
             const btn = document.getElementById('confirm-btn-action');
             
-            // Retirer l'ancien event listener (astuce du clone)
+            // Retrait de l'ancien event listener
             const newBtn = btn.cloneNode(true);
             btn.parentNode.replaceChild(newBtn, btn);
             
@@ -480,11 +482,11 @@
         // ==========================================
         // GROQ API IA (Clé décomposée & Obfusquée)
         // ==========================================
-        // Technique: On masque les fragments dans un tableau
         const _k = ["gsk_pjt", "azapsFrht", "EembR2js", "WGdyb3FY", "iT0KLBuv", "7N7pw3c1", "6sNUt19s"];
         const getGroqKey = () => _k.join("");
 
-        window.callGroqAI = async (messages, model = "llama3-8b-8192") => {
+        // Fonction centralisée appel Groq API - Prise en charge des tokens et température
+        window.callGroqAI = async (messages, model = "llama3-8b-8192", temp = 0.7, maxTokens = 1024) => {
             try {
                 const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                     method: 'POST',
@@ -492,15 +494,19 @@
                         'Authorization': `Bearer ${getGroqKey()}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ model: model, messages: messages, temperature: 0.7, max_tokens: 1024 })
+                    body: JSON.stringify({ model: model, messages: messages, temperature: temp, max_tokens: maxTokens })
                 });
-                const data = await response.json();
                 
-                if (data.error) {
-                    console.error("Groq API Error:", data.error);
+                // Contrôle strict si la réponse HTTP n'est pas OK (ex: 401, 429...)
+                if (!response.ok) {
+                    console.error("Groq HTTP Error:", response.status, response.statusText);
                     return null;
                 }
-                if(data.choices && data.choices.length > 0) {
+
+                const data = await response.json();
+                
+                // Prévention des plantages si data ou choices est manquant
+                if(data && data.choices && data.choices.length > 0 && data.choices[0].message) {
                     return data.choices[0].message.content;
                 }
                 return null;
@@ -510,16 +516,19 @@
             }
         };
 
+        // Fonction de modération IA robuste
         window.moderateText = async (text) => {
-            const prompt = `Agis comme un modérateur strict. Le texte suivant est-il haineux, insultant, toxique, raciste ou est-ce du spam évident ? Réponds UNIQUEMENT par OUI (s'il est inapproprié) ou par NON (s'il est correct). Ne justifie pas ta réponse. Texte: "${text}"`;
-            const response = await window.callGroqAI([{ role: "user", content: prompt }]);
+            // Prompt fermé pour empêcher la créativité de l'IA.
+            const prompt = `Agis comme un modérateur strict. Le texte suivant est-il haineux, insultant, toxique, raciste ou est-ce du spam évident ? Réponds EXACTEMENT ET UNIQUEMENT par le mot OUI ou par le mot NON. Ne fais aucune phrase. Ne rajoute pas de ponctuation. Texte: "${text}"`;
             
-            if (!response) return false; // Par défaut, on laisse passer si l'IA plante
-            const upper = response.toUpperCase();
-            if(upper.includes("OUI") || upper.includes("INAPPROPRIÉ")) {
-                return true;
-            }
-            return false;
+            // Température très basse et max 5 tokens pour obliger à une réponse binaire pure.
+            const response = await window.callGroqAI([{ role: "user", content: prompt }], "llama3-8b-8192", 0.1, 5);
+            
+            if (!response) return false; // Par défaut on laisse passer si l'API est down (fail-safe)
+            
+            // Nettoyage impitoyable de la chaîne retournée pour valider EXACTEMENT le mot voulu
+            const cleanResponse = response.trim().toUpperCase().replace(/[^A-Z]/g, '');
+            return cleanResponse === 'OUI';
         };
 
         // ==========================================
@@ -633,24 +642,70 @@
         const commentsList = document.getElementById('comments-list');
         const commentsRef = ref(db, 'comments');
         
+        // Retrait propre des états de chargement
+        function removeEmptyOrLoaderState() {
+            const loader = document.getElementById('comments-loader');
+            const emptyMsg = document.getElementById('empty-comments-msg');
+            if (loader) loader.remove();
+            if (emptyMsg) emptyMsg.remove();
+        }
+
         get(commentsRef).then(snapshot => {
-            if(!snapshot.exists()) commentsList.innerHTML = '<div class="text-center text-white/30 py-4 text-sm">Soyez le premier à publier.</div>';
+            if(!snapshot.exists()) {
+                removeEmptyOrLoaderState();
+                const emptyDiv = document.createElement('div');
+                emptyDiv.id = 'empty-comments-msg';
+                emptyDiv.className = 'text-center text-white/30 py-4 text-sm';
+                emptyDiv.innerText = 'Soyez le premier à publier.';
+                commentsList.appendChild(emptyDiv);
+            } else {
+                removeEmptyOrLoaderState();
+            }
         });
 
         onChildAdded(commentsRef, (snapshot) => {
-            if(commentsList.innerHTML.includes('Synchronisation') || commentsList.innerHTML.includes('premier')) commentsList.innerHTML = '';
+            removeEmptyOrLoaderState();
             renderComment(snapshot.key, snapshot.val());
         });
 
         onChildRemoved(commentsRef, (snapshot) => {
+            // Suppression du parent complet
             const el = document.getElementById(`comment-${snapshot.key}`);
             if (el) el.remove();
         });
 
         onChildChanged(commentsRef, (snapshot) => {
+            // Ce trigger gère à la fois les likes ET les suppressions/ajouts de replies dans un post
             const data = snapshot.val();
-            const likeCountEl = document.querySelector(`#comment-${snapshot.key} .like-count`);
+            const parentId = snapshot.key;
+            
+            const parentEl = document.getElementById(`comment-${parentId}`);
+            if(!parentEl) return;
+
+            // 1. Mise à jour du compteur de likes du parent
+            const likeCountEl = parentEl.querySelector('.like-count');
             if (likeCountEl) likeCountEl.innerText = data.likes || 0;
+
+            // 2. Synchronisation des Replies
+            const repliesContainer = document.getElementById(`replies-${parentId}`);
+            if (repliesContainer) {
+                const currentReplies = data.replies || {};
+                
+                // Suppression des DOM replies qui n'existent plus dans Firebase
+                Array.from(repliesContainer.children).forEach(child => {
+                    const replyId = child.id.replace('comment-', '');
+                    if (!currentReplies[replyId]) {
+                        child.remove(); // Evite la désynchronisation pointée par le prompt
+                    }
+                });
+
+                // Ajout des nouvelles replies (sécurité)
+                Object.keys(currentReplies).forEach(replyId => {
+                    if (!document.getElementById(`comment-${replyId}`)) {
+                        renderComment(replyId, currentReplies[replyId], true, parentId);
+                    }
+                });
+            }
         });
 
         function renderComment(id, data, isReply = false, parentId = null) {
@@ -762,11 +817,7 @@
                 () => {
                     remove(ref(db, `comments/${path}`)).then(() => {
                         window.showToast("Message supprimé.", "success");
-                        if(path.includes('replies')) {
-                            const id = path.split('/').pop();
-                            const el = document.getElementById(`comment-${id}`);
-                            if(el) el.remove();
-                        }
+                        // Suppression locale inutile car gérée dynamiquement par Firebase onChildChanged / onChildRemoved
                     }).catch(err => window.showToast("Erreur: " + err.message, "error"));
                 }
             );
@@ -788,14 +839,10 @@
                     
                     if(isBad) {
                         try {
-                            // On tente de supprimer sur Firebase
                             await remove(ref(db, `comments/${pathId}`));
                             window.showToast("L'IA a supprimé ce commentaire toxique !", "success");
-                            const id = pathId.split('/').pop();
-                            const el = document.getElementById(`comment-${id}`);
-                            if(el) el.remove();
+                            // La suppression DOM de la vue en cours sera gérée par les listener Firebase automatiquement
                         } catch(err) {
-                            // Si firebase bloque (car on est pas proprio), on le cache en local pour l'utilisateur
                             window.showToast("L'IA a confirmé l'infraction. Masqué localement.", "info");
                             const id = pathId.split('/').pop();
                             const el = document.getElementById(`comment-${id}`);
@@ -847,12 +894,18 @@
             minichatMessages.scrollTop = minichatMessages.scrollHeight;
             minichatHistory.push({ role: "user", content: text });
 
+            // Restriction de l'historique pour éviter l'overflow de Tokens API (Garde le système + 10 messages max)
+            if (minichatHistory.length > 11) {
+                minichatHistory = [minichatHistory[0], ...minichatHistory.slice(-10)];
+            }
+
             const loadDiv = document.createElement('div');
             loadDiv.className = "text-xs text-brand-glow self-start mt-1 italic minichat-loading";
             loadDiv.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Réflexion...';
             minichatMessages.appendChild(loadDiv);
 
-            const aiResponse = await window.callGroqAI(minichatHistory, "llama3-8b-8192");
+            // Appel API normal avec tokens standards (différent de la modération)
+            const aiResponse = await window.callGroqAI(minichatHistory, "llama3-8b-8192", 0.7, 1024);
 
             minichatMessages.querySelectorAll('.minichat-loading').forEach(l => l.remove());
 
@@ -872,7 +925,8 @@
         }
 
         if(minichatSendBtn) minichatSendBtn.addEventListener('click', handleMinichatSend);
-        if(minichatInput) minichatInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') handleMinichatSend(); });
+        // Correctif : Remplacement de keypress par keydown
+        if(minichatInput) minichatInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') handleMinichatSend(); });
 
         // --- SEARCH BAR ---
         const searchInput = document.getElementById('app-search');
