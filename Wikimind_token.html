@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WikiMind Token • Market</title>
+    
+    <!-- Scripts & Styles identiques à l'index pour la cohérence -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js pour le graphique financier -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Toastify pour les notifs stylées -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
+                    colors: {
+                        glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
+                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' },
+                        trade: { up: '#10b981', down: '#ef4444' }
+                    },
+                    animation: { 'fade-in-up': 'fadeInUp 0.5s ease-out forwards' },
+                    keyframes: { fadeInUp: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } } }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #050505; color: #ffffff; overflow-x: hidden; }
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+        .text-gradient { background: linear-gradient(135deg, #ffffff 0%, #a5a6f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        /* Input Remove Arrows */
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        /* Custom Scrollbar for Order Book */
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+    </style>
+</head>
+<body class="selection:bg-brand-500 selection:text-white">
+
+    <!-- AURORA BG -->
+    <div class="fixed inset-0 z-[-10]">
+        <div class="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-brand-600/10 rounded-full blur-[120px]"></div>
+        <div class="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px]"></div>
+    </div>
+
+    <!-- NAVBAR -->
+    <nav class="fixed top-0 w-full z-50 px-6 py-6 transition-all duration-300">
+        <div class="max-w-7xl mx-auto flex justify-between items-center glass-panel rounded-full px-6 py-3">
+            <a href="index.html" class="flex items-center gap-3 group">
+                <div class="w-8 h-8 bg-gradient-to-tr from-white to-gray-400 rounded-lg flex items-center justify-center">
+                    <span class="font-bold text-black text-xs">W</span>
+                </div>
+                <span class="font-display font-bold text-lg tracking-tight">Wiki<span class="text-brand-glow">Token</span></span>
+            </a>
+            
+            <div id="auth-container" class="flex items-center gap-4">
+                <a href="Wikimind_user.html" id="login-btn" class="px-5 py-2 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-gray-200 transition-colors">
+                    Connexion
+                </a>
+                <div id="user-logged" class="hidden flex items-center gap-3">
+                    <div class="text-right hidden md:block">
+                        <div id="user-balance-display" class="text-xs font-bold text-white font-mono">$0.00</div>
+                        <div class="text-[10px] text-green-400">Solde Dispo</div>
+                    </div>
+                    <a href="Wikimind_user.html">
+                        <img id="nav-avatar" src="" class="w-9 h-9 rounded-full border border-white/20 object-cover bg-gray-800">
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="relative pt-32 pb-20 px-4 md:px-6 max-w-7xl mx-auto">
+        
+        <!-- HEADER MARKET -->
+        <div class="flex flex-col md:flex-row justify-between items-end mb-8 animate-fade-in-up">
+            <div>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-brand-500/20 text-brand-glow border border-brand-500/30">TOKEN OFFICIEL</span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 text-white/40 border border-white/10">WMT / USDT</span>
+                </div>
+                <h1 class="text-5xl md:text-6xl font-display font-bold text-white tracking-tighter" id="current-price-display">
+                    ---
+                </h1>
+                <div class="flex items-center gap-3 mt-2 font-mono">
+                    <span id="price-change-pill" class="text-sm px-2 py-1 rounded bg-white/5 text-white/60">--%</span>
+                    <span class="text-xs text-white/40">Vol 24h: <span class="text-white">12.4M</span></span>
+                </div>
+            </div>
+            
+            <!-- MARKET STATS -->
+            <div class="grid grid-cols-3 gap-4 mt-6 md:mt-0 w-full md:w-auto">
+                <div class="glass-panel p-3 rounded-xl text-center">
+                    <div class="text-[10px] text-white/40 uppercase">High 24h</div>
+                    <div class="font-bold text-sm" id="high-24h">--</div>
+                </div>
+                <div class="glass-panel p-3 rounded-xl text-center">
+                    <div class="text-[10px] text-white/40 uppercase">Low 24h</div>
+                    <div class="font-bold text-sm" id="low-24h">--</div>
+                </div>
+                <div class="glass-panel p-3 rounded-xl text-center">
+                    <div class="text-[10px] text-white/40 uppercase">Market Cap</div>
+                    <div class="font-bold text-sm text-brand-glow">420M</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN GRID -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in-up" style="animation-delay: 0.1s;">
+            
+            <!-- CHART SECTION (2/3 width) -->
+            <div class="lg:col-span-2 flex flex-col gap-6">
+                <!-- Graphique -->
+                <div class="glass-panel rounded-3xl p-1 border border-white/10 h-[450px] relative">
+                    <canvas id="tokenChart"></canvas>
+                    <div id="live-indicator" class="absolute top-4 right-4 flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-white/10 backdrop-blur-md">
+                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        <span class="text-[10px] font-bold tracking-widest uppercase text-white/80">En direct</span>
+                    </div>
+                </div>
+
+                <!-- Portfolio Summary -->
+                <div class="glass-panel rounded-3xl p-6 border border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-brand-500/10 flex items-center justify-center text-2xl">💼</div>
+                        <div>
+                            <div class="text-xs text-white/40 uppercase tracking-widest">Vos WikiTokens</div>
+                            <div class="text-2xl font-bold font-display" id="user-token-balance">0.00 WMT</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-8 text-right">
+                        <div>
+                            <div class="text-[10px] text-white/40 uppercase">Valeur Actuelle</div>
+                            <div class="font-mono text-lg" id="user-token-value">$0.00</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-white/40 uppercase">Profit / Perte</div>
+                            <div class="font-mono text-lg font-bold" id="user-pnl">--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TRADING PANEL (1/3 width) -->
+            <div class="lg:col-span-1 flex flex-col gap-6">
+                
+                <!-- ORDER BOX -->
+                <div class="glass-panel rounded-3xl p-6 border border-white/10 relative overflow-hidden">
+                    <!-- Background decor -->
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-brand-500/5 rounded-full blur-3xl"></div>
+
+                    <!-- Tabs -->
+                    <div class="flex bg-black/20 p-1 rounded-xl mb-6">
+                        <button onclick="switchTab('buy')" id="tab-buy" class="flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all bg-brand-600 text-white shadow-lg">Acheter</button>
+                        <button onclick="switchTab('sell')" id="tab-sell" class="flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all text-white/40 hover:text-white">Vendre</button>
+                    </div>
+
+                    <!-- Input Amount -->
+                    <div class="mb-4">
+                        <div class="flex justify-between text-xs mb-2">
+                            <span class="text-white/40">Montant (USD)</span>
+                            <span class="text-white/40 cursor-pointer hover:text-brand-glow" id="max-btn">Max: <span id="max-amount-display">$0.00</span></span>
+                        </div>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 font-bold">$</span>
+                            <input type="number" id="trade-amount" placeholder="0.00" class="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-8 pr-4 font-mono text-white focus:outline-none focus:border-brand-500 transition-colors">
+                        </div>
+                    </div>
+
+                    <!-- Estimation -->
+                    <div class="mb-6 p-4 rounded-xl bg-white/5 border border-white/5 space-y-2">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-white/40">Prix unitaire</span>
+                            <span class="font-mono" id="trade-price-display">Loading...</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-white/40">Estimation WMT</span>
+                            <span class="font-mono text-brand-glow font-bold" id="trade-estimate">0.00 WMT</span>
+                        </div>
+                        <div class="flex justify-between text-xs pt-2 border-t border-white/5">
+                            <span class="text-white/40">Frais (0.1%)</span>
+                            <span class="font-mono text-white/60">$0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button id="trade-btn" class="w-full py-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold font-display uppercase tracking-widest transition-all shadow-lg shadow-brand-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Acheter WMT
+                    </button>
+                    
+                    <p class="text-[10px] text-center text-white/20 mt-4">
+                        Trading simulé. Les fonds sont fictifs mais le talent est réel.
+                    </p>
+                </div>
+
+                <!-- MARKET SENTIMENT (Fake Data) -->
+                <div class="glass-panel rounded-3xl p-6 border border-white/10">
+                    <h3 class="text-sm font-bold mb-4 font-display">Sentiment du Marché</h3>
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="h-2 flex-1 bg-green-500 rounded-l-full" style="width: 65%"></div>
+                        <div class="h-2 flex-1 bg-red-500 rounded-r-full" style="width: 35%"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] font-bold uppercase">
+                        <span class="text-green-400">65% Acheteurs</span>
+                        <span class="text-red-400">35% Vendeurs</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FIREBASE & LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // CONFIG FIREBASE (IDENTIQUE INDEX)
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+            authDomain: "wikimind-3-comments.firebaseapp.com",
+            projectId: "wikimind-3-comments",
+            appId: "1:137479541640:web:4ed2510a9908055052e03d"
+        };
+        // Utilisation d'une DB spécifique pour l'économie si besoin, ici on utilise la même que la communauté
+        // Mais pour l'économie, idéalement on sépare. Pour la démo, on utilise la DB community.
+        const communityConfig = {
+            apiKey: "AIzaSyCn5IyWS4deyVRG7zYY2qLQiNE49aD8a-Y",
+            authDomain: "wikimind-communauty.firebaseapp.com",
+            databaseURL: "https://wikimind-communauty-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "wikimind-communauty"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        
+        const dbApp = initializeApp(communityConfig, "economyDB");
+        const db = getDatabase(dbApp);
+
+        // --- VARIABLES GLOBALES ---
+        let currentPrice = 0;
+        let userWallet = { usdt: 10000, tokens: 0, avgPrice: 0 }; // Défaut 10k$
+        let currentUser = null;
+        let currentTab = 'buy';
+        let chartInstance = null;
+
+        // --- GENERATEUR DE PRIX DETERMINISTE ---
+        // Cette fonction permet à tout le monde d'avoir le même prix au même moment
+        function getPseudoRandom(seed) {
+            var x = Math.sin(seed) * 10000;
+            return x - Math.floor(x);
+        }
+
+        function getPriceForTime(timestamp) {
+            // On arrondit à la minute pour la "bougie"
+            const minute = Math.floor(timestamp / 60000);
+            
+            // Seed stable mais changeante
+            const seed = minute * 123.45;
+            const random = getPseudoRandom(seed);
+            
+            // Tendance générale (sinusoidale sur 2h)
+            const trend = Math.sin(timestamp / (1000 * 60 * 60 * 2)) * 50; 
+            
+            // Volatilité
+            const noise = (random - 0.5) * 20; 
+
+            // Prix de base ~ 150$
+            let price = 150 + trend + noise;
+            
+            // Empêcher prix négatif
+            return Math.max(1, price);
+        }
+
+        // --- INITIALISATION CHART.JS ---
+        function initChart() {
+            const ctx = document.getElementById('tokenChart').getContext('2d');
+            
+            // Générer l'historique (60 dernières minutes)
+            const now = Date.now();
+            const labels = [];
+            const dataPoints = [];
+            
+            for(let i = 60; i >= 0; i--) {
+                const t = now - (i * 60000);
+                labels.push(new Date(t).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+                dataPoints.push(getPriceForTime(t));
+            }
+
+            // Gradient stylé
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(99, 102, 241, 0.5)'); // Brand color
+            gradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Prix WMT ($)',
+                        data: dataPoints,
+                        borderColor: '#6366f1',
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false, backgroundColor: 'rgba(0,0,0,0.8)', titleColor: '#fff', bodyColor: '#ccc', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1 } },
+                    scales: {
+                        x: { grid: { display: false, drawBorder: false }, ticks: { color: 'rgba(255,255,255,0.3)', maxTicksLimit: 6 } },
+                        y: { position: 'right', grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: 'rgba(255,255,255,0.3)', callback: function(value) { return '$' + value.toFixed(2); } } }
+                    },
+                    animation: { duration: 0 }
+                }
+            });
+        }
+
+        // --- BOUCLE DE JEU (UPDATE PRIX) ---
+        function updateMarket() {
+            const now = Date.now();
+            const newPrice = getPriceForTime(now);
+            
+            // Interpolation pour animation fluide (optionnel, ici on met à jour brut)
+            currentPrice = newPrice;
+
+            // Mise à jour UI Prix
+            const display = document.getElementById('current-price-display');
+            const pill = document.getElementById('price-change-pill');
+            
+            // Calcul variation (vs il y a 5 min)
+            const oldPrice = getPriceForTime(now - 300000); 
+            const change = ((currentPrice - oldPrice) / oldPrice) * 100;
+            
+            display.innerText = `$${currentPrice.toFixed(2)}`;
+            display.style.color = change >= 0 ? '#10b981' : '#ef4444';
+            
+            pill.innerText = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+            pill.className = `text-sm px-2 py-1 rounded font-bold ${change >= 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`;
+
+            // Stats fake (basées sur prix)
+            document.getElementById('high-24h').innerText = `$${(currentPrice * 1.05).toFixed(2)}`;
+            document.getElementById('low-24h').innerText = `$${(currentPrice * 0.92).toFixed(2)}`;
+
+            // Mise à jour Chart (Dernier point)
+            if(chartInstance) {
+                const labelNow = new Date(now).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const lastLabel = chartInstance.data.labels[chartInstance.data.labels.length - 1];
+
+                // Si nouvelle minute, on push
+                if(labelNow !== lastLabel) {
+                    chartInstance.data.labels.push(labelNow);
+                    chartInstance.data.datasets[0].data.push(currentPrice);
+                    // On garde que 60 points
+                    if(chartInstance.data.labels.length > 60) {
+                        chartInstance.data.labels.shift();
+                        chartInstance.data.datasets[0].data.shift();
+                    }
+                } else {
+                    // Sinon on update le dernier point
+                    chartInstance.data.datasets[0].data[chartInstance.data.datasets[0].data.length - 1] = currentPrice;
+                }
+                chartInstance.update('none'); // Update sans anim complète
+            }
+
+            // Update trade estimate
+            updateTradeEstimate();
+            updatePortfolioUI();
+        }
+
+        // --- GESTION UTILISATEUR & PORTEFEUILLE ---
+        onAuthStateChanged(auth, async (user) => {
+            const loginBtn = document.getElementById('login-btn');
+            const userLogged = document.getElementById('user-logged');
+            const tradeBtn = document.getElementById('trade-btn');
+
+            if (user) {
+                currentUser = user;
+                if(loginBtn) loginBtn.classList.add('hidden');
+                if(userLogged) { userLogged.classList.remove('hidden'); userLogged.classList.add('flex'); }
+                document.getElementById('nav-avatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}`;
+
+                tradeBtn.disabled = false;
+                tradeBtn.innerText = currentTab === 'buy' ? "Acheter WMT" : "Vendre WMT";
+
+                // CHARGER LE WALLET DEPUIS FIREBASE
+                const walletRef = ref(db, `users/${user.uid}/wallet`);
+                const snapshot = await get(walletRef);
+                
+                if (snapshot.exists()) {
+                    userWallet = snapshot.val();
+                } else {
+                    // Initialisation nouveau user (Airdrop)
+                    userWallet = { usdt: 10000, tokens: 0, avgPrice: 0 };
+                    await set(walletRef, userWallet);
+                    Toastify({ text: "🎁 Bienvenue ! 10,000$ (virtuels) ajoutés à votre compte.", duration: 5000, style: { background: "#10b981" } }).showToast();
+                }
+                updatePortfolioUI();
+
+            } else {
+                currentUser = null;
+                if(loginBtn) loginBtn.classList.remove('hidden');
+                if(userLogged) { userLogged.classList.add('hidden'); userLogged.classList.remove('flex'); }
+                
+                tradeBtn.disabled = true;
+                tradeBtn.innerText = "Connectez-vous pour trader";
+                
+                userWallet = { usdt: 0, tokens: 0, avgPrice: 0 };
+                updatePortfolioUI();
+            }
+        });
+
+        function updatePortfolioUI() {
+            document.getElementById('user-balance-display').innerText = `$${userWallet.usdt.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            document.getElementById('max-amount-display').innerText = currentTab === 'buy' 
+                ? `$${userWallet.usdt.toFixed(2)}` 
+                : `${userWallet.tokens.toFixed(4)} WMT`;
+
+            document.getElementById('user-token-balance').innerText = `${userWallet.tokens.toFixed(4)} WMT`;
+            
+            const currentValue = userWallet.tokens * currentPrice;
+            document.getElementById('user-token-value').innerText = `$${currentValue.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+
+            // Calcul PNL (Profit and Loss)
+            if(userWallet.tokens > 0) {
+                const invested = userWallet.tokens * userWallet.avgPrice;
+                const pnl = currentValue - invested;
+                const pnlPercent = (pnl / invested) * 100;
+                const sign = pnl >= 0 ? '+' : '';
+                const color = pnl >= 0 ? 'text-green-400' : 'text-red-400';
+                document.getElementById('user-pnl').innerHTML = `<span class="${color}">${sign}$${Math.abs(pnl).toFixed(2)} (${sign}${pnlPercent.toFixed(2)}%)</span>`;
+            } else {
+                document.getElementById('user-pnl').innerText = "--";
+            }
+        }
+
+        // --- TRADING LOGIC ---
+        window.switchTab = (tab) => {
+            currentTab = tab;
+            const btnBuy = document.getElementById('tab-buy');
+            const btnSell = document.getElementById('tab-sell');
+            const mainBtn = document.getElementById('trade-btn');
+            
+            if(tab === 'buy') {
+                btnBuy.className = "flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all bg-brand-600 text-white shadow-lg";
+                btnSell.className = "flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all text-white/40 hover:text-white";
+                mainBtn.className = "w-full py-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold font-display uppercase tracking-widest transition-all shadow-lg shadow-brand-500/20";
+                mainBtn.innerText = currentUser ? "Acheter WMT" : "Connectez-vous";
+            } else {
+                btnSell.className = "flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all bg-red-600 text-white shadow-lg";
+                btnBuy.className = "flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all text-white/40 hover:text-white";
+                mainBtn.className = "w-full py-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold font-display uppercase tracking-widest transition-all shadow-lg shadow-red-500/20";
+                mainBtn.innerText = currentUser ? "Vendre WMT" : "Connectez-vous";
+            }
+            
+            document.getElementById('trade-amount').value = '';
+            updatePortfolioUI(); // Pour changer le label "Max"
+            updateTradeEstimate();
+        };
+
+        const amountInput = document.getElementById('trade-amount');
+        amountInput.addEventListener('input', updateTradeEstimate);
+
+        function updateTradeEstimate() {
+            const amount = parseFloat(amountInput.value) || 0;
+            const estimateEl = document.getElementById('trade-estimate');
+            document.getElementById('trade-price-display').innerText = `$${currentPrice.toFixed(2)}`;
+
+            if(currentTab === 'buy') {
+                // Input est en USD
+                const tokens = amount / currentPrice;
+                estimateEl.innerText = `${tokens.toFixed(4)} WMT`;
+            } else {
+                // Input est en WMT (pour simplifier on va dire que l'input reste en USD pour la valeur de vente, ou on change la logique)
+                // Pour rester simple : L'input est TOUJOURS en USD (valeur de ce qu'on veut acheter/vendre)
+                // Donc si je mets 100$, je vends pour 100$ de WMT
+                const tokensToSell = amount / currentPrice;
+                estimateEl.innerText = `${tokensToSell.toFixed(4)} WMT`;
+            }
+        }
+
+        // BOUTON MAX
+        document.getElementById('max-btn').addEventListener('click', () => {
+            if(currentTab === 'buy') {
+                amountInput.value = userWallet.usdt.toFixed(2);
+            } else {
+                // Pour vendre tout, on calcule la valeur en USD de tous les tokens
+                amountInput.value = (userWallet.tokens * currentPrice).toFixed(2);
+            }
+            updateTradeEstimate();
+        });
+
+        // EXECUTION TRADE
+        document.getElementById('trade-btn').addEventListener('click', async () => {
+            if(!currentUser) {
+                window.location.href = 'Wikimind_user.html';
+                return;
+            }
+
+            const amountUSD = parseFloat(amountInput.value);
+            if(!amountUSD || amountUSD <= 0) return;
+
+            const btn = document.getElementById('trade-btn');
+            const originalText = btn.innerText;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Traitement...';
+
+            try {
+                if(currentTab === 'buy') {
+                    // ACHAT
+                    if(amountUSD > userWallet.usdt) throw new Error("Fonds insuffisants.");
+                    
+                    const tokensReceived = amountUSD / currentPrice;
+                    
+                    // Calcul nouveau prix moyen pondéré
+                    const totalTokens = userWallet.tokens + tokensReceived;
+                    const totalCost = (userWallet.tokens * userWallet.avgPrice) + amountUSD;
+                    const newAvgPrice = totalCost / totalTokens;
+
+                    userWallet.usdt -= amountUSD;
+                    userWallet.tokens = totalTokens;
+                    userWallet.avgPrice = newAvgPrice;
+
+                    Toastify({ text: `🚀 Achat réussi : +${tokensReceived.toFixed(2)} WMT`, duration: 3000, style: { background: "#10b981" } }).showToast();
+
+                } else {
+                    // VENTE
+                    const tokensToSell = amountUSD / currentPrice;
+                    if(tokensToSell > userWallet.tokens) throw new Error("Solde de tokens insuffisant.");
+
+                    userWallet.tokens -= tokensToSell;
+                    userWallet.usdt += amountUSD;
+                    
+                    // Si on a tout vendu, reset avg price
+                    if(userWallet.tokens < 0.0001) { 
+                        userWallet.tokens = 0; 
+                        userWallet.avgPrice = 0; 
+                    }
+
+                    Toastify({ text: `💰 Vente réussie : +$${amountUSD.toFixed(2)}`, duration: 3000, style: { background: "#6366f1" } }).showToast();
+                }
+
+                // Sauvegarde Firebase
+                await update(ref(db, `users/${currentUser.uid}/wallet`), userWallet);
+                
+                amountInput.value = '';
+                updatePortfolioUI();
+
+            } catch (err) {
+                Toastify({ text: "⚠️ " + err.message, duration: 3000, style: { background: "#ef4444" } }).showToast();
+            } finally {
+                btn.disabled = false;
+                btn.innerText = originalText;
+            }
+        });
+
+        // --- DÉMARRAGE ---
+        initChart();
+        setInterval(updateMarket, 1000); // Update prix chaque seconde (lissage)
+        updateMarket();
+
+    </script>
+</body>
+</html>
