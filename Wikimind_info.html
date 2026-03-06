@@ -3,16 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#050505">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>WikiMind Info - Apprentissage Quotidien</title>
+    
+    <!-- PWA Meta Tags (Pour l'installation sur téléphone) -->
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>WikiMind Info - Savoir Quotidien</title>
+    <meta name="apple-mobile-web-app-title" content="WM Info">
+    <!-- Pour un vrai fonctionnement PWA, vous devrez créer un fichier manifest.json à la racine -->
+    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22WikiMind%20Info%22%2C%22short_name%22%3A%22WM%20Info%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23050505%22%2C%22theme_color%22%3A%22%236366f1%22%7D">
 
+    <!-- Fonts & Icons -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
+    
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -20,16 +24,16 @@
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
                     colors: {
-                        glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
-                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' },
-                        streak: { 500: '#f59e0b', glow: '#fcd34d' }
+                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' }
                     },
                     animation: { 
-                        'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                        'bounce-slow': 'bounce 3s infinite',
+                        'pulse-glow': 'pulseGlow 2s infinite'
                     },
                     keyframes: { 
-                        fadeInUp: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } }
+                        fadeIn: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+                        pulseGlow: { '0%, 100%': { opacity: 1, transform: 'scale(1)' }, '50%': { opacity: 0.8, transform: 'scale(1.05)' } }
                     }
                 }
             }
@@ -42,417 +46,587 @@
             border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         }
         .text-gradient { background: linear-gradient(135deg, #ffffff 0%, #a5a6f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .streak-gradient { background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .theme-btn.active { background-color: rgba(99, 102, 241, 0.2); border-color: #6366f1; color: #818cf8; }
+        .checkbox-theme:checked + div { background-color: rgba(99, 102, 241, 0.2); border-color: #6366f1; color: white; }
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
         
-        /* Loading spinner */
+        /* Loading Spinner */
         .loader { border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid #6366f1; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Markdown style content */
+        .ai-content h3 { font-size: 1.25rem; font-weight: bold; margin-bottom: 0.5rem; color: #818cf8; font-family: 'Space Grotesk', sans-serif;}
+        .ai-content p { margin-bottom: 1rem; color: rgba(255,255,255,0.8); line-height: 1.6; }
+        .ai-content ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: rgba(255,255,255,0.8); }
+        .ai-content strong { color: white; }
     </style>
 </head>
 <body class="selection:bg-brand-500 selection:text-white min-h-screen flex flex-col">
 
+    <!-- AURORA BG -->
     <canvas id="aurora-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
+    
+    <!-- TOASTS -->
+    <div id="toast-container"></div>
 
-    <nav class="w-full z-50 px-6 py-4 flex justify-between items-center bg-black/20 backdrop-blur-md border-b border-white/5">
-        <a href="index.html" class="flex items-center gap-3 group">
-            <div class="w-8 h-8 bg-gradient-to-tr from-white to-gray-400 rounded-lg flex items-center justify-center">
-                <span class="font-bold text-black text-xs">W</span>
+    <!-- NAVBAR -->
+    <nav class="w-full z-50 px-4 py-4 transition-all duration-300">
+        <div class="max-w-4xl mx-auto flex justify-between items-center glass-panel rounded-full px-6 py-3">
+            <a href="index.html" class="flex items-center gap-3 group">
+                <div class="w-8 h-8 bg-gradient-to-tr from-brand-500 to-purple-500 rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-lightbulb text-white text-xs"></i>
+                </div>
+                <span class="font-display font-bold text-lg tracking-tight">WikiMind <span class="text-brand-glow">Info</span></span>
+            </a>
+
+            <!-- User Info / Install Btn -->
+            <div class="flex items-center gap-4">
+                <button id="install-pwa-btn" class="hidden md:block text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition text-white/70 font-bold">
+                    <i class="fa-solid fa-download mr-1"></i> Installer
+                </button>
+                <div id="nav-user-profile" class="hidden items-center gap-3 cursor-pointer" onclick="window.logout()">
+                    <div class="text-right hidden md:block">
+                        <div id="nav-username" class="text-xs font-bold text-white">Profil</div>
+                        <div class="text-[10px] text-brand-glow">Déconnexion</div>
+                    </div>
+                    <img id="nav-avatar" src="" class="w-9 h-9 rounded-full border border-white/20 object-cover bg-gray-800">
+                </div>
             </div>
-            <span class="font-display font-bold text-lg tracking-tight">WikiMind <span class="text-white/40 font-normal">Info</span></span>
-        </a>
-        <div id="nav-streak" class="hidden flex items-center gap-2 glass-panel px-3 py-1.5 rounded-full border-streak-500/30">
-            <i class="fa-solid fa-fire text-streak-500"></i>
-            <span id="streak-count" class="font-bold text-sm">0</span>
         </div>
-        <button id="pwa-install-btn" class="hidden bg-white/10 hover:bg-white/20 text-white text-xs px-3 py-1.5 rounded-full transition-all">
-            <i class="fa-solid fa-download mr-1"></i> Installer
-        </button>
     </nav>
 
-    <main class="flex-1 w-full max-w-3xl mx-auto p-4 md:p-8 flex flex-col justify-center relative">
-        
-        <div id="global-loader" class="flex flex-col items-center justify-center h-64">
-            <div class="loader mb-4 w-12 h-12 border-4"></div>
-            <p class="text-white/40 text-sm animate-pulse">Initialisation de l'IA...</p>
+    <!-- MAIN CONTAINER -->
+    <main class="flex-1 max-w-4xl mx-auto w-full px-4 py-8 relative flex flex-col items-center justify-center">
+
+        <!-- 1. LOADING SCREEN -->
+        <div id="loading-screen" class="flex flex-col items-center justify-center animate-pulse-glow">
+            <div class="loader w-12 h-12 mb-4"></div>
+            <p class="text-white/50 text-sm font-display tracking-widest uppercase">Initialisation...</p>
         </div>
 
-        <div id="view-auth" class="hidden glass-panel p-8 rounded-3xl animate-fade-in-up text-center border-brand-500/20 shadow-lg shadow-brand-500/10">
-            <div class="w-16 h-16 bg-brand-500/20 text-brand-glow rounded-2xl flex items-center justify-center text-3xl mx-auto mb-6">
-                <i class="fa-solid fa-brain"></i>
-            </div>
-            <h1 class="text-3xl font-display font-bold mb-2">Rejoignez WikiMind Info</h1>
-            <p class="text-white/60 text-sm mb-8">Une nouvelle connaissance chaque jour pour nourrir votre esprit. Connectez-vous pour commencer votre série.</p>
-            
-            <div class="space-y-3 max-w-sm mx-auto">
-                <button onclick="loginWithGoogle()" class="w-full bg-white text-black font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-3">
-                    <i class="fa-brands fa-google text-red-500"></i> Continuer avec Google
-                </button>
-                <button onclick="loginWithEmail()" class="w-full bg-white/5 border border-white/10 text-white font-bold py-3 rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center gap-3">
-                    <i class="fa-solid fa-envelope"></i> Continuer avec Email (Démo)
-                </button>
-            </div>
-        </div>
-
-        <div id="view-onboarding" class="hidden glass-panel p-8 rounded-3xl animate-fade-in-up border-brand-500/20">
-            <h2 class="text-3xl font-display font-bold mb-2">Personnalisez votre expérience</h2>
-            <p class="text-white/60 text-sm mb-6">Quels sujets vous passionnent le plus ? (Sélectionnez-en au moins 1)</p>
-            
-            <div id="themes-container" class="flex flex-wrap gap-3 mb-8">
+        <!-- 2. AUTHENTICATION SECTION (If not logged in) -->
+        <section id="auth-section" class="hidden w-full max-w-md animate-fade-in">
+            <div class="glass-panel p-8 rounded-3xl text-center">
+                <h2 class="text-3xl font-display font-bold mb-2">Bienvenue</h2>
+                <p class="text-white/60 text-sm mb-8">Connectez-vous pour configurer votre apprentissage quotidien.</p>
+                
+                <div class="space-y-3 mb-6">
+                    <button onclick="window.loginGoogle()" class="w-full flex items-center justify-center gap-3 bg-white text-black py-3 rounded-xl font-bold text-sm hover:bg-gray-200 transition">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" class="w-5 h-5"> Continuer avec Google
+                    </button>
                 </div>
 
-            <div class="mb-8">
-                <h3 class="font-bold text-sm mb-3"><i class="fa-regular fa-bell text-brand-glow mr-2"></i> Heure de la notification</h3>
-                <input type="time" id="notif-time" value="09:00" class="bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-brand-500 focus:outline-none">
-                <p class="text-[10px] text-white/40 mt-2">Nous demanderons l'autorisation d'envoyer des notifications sur cet appareil.</p>
+                <div class="flex items-center gap-3 my-6 text-white/30 text-xs uppercase font-bold">
+                    <hr class="flex-1 border-white/10"> OU <hr class="flex-1 border-white/10">
+                </div>
+
+                <form id="email-auth-form" class="space-y-4">
+                    <input type="email" id="auth-email" placeholder="Adresse email" required class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-500 transition">
+                    <input type="password" id="auth-password" placeholder="Mot de passe" required class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-500 transition">
+                    <button type="submit" id="auth-submit-btn" class="w-full bg-brand-600 hover:bg-brand-500 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-brand-500/20 transition">Connexion / Inscription</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- 3. ONBOARDING SECTION (First time setup) -->
+        <section id="onboarding-section" class="hidden w-full animate-fade-in">
+            <div class="glass-panel p-8 rounded-3xl">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-display font-bold mb-2">Personnalisation <i class="fa-solid fa-sliders text-brand-glow"></i></h2>
+                    <p class="text-white/60 text-sm">Qu'aimeriez-vous apprendre chaque jour ?</p>
+                </div>
+
+                <form id="preferences-form">
+                    <h3 class="font-bold mb-3 text-sm uppercase tracking-wider text-white/80">1. Thèmes favoris</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+                        <label class="cursor-pointer relative">
+                            <input type="checkbox" value="Science" class="checkbox-theme sr-only">
+                            <div class="border border-white/10 bg-white/5 rounded-xl p-3 text-center text-sm font-medium text-white/60 transition-all hover:bg-white/10">🧪 Science</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="checkbox" value="Histoire" class="checkbox-theme sr-only">
+                            <div class="border border-white/10 bg-white/5 rounded-xl p-3 text-center text-sm font-medium text-white/60 transition-all hover:bg-white/10">🏛️ Histoire</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="checkbox" value="Espace" class="checkbox-theme sr-only">
+                            <div class="border border-white/10 bg-white/5 rounded-xl p-3 text-center text-sm font-medium text-white/60 transition-all hover:bg-white/10">🚀 Espace</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="checkbox" value="Technologie" class="checkbox-theme sr-only">
+                            <div class="border border-white/10 bg-white/5 rounded-xl p-3 text-center text-sm font-medium text-white/60 transition-all hover:bg-white/10">💻 Tech</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="checkbox" value="Art" class="checkbox-theme sr-only">
+                            <div class="border border-white/10 bg-white/5 rounded-xl p-3 text-center text-sm font-medium text-white/60 transition-all hover:bg-white/10">🎨 Art</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="checkbox" value="Psychologie" class="checkbox-theme sr-only">
+                            <div class="border border-white/10 bg-white/5 rounded-xl p-3 text-center text-sm font-medium text-white/60 transition-all hover:bg-white/10">🧠 Psycho</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="checkbox" value="Nature" class="checkbox-theme sr-only">
+                            <div class="border border-white/10 bg-white/5 rounded-xl p-3 text-center text-sm font-medium text-white/60 transition-all hover:bg-white/10">🌿 Nature</div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="checkbox" value="Philosophie" class="checkbox-theme sr-only">
+                            <div class="border border-white/10 bg-white/5 rounded-xl p-3 text-center text-sm font-medium text-white/60 transition-all hover:bg-white/10">🤔 Philo</div>
+                        </label>
+                    </div>
+
+                    <h3 class="font-bold mb-3 text-sm uppercase tracking-wider text-white/80">2. Heure de Notification</h3>
+                    <div class="flex items-center gap-4 mb-8 bg-white/5 p-4 rounded-xl border border-white/10">
+                        <i class="fa-regular fa-bell text-xl text-brand-glow"></i>
+                        <input type="time" id="notif-time" value="09:00" class="bg-transparent border-none text-xl font-bold text-white focus:outline-none flex-1 [color-scheme:dark]">
+                    </div>
+
+                    <button type="button" onclick="window.savePreferences()" id="save-prefs-btn" class="w-full bg-brand-600 hover:bg-brand-500 text-white py-4 rounded-xl font-bold text-sm shadow-lg shadow-brand-500/20 transition flex justify-center items-center gap-2">
+                        Commencer l'expérience <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- 4. DASHBOARD SECTION -->
+        <section id="dashboard-section" class="hidden w-full flex-col gap-6 animate-fade-in">
+            
+            <!-- Streak Banner -->
+            <div class="glass-panel rounded-2xl p-4 flex justify-between items-center bg-gradient-to-r from-orange-500/10 to-red-500/10 border-orange-500/20">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-500 text-xl animate-bounce-slow">
+                        <i class="fa-solid fa-fire"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-white/60 uppercase font-bold tracking-widest">Série d'apprentissage</div>
+                        <div class="font-display font-bold text-lg"><span id="streak-count" class="text-orange-400">0</span> Jours consécutifs</div>
+                    </div>
+                </div>
+                <div id="streak-status" class="text-xs bg-orange-500/20 text-orange-300 px-3 py-1 rounded-full border border-orange-500/30">
+                    Aujourd'hui validé !
+                </div>
             </div>
 
-            <button onclick="savePreferences()" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-brand-500/20">
-                Commencer l'aventure <i class="fa-solid fa-arrow-right ml-2"></i>
-            </button>
-        </div>
-
-        <div id="view-dashboard" class="hidden animate-fade-in-up space-y-6">
-            
-            <div class="glass-panel p-6 md:p-8 rounded-3xl relative overflow-hidden group">
-                <div class="absolute -top-24 -right-24 w-48 h-48 bg-brand-500/20 blur-3xl rounded-full"></div>
+            <!-- Info of the Day -->
+            <div class="glass-panel rounded-3xl p-6 md:p-10 relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-40 h-40 bg-brand-500/20 blur-3xl rounded-full"></div>
                 
                 <div class="flex justify-between items-start mb-6 relative z-10">
                     <div>
-                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-brand-500/30 bg-brand-500/10 text-brand-glow text-[10px] uppercase font-bold tracking-[0.2em] mb-3">
-                            Info du Jour
-                        </div>
-                        <h2 class="text-2xl font-display font-bold text-white">Prêt pour votre dose de savoir ?</h2>
+                        <h2 class="text-3xl font-display font-bold text-gradient mb-1">Votre Savoir du Jour</h2>
+                        <p id="dashboard-topics" class="text-white/40 text-xs uppercase tracking-widest">Généré selon vos préférences</p>
                     </div>
-                    <button onclick="generateDailyInfo(true)" class="text-white/40 hover:text-white transition-colors text-xl" title="Régénérer">
+                    <button onclick="window.generateDailyInfo(true)" class="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/60 hover:text-white transition" title="Regénérer (Force)">
                         <i class="fa-solid fa-rotate-right"></i>
                     </button>
                 </div>
 
-                <div id="daily-info-content" class="min-h-[150px] relative z-10 bg-black/30 p-5 rounded-2xl border border-white/5 text-white/80 leading-relaxed text-sm md:text-base">
+                <div id="daily-info-content" class="ai-content bg-black/40 rounded-2xl p-6 border border-white/5 min-h-[200px] relative z-10">
+                    <!-- Contenu généré par l'IA ici -->
+                    <div class="flex justify-center items-center h-full opacity-50">
+                        <div class="loader mr-3"></div> Création de la connaissance par WikiMind AI...
                     </div>
+                </div>
             </div>
 
-            <div class="glass-panel p-6 rounded-3xl border-white/5">
-                <h3 class="text-lg font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles text-brand-glow"></i> Sujet Personnalisé</h3>
-                <p class="text-xs text-white/50 mb-4">Envie d'apprendre quelque chose de précis aujourd'hui ? (Pas d'actualité)</p>
+            <!-- Custom Subject Generator -->
+            <div class="glass-panel rounded-2xl p-6 border border-brand-500/20">
+                <h3 class="font-display font-bold text-lg mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles text-brand-glow"></i> Curiosité Spécifique
+                </h3>
+                <p class="text-white/50 text-xs mb-4">Posez une question ou donnez un thème précis (hors actualité).</p>
                 <div class="flex gap-2">
-                    <input type="text" id="custom-subject-input" placeholder="Ex: L'origine de l'univers, la Rome antique..." class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-500 transition-colors">
-                    <button onclick="generateCustomInfo()" id="custom-btn" class="bg-brand-600 hover:bg-brand-500 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2">
-                        Générer
+                    <input type="text" id="custom-subject-input" placeholder="Ex: Comment fonctionnent les trous noirs ?" class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-500 transition">
+                    <button onclick="window.generateCustomInfo()" id="custom-btn" class="bg-brand-600 hover:bg-brand-500 text-white px-6 py-3 rounded-xl font-bold text-sm transition shadow-lg shadow-brand-500/20">
+                        Explorer
                     </button>
                 </div>
-                <div id="custom-info-content" class="mt-4 text-sm text-white/80 hidden bg-brand-500/5 p-4 rounded-xl border border-brand-500/20"></div>
+                <div id="custom-info-content" class="ai-content mt-4 hidden bg-white/5 rounded-xl p-4 border border-white/10 text-sm"></div>
             </div>
-        </div>
+
+        </section>
 
     </main>
 
+    <!-- SCRIPTS CORE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // CONFIGURATIONS FIREBASE (Tirées de ton index.html)
-        const authConfig = {
+        // ==========================================
+        // CONFIGURATION FIREBASE (WikiMind Auth & DB)
+        // ==========================================
+        const firebaseConfig = {
             apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
             authDomain: "wikimind-3-comments.firebaseapp.com",
             projectId: "wikimind-3-comments",
-            appId: "1:137479541640:web:4ed2510a9908055052e03d"
+            appId: "1:137479541640:web:4ed2510a9908055052e03d",
+            // Assuming realtime DB uses the same project structure based on standard Firebase setups
+            databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app" 
         };
-        const authApp = initializeApp(authConfig); 
-        const auth = getAuth(authApp);
-
-        // Attention : Règle DB -> .read & .write === auth.uid pour "users"
-        const communityConfig = {
+        
+        // Note : Si la DB est "wikimind-communauty", j'utilise l'autre config donnée dans l'index.html
+        const dbConfig = {
             apiKey: "AIzaSyCn5IyWS4deyVRG7zYY2qLQiNE49aD8a-Y",
             authDomain: "wikimind-communauty.firebaseapp.com",
             databaseURL: "https://wikimind-communauty-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "wikimind-communauty"
         };
-        const communityApp = initializeApp(communityConfig, "communityApp");
-        const db = getDatabase(communityApp);
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        
+        const dbApp = initializeApp(dbConfig, "dbApp");
+        const db = getDatabase(dbApp);
 
         const MISTRAL_API_KEY = "SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9";
 
-        // ETAT GLOBAL
         let currentUser = null;
-        let userData = null;
-        const availableThemes = ["Sciences", "Histoire", "Technologie", "Espace", "Art", "Philosophie", "Psychologie", "Biologie", "Mythologie"];
-        let selectedThemes = new Set();
-
-        // UI ELEMENTS
-        const viewAuth = document.getElementById('view-auth');
-        const viewOnboarding = document.getElementById('view-onboarding');
-        const viewDashboard = document.getElementById('view-dashboard');
-        const globalLoader = document.getElementById('global-loader');
-
-        // GESTIONNAIRE DE VUES
-        function showView(viewElement) {
-            globalLoader.classList.add('hidden');
-            viewAuth.classList.add('hidden');
-            viewOnboarding.classList.add('hidden');
-            viewDashboard.classList.add('hidden');
-            viewElement.classList.remove('hidden');
-        }
+        let userPrefs = null;
 
         // ==========================================
-        // AUTHENTIFICATION
+        // UI UTILS
+        // ==========================================
+        window.showToast = (message, type = 'info') => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-lg text-sm font-medium shadow-xl flex items-center gap-3 animate-fade-in backdrop-blur-md border ${
+                type === 'error' ? 'bg-red-500/20 text-red-200 border-red-500/30' : 
+                type === 'success' ? 'bg-green-500/20 text-green-200 border-green-500/30' : 
+                'bg-white/10 text-white border-white/10'
+            }`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-triangle-exclamation' : type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
+        };
+
+        const switchSection = (sectionId) => {
+            ['loading-screen', 'auth-section', 'onboarding-section', 'dashboard-section'].forEach(id => {
+                document.getElementById(id).style.display = (id === sectionId) ? 'flex' : 'none';
+            });
+        };
+
+        // ==========================================
+        // AUTHENTICATION LOGIC
         // ==========================================
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                await checkUserData();
+                // Update UI Profile
+                document.getElementById('nav-user-profile').classList.remove('hidden');
+                document.getElementById('nav-user-profile').classList.add('flex');
+                document.getElementById('nav-username').innerText = user.displayName || user.email.split('@')[0];
+                document.getElementById('nav-avatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff`;
+                
+                // Check preferences in DB
+                await loadUserData();
             } else {
-                showView(viewAuth);
+                currentUser = null;
+                document.getElementById('nav-user-profile').classList.add('hidden');
+                document.getElementById('nav-user-profile').classList.remove('flex');
+                switchSection('auth-section');
             }
         });
 
-        window.loginWithGoogle = () => {
-            const provider = new GoogleAuthProvider();
-            signInWithPopup(auth, provider).catch(err => alert("Erreur : " + err.message));
-        };
-
-        window.loginWithEmail = () => {
-            // Pour la démo, on crée/connecte un compte test automatiquement
-            const email = prompt("Email (ex: test@wikimind.com) :");
-            const pass = prompt("Mot de passe (min 6 chars) :");
-            if(email && pass) {
-                signInWithEmailAndPassword(auth, email, pass).catch(err => {
-                    if(err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-                        createUserWithEmailAndPassword(auth, email, pass).catch(e => alert(e.message));
-                    } else alert(err.message);
-                });
+        window.loginGoogle = async () => {
+            try {
+                const provider = new GoogleAuthProvider();
+                await signInWithPopup(auth, provider);
+                window.showToast("Connexion Google réussie", "success");
+            } catch (error) {
+                window.showToast("Erreur: " + error.message, "error");
             }
         };
 
-        // ==========================================
-        // GESTION UTILISATEUR & STREAKS (SÉRIES)
-        // ==========================================
-        async function checkUserData() {
-            const userRef = ref(db, `users/${currentUser.uid}`);
-            const snapshot = await get(userRef);
+        document.getElementById('email-auth-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const pwd = document.getElementById('auth-password').value;
+            const btn = document.getElementById('auth-submit-btn');
+            btn.innerHTML = '<div class="loader mx-auto"></div>';
             
-            if (snapshot.exists()) {
-                userData = snapshot.val();
-                updateStreak();
-                showView(viewDashboard);
-                generateDailyInfo(false); // Charge ou génère l'info du jour
-            } else {
-                renderThemes();
-                showView(viewOnboarding);
-            }
-        }
-
-        async function updateStreak() {
-            const today = new Date().toDateString();
-            const lastLogin = userData.lastLoginDate;
-            let currentStreak = userData.streak || 0;
-
-            if (lastLogin !== today) {
-                let yesterday = new Date();
-                yesterday.setDate(yesterday.getDate() - 1);
-                
-                if (lastLogin === yesterday.toDateString()) {
-                    currentStreak += 1; // Série continue !
-                    triggerConfetti();
-                } else {
-                    currentStreak = 1; // Série brisée, on recommence à 1
-                }
-                
-                // On met à jour la base de données
-                await update(ref(db, `users/${currentUser.uid}`), {
-                    streak: currentStreak,
-                    lastLoginDate: today,
-                    // On efface l'info d'hier pour en forcer une nouvelle aujourd'hui
-                    dailyInfoCache: null 
-                });
-                userData.streak = currentStreak;
-                userData.lastLoginDate = today;
-            }
-
-            // Mise à jour de l'UI
-            document.getElementById('nav-streak').classList.remove('hidden');
-            document.getElementById('streak-count').innerText = userData.streak;
-            if(userData.streak > 3) document.getElementById('streak-count').classList.add('streak-gradient');
-        }
-
-        function triggerConfetti() {
-            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#6366f1', '#fcd34d', '#f59e0b'] });
-        }
-
-        // ==========================================
-        // ONBOARDING (THÈMES & NOTIFS)
-        // ==========================================
-        function renderThemes() {
-            const container = document.getElementById('themes-container');
-            container.innerHTML = '';
-            availableThemes.forEach(theme => {
-                const btn = document.createElement('button');
-                btn.className = "theme-btn bg-white/5 border border-white/10 rounded-full px-4 py-2 text-xs font-bold text-white/70 transition-all";
-                btn.innerText = theme;
-                btn.onclick = () => {
-                    if(selectedThemes.has(theme)) {
-                        selectedThemes.delete(theme);
-                        btn.classList.remove('active');
-                    } else {
-                        selectedThemes.add(theme);
-                        btn.classList.add('active');
+            try {
+                await signInWithEmailAndPassword(auth, email, pwd);
+            } catch (error) {
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                    try {
+                        await createUserWithEmailAndPassword(auth, email, pwd);
+                        window.showToast("Compte créé avec succès !", "success");
+                    } catch (err2) {
+                        window.showToast(err2.message, "error");
                     }
-                };
-                container.appendChild(btn);
-            });
+                } else {
+                    window.showToast("Erreur: " + error.message, "error");
+                }
+            }
+            btn.innerHTML = 'Connexion / Inscription';
+        });
+
+        window.logout = () => { signOut(auth); };
+
+        // ==========================================
+        // USER DATA & STREAKS LOGIC
+        // ==========================================
+        const getTodayString = () => new Date().toISOString().split('T')[0];
+
+        async function loadUserData() {
+            try {
+                const dbRef = ref(db);
+                const snapshot = await get(child(dbRef, `users/${currentUser.uid}`));
+                
+                if (snapshot.exists() && snapshot.val().preferences) {
+                    userPrefs = snapshot.val().preferences;
+                    await handleStreakLogic(snapshot.val().stats);
+                    switchSection('dashboard-section');
+                    document.getElementById('dashboard-topics').innerText = "Thèmes: " + userPrefs.topics.join(', ');
+                    scheduleNotification(userPrefs.time);
+                    window.generateDailyInfo(false); // Check/Generate
+                } else {
+                    switchSection('onboarding-section');
+                }
+            } catch (err) {
+                console.error(err);
+                window.showToast("Erreur de chargement des données", "error");
+            }
         }
 
         window.savePreferences = async () => {
-            if (selectedThemes.size === 0) return alert("Veuillez sélectionner au moins un thème !");
+            const btn = document.getElementById('save-prefs-btn');
+            const checkboxes = document.querySelectorAll('.checkbox-theme:checked');
+            const time = document.getElementById('notif-time').value;
             
-            const notifTime = document.getElementById('notif-time').value;
-            
-            // Demande permission Notification (Navigateur)
-            if ("Notification" in window) {
-                Notification.requestPermission();
+            const topics = Array.from(checkboxes).map(cb => cb.value);
+            if (topics.length === 0) {
+                window.showToast("Veuillez choisir au moins un thème.", "error");
+                return;
             }
 
-            const initialData = {
-                themes: Array.from(selectedThemes),
-                notificationTime: notifTime,
-                streak: 1,
-                lastLoginDate: new Date().toDateString(),
-                createdAt: Date.now()
-            };
+            btn.innerHTML = '<div class="loader mx-auto"></div>';
+            
+            userPrefs = { topics, time };
+            
+            try {
+                // Demander permission notifications
+                if ("Notification" in window && Notification.permission !== "granted") {
+                    await Notification.requestPermission();
+                }
 
-            await set(ref(db, `users/${currentUser.uid}`), initialData);
-            userData = initialData;
-            triggerConfetti();
-            updateStreak();
-            showView(viewDashboard);
-            generateDailyInfo(true);
+                await set(ref(db, `users/${currentUser.uid}/preferences`), userPrefs);
+                await set(ref(db, `users/${currentUser.uid}/stats`), { streak: 1, lastLogin: getTodayString() });
+                
+                window.showToast("Préférences sauvegardées !", "success");
+                await loadUserData();
+            } catch (err) {
+                window.showToast(err.message, "error");
+                btn.innerHTML = "Réessayer";
+            }
         };
 
+        async function handleStreakLogic(stats) {
+            const today = getTodayString();
+            let streak = 1;
+            
+            if (stats && stats.lastLogin) {
+                const lastDate = new Date(stats.lastLogin);
+                const currentDate = new Date(today);
+                const diffTime = Math.abs(currentDate - lastDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+
+                if (diffDays === 0) {
+                    streak = stats.streak; // Already logged in today
+                } else if (diffDays === 1) {
+                    streak = stats.streak + 1; // Consecutive day
+                    await set(ref(db, `users/${currentUser.uid}/stats`), { streak, lastLogin: today });
+                    window.showToast("🔥 Série augmentée ! +1 jour", "success");
+                } else {
+                    streak = 1; // Streak lost
+                    await set(ref(db, `users/${currentUser.uid}/stats`), { streak, lastLogin: today });
+                    window.showToast("Série réinitialisée. Nouveau départ !", "info");
+                }
+            } else {
+                await set(ref(db, `users/${currentUser.uid}/stats`), { streak: 1, lastLogin: today });
+            }
+
+            document.getElementById('streak-count').innerText = streak;
+        }
+
         // ==========================================
-        // MISTRAL API - GÉNÉRATION
+        // MISTRAL AI LOGIC (Daily & Custom)
         // ==========================================
-        async function callMistral(promptText) {
+        async function callMistralAI(prompt) {
             try {
                 const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${MISTRAL_API_KEY}`, 'Content-Type': 'application/json' },
+                    headers: {
+                        'Authorization': `Bearer ${MISTRAL_API_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
                     body: JSON.stringify({ 
                         model: "mistral-small-latest", 
-                        messages: [{ role: "system", content: "Tu es un expert pédagogique WikiMind. Tu partages des faits fascinants, très précis, véridiques, en évitant formellement l'actualité politique/news." },
-                                   { role: "user", content: promptText }],
-                        temperature: 0.7, 
-                        max_tokens: 400 
+                        messages: [{ role: "user", content: prompt }], 
+                        temperature: 0.7 
                     })
                 });
                 const data = await response.json();
                 return data.choices[0].message.content;
-            } catch (e) {
-                console.error(e);
-                return "Erreur lors de la connexion à l'IA WikiMind. Veuillez réessayer.";
+            } catch (error) {
+                console.error("Mistral Error:", error);
+                return null;
             }
         }
 
-        window.generateDailyInfo = async (forceRefresh = false) => {
-            const container = document.getElementById('daily-info-content');
-            
-            // Si on a déjà généré l'info aujourd'hui et qu'on ne force pas le rafraichissement
-            if (!forceRefresh && userData.dailyInfoCache) {
-                container.innerHTML = formatMarkdown(userData.dailyInfoCache);
-                return;
+        function formatMarkdownToHTML(text) {
+            let html = text.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+            html = html.replace(/^## (.*$)/gim, '<h3>$1</h3>');
+            html = html.replace(/^\*\*([^*]+)\*\*/gim, '<strong>$1</strong>');
+            html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\n\n/g, '<br><br>');
+            html = html.replace(/^- (.*$)/gim, '<li>$1</li>');
+            if (html.includes('<li>')) html = '<ul>' + html + '</ul>';
+            return html;
+        }
+
+        window.generateDailyInfo = async (forceRegenerate = false) => {
+            const today = getTodayString();
+            const dbPath = `users/${currentUser.uid}/dailyInfo/${today}`;
+            const contentDiv = document.getElementById('daily-info-content');
+
+            contentDiv.innerHTML = '<div class="flex justify-center items-center h-full opacity-50"><div class="loader mr-3"></div> Synthèse des connaissances en cours...</div>';
+
+            if (!forceRegenerate) {
+                const snapshot = await get(ref(db, dbPath));
+                if (snapshot.exists()) {
+                    contentDiv.innerHTML = formatMarkdownToHTML(snapshot.val().content);
+                    return;
+                }
             }
 
-            container.innerHTML = '<div class="flex items-center gap-3 text-brand-glow"><div class="loader"></div> <span>WikiMind réfléchit...</span></div>';
+            const topicsStr = userPrefs.topics.join(', ');
+            const prompt = `Agis comme un professeur passionnant pour l'application WikiMind Info. 
+Génère une petite leçon ou un fait fascinant, peu connu, sur l'un de ces thèmes : ${topicsStr}. 
+RÈGLE STRICTE : Ne parle JAMAIS d'actualité, de politique récente ou d'événements en cours. Uniquement du savoir intemporel (science, histoire, etc.).
+Format demandé :
+### [Titre accrocheur]
+[1 ou 2 paragraphes d'explication claire et captivante]
+- **Le saviez-vous ?** [Une anecdote courte et bluffante liée au sujet]`;
+
+            const aiResponse = await callMistralAI(prompt);
             
-            const themesStr = userData.themes.join(", ");
-            const prompt = `Génère UN FAIT unique, surprenant, très intéressant et méconnu sur l'un de ces thèmes : ${themesStr}. 
-            Formatte ta réponse de façon engageante avec un titre accrocheur, 2 paragraphes d'explication, et une conclusion "Le saviez-vous ?". 
-            Ne parle PAS d'actualité récente.`;
-
-            const result = await callMistral(prompt);
-            container.innerHTML = formatMarkdown(result);
-
-            // Sauvegarder dans la DB pour ne pas regénérer à chaque F5 aujourd'hui
-            await update(ref(db, `users/${currentUser.uid}`), { dailyInfoCache: result });
-            userData.dailyInfoCache = result;
+            if (aiResponse) {
+                await set(ref(db, dbPath), { content: aiResponse });
+                contentDiv.innerHTML = formatMarkdownToHTML(aiResponse);
+            } else {
+                contentDiv.innerHTML = '<p class="text-red-400">Erreur de connexion à WikiMind AI. Veuillez réessayer.</p>';
+            }
         };
 
         window.generateCustomInfo = async () => {
             const input = document.getElementById('custom-subject-input');
+            const btn = document.getElementById('custom-btn');
+            const output = document.getElementById('custom-info-content');
             const subject = input.value.trim();
+
             if (!subject) return;
 
-            const btn = document.getElementById('custom-btn');
-            const container = document.getElementById('custom-info-content');
-            
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+            btn.innerHTML = '<div class="loader"></div>';
             btn.disabled = true;
-            container.classList.remove('hidden');
-            container.innerHTML = '<span class="animate-pulse text-brand-glow">Analyse du sujet...</span>';
+            output.classList.remove('hidden');
+            output.innerHTML = '<div class="flex items-center text-white/50 text-xs"><div class="loader mr-2 w-4 h-4 border-2"></div> Recherche en cours...</div>';
 
-            const prompt = `L'utilisateur veut apprendre quelque chose d'intéressant sur : "${subject}". 
-            Génère une explication concise, fascinante et factuelle. Si c'est un sujet d'actualité chaude/news, refuse poliment et explique que tu ne traites que des connaissances intemporelles.`;
+            const prompt = `L'utilisateur demande une explication sur : "${subject}".
+Explique ce sujet de manière simple, concise et captivante (façon WikiMind).
+RÈGLE ABSOLUE : Si le sujet concerne l'actualité récente, les news, ou des potins, refuse poliment de répondre en expliquant que tu es dédié uniquement au savoir intemporel. 
+Format : Un petit paragraphe d'explication et un point clé final.`;
 
-            const result = await callMistral(prompt);
+            const aiResponse = await callMistralAI(prompt);
             
-            container.innerHTML = formatMarkdown(result);
-            input.value = '';
-            btn.innerHTML = 'Générer';
+            if (aiResponse) {
+                output.innerHTML = formatMarkdownToHTML(aiResponse);
+            } else {
+                output.innerHTML = '<p class="text-red-400 text-xs">Erreur de génération.</p>';
+            }
+
+            btn.innerHTML = 'Explorer';
             btn.disabled = false;
+            input.value = '';
         };
 
-        // Petit utilitaire basique pour rendre le texte Markdown (Gras et sauts de ligne)
-        function formatMarkdown(text) {
-            return text
-                .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-bold">$1</strong>')
-                .replace(/\n/g, '<br/>');
+        // ==========================================
+        // NOTIFICATIONS SYSTEM (Web Local)
+        // ==========================================
+        function scheduleNotification(timeString) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                const now = new Date();
+                const [hours, minutes] = timeString.split(':');
+                let notifTime = new Date();
+                notifTime.setHours(hours, minutes, 0, 0);
+
+                if (notifTime < now) {
+                    notifTime.setDate(notifTime.getDate() + 1); // Tomorrow
+                }
+
+                const msUntilNotif = notifTime - now;
+
+                // Set a timeout. (Note: Only works while tab is open. A real Service Worker Push is needed for offline push).
+                setTimeout(() => {
+                    new Notification("WikiMind Info 🧠", {
+                        body: "Votre dose de savoir quotidienne est prête !",
+                        icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Wikipedia-logo-v2.svg/100px-Wikipedia-logo-v2.svg.png"
+                    });
+                    // Reschedule for next day
+                    scheduleNotification(timeString);
+                }, msUntilNotif);
+            }
         }
 
         // ==========================================
-        // PWA INSTALL LOGIC & ANIMATION AURORA
+        // BACKGROUND ANIMATION
+        // ==========================================
+        const canvas = document.getElementById('aurora-bg');
+        if(canvas) {
+            const ctx = canvas.getContext('2d');
+            let width, height;
+            const orbs = [
+                { x: 0.3, y: 0.3, r: 0.5, color: 'rgba(99, 102, 241, 0.1)', vx: 0.001, vy: 0.001 },
+                { x: 0.7, y: 0.7, r: 0.5, color: 'rgba(168, 85, 247, 0.1)', vx: -0.001, vy: -0.001 }
+            ];
+            function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, width, height);
+                orbs.forEach(orb => {
+                    orb.x += orb.vx; orb.y += orb.vy;
+                    if(orb.x < -0.2 || orb.x > 1.2) orb.vx *= -1;
+                    if(orb.y < -0.2 || orb.y > 1.2) orb.vy *= -1;
+                    const g = ctx.createRadialGradient(orb.x * width, orb.y * height, 0, orb.x * width, orb.y * height, orb.r * width);
+                    g.addColorStop(0, orb.color); g.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = g; ctx.fillRect(0, 0, width, height);
+                });
+                requestAnimationFrame(animate);
+            }
+            window.addEventListener('resize', resize); resize(); animate();
+        }
+
+        // ==========================================
+        // PWA INSTALLATION LOGIC
         // ==========================================
         let deferredPrompt;
+        const installBtn = document.getElementById('install-pwa-btn');
+
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            document.getElementById('pwa-install-btn').classList.remove('hidden');
+            installBtn.classList.remove('hidden');
         });
 
-        document.getElementById('pwa-install-btn').addEventListener('click', async () => {
+        installBtn.addEventListener('click', async () => {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
                 if (outcome === 'accepted') {
-                    document.getElementById('pwa-install-btn').classList.add('hidden');
+                    installBtn.classList.add('hidden');
                 }
                 deferredPrompt = null;
             }
         });
-
-        // Animation de fond (identique à index.html)
-        const canvas = document.getElementById('aurora-bg');
-        const ctx = canvas.getContext('2d');
-        let width, height;
-        const orbs = [
-            { x: 0.2, y: 0.2, r: 0.4, color: 'rgba(79, 70, 229, 0.15)', vx: 0.0005, vy: 0.0005 },
-            { x: 0.8, y: 0.3, r: 0.5, color: 'rgba(245, 158, 11, 0.10)', vx: -0.0006, vy: 0.0004 } // Teinte orangée pour les streaks
-        ];
-        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
-        function animate() {
-            ctx.clearRect(0, 0, width, height);
-            ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, width, height);
-            orbs.forEach(orb => {
-                orb.x += orb.vx; orb.y += orb.vy;
-                if(orb.x < -0.2 || orb.x > 1.2) orb.vx *= -1;
-                if(orb.y < -0.2 || orb.y > 1.2) orb.vy *= -1;
-                const g = ctx.createRadialGradient(orb.x * width, orb.y * height, 0, orb.x * width, orb.y * height, orb.r * width);
-                g.addColorStop(0, orb.color); g.addColorStop(1, 'rgba(0,0,0,0)');
-                ctx.fillStyle = g; ctx.fillRect(0, 0, width, height);
-            });
-            requestAnimationFrame(animate);
-        }
-        window.addEventListener('resize', resize); resize(); animate();
 
     </script>
 </body>
