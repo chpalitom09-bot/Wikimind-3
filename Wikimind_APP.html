@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WikiMind APP Maker</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
+                    colors: {
+                        glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
+                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' }
+                    },
+                    animation: { 
+                        'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+                        'toast-enter': 'toastEnter 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                        'toast-leave': 'toastLeave 0.3s ease-in forwards'
+                    },
+                    keyframes: { 
+                        fadeInUp: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+                        toastEnter: { '0%': { opacity: 0, transform: 'translateY(100%) scale(0.9)' }, '100%': { opacity: 1, transform: 'translateY(0) scale(1)' } },
+                        toastLeave: { '0%': { opacity: 1, transform: 'scale(1)' }, '100%': { opacity: 0, transform: 'scale(0.9)' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #050505; color: #ffffff; overflow-x: hidden; }
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+        .text-gradient { background: linear-gradient(135deg, #ffffff 0%, #a5a6f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 100; align-items: center; justify-content: center; }
+        .modal-content { max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        
+        /* Custom Scrollbar for textareas */
+        textarea::-webkit-scrollbar { width: 6px; }
+        textarea::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+    </style>
+</head>
+<body class="selection:bg-brand-500 selection:text-white">
+
+    <!-- AURORA BG -->
+    <canvas id="aurora-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
+
+    <!-- UI TOAST CONTAINER -->
+    <div id="toast-container"></div>
+
+    <!-- NAVBAR -->
+    <nav class="fixed top-0 w-full z-50 px-6 py-6 transition-all duration-300">
+        <div class="max-w-7xl mx-auto flex justify-between items-center glass-panel rounded-full px-6 py-3">
+            <a href="index.html" class="flex items-center gap-3 group">
+                <div class="w-8 h-8 bg-gradient-to-tr from-brand-500 to-purple-500 rounded-lg flex items-center justify-center">
+                    <span class="font-bold text-white text-xs"><i class="fa-solid fa-code"></i></span>
+                </div>
+                <span class="font-display font-bold text-lg tracking-tight">WikiMind <span class="text-brand-glow font-normal">APP Maker</span></span>
+            </a>
+
+            <!-- Auth State -->
+            <div id="auth-container" class="flex items-center gap-4">
+                <button id="nav-login-btn" onclick="showAuthModal()" class="px-5 py-2 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-gray-200 transition-colors">
+                    Connexion
+                </button>
+                <div id="user-logged" class="hidden flex items-center gap-3">
+                    <div class="text-right hidden md:block">
+                        <div id="user-name-display" class="text-xs font-bold text-white">Utilisateur</div>
+                        <div id="user-role-display" class="text-[10px] text-brand-glow">Membre</div>
+                    </div>
+                    <img id="nav-avatar" src="" class="w-9 h-9 rounded-full border border-white/20 object-cover bg-gray-800">
+                    <button onclick="logout()" class="ml-2 text-white/40 hover:text-red-400 transition"><i class="fa-solid fa-right-from-bracket"></i></button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="relative pt-32 pb-20 px-4 md:px-6 max-w-7xl mx-auto min-h-screen">
+        
+        <!-- HERO -->
+        <div class="text-center mb-12 animate-fade-in-up">
+            <h1 class="text-4xl md:text-6xl font-display font-bold mb-4">
+                Faites coder votre <span class="text-gradient">App.</span>
+            </h1>
+            <p class="text-white/60 max-w-2xl mx-auto text-sm md:text-base">
+                Vous avez une idée d'application ? L'équipe de développement WikiMind la code pour vous, gratuitement. 
+                Soumettez votre projet, suivez son avancement et profitez-en avec la communauté !
+            </p>
+        </div>
+
+        <!-- SECTION NON CONNECTÉ -->
+        <div id="unauth-section" class="flex flex-col items-center justify-center py-10 animate-fade-in-up hidden">
+            <div class="glass-panel p-8 rounded-3xl text-center max-w-md w-full border border-brand-500/30">
+                <div class="w-16 h-16 bg-brand-500/20 text-brand-glow rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h2 class="text-xl font-display font-bold mb-2">Connexion requise</h2>
+                <p class="text-white/60 text-sm mb-6">Vous devez être connecté pour soumettre une idée d'application aux développeurs.</p>
+                <button onclick="showAuthModal()" class="w-full bg-brand-600 hover:bg-brand-500 text-white py-3 rounded-xl font-bold uppercase tracking-wide text-sm transition">
+                    Se connecter / S'inscrire
+                </button>
+            </div>
+        </div>
+
+        <!-- SECTION UTILISATEUR (FORMULAIRE) -->
+        <div id="user-section" class="grid grid-cols-1 lg:grid-cols-3 gap-8 hidden">
+            
+            <!-- Colonne Formulaire -->
+            <div class="lg:col-span-1">
+                <div class="glass-panel p-6 md:p-8 rounded-3xl border border-white/10 sticky top-32">
+                    <h2 class="text-2xl font-display font-bold mb-1">Nouvelle Requête</h2>
+                    <p class="text-white/40 text-xs mb-6">Détaillez votre idée d'application.</p>
+
+                    <form id="app-request-form" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-white/60 uppercase mb-1">Nom de l'application</label>
+                            <input type="text" id="form-name" required placeholder="Ex: WikiMind Finance..." class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-brand-500 focus:outline-none transition">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-white/60 uppercase mb-1">Description détaillée</label>
+                            <textarea id="form-desc" required rows="4" placeholder="Que fait l'application ? À quoi sert-elle ?" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-brand-500 focus:outline-none transition resize-none"></textarea>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-white/60 uppercase mb-1">Stockage</label>
+                                <select id="form-storage" class="w-full bg-[#1a1a1a] border border-white/10 rounded-xl p-3 text-sm text-white focus:border-brand-500 focus:outline-none transition">
+                                    <option value="Local (Navigateur)">Local (Navigateur)</option>
+                                    <option value="Cloud (Serveur)">Cloud (Serveur)</option>
+                                    <option value="Aucun">Aucun</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-white/60 uppercase mb-1">IA Intégrée ?</label>
+                                <select id="form-ai" class="w-full bg-[#1a1a1a] border border-white/10 rounded-xl p-3 text-sm text-white focus:border-brand-500 focus:outline-none transition">
+                                    <option value="Non">Non</option>
+                                    <option value="Oui (Mistral/Llama)">Oui (Mistral/Llama)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="btn-submit-request" class="w-full mt-4 bg-white text-black hover:bg-gray-200 py-3 rounded-xl font-bold uppercase tracking-wide text-sm transition shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+                            Soumettre le projet <i class="fa-solid fa-paper-plane ml-2"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Colonne Liste des requêtes -->
+            <div class="lg:col-span-2">
+                <div class="flex justify-between items-end mb-6 border-b border-white/10 pb-4">
+                    <div>
+                        <h2 id="list-title" class="text-2xl font-display font-bold">Mes Projets</h2>
+                        <p id="list-subtitle" class="text-white/40 text-xs">Suivi de vos demandes.</p>
+                    </div>
+                </div>
+
+                <div id="requests-list" class="space-y-4">
+                    <!-- Les cartes apparaitront ici -->
+                    <div class="text-center text-white/30 py-10 animate-pulse">Chargement des données...</div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODAL AUTHENTIFICATION -->
+    <div id="auth-modal" class="modal" onclick="closeAuthModal()">
+        <div class="modal-content glass-panel p-8 rounded-3xl border border-white/10 relative" onclick="event.stopPropagation()">
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 text-white/50 hover:text-white hover:bg-white/10 transition"><i class="fa-solid fa-times"></i></button>
+            
+            <h3 class="text-2xl font-display font-bold mb-2 text-center">Connexion</h3>
+            <p class="text-white/40 text-xs text-center mb-6">Rejoignez l'écosystème WikiMind</p>
+
+            <button onclick="loginWithGoogle()" class="w-full flex items-center justify-center gap-3 bg-white text-black py-3 rounded-xl font-bold text-sm hover:bg-gray-200 transition mb-4">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5"> Continuer avec Google
+            </button>
+            
+            <div class="flex items-center gap-3 text-white/30 text-xs my-4 uppercase font-bold">
+                <div class="flex-1 h-px bg-white/10"></div> OU <div class="flex-1 h-px bg-white/10"></div>
+            </div>
+
+            <div class="space-y-3">
+                <input type="email" id="auth-email" placeholder="Adresse Email" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-brand-500 focus:outline-none transition">
+                <input type="password" id="auth-password" placeholder="Mot de passe" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-brand-500 focus:outline-none transition">
+                <button onclick="loginWithEmail()" class="w-full bg-brand-600 hover:bg-brand-500 text-white py-3 rounded-xl font-bold text-sm transition">Se connecter / S'inscrire</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DÉVELOPPEUR (REVIEW) -->
+    <div id="dev-modal" class="modal" onclick="closeDevModal()">
+        <div class="modal-content glass-panel p-8 rounded-3xl border border-brand-500/50 relative" onclick="event.stopPropagation()">
+            <button onclick="closeDevModal()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 text-white/50 hover:text-white hover:bg-white/10 transition"><i class="fa-solid fa-times"></i></button>
+            
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-brand-500/20 text-brand-glow rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+                <h3 class="text-2xl font-display font-bold">Panel Admin</h3>
+            </div>
+            
+            <div id="dev-modal-content" class="mb-6 bg-black/40 p-4 rounded-xl border border-white/5 text-sm text-white/80">
+                <!-- Détails injectés ici -->
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-white/60 uppercase mb-1">Statut du projet</label>
+                    <select id="dev-status" class="w-full bg-[#1a1a1a] border border-white/10 rounded-xl p-3 text-sm text-white focus:border-brand-500 focus:outline-none transition">
+                        <option value="pending">En attente (Pending)</option>
+                        <option value="accepted">Accepté (En dev)</option>
+                        <option value="rejected">Refusé</option>
+                        <option value="completed">Terminé (En ligne)</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-white/60 uppercase mb-1">Raison / Message au créateur</label>
+                    <textarea id="dev-reason" rows="2" placeholder="Ex: C'est une super idée, on s'y met ! ou Ex: Trop complexe pour le moment..." class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-brand-500 focus:outline-none transition resize-none"></textarea>
+                </div>
+
+                <div id="dev-link-container">
+                    <label class="block text-xs font-bold text-brand-glow uppercase mb-1">Lien de l'application (Si terminé)</label>
+                    <input type="text" id="dev-link" placeholder="Ex: Wikimind_newapp.html" class="w-full bg-white/5 border border-brand-500/30 rounded-xl p-3 text-sm text-white focus:border-brand-500 focus:outline-none transition">
+                </div>
+
+                <button id="btn-save-dev" class="w-full bg-brand-600 hover:bg-brand-500 text-white py-3 rounded-xl font-bold uppercase tracking-wide text-sm transition shadow-[0_0_20px_rgba(99,102,241,0.3)] mt-2">
+                    Enregistrer les modifications
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, push, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // ==========================================
+        // UI: TOASTS & ANIMATIONS (Identique index)
+        // ==========================================
+        window.showToast = (message, type = 'info') => {
+            const container = document.getElementById('toast-container');
+            if(!container) return;
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-xl text-sm font-medium shadow-xl flex items-center gap-3 animate-toast-enter backdrop-blur-md border ${
+                type === 'error' ? 'bg-red-500/20 text-red-200 border-red-500/30' : 
+                type === 'success' ? 'bg-green-500/20 text-green-200 border-green-500/30' : 
+                'bg-white/10 text-white border-white/10'
+            }`;
+            const icon = type === 'error' ? '<i class="fa-solid fa-triangle-exclamation"></i>' : 
+                         type === 'success' ? '<i class="fa-solid fa-check-circle"></i>' : 
+                         '<i class="fa-solid fa-info-circle"></i>';
+            toast.innerHTML = `${icon} <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'toastLeave 0.3s ease-in forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        };
+
+        // UI: Modals
+        window.showAuthModal = () => document.getElementById('auth-modal').style.display = 'flex';
+        window.closeAuthModal = () => document.getElementById('auth-modal').style.display = 'none';
+        window.closeDevModal = () => {
+            document.getElementById('dev-modal').style.display = 'none';
+            currentEditId = null;
+        }
+
+        // ==========================================
+        // FIREBASE INIT
+        // ==========================================
+        
+        // 1. Auth App
+        const authConfig = {
+            apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+            authDomain: "wikimind-3-comments.firebaseapp.com",
+            projectId: "wikimind-3-comments",
+            appId: "1:137479541640:web:4ed2510a9908055052e03d"
+        };
+        const authApp = initializeApp(authConfig, "authApp"); 
+        const auth = getAuth(authApp);
+
+        // 2. DB App
+        const dbConfig = {
+            apiKey: "AIzaSyCn5IyWS4deyVRG7zYY2qLQiNE49aD8a-Y",
+            authDomain: "wikimind-communauty.firebaseapp.com",
+            databaseURL: "https://wikimind-communauty-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "wikimind-communauty",
+            appId: "1:842497095525:web:2b1c33ca7f4912b34dd38c"
+        };
+        const dbApp = initializeApp(dbConfig, "dbApp");
+        const db = getDatabase(dbApp);
+
+        // ==========================================
+        // LOGIQUE UTILISATEUR & ROLES
+        // ==========================================
+        const DEV_UIDS = ['vbpNViPUq8e8zhmyKYNMDSx4HEF3', 'ynYjIJbIoJZIsleuzsWZRFXrGxs1'];
+        let currentUser = null;
+        let isDev = false;
+        let allRequests = {};
+        let currentEditId = null;
+
+        // AUTHENTICATION LOGIC
+        window.loginWithGoogle = () => {
+            const provider = new GoogleAuthProvider();
+            signInWithPopup(auth, provider).then(() => {
+                closeAuthModal();
+                showToast("Connexion réussie !", "success");
+            }).catch(e => showToast(e.message, "error"));
+        };
+
+        window.loginWithEmail = () => {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-password').value;
+            if(!email || !pass) return showToast("Remplissez les champs.", "error");
+            
+            signInWithEmailAndPassword(auth, email, pass).then(() => {
+                closeAuthModal();
+                showToast("Connexion réussie !", "success");
+            }).catch(e => {
+                // Si non trouvé, on tente de créer le compte
+                if(e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') {
+                    createUserWithEmailAndPassword(auth, email, pass).then((userCred) => {
+                        const name = prompt("Comment vous appelez-vous ?");
+                        updateProfile(userCred.user, { displayName: name || "Utilisateur" }).then(() => {
+                            closeAuthModal();
+                            showToast("Compte créé avec succès !", "success");
+                            window.location.reload(); // Pour rafraichir le nom
+                        });
+                    }).catch(err => showToast(err.message, "error"));
+                } else {
+                    showToast(e.message, "error");
+                }
+            });
+        };
+
+        window.logout = () => {
+            signOut(auth).then(() => {
+                showToast("Déconnecté.", "info");
+            });
+        };
+
+        // GESTION DE L'ÉTAT UI
+        onAuthStateChanged(auth, (user) => {
+            const unauthSec = document.getElementById('unauth-section');
+            const userSec = document.getElementById('user-section');
+            const navLoginBtn = document.getElementById('nav-login-btn');
+            const navUserLogged = document.getElementById('user-logged');
+
+            if (user) {
+                currentUser = user;
+                isDev = DEV_UIDS.includes(user.uid);
+
+                // UI Navbar
+                navLoginBtn.classList.add('hidden');
+                navUserLogged.classList.remove('hidden');
+                navUserLogged.classList.add('flex');
+                
+                const name = user.displayName || user.email.split('@')[0];
+                document.getElementById('user-name-display').innerText = name;
+                document.getElementById('nav-avatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${name}&background=6366f1&color=fff&bold=true`;
+                
+                if(isDev) {
+                    document.getElementById('user-role-display').innerText = "👨‍💻 Admin/Développeur";
+                    document.getElementById('user-role-display').classList.replace('text-brand-glow', 'text-red-400');
+                    document.getElementById('list-title').innerText = "Toutes les requêtes (Admin)";
+                    document.getElementById('list-subtitle').innerText = "Gérez les demandes de la communauté.";
+                }
+
+                // UI Sections
+                unauthSec.classList.add('hidden');
+                userSec.classList.remove('hidden');
+
+                loadRequests();
+
+            } else {
+                currentUser = null;
+                isDev = false;
+                navLoginBtn.classList.remove('hidden');
+                navUserLogged.classList.add('hidden');
+                navUserLogged.classList.remove('flex');
+                
+                unauthSec.classList.remove('hidden');
+                userSec.classList.add('hidden');
+            }
+        });
+
+        // ==========================================
+        // SOUMISSION FORMULAIRE
+        // ==========================================
+        document.getElementById('app-request-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            if(!currentUser) return;
+
+            const btn = document.getElementById('btn-submit-request');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Envoi...';
+            btn.disabled = true;
+
+            const requestData = {
+                uid: currentUser.uid,
+                authorName: currentUser.displayName || currentUser.email.split('@')[0],
+                authorAvatar: currentUser.photoURL || `https://ui-avatars.com/api/?name=${currentUser.email}&background=333&color=fff`,
+                appName: document.getElementById('form-name').value,
+                description: document.getElementById('form-desc').value,
+                storage: document.getElementById('form-storage').value,
+                aiStatus: document.getElementById('form-ai').value,
+                status: 'pending', // pending, accepted, rejected, completed
+                timestamp: Date.now(),
+                adminReason: "",
+                appLink: ""
+            };
+
+            const newReqRef = push(ref(db, 'app_requests'));
+            set(newReqRef, requestData).then(() => {
+                showToast("Votre demande a été envoyée aux développeurs !", "success");
+                e.target.reset();
+            }).catch(err => {
+                showToast("Erreur: " + err.message, "error");
+            }).finally(() => {
+                btn.innerHTML = 'Soumettre le projet <i class="fa-solid fa-paper-plane ml-2"></i>';
+                btn.disabled = false;
+            });
+        });
+
+        // ==========================================
+        // CHARGEMENT ET AFFICHAGE DES REQUÊTES
+        // ==========================================
+        function loadRequests() {
+            const reqRef = ref(db, 'app_requests');
+            onValue(reqRef, (snapshot) => {
+                const listEl = document.getElementById('requests-list');
+                listEl.innerHTML = '';
+                allRequests = {};
+
+                if (!snapshot.exists()) {
+                    listEl.innerHTML = '<div class="text-center text-white/30 py-10 bg-white/5 rounded-2xl border border-white/5">Aucun projet pour le moment.</div>';
+                    return;
+                }
+
+                const data = snapshot.val();
+                let hasVisibleItems = false;
+                
+                // Trier par date décroissante
+                const sortedKeys = Object.keys(data).sort((a,b) => data[b].timestamp - data[a].timestamp);
+
+                sortedKeys.forEach(key => {
+                    const req = data[key];
+                    allRequests[key] = req;
+
+                    // Filtrage : Le dev voit tout, l'user normal ne voit que les siennes
+                    if (!isDev && req.uid !== currentUser.uid) return;
+                    hasVisibleItems = true;
+
+                    // Styles selon statut
+                    let statusConfig = { text: 'En attente', color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', icon: 'fa-hourglass-half' };
+                    if(req.status === 'accepted') statusConfig = { text: 'Accepté / En Dev', color: 'text-brand-400', bg: 'bg-brand-500/10', border: 'border-brand-500/20', icon: 'fa-code' };
+                    if(req.status === 'rejected') statusConfig = { text: 'Refusé', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: 'fa-ban' };
+                    if(req.status === 'completed') statusConfig = { text: 'Terminé !', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20', icon: 'fa-check-circle' };
+
+                    const dateStr = new Date(req.timestamp).toLocaleDateString('fr-FR', {day: '2-digit', month: 'short', hour:'2-digit', minute:'2-digit'});
+
+                    // HTML Carte
+                    const div = document.createElement('div');
+                    div.className = `glass-panel p-5 rounded-2xl border border-white/5 animate-fade-in-up relative overflow-hidden group`;
+                    
+                    let html = `
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="flex items-center gap-3">
+                                ${isDev ? `<img src="${req.authorAvatar}" class="w-8 h-8 rounded-full border border-white/10" title="Demandé par ${req.authorName}">` : ''}
+                                <div>
+                                    <h3 class="font-bold text-lg font-display text-white">${req.appName}</h3>
+                                    <div class="text-[10px] text-white/40">Le ${dateStr} ${isDev ? `par <b>${req.authorName}</b>` : ''}</div>
+                                </div>
+                            </div>
+                            <div class="${statusConfig.bg} ${statusConfig.color} border ${statusConfig.border} px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-lg">
+                                <i class="fa-solid ${statusConfig.icon}"></i> ${statusConfig.text}
+                            </div>
+                        </div>
+
+                        <p class="text-white/70 text-sm mb-4 leading-relaxed">${req.description}</p>
+                        
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="bg-black/40 border border-white/10 px-2 py-1 rounded text-[10px] text-white/60"><i class="fa-solid fa-database mr-1"></i> ${req.storage}</span>
+                            <span class="bg-black/40 border border-white/10 px-2 py-1 rounded text-[10px] text-white/60"><i class="fa-solid fa-robot mr-1"></i> IA: ${req.aiStatus}</span>
+                        </div>
+                    `;
+
+                    // Feedback dev s'il y en a
+                    if (req.adminReason) {
+                        html += `
+                            <div class="mt-3 p-3 bg-brand-500/5 border-l-2 border-brand-500 rounded-r-lg text-sm text-white/80">
+                                <span class="text-[10px] font-bold text-brand-glow uppercase block mb-1"><i class="fa-solid fa-comment-dots"></i> Mot du développeur :</span>
+                                ${req.adminReason}
+                            </div>
+                        `;
+                    }
+
+                    // Bouton Lien si complété
+                    if (req.status === 'completed' && req.appLink) {
+                        html += `
+                            <div class="mt-4">
+                                <a href="${req.appLink}" target="_blank" class="inline-flex items-center gap-2 bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/30 px-4 py-2 rounded-xl text-xs font-bold transition">
+                                    Ouvrir l'application <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        `;
+                    }
+
+                    // Boutons Dev (Uniquement pour les UIDs Dev)
+                    if (isDev) {
+                        html += `
+                            <div class="mt-4 pt-4 border-t border-white/10 flex justify-end gap-2">
+                                <button onclick="window.deleteRequest('${key}')" class="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 text-xs font-bold transition"><i class="fa-solid fa-trash"></i></button>
+                                <button onclick="window.openDevPanel('${key}')" class="px-4 py-1.5 rounded-lg bg-white/10 text-white hover:bg-white/20 text-xs font-bold transition flex items-center gap-2"><i class="fa-solid fa-pen-to-square"></i> Gérer</button>
+                            </div>
+                        `;
+                    }
+
+                    div.innerHTML = html;
+                    listEl.appendChild(div);
+                });
+
+                if (!hasVisibleItems) {
+                    listEl.innerHTML = '<div class="text-center text-white/30 py-10 bg-white/5 rounded-2xl border border-white/5">Vous n\'avez fait aucune demande.</div>';
+                }
+            });
+        }
+
+        // ==========================================
+        // FONCTIONS DÉVELOPPEUR (ADMIN)
+        // ==========================================
+        
+        window.openDevPanel = (key) => {
+            if(!isDev) return;
+            currentEditId = key;
+            const req = allRequests[key];
+            
+            // Remplir infos visuelles
+            document.getElementById('dev-modal-content').innerHTML = `
+                <div class="font-bold text-lg mb-1">${req.appName}</div>
+                <div class="text-xs text-white/50 mb-2">Demandé par ${req.authorName}</div>
+                <div class="italic text-white/70">"${req.description}"</div>
+            `;
+
+            // Remplir les inputs
+            document.getElementById('dev-status').value = req.status;
+            document.getElementById('dev-reason').value = req.adminReason || "";
+            document.getElementById('dev-link').value = req.appLink || "";
+
+            // Toggle visibilité du lien selon statut
+            const linkContainer = document.getElementById('dev-link-container');
+            document.getElementById('dev-status').addEventListener('change', (e) => {
+                if(e.target.value === 'completed') linkContainer.style.display = 'block';
+                else linkContainer.style.display = 'none';
+            });
+            if(req.status === 'completed') linkContainer.style.display = 'block';
+            else linkContainer.style.display = 'none';
+
+            document.getElementById('dev-modal').style.display = 'flex';
+        };
+
+        document.getElementById('btn-save-dev').addEventListener('click', () => {
+            if(!isDev || !currentEditId) return;
+
+            const newStatus = document.getElementById('dev-status').value;
+            const newReason = document.getElementById('dev-reason').value;
+            const newLink = document.getElementById('dev-link').value;
+
+            const updates = {
+                status: newStatus,
+                adminReason: newReason,
+                appLink: newStatus === 'completed' ? newLink : ""
+            };
+
+            update(ref(db, `app_requests/${currentEditId}`), updates).then(() => {
+                showToast("Mise à jour effectuée !", "success");
+                closeDevModal();
+            }).catch(e => showToast("Erreur: " + e.message, "error"));
+        });
+
+        window.deleteRequest = (key) => {
+            if(!isDev) return;
+            if(confirm("Supprimer définitivement cette demande ?")) {
+                remove(ref(db, `app_requests/${key}`)).then(() => showToast("Supprimé", "success"));
+            }
+        };
+
+        // ==========================================
+        // ANIMATION AURORA (Identique index)
+        // ==========================================
+        const canvas = document.getElementById('aurora-bg');
+        if(canvas) {
+            const ctx = canvas.getContext('2d');
+            let width, height;
+            const orbs = [
+                { x: 0.2, y: 0.2, r: 0.4, color: 'rgba(79, 70, 229, 0.12)', vx: 0.0005, vy: 0.0005 },
+                { x: 0.8, y: 0.3, r: 0.5, color: 'rgba(168, 85, 247, 0.12)', vx: -0.0006, vy: 0.0004 }
+            ];
+            function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, width, height);
+                orbs.forEach(orb => {
+                    orb.x += orb.vx; orb.y += orb.vy;
+                    if(orb.x < -0.2 || orb.x > 1.2) orb.vx *= -1;
+                    if(orb.y < -0.2 || orb.y > 1.2) orb.vy *= -1;
+                    const g = ctx.createRadialGradient(orb.x * width, orb.y * height, 0, orb.x * width, orb.y * height, orb.r * width);
+                    g.addColorStop(0, orb.color); g.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = g; ctx.fillRect(0, 0, width, height);
+                });
+                requestAnimationFrame(animate);
+            }
+            window.addEventListener('resize', resize); resize(); animate();
+        }
+
+    </script>
+</body>
+</html>
