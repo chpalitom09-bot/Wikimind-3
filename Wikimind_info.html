@@ -5,15 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>WikiMind Info - Apprentissage Quotidien</title>
     
-    <!-- Meta de base PWA -->
+    <!-- LIAISON MANIFESTE PWA DYNAMIQUE -->
+    <link id="app-manifest" rel="manifest" href="">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WM Info">
     <meta name="theme-color" content="#050505">
-    
-    <!-- Icône pour Apple (statique obligatoire) -->
-    <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Wikipedia-logo-v2.svg/192px-Wikipedia-logo-v2.svg.png">
 
     <!-- Fonts & Icons -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -44,63 +41,44 @@
     </script>
     <style>
         body { background-color: #050505; color: #ffffff; overflow-x: hidden; }
-        .glass-panel { background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); }
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
         .text-gradient { background: linear-gradient(135deg, #ffffff 0%, #a5a6f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .checkbox-theme:checked + div { background-color: rgba(99, 102, 241, 0.2); border-color: #6366f1; color: white; }
         #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        
         .loader { border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid #6366f1; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
         .ai-content h3 { font-size: 1.25rem; font-weight: bold; margin-bottom: 0.5rem; color: #818cf8; font-family: 'Space Grotesk', sans-serif;}
         .ai-content p { margin-bottom: 1rem; color: rgba(255,255,255,0.8); line-height: 1.6; }
         .ai-content ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: rgba(255,255,255,0.8); }
+        .ai-content strong { color: white; }
+        
+        /* Modal */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
         .modal-content { max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; }
-        ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
     </style>
 </head>
 <body class="selection:bg-brand-500 selection:text-white min-h-screen flex flex-col pb-20">
 
-    <!-- MAGIE PWA : Création virtuelle des fichiers requis pour l'installation Chrome/Android -->
-    <script>
-        (function setupVirtualPWA() {
-            // 1. Génération du Manifest virtuel
-            const manifestJSON = {
-                "name": "WikiMind Info",
-                "short_name": "WM Info",
-                "start_url": window.location.href,
-                "display": "standalone",
-                "background_color": "#050505",
-                "theme_color": "#050505",
-                "description": "Apprentissage quotidien par WikiMind AI",
-                "icons": [
-                    { "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Wikipedia-logo-v2.svg/192px-Wikipedia-logo-v2.svg.png", "sizes": "192x192", "type": "image/png" },
-                    { "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Wikipedia-logo-v2.svg/512px-Wikipedia-logo-v2.svg.png", "sizes": "512x512", "type": "image/png" }
-                ]
-            };
-            const manifestBlob = new Blob([JSON.stringify(manifestJSON)], { type: 'application/json' });
-            const manifestURL = URL.createObjectURL(manifestBlob);
-            document.querySelector('head').insertAdjacentHTML('beforeend', `<link rel="manifest" href="${manifestURL}">`);
-
-            // 2. Génération du Service Worker virtuel (Requis par Chrome pour le bouton installer)
-            const swCode = `
-                self.addEventListener('install', (e) => self.skipWaiting());
-                self.addEventListener('activate', (e) => self.clients.claim());
-                self.addEventListener('fetch', (e) => { e.respondWith(fetch(e.request).catch(() => new Response('Hors ligne'))); });
-            `;
-            const swBlob = new Blob([swCode], { type: 'application/javascript' });
-            const swURL = URL.createObjectURL(swBlob);
-
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register(swURL).then(() => console.log("PWA Engine Ready")).catch(console.error);
-            }
-        })();
-    </script>
-
     <!-- AURORA BG -->
     <canvas id="aurora-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
+    
+    <!-- TOASTS -->
     <div id="toast-container"></div>
 
-    <!-- BANNIÈRE D'INSTALLATION (ANDROID / CHROME) -->
+    <!-- BOUTON FLOTTANT DÉFINITION (Apparaît au clic long / sélection) -->
+    <button id="define-fab" class="hidden fixed bottom-24 left-1/2 transform -translate-x-1/2 bg-brand-600 hover:bg-brand-500 text-white px-5 py-3 rounded-full shadow-[0_0_20px_rgba(99,102,241,0.5)] font-bold text-sm z-[9999] flex items-center gap-2 animate-slide-up border border-white/20 transition-all">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> <span id="define-fab-text">Définir</span>
+    </button>
+
+    <!-- BANNIERE D'INSTALLATION PWA FLOTTANTE -->
     <div id="pwa-install-banner" class="hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 w-[90%] max-w-sm glass-panel p-4 rounded-3xl z-[100] flex items-center justify-between shadow-2xl shadow-brand-500/20 border border-brand-500/50">
         <div class="flex items-center gap-3">
             <div class="w-12 h-12 bg-gradient-to-tr from-brand-600 to-purple-500 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
@@ -108,25 +86,13 @@
             </div>
             <div>
                 <div class="font-bold text-sm text-white font-display">Installer l'App</div>
-                <div class="text-[10px] text-white/60">Accès rapide depuis l'écran d'accueil</div>
+                <div class="text-[10px] text-white/60">Accès rapide & plein écran</div>
             </div>
         </div>
         <div class="flex gap-2">
             <button id="pwa-close-btn" class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50 hover:text-white transition"><i class="fa-solid fa-times"></i></button>
             <button id="pwa-accept-btn" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl shadow-lg transition">Installer</button>
         </div>
-    </div>
-
-    <!-- BANNIÈRE D'INSTALLATION (IOS / IPHONE) -->
-    <div id="ios-install-banner" class="hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 w-[90%] max-w-sm glass-panel p-4 rounded-3xl z-[100] shadow-2xl shadow-white/10 border border-white/20">
-        <div class="flex justify-between items-start mb-2">
-            <div class="font-bold text-sm flex items-center gap-2"><i class="fa-brands fa-apple text-white"></i> Installer sur iPhone</div>
-            <button onclick="document.getElementById('ios-install-banner').classList.add('hidden')" class="text-white/50"><i class="fa-solid fa-times"></i></button>
-        </div>
-        <p class="text-xs text-white/70">
-            1. Touchez l'icône Partager <i class="fa-solid fa-arrow-up-from-bracket mx-1 text-brand-glow"></i> en bas de l'écran.<br>
-            2. Choisissez <strong>"Sur l'écran d'accueil"</strong> <i class="fa-solid fa-square-plus mx-1 text-white"></i>.
-        </p>
     </div>
 
     <!-- NAVBAR -->
@@ -159,11 +125,13 @@
     <!-- MAIN CONTAINER -->
     <main class="flex-1 max-w-4xl mx-auto w-full px-4 py-4 relative flex flex-col items-center justify-center">
 
+        <!-- 1. LOADING SCREEN -->
         <div id="loading-screen" class="flex flex-col items-center justify-center animate-pulse-glow h-[50vh]">
             <div class="loader w-12 h-12 mb-4"></div>
             <p class="text-white/50 text-sm font-display tracking-widest uppercase">Initialisation...</p>
         </div>
 
+        <!-- 2. AUTH SECTION -->
         <section id="auth-section" class="hidden w-full max-w-md animate-fade-in">
             <div class="glass-panel p-8 rounded-3xl text-center">
                 <h2 class="text-3xl font-display font-bold mb-2">Bienvenue</h2>
@@ -180,30 +148,60 @@
             </div>
         </section>
 
+        <!-- 3. ONBOARDING SECTION -->
         <section id="onboarding-section" class="hidden w-full animate-fade-in">
             <div class="glass-panel p-6 md:p-8 rounded-3xl">
                 <div class="text-center mb-8">
                     <h2 class="text-3xl font-display font-bold mb-2">Personnalisation <i class="fa-solid fa-sliders text-brand-glow"></i></h2>
                     <p class="text-white/60 text-sm">Configurons votre IA d'apprentissage.</p>
                 </div>
+
                 <form id="preferences-form">
                     <h3 class="font-bold mb-3 text-sm uppercase tracking-wider text-brand-glow">1. Votre Objectif</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <label class="cursor-pointer relative"><input type="radio" name="goal" value="culture" class="peer sr-only" checked onchange="window.toggleSchoolFields('ob')"><div class="border border-white/10 bg-white/5 rounded-xl p-4 peer-checked:bg-brand-500/20 peer-checked:border-brand-500 transition-all"><div class="font-bold text-white mb-1">🌍 Culture Générale</div><div class="text-xs text-white/60">Pour briller en société et découvrir le monde.</div></div></label>
-                        <label class="cursor-pointer relative"><input type="radio" name="goal" value="school" class="peer sr-only" onchange="window.toggleSchoolFields('ob')"><div class="border border-white/10 bg-white/5 rounded-xl p-4 peer-checked:bg-brand-500/20 peer-checked:border-brand-500 transition-all"><div class="font-bold text-white mb-1">🎓 École / Études</div><div class="text-xs text-white/60">Adapté à votre niveau scolaire.</div></div></label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="goal" value="culture" class="peer sr-only" checked onchange="window.toggleSchoolFields('ob')">
+                            <div class="border border-white/10 bg-white/5 rounded-xl p-4 peer-checked:bg-brand-500/20 peer-checked:border-brand-500 transition-all">
+                                <div class="font-bold text-white mb-1">🌍 Culture Générale</div>
+                                <div class="text-xs text-white/60">Pour briller en société et découvrir le monde.</div>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="goal" value="school" class="peer sr-only" onchange="window.toggleSchoolFields('ob')">
+                            <div class="border border-white/10 bg-white/5 rounded-xl p-4 peer-checked:bg-brand-500/20 peer-checked:border-brand-500 transition-all">
+                                <div class="font-bold text-white mb-1">🎓 École / Études</div>
+                                <div class="text-xs text-white/60">Adapté à votre niveau scolaire.</div>
+                            </div>
+                        </label>
                     </div>
+
                     <div id="ob-school-fields" class="hidden bg-white/5 border border-white/10 rounded-xl p-4 mb-8 space-y-4">
-                        <div><label class="text-xs text-white/60 block mb-1">Niveau scolaire</label><select id="ob-school-level" class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"><option value="Collège">Collège</option><option value="Lycée">Lycée</option><option value="Études Supérieures">Études Supérieures</option></select></div>
-                        <div><label class="text-xs text-white/60 block mb-1">Spécialités / Options (Ex: Maths, Droit, Histoire...)</label><input type="text" id="ob-school-specs" placeholder="Vos matières de prédilection" class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"></div>
+                        <div>
+                            <label class="text-xs text-white/60 block mb-1">Niveau scolaire</label>
+                            <select id="ob-school-level" class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+                                <option value="Collège">Collège</option>
+                                <option value="Lycée">Lycée</option>
+                                <option value="Études Supérieures">Études Supérieures</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-white/60 block mb-1">Spécialités / Options</label>
+                            <input type="text" id="ob-school-specs" placeholder="Ex: Maths, Droit..." class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+                        </div>
                     </div>
+
                     <div class="h-px w-full bg-white/10 my-6"></div>
 
                     <h3 class="font-bold mb-3 text-sm uppercase tracking-wider text-brand-glow">2. Thèmes favoris</h3>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="ob-themes-container"></div>
                     <div class="flex items-center gap-3 mb-8">
-                        <label class="cursor-pointer relative flex-shrink-0"><input type="checkbox" id="ob-theme-autre-cb" class="checkbox-theme sr-only" onchange="document.getElementById('ob-theme-autre-input').classList.toggle('hidden')"><div class="border border-white/10 bg-white/5 rounded-xl px-4 py-2 text-sm font-medium transition-all hover:bg-white/10">➕ Autre</div></label>
-                        <input type="text" id="ob-theme-autre-input" placeholder="Précisez (Ex: Mythologie...)" class="hidden flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+                        <label class="cursor-pointer relative flex-shrink-0">
+                            <input type="checkbox" id="ob-theme-autre-cb" class="checkbox-theme sr-only" onchange="document.getElementById('ob-theme-autre-input').classList.toggle('hidden')">
+                            <div class="border border-white/10 bg-white/5 rounded-xl px-4 py-2 text-sm font-medium transition-all hover:bg-white/10">➕ Autre</div>
+                        </label>
+                        <input type="text" id="ob-theme-autre-input" placeholder="Ex: Bourse, Mythologie..." class="hidden flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
                     </div>
+
                     <div class="h-px w-full bg-white/10 my-6"></div>
 
                     <h3 class="font-bold mb-3 text-sm uppercase tracking-wider text-brand-glow">3. Heure de Notification</h3>
@@ -212,20 +210,28 @@
                         <input type="time" id="ob-notif-time" value="08:00" class="bg-transparent border-none text-xl font-bold text-white focus:outline-none flex-1 [color-scheme:dark]">
                     </div>
 
-                    <button type="button" onclick="window.savePreferences('ob')" id="ob-save-btn" class="w-full bg-brand-600 hover:bg-brand-500 text-white py-4 rounded-xl font-bold text-sm shadow-lg shadow-brand-500/20 transition flex justify-center items-center gap-2">Créer mon IA <i class="fa-solid fa-arrow-right"></i></button>
+                    <button type="button" onclick="window.savePreferences('ob')" id="ob-save-btn" class="w-full bg-brand-600 hover:bg-brand-500 text-white py-4 rounded-xl font-bold text-sm shadow-lg shadow-brand-500/20 transition flex justify-center items-center gap-2">
+                        Créer mon IA <i class="fa-solid fa-arrow-right"></i>
+                    </button>
                 </form>
             </div>
         </section>
 
+        <!-- 4. DASHBOARD SECTION -->
         <section id="dashboard-section" class="hidden w-full flex-col gap-6 animate-fade-in">
+            <!-- Streak Banner -->
             <div class="glass-panel rounded-2xl p-4 flex justify-between items-center bg-gradient-to-r from-orange-500/10 to-red-500/10 border-orange-500/20">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-500 text-xl animate-bounce-slow"><i class="fa-solid fa-fire"></i></div>
-                    <div><div class="text-[10px] md:text-xs text-white/60 uppercase font-bold tracking-widest">Série d'apprentissage</div><div class="font-display font-bold text-base md:text-lg"><span id="streak-count" class="text-orange-400">0</span> Jours consécutifs</div></div>
+                    <div>
+                        <div class="text-[10px] md:text-xs text-white/60 uppercase font-bold tracking-widest">Série d'apprentissage</div>
+                        <div class="font-display font-bold text-base md:text-lg"><span id="streak-count" class="text-orange-400">0</span> Jours consécutifs</div>
+                    </div>
                 </div>
                 <div class="text-[10px] md:text-xs bg-orange-500/20 text-orange-300 px-3 py-1 rounded-full border border-orange-500/30">Validé !</div>
             </div>
 
+            <!-- Info of the Day -->
             <div class="glass-panel rounded-3xl p-6 md:p-10 relative overflow-hidden">
                 <div class="absolute -top-10 -right-10 w-40 h-40 bg-brand-500/20 blur-3xl rounded-full pointer-events-none"></div>
                 <div class="flex justify-between items-start mb-6 relative z-10">
@@ -233,14 +239,22 @@
                         <h2 class="text-2xl md:text-3xl font-display font-bold text-gradient mb-1">Savoir du Jour</h2>
                         <p id="dashboard-topics" class="text-white/40 text-[10px] md:text-xs uppercase tracking-widest line-clamp-1">Vos thèmes</p>
                     </div>
-                    <button onclick="window.generateDailyInfo(true)" class="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/60 hover:text-white transition" title="Regénérer l'info"><i class="fa-solid fa-rotate-right"></i></button>
+                    <button onclick="window.generateDailyInfo(true)" class="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/60 hover:text-white transition" title="Regénérer l'info">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
                 </div>
                 <div id="daily-info-content" class="ai-content bg-black/40 rounded-2xl p-6 border border-white/5 min-h-[200px] relative z-10"></div>
+                
+                <!-- Petit Tip pour la définition -->
+                <p class="text-[10px] text-white/30 text-center mt-4 uppercase tracking-widest flex items-center justify-center gap-2">
+                    <i class="fa-regular fa-hand-pointer"></i> Appuyez longuement sur un mot pour le définir
+                </p>
             </div>
 
+            <!-- Custom Subject Generator -->
             <div class="glass-panel rounded-2xl p-6 border border-brand-500/20">
                 <h3 class="font-display font-bold text-lg mb-2 flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles text-brand-glow"></i> Curiosité Spécifique</h3>
-                <p class="text-white/50 text-xs mb-4">Posez une question précise (hors actualité). L'IA vous l'expliquera selon votre profil.</p>
+                <p class="text-white/50 text-xs mb-4">Posez une question précise. L'IA vous l'expliquera selon votre profil.</p>
                 <div class="flex flex-col md:flex-row gap-2">
                     <input type="text" id="custom-subject-input" placeholder="Ex: C'est quoi la physique quantique ?" class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-500">
                     <button onclick="window.generateCustomInfo()" id="custom-btn" class="bg-brand-600 hover:bg-brand-500 text-white px-6 py-3 rounded-xl font-bold text-sm transition shadow-lg shadow-brand-500/20">Explorer</button>
@@ -249,6 +263,21 @@
             </div>
         </section>
     </main>
+
+    <!-- MODAL DEFINITION -->
+    <div id="definition-modal" class="modal" onclick="this.style.display='none'">
+        <div class="modal-content glass-panel p-6 rounded-3xl" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-4">
+                <h2 class="text-xl font-display font-bold text-brand-glow flex items-center gap-2">
+                    <i class="fa-solid fa-book-open"></i> <span id="def-word-title" class="capitalize">Mot</span>
+                </h2>
+                <button onclick="document.getElementById('definition-modal').style.display='none'" class="text-white/50 hover:text-white w-8 h-8 flex items-center justify-center rounded-full bg-white/5"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div id="def-content" class="ai-content text-sm text-white/90 leading-relaxed">
+                <div class="flex items-center gap-3 opacity-50"><div class="loader w-4 h-4"></div> Recherche...</div>
+            </div>
+        </div>
+    </div>
 
     <!-- SETTINGS MODAL -->
     <div id="settings-modal" class="modal" onclick="this.style.display='none'">
@@ -260,22 +289,39 @@
             
             <form id="settings-form" class="space-y-6">
                 <div>
-                    <label class="text-xs text-brand-glow font-bold uppercase tracking-wider mb-2 block">Objectif</label>
-                    <select id="set-goal" onchange="window.toggleSchoolFields('set')" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-3 text-sm text-white focus:outline-none mb-2"><option value="culture" class="text-black">Culture Générale</option><option value="school" class="text-black">École / Études</option></select>
-                    <div id="set-school-fields" class="hidden bg-black/30 rounded-xl p-3 space-y-3 border border-white/5"><select id="set-school-level" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"><option value="Collège" class="text-black">Collège</option><option value="Lycée" class="text-black">Lycée</option><option value="Études Supérieures" class="text-black">Études Supérieures</option></select><input type="text" id="set-school-specs" placeholder="Spécialités (Maths, Droit...)" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"></div>
+                    <label class="text-xs text-brand-glow font-bold uppercase tracking-wider mb-2 block">Objectif d'apprentissage</label>
+                    <select id="set-goal" onchange="window.toggleSchoolFields('set')" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-3 text-sm text-white focus:outline-none focus:border-brand-500 mb-2">
+                        <option value="culture" class="text-black">Culture Générale</option>
+                        <option value="school" class="text-black">École / Études</option>
+                    </select>
+                    
+                    <div id="set-school-fields" class="hidden bg-black/30 rounded-xl p-3 space-y-3 border border-white/5">
+                        <select id="set-school-level" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white">
+                            <option value="Collège" class="text-black">Collège</option>
+                            <option value="Lycée" class="text-black">Lycée</option>
+                            <option value="Études Supérieures" class="text-black">Études Supérieures</option>
+                        </select>
+                        <input type="text" id="set-school-specs" placeholder="Spécialités (Maths, Droit...)" class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white">
+                    </div>
                 </div>
+
                 <div>
                     <label class="text-xs text-brand-glow font-bold uppercase tracking-wider mb-2 block">Thèmes</label>
                     <div class="grid grid-cols-2 gap-2 mb-2" id="set-themes-container"></div>
                     <div class="flex items-center gap-2">
-                        <label class="cursor-pointer"><input type="checkbox" id="set-theme-autre-cb" class="checkbox-theme sr-only" onchange="document.getElementById('set-theme-autre-input').classList.toggle('hidden')"><div class="border border-white/10 bg-white/5 rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-white/10">➕ Autre</div></label>
+                        <label class="cursor-pointer">
+                            <input type="checkbox" id="set-theme-autre-cb" class="checkbox-theme sr-only" onchange="document.getElementById('set-theme-autre-input').classList.toggle('hidden')">
+                            <div class="border border-white/10 bg-white/5 rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-white/10">➕ Autre</div>
+                        </label>
                         <input type="text" id="set-theme-autre-input" placeholder="Précisez..." class="hidden flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white">
                     </div>
                 </div>
+
                 <div>
                     <label class="text-xs text-brand-glow font-bold uppercase tracking-wider mb-2 block">Heure de Notification</label>
                     <input type="time" id="set-notif-time" class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-lg font-bold text-white focus:outline-none [color-scheme:dark]">
                 </div>
+
                 <button type="button" onclick="window.savePreferences('set')" id="set-save-btn" class="w-full bg-brand-600 hover:bg-brand-500 text-white py-4 rounded-xl font-bold text-sm shadow-lg transition">Mettre à jour & Regénérer</button>
             </form>
         </div>
@@ -288,21 +334,35 @@
         import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         // ==========================================
-        // 1. GESTION DE L'INSTALLATION (PWA) 
+        // 1. PWA : MANIFESTE INLINE & INSTALLATION
         // ==========================================
+        const manifestData = {
+            "name": "WikiMind Info",
+            "short_name": "WM Info",
+            "start_url": window.location.pathname,
+            "display": "standalone",
+            "background_color": "#050505",
+            "theme_color": "#050505",
+            "icons": [
+                { "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Wikipedia-logo-v2.svg/192px-Wikipedia-logo-v2.svg.png", "sizes": "192x192", "type": "image/png" },
+                { "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Wikipedia-logo-v2.svg/512px-Wikipedia-logo-v2.svg.png", "sizes": "512x512", "type": "image/png" }
+            ]
+        };
+        // Injecte le JSON comme un vrai fichier pour Chrome
+        document.getElementById('app-manifest').setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(manifestData)));
+
+        // Un petit worker fantôme (Chrome exige parfois qu'on tente de l'enregistrer pour valider la PWA)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(() => {
+                    // Ignoré silencieusement (fonctionne quand même souvent sur Android)
+                });
+            });
+        }
+
         let deferredPrompt;
         const pwaBanner = document.getElementById('pwa-install-banner');
         
-        // Détection de l'OS pour iOS
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
-
-        if (isIOS && !isStandalone) {
-            // Affichage de l'instruction pour iPhone
-            setTimeout(() => { document.getElementById('ios-install-banner').classList.remove('hidden'); document.getElementById('ios-install-banner').classList.add('animate-slide-up'); }, 2000);
-        }
-
-        // Capture Chrome/Android
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
@@ -315,32 +375,98 @@
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') window.showToast("Installation lancée !", "success");
                 deferredPrompt = null;
             }
         });
         document.getElementById('pwa-close-btn').addEventListener('click', () => pwaBanner.classList.add('hidden'));
 
+
         // ==========================================
-        // 2. FIREBASE CONFIG
+        // 2. DÉFINITION PAR APPUI LONG (SÉLECTION)
         // ==========================================
-        const firebaseConfig = { apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA", authDomain: "wikimind-3-comments.firebaseapp.com", projectId: "wikimind-3-comments", databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app" };
-        const app = initializeApp(firebaseConfig); const auth = getAuth(app); const db = getDatabase(app);
+        document.addEventListener('selectionchange', () => {
+            // Empêche le bouton de s'afficher quand on tape dans un champ texte
+            if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+
+            const text = window.getSelection().toString().trim();
+            const fab = document.getElementById('define-fab');
+            const fabText = document.getElementById('define-fab-text');
+
+            // Si on sélectionne 1 à 4 mots maximum
+            if (text.length > 1 && text.split(/\s+/).length <= 4) {
+                let shortText = text.substring(0, 15) + (text.length > 15 ? '...' : '');
+                fabText.innerText = `Définir "${shortText}"`;
+                fab.onclick = () => window.triggerDefinition(text);
+                fab.classList.remove('hidden');
+            } else {
+                fab.classList.add('hidden');
+            }
+        });
+
+        window.triggerDefinition = async (word) => {
+            document.getElementById('define-fab').classList.add('hidden');
+            document.getElementById('def-word-title').innerText = word;
+            document.getElementById('def-content').innerHTML = '<div class="flex items-center gap-3 opacity-50"><div class="loader w-4 h-4"></div> Réflexion de l\'IA...</div>';
+            document.getElementById('definition-modal').style.display = 'flex';
+            
+            // Efface la sélection visuelle sur le téléphone
+            window.getSelection().removeAllRanges();
+
+            const prompt = `Agis comme un dictionnaire moderne. Donne une définition très courte, simple et claire (max 2 phrases) du mot ou de l'expression : "${word}". Pas de blabla, va à l'essentiel.`;
+            const def = await callMistral(prompt);
+            
+            if (def) {
+                document.getElementById('def-content').innerHTML = formatMD(def);
+            } else {
+                document.getElementById('def-content').innerHTML = '<span class="text-red-400">Erreur lors de la définition.</span>';
+            }
+        };
+
+
+        // ==========================================
+        // 3. FIREBASE CONFIG
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+            authDomain: "wikimind-3-comments.firebaseapp.com",
+            projectId: "wikimind-3-comments",
+            databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app" 
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
         const MISTRAL_API_KEY = "SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9";
-        let currentUser = null; let userPrefs = null;
+
+        let currentUser = null;
+        let userPrefs = null;
 
         const defaultThemes = ['Science', 'Histoire', 'Espace', 'Technologie', 'Art', 'Psychologie', 'Nature', 'Philosophie', 'Économie', 'Géographie'];
+
         function injectThemes() {
-            let html = defaultThemes.map(t => `<label class="cursor-pointer relative"><input type="checkbox" value="${t}" class="checkbox-theme sr-only theme-cb"><div class="border border-white/10 bg-white/5 rounded-xl p-2 md:p-3 text-center text-xs md:text-sm font-medium text-white/60 transition-all hover:bg-white/10">${t}</div></label>`).join('');
+            let html = defaultThemes.map(t => `
+                <label class="cursor-pointer relative">
+                    <input type="checkbox" value="${t}" class="checkbox-theme sr-only theme-cb">
+                    <div class="border border-white/10 bg-white/5 rounded-xl p-2 md:p-3 text-center text-xs md:text-sm font-medium text-white/60 transition-all hover:bg-white/10">${t}</div>
+                </label>`).join('');
             document.getElementById('ob-themes-container').innerHTML = html;
-            let htmlSet = defaultThemes.map(t => `<label class="cursor-pointer relative"><input type="checkbox" value="${t}" class="checkbox-theme sr-only theme-cb-set"><div class="border border-white/10 bg-white/5 rounded-lg p-2 text-center text-xs font-medium text-white/60 transition-all hover:bg-white/10">${t}</div></label>`).join('');
+            
+            let htmlSet = defaultThemes.map(t => `
+                <label class="cursor-pointer relative">
+                    <input type="checkbox" value="${t}" class="checkbox-theme sr-only theme-cb-set">
+                    <div class="border border-white/10 bg-white/5 rounded-lg p-2 text-center text-xs font-medium text-white/60 transition-all hover:bg-white/10">${t}</div>
+                </label>`).join('');
             document.getElementById('set-themes-container').innerHTML = htmlSet;
-        } injectThemes();
+        }
+        injectThemes();
 
         window.showToast = (msg, type = 'info') => {
-            const c = document.getElementById('toast-container'); const t = document.createElement('div');
+            const c = document.getElementById('toast-container');
+            const t = document.createElement('div');
             t.className = `px-4 py-3 rounded-xl text-sm font-bold shadow-xl flex items-center gap-3 animate-fade-in backdrop-blur-md border ${type === 'error' ? 'bg-red-500/20 text-red-200 border-red-500/30' : type === 'success' ? 'bg-green-500/20 text-green-200 border-green-500/30' : 'bg-white/10 text-white border-white/10'}`;
             t.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-triangle-exclamation' : type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i> <span>${msg}</span>`;
-            c.appendChild(t); setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
+            c.appendChild(t);
+            setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
         };
 
         const switchSection = (id) => {
@@ -349,34 +475,48 @@
             document.getElementById('nav-tools').classList[id === 'dashboard-section' ? 'add' : 'remove']('flex');
         };
 
-        window.toggleSchoolFields = (prefix) => { let val = prefix === 'ob' ? document.querySelector('input[name="goal"]:checked').value : document.getElementById('set-goal').value; document.getElementById(`${prefix}-school-fields`).classList[val === 'school' ? 'remove' : 'add']('hidden'); };
+        window.toggleSchoolFields = (prefix) => {
+            let val = prefix === 'ob' ? document.querySelector('input[name="goal"]:checked').value : document.getElementById('set-goal').value;
+            document.getElementById(`${prefix}-school-fields`).classList[val === 'school' ? 'remove' : 'add']('hidden');
+        };
 
-        // AUTHENTICATION
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                currentUser = user; document.getElementById('nav-username').innerText = user.displayName || user.email.split('@')[0]; document.getElementById('nav-avatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff`;
+                currentUser = user;
+                document.getElementById('nav-username').innerText = user.displayName || user.email.split('@')[0];
+                document.getElementById('nav-avatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff`;
                 await loadUserData();
-            } else { currentUser = null; switchSection('auth-section'); }
+            } else {
+                currentUser = null;
+                switchSection('auth-section');
+            }
         });
+
         window.loginGoogle = async () => { try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch (e) { window.showToast(e.message, "error"); } };
         document.getElementById('email-auth-form').addEventListener('submit', async (e) => {
-            e.preventDefault(); const btn = document.getElementById('auth-submit-btn'); btn.innerHTML = '<div class="loader mx-auto"></div>';
+            e.preventDefault();
+            const btn = document.getElementById('auth-submit-btn'); btn.innerHTML = '<div class="loader mx-auto"></div>';
             try { await signInWithEmailAndPassword(auth, document.getElementById('auth-email').value, document.getElementById('auth-password').value); } 
             catch (er) { try { await createUserWithEmailAndPassword(auth, document.getElementById('auth-email').value, document.getElementById('auth-password').value); } catch(er2) { window.showToast(er2.message, "error"); } }
             btn.innerHTML = 'Connexion / Inscription';
         });
         window.logout = () => signOut(auth);
 
-        // DATA & NOTIFICATIONS
         const getTodayString = () => new Date().toISOString().split('T')[0];
 
         async function loadUserData() {
             try {
                 const snap = await get(child(ref(db), `users/${currentUser.uid}`));
                 if (snap.exists() && snap.val().preferences) {
-                    userPrefs = snap.val().preferences; await handleStreakLogic(snap.val().stats); populateSettingsModal(); switchSection('dashboard-section');
-                    document.getElementById('dashboard-topics').innerText = `${userPrefs.goal === 'school' ? `🎓 ${userPrefs.schoolLevel}` : `🌍 Culture`} | ${userPrefs.topics.join(', ')}`;
-                    setupReliableNotification(userPrefs.time); window.generateDailyInfo(false);
+                    userPrefs = snap.val().preferences;
+                    await handleStreakLogic(snap.val().stats);
+                    populateSettingsModal();
+                    switchSection('dashboard-section');
+                    let goalText = userPrefs.goal === 'school' ? `🎓 ${userPrefs.schoolLevel}` : `🌍 Culture`;
+                    document.getElementById('dashboard-topics').innerText = `${goalText} | ${userPrefs.topics.join(', ')}`;
+                    
+                    setupReliableNotification(userPrefs.time);
+                    window.generateDailyInfo(false);
                 } else { switchSection('onboarding-section'); }
             } catch (err) { window.showToast("Erreur DB", "error"); }
         }
@@ -388,23 +528,39 @@
             if (topics.length === 0) return window.showToast("Choisissez au moins un thème.", "error");
 
             let goal = prefix === 'ob' ? document.querySelector('input[name="goal"]:checked').value : document.getElementById('set-goal').value;
-            userPrefs = { topics, time: document.getElementById(`${prefix}-notif-time`).value, goal, schoolLevel: goal === 'school' ? document.getElementById(`${prefix}-school-level`).value : null, specialties: goal === 'school' ? document.getElementById(`${prefix}-school-specs`).value : null };
+            userPrefs = { 
+                topics, time: document.getElementById(`${prefix}-notif-time`).value, goal, 
+                schoolLevel: goal === 'school' ? document.getElementById(`${prefix}-school-level`).value : null, 
+                specialties: goal === 'school' ? document.getElementById(`${prefix}-school-specs`).value : null 
+            };
+            
             btn.innerHTML = '<div class="loader mx-auto"></div>';
             try {
                 if ("Notification" in window && Notification.permission !== "granted") await Notification.requestPermission();
                 await set(ref(db, `users/${currentUser.uid}/preferences`), userPrefs);
                 if(prefix === 'ob') await set(ref(db, `users/${currentUser.uid}/stats`), { streak: 1, lastLogin: getTodayString() });
+                
                 window.showToast("Sauvegardé !", "success");
-                if (prefix === 'set') { document.getElementById('settings-modal').style.display = 'none'; document.getElementById('dashboard-topics').innerText = `${userPrefs.goal === 'school' ? `🎓 ${userPrefs.schoolLevel}` : `🌍 Culture`} | ${userPrefs.topics.join(', ')}`; setupReliableNotification(userPrefs.time); window.generateDailyInfo(true); } else { await loadUserData(); }
+                if (prefix === 'set') {
+                    document.getElementById('settings-modal').style.display = 'none';
+                    document.getElementById('dashboard-topics').innerText = `${userPrefs.goal === 'school' ? `🎓 ${userPrefs.schoolLevel}` : `🌍 Culture`} | ${userPrefs.topics.join(', ')}`;
+                    setupReliableNotification(userPrefs.time);
+                    window.generateDailyInfo(true); 
+                } else { await loadUserData(); }
             } catch (err) { window.showToast(err.message, "error"); } finally { btn.innerHTML = ogBtnHtml; }
         };
 
         function populateSettingsModal() {
-            if(!userPrefs) return; document.getElementById('set-goal').value = userPrefs.goal; window.toggleSchoolFields('set');
+            if(!userPrefs) return;
+            document.getElementById('set-goal').value = userPrefs.goal; window.toggleSchoolFields('set');
             if(userPrefs.goal === 'school') { document.getElementById('set-school-level').value = userPrefs.schoolLevel; document.getElementById('set-school-specs').value = userPrefs.specialties || ''; }
-            document.getElementById('set-notif-time').value = userPrefs.time; document.querySelectorAll('.theme-cb-set').forEach(cb => cb.checked = false);
+            document.getElementById('set-notif-time').value = userPrefs.time;
+            document.querySelectorAll('.theme-cb-set').forEach(cb => cb.checked = false);
             document.getElementById('set-theme-autre-cb').checked = false; document.getElementById('set-theme-autre-input').classList.add('hidden'); document.getElementById('set-theme-autre-input').value = '';
-            userPrefs.topics.forEach(t => { let found = false; document.querySelectorAll('.theme-cb-set').forEach(cb => { if(cb.value === t) { cb.checked = true; found = true; }}); if(!found) { document.getElementById('set-theme-autre-cb').checked = true; document.getElementById('set-theme-autre-input').classList.remove('hidden'); document.getElementById('set-theme-autre-input').value = t; } });
+            userPrefs.topics.forEach(t => {
+                let found = false; document.querySelectorAll('.theme-cb-set').forEach(cb => { if(cb.value === t) { cb.checked = true; found = true; }});
+                if(!found) { document.getElementById('set-theme-autre-cb').checked = true; document.getElementById('set-theme-autre-input').classList.remove('hidden'); document.getElementById('set-theme-autre-input').value = t; }
+            });
         }
 
         async function handleStreakLogic(stats) {
@@ -418,47 +574,104 @@
             document.getElementById('streak-count').innerText = streak;
         }
 
+        // IA MISTRAL
+        async function callMistral(prompt) {
+            try {
+                const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+                    method: 'POST', headers: { 'Authorization': `Bearer ${MISTRAL_API_KEY}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: "mistral-small-latest", messages: [{ role: "user", content: prompt }], temperature: 0.7 })
+                });
+                const data = await res.json(); return data.choices[0].message.content;
+            } catch (e) { return null; }
+        }
+
+        function formatMD(text) {
+            let html = text.replace(/^### (.*$)/gim, '<h3>$1</h3>').replace(/^## (.*$)/gim, '<h3>$1</h3>');
+            html = html.replace(/^\*\*([^*]+)\*\*/gim, '<strong>$1</strong>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            return html.replace(/\n\n/g, '<br><br>').replace(/^- (.*$)/gim, '<li>$1</li>');
+        }
+
+        window.generateDailyInfo = async (force = false) => {
+            const dbPath = `users/${currentUser.uid}/dailyInfo/${getTodayString()}`;
+            const contentDiv = document.getElementById('daily-info-content');
+            contentDiv.innerHTML = '<div class="flex justify-center items-center h-full opacity-50"><div class="loader mr-3"></div> Création par IA en cours...</div>';
+
+            if (!force) {
+                const snap = await get(ref(db, dbPath));
+                if (snap.exists()) return contentDiv.innerHTML = formatMD(snap.val().content);
+            }
+
+            let contextStr = userPrefs.goal === 'school' 
+                ? `L'utilisateur est un élève de niveau "${userPrefs.schoolLevel}". Il étudie ces spécialités : "${userPrefs.specialties || 'Général'}". Adapte rigoureusement ton vocabulaire et la profondeur technique à son niveau scolaire.`
+                : `L'objectif est d'enrichir sa culture générale pour briller en société, de manière accessible et fascinante.`;
+
+            const prompt = `Agis comme un professeur passionnant pour WikiMind Info. Génère une leçon courte ou un fait bluffant sur l'un de ces thèmes : ${userPrefs.topics.join(', ')}. ${contextStr} RÈGLE STRICTE : AUCUNE actualité. Que du savoir intemporel. Format requis :
+### [Titre accrocheur]
+[1 ou 2 paragraphes d'explication]
+- **Le saviez-vous ?** [Anecdote finale]`;
+
+            const res = await callMistral(prompt);
+            if (res) { await set(ref(db, dbPath), { content: res }); contentDiv.innerHTML = formatMD(res); }
+            else contentDiv.innerHTML = '<p class="text-red-400">Erreur réseau IA.</p>';
+        };
+
+        window.generateCustomInfo = async () => {
+            const input = document.getElementById('custom-subject-input'), btn = document.getElementById('custom-btn'), output = document.getElementById('custom-info-content');
+            if (!input.value.trim()) return;
+            btn.innerHTML = '<div class="loader w-4 h-4"></div>'; btn.disabled = true;
+            output.classList.remove('hidden'); output.innerHTML = 'Recherche...';
+
+            let contextStr = userPrefs.goal === 'school' ? `Explique ça pour un niveau ${userPrefs.schoolLevel}.` : `Explique pour enrichir la culture générale.`;
+            const prompt = `L'utilisateur demande : "${input.value}". ${contextStr} Refuse de parler d'actualité ou news. Sois bref et clair.`;
+
+            const res = await callMistral(prompt);
+            output.innerHTML = res ? formatMD(res) : '<p class="text-red-400">Erreur.</p>';
+            btn.innerHTML = 'Explorer'; btn.disabled = false; input.value = '';
+        };
+
         function setupReliableNotification(timeStr) {
             if (!timeStr || Notification.permission !== "granted") return;
             const [targetH, targetM] = timeStr.split(':').map(Number);
-            const now = new Date(); let target = new Date(); target.setHours(targetH, targetM, 0, 0);
-            if (target <= now) target.setDate(target.getDate() + 1); // Déjà passé, on vise demain
+            const now = new Date();
+            let target = new Date();
+            target.setHours(targetH, targetM, 0, 0);
+
+            if (target <= now) target.setDate(target.getDate() + 1);
+
             const msUntil = target.getTime() - now.getTime();
             if (window.notifTimeout) clearTimeout(window.notifTimeout);
+
             window.notifTimeout = setTimeout(() => {
-                new Notification('WikiMind Info 🧠', { body: 'Votre savoir du jour vous attend !', icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Wikipedia-logo-v2.svg/192px-Wikipedia-logo-v2.svg.png' });
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.ready.then(reg => {
+                        reg.showNotification('WikiMind Info 🧠', {
+                            body: 'Votre savoir du jour vous attend ! Cliquez pour apprendre.',
+                            icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Wikipedia-logo-v2.svg/192px-Wikipedia-logo-v2.svg.png',
+                            vibrate: [200, 100, 200]
+                        });
+                    });
+                } else {
+                    new Notification('WikiMind Info 🧠', { body: 'Votre savoir du jour vous attend !' });
+                }
                 setupReliableNotification(timeStr);
             }, msUntil);
         }
 
-        // IA GENERATION
-        async function callMistral(prompt) {
-            try { const res = await fetch('https://api.mistral.ai/v1/chat/completions', { method: 'POST', headers: { 'Authorization': `Bearer ${MISTRAL_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: "mistral-small-latest", messages: [{ role: "user", content: prompt }], temperature: 0.7 }) }); const data = await res.json(); return data.choices[0].message.content; } catch (e) { return null; }
-        }
-        function formatMD(text) { let html = text.replace(/^### (.*$)/gim, '<h3>$1</h3>').replace(/^## (.*$)/gim, '<h3>$1</h3>'); html = html.replace(/^\*\*([^*]+)\*\*/gim, '<strong>$1</strong>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>'); return html.replace(/\n\n/g, '<br><br>').replace(/^- (.*$)/gim, '<li>$1</li>'); }
-        window.generateDailyInfo = async (force = false) => {
-            const dbPath = `users/${currentUser.uid}/dailyInfo/${getTodayString()}`; const contentDiv = document.getElementById('daily-info-content');
-            contentDiv.innerHTML = '<div class="flex justify-center items-center h-full opacity-50"><div class="loader mr-3"></div> Création par IA en cours...</div>';
-            if (!force) { const snap = await get(ref(db, dbPath)); if (snap.exists()) return contentDiv.innerHTML = formatMD(snap.val().content); }
-            let contextStr = userPrefs.goal === 'school' ? `L'utilisateur est un élève de niveau "${userPrefs.schoolLevel}". Il étudie ces spécialités : "${userPrefs.specialties || 'Général'}". Adapte ton vocabulaire.` : `L'objectif est d'enrichir sa culture générale.`;
-            const prompt = `Agis comme un professeur passionnant pour WikiMind Info. Génère un fait sur l'un de ces thèmes : ${userPrefs.topics.join(', ')}. ${contextStr} AUCUNE actualité. Format requis :
-### [Titre]
-[1 ou 2 paragraphes]
-- **Le saviez-vous ?** [Anecdote finale]`;
-            const res = await callMistral(prompt);
-            if (res) { await set(ref(db, dbPath), { content: res }); contentDiv.innerHTML = formatMD(res); } else contentDiv.innerHTML = '<p class="text-red-400">Erreur réseau IA.</p>';
-        };
-        window.generateCustomInfo = async () => {
-            const input = document.getElementById('custom-subject-input'), btn = document.getElementById('custom-btn'), output = document.getElementById('custom-info-content'); if (!input.value.trim()) return;
-            btn.innerHTML = '<div class="loader w-4 h-4"></div>'; btn.disabled = true; output.classList.remove('hidden'); output.innerHTML = 'Recherche...';
-            let contextStr = userPrefs.goal === 'school' ? `Explique ça pour un niveau ${userPrefs.schoolLevel}.` : `Explique pour enrichir la culture générale.`;
-            const prompt = `L'utilisateur demande : "${input.value}". ${contextStr} Refuse de parler d'actualité.`;
-            const res = await callMistral(prompt); output.innerHTML = res ? formatMD(res) : '<p class="text-red-400">Erreur.</p>';
-            btn.innerHTML = 'Explorer'; btn.disabled = false; input.value = '';
-        };
-
         // BG Animation
-        const canvas = document.getElementById('aurora-bg'); if(canvas) { const ctx = canvas.getContext('2d'); let width, height; const orbs = [{ x: 0.3, y: 0.3, r: 0.5, color: 'rgba(99, 102, 241, 0.1)', vx: 0.001, vy: 0.001 }, { x: 0.7, y: 0.7, r: 0.5, color: 'rgba(168, 85, 247, 0.1)', vx: -0.001, vy: -0.001 }]; function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; } function animate() { ctx.clearRect(0, 0, width, height); ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, width, height); orbs.forEach(o => { o.x+=o.vx; o.y+=o.vy; if(o.x<0||o.x>1)o.vx*=-1; if(o.y<0||o.y>1)o.vy*=-1; const g = ctx.createRadialGradient(o.x*width, o.y*height, 0, o.x*width, o.y*height, o.r*width); g.addColorStop(0, o.color); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, width, height); }); requestAnimationFrame(animate); } window.addEventListener('resize', resize); resize(); animate(); }
+        const canvas = document.getElementById('aurora-bg');
+        if(canvas) {
+            const ctx = canvas.getContext('2d'); let width, height;
+            const orbs = [{ x: 0.3, y: 0.3, r: 0.5, color: 'rgba(99, 102, 241, 0.1)', vx: 0.001, vy: 0.001 }, { x: 0.7, y: 0.7, r: 0.5, color: 'rgba(168, 85, 247, 0.1)', vx: -0.001, vy: -0.001 }];
+            function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+            function animate() {
+                ctx.clearRect(0, 0, width, height); ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, width, height);
+                orbs.forEach(o => { o.x+=o.vx; o.y+=o.vy; if(o.x<0||o.x>1)o.vx*=-1; if(o.y<0||o.y>1)o.vy*=-1;
+                    const g = ctx.createRadialGradient(o.x*width, o.y*height, 0, o.x*width, o.y*height, o.r*width);
+                    g.addColorStop(0, o.color); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, width, height);
+                }); requestAnimationFrame(animate);
+            }
+            window.addEventListener('resize', resize); resize(); animate();
+        }
     </script>
 </body>
 </html>
