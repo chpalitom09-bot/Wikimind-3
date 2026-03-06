@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>WikiMind Info - Apprentissage Quotidien</title>
     
-    <!-- LIAISON MANIFESTE PWA DYNAMIQUE -->
-    <link id="app-manifest" rel="manifest" href="">
+    <!-- LIAISON AVEC LE MANIFESTE PWA (INSTALLATION MOBILE) -->
+    <link rel="manifest" href="./info.json">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WM Info">
@@ -334,29 +334,13 @@
         import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         // ==========================================
-        // 1. PWA : MANIFESTE INLINE & INSTALLATION
+        // 1. PWA : ENREGISTREMENT SERVICE WORKER
         // ==========================================
-        const manifestData = {
-            "name": "WikiMind Info",
-            "short_name": "WM Info",
-            "start_url": window.location.pathname,
-            "display": "standalone",
-            "background_color": "#050505",
-            "theme_color": "#050505",
-            "icons": [
-                { "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Wikipedia-logo-v2.svg/192px-Wikipedia-logo-v2.svg.png", "sizes": "192x192", "type": "image/png" },
-                { "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Wikipedia-logo-v2.svg/512px-Wikipedia-logo-v2.svg.png", "sizes": "512x512", "type": "image/png" }
-            ]
-        };
-        // Injecte le JSON comme un vrai fichier pour Chrome
-        document.getElementById('app-manifest').setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(manifestData)));
-
-        // Un petit worker fantôme (Chrome exige parfois qu'on tente de l'enregistrer pour valider la PWA)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').catch(() => {
-                    // Ignoré silencieusement (fonctionne quand même souvent sur Android)
-                });
+                navigator.serviceWorker.register('./info-sw.js')
+                .then(reg => console.log('✅ Service Worker enregistré !'))
+                .catch(err => console.log('❌ SW erreur :', err));
             });
         }
 
@@ -364,7 +348,7 @@
         const pwaBanner = document.getElementById('pwa-install-banner');
         
         window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
+            e.preventDefault(); // Empêche l'affichage natif pour afficher la nôtre
             deferredPrompt = e;
             pwaBanner.classList.remove('hidden');
             pwaBanner.classList.add('animate-slide-up');
@@ -386,14 +370,12 @@
         // 2. DÉFINITION PAR APPUI LONG (SÉLECTION)
         // ==========================================
         document.addEventListener('selectionchange', () => {
-            // Empêche le bouton de s'afficher quand on tape dans un champ texte
             if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
 
             const text = window.getSelection().toString().trim();
             const fab = document.getElementById('define-fab');
             const fabText = document.getElementById('define-fab-text');
 
-            // Si on sélectionne 1 à 4 mots maximum
             if (text.length > 1 && text.split(/\s+/).length <= 4) {
                 let shortText = text.substring(0, 15) + (text.length > 15 ? '...' : '');
                 fabText.innerText = `Définir "${shortText}"`;
@@ -410,7 +392,6 @@
             document.getElementById('def-content').innerHTML = '<div class="flex items-center gap-3 opacity-50"><div class="loader w-4 h-4"></div> Réflexion de l\'IA...</div>';
             document.getElementById('definition-modal').style.display = 'flex';
             
-            // Efface la sélection visuelle sur le téléphone
             window.getSelection().removeAllRanges();
 
             const prompt = `Agis comme un dictionnaire moderne. Donne une définition très courte, simple et claire (max 2 phrases) du mot ou de l'expression : "${word}". Pas de blabla, va à l'essentiel.`;
@@ -425,7 +406,7 @@
 
 
         // ==========================================
-        // 3. FIREBASE CONFIG
+        // 3. FIREBASE CONFIG & LOGIC
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
