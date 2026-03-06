@@ -6,11 +6,11 @@
     <title>WikiMind Info - Apprentissage Quotidien</title>
     
     <!-- LIAISON AVEC LE MANIFESTE PWA (INSTALLATION MOBILE) -->
-    <link rel="manifest" href="info.json">
+    <link rel="manifest" href="./info.json">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="WM Info">
-    <meta name="theme-color" content="#6366f1">
+    <meta name="theme-color" content="#050505">
 
     <!-- Fonts & Icons -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -24,10 +24,16 @@
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
                     colors: { brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' } },
-                    animation: { 'fade-in': 'fadeIn 0.5s ease-out forwards', 'bounce-slow': 'bounce 3s infinite', 'pulse-glow': 'pulseGlow 2s infinite' },
+                    animation: { 
+                        'fade-in': 'fadeIn 0.5s ease-out forwards', 
+                        'bounce-slow': 'bounce 3s infinite', 
+                        'pulse-glow': 'pulseGlow 2s infinite',
+                        'slide-up': 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+                    },
                     keyframes: { 
                         fadeIn: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
-                        pulseGlow: { '0%, 100%': { opacity: 1, transform: 'scale(1)' }, '50%': { opacity: 0.8, transform: 'scale(1.05)' } }
+                        pulseGlow: { '0%, 100%': { opacity: 1, transform: 'scale(1)' }, '50%': { opacity: 0.8, transform: 'scale(1.05)' } },
+                        slideUp: { '0%': { opacity: 0, transform: 'translate(-50%, 100%)' }, '100%': { opacity: 1, transform: 'translate(-50%, 0)' } }
                     }
                 }
             }
@@ -41,7 +47,7 @@
         }
         .text-gradient { background: linear-gradient(135deg, #ffffff 0%, #a5a6f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .checkbox-theme:checked + div { background-color: rgba(99, 102, 241, 0.2); border-color: #6366f1; color: white; }
-        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
         
         .loader { border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid #6366f1; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -49,6 +55,7 @@
         .ai-content h3 { font-size: 1.25rem; font-weight: bold; margin-bottom: 0.5rem; color: #818cf8; font-family: 'Space Grotesk', sans-serif;}
         .ai-content p { margin-bottom: 1rem; color: rgba(255,255,255,0.8); line-height: 1.6; }
         .ai-content ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: rgba(255,255,255,0.8); }
+        .ai-content strong { color: white; }
         
         /* Modal */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
@@ -59,10 +66,30 @@
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
     </style>
 </head>
-<body class="selection:bg-brand-500 selection:text-white min-h-screen flex flex-col">
+<body class="selection:bg-brand-500 selection:text-white min-h-screen flex flex-col pb-20">
 
+    <!-- AURORA BG -->
     <canvas id="aurora-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
+    
+    <!-- TOASTS -->
     <div id="toast-container"></div>
+
+    <!-- BANNIERE D'INSTALLATION PWA FLOTTANTE -->
+    <div id="pwa-install-banner" class="hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 w-[90%] max-w-sm glass-panel p-4 rounded-3xl z-[100] flex items-center justify-between shadow-2xl shadow-brand-500/20 border border-brand-500/50">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-gradient-to-tr from-brand-600 to-purple-500 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
+                <i class="fa-solid fa-mobile-screen"></i>
+            </div>
+            <div>
+                <div class="font-bold text-sm text-white font-display">Installer l'App</div>
+                <div class="text-[10px] text-white/60">Accès rapide & notifications</div>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button id="pwa-close-btn" class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50 hover:text-white transition"><i class="fa-solid fa-times"></i></button>
+            <button id="pwa-accept-btn" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl shadow-lg transition">Installer</button>
+        </div>
+    </div>
 
     <!-- NAVBAR -->
     <nav class="w-full z-50 px-4 py-4 transition-all duration-300">
@@ -75,16 +102,12 @@
             </a>
 
             <div class="flex items-center gap-3 md:gap-4">
-                <button id="install-pwa-btn" class="hidden text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition text-white/70 font-bold">
-                    <i class="fa-solid fa-download mr-1"></i> App
-                </button>
-                
                 <!-- Outils Connectés -->
                 <div id="nav-tools" class="hidden items-center gap-3">
                     <button onclick="document.getElementById('settings-modal').style.display='flex'" class="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/70 transition" title="Paramètres">
                         <i class="fa-solid fa-gear"></i>
                     </button>
-                    <div id="nav-user-profile" class="flex items-center gap-3 cursor-pointer pl-2 border-l border-white/10" onclick="window.logout()">
+                    <div id="nav-user-profile" class="flex items-center gap-3 cursor-pointer pl-3 border-l border-white/10" onclick="window.logout()">
                         <div class="text-right hidden md:block">
                             <div id="nav-username" class="text-xs font-bold text-white">Profil</div>
                             <div class="text-[10px] text-brand-glow">Déconnexion</div>
@@ -96,10 +119,11 @@
         </div>
     </nav>
 
-    <main class="flex-1 max-w-4xl mx-auto w-full px-4 py-8 relative flex flex-col items-center justify-center">
+    <!-- MAIN CONTAINER -->
+    <main class="flex-1 max-w-4xl mx-auto w-full px-4 py-4 relative flex flex-col items-center justify-center">
 
         <!-- 1. LOADING SCREEN -->
-        <div id="loading-screen" class="flex flex-col items-center justify-center animate-pulse-glow">
+        <div id="loading-screen" class="flex flex-col items-center justify-center animate-pulse-glow h-[50vh]">
             <div class="loader w-12 h-12 mb-4"></div>
             <p class="text-white/50 text-sm font-display tracking-widest uppercase">Initialisation...</p>
         </div>
@@ -149,7 +173,7 @@
                         </label>
                     </div>
 
-                    <!-- Champs spécifiques École (Cachés par défaut) -->
+                    <!-- Champs spécifiques École -->
                     <div id="ob-school-fields" class="hidden bg-white/5 border border-white/10 rounded-xl p-4 mb-8 space-y-4">
                         <div>
                             <label class="text-xs text-white/60 block mb-1">Niveau scolaire</label>
@@ -169,9 +193,7 @@
 
                     <!-- Thèmes -->
                     <h3 class="font-bold mb-3 text-sm uppercase tracking-wider text-brand-glow">2. Thèmes favoris</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="ob-themes-container">
-                        <!-- Themes injected by JS to share with settings -->
-                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="ob-themes-container"></div>
                     <div class="flex items-center gap-3 mb-8">
                         <label class="cursor-pointer relative flex-shrink-0">
                             <input type="checkbox" id="ob-theme-autre-cb" class="checkbox-theme sr-only" onchange="document.getElementById('ob-theme-autre-input').classList.toggle('hidden')">
@@ -184,7 +206,7 @@
 
                     <!-- Notif -->
                     <h3 class="font-bold mb-3 text-sm uppercase tracking-wider text-brand-glow">3. Heure de Notification</h3>
-                    <p class="text-xs text-white/50 mb-3">L'application doit rester en arrière-plan pour recevoir la notification exacte à l'heure locale.</p>
+                    <p class="text-xs text-white/50 mb-3">Choisissez à quelle heure vous souhaitez recevoir votre dose de savoir quotidienne.</p>
                     <div class="flex items-center gap-4 mb-8 bg-white/5 p-4 rounded-xl border border-white/10">
                         <i class="fa-regular fa-bell text-xl text-brand-glow"></i>
                         <input type="time" id="ob-notif-time" value="08:00" class="bg-transparent border-none text-xl font-bold text-white focus:outline-none flex-1 [color-scheme:dark]">
@@ -213,7 +235,7 @@
 
             <!-- Info of the Day -->
             <div class="glass-panel rounded-3xl p-6 md:p-10 relative overflow-hidden">
-                <div class="absolute -top-10 -right-10 w-40 h-40 bg-brand-500/20 blur-3xl rounded-full"></div>
+                <div class="absolute -top-10 -right-10 w-40 h-40 bg-brand-500/20 blur-3xl rounded-full pointer-events-none"></div>
                 <div class="flex justify-between items-start mb-6 relative z-10">
                     <div>
                         <h2 class="text-2xl md:text-3xl font-display font-bold text-gradient mb-1">Savoir du Jour</h2>
@@ -232,7 +254,7 @@
                 <p class="text-white/50 text-xs mb-4">Posez une question précise (hors actualité). L'IA vous l'expliquera selon votre profil.</p>
                 <div class="flex flex-col md:flex-row gap-2">
                     <input type="text" id="custom-subject-input" placeholder="Ex: C'est quoi la physique quantique ?" class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-500">
-                    <button onclick="window.generateCustomInfo()" id="custom-btn" class="bg-brand-600 hover:bg-brand-500 text-white px-6 py-3 rounded-xl font-bold text-sm transition">Explorer</button>
+                    <button onclick="window.generateCustomInfo()" id="custom-btn" class="bg-brand-600 hover:bg-brand-500 text-white px-6 py-3 rounded-xl font-bold text-sm transition shadow-lg shadow-brand-500/20">Explorer</button>
                 </div>
                 <div id="custom-info-content" class="ai-content mt-4 hidden bg-white/5 rounded-xl p-4 border border-white/10 text-sm"></div>
             </div>
@@ -241,10 +263,10 @@
 
     <!-- SETTINGS MODAL -->
     <div id="settings-modal" class="modal" onclick="this.style.display='none'">
-        <div class="modal-content glass-panel p-6 rounded-3xl" onclick="event.stopPropagation()">
+        <div class="modal-content glass-panel p-6 md:p-8 rounded-3xl" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
                 <h2 class="text-2xl font-display font-bold">Paramètres</h2>
-                <button onclick="document.getElementById('settings-modal').style.display='none'" class="text-white/50 hover:text-white"><i class="fa-solid fa-times text-xl"></i></button>
+                <button onclick="document.getElementById('settings-modal').style.display='none'" class="text-white/50 hover:text-white w-8 h-8 flex items-center justify-center rounded-full bg-white/5"><i class="fa-solid fa-times"></i></button>
             </div>
             
             <form id="settings-form" class="space-y-6">
@@ -285,7 +307,7 @@
                     <input type="time" id="set-notif-time" class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-lg font-bold text-white focus:outline-none [color-scheme:dark]">
                 </div>
 
-                <button type="button" onclick="window.savePreferences('set')" id="set-save-btn" class="w-full bg-brand-600 hover:bg-brand-500 text-white py-3 rounded-xl font-bold text-sm shadow-lg transition">Enregistrer et Regénérer l'info</button>
+                <button type="button" onclick="window.savePreferences('set')" id="set-save-btn" class="w-full bg-brand-600 hover:bg-brand-500 text-white py-4 rounded-xl font-bold text-sm shadow-lg transition">Mettre à jour & Regénérer</button>
             </form>
         </div>
     </div>
@@ -296,33 +318,48 @@
         import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // === ENREGISTREMENT SERVICE WORKER (PWA) ===
+        // ==========================================
+        // 1. PWA INSTALLATION & SERVICE WORKER
+        // ==========================================
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('info-sw.js')
-                .then(reg => console.log('SW registered!', reg))
-                .catch(err => console.log('SW registration failed', err));
+                navigator.serviceWorker.register('./info-sw.js')
+                .then(reg => console.log('✅ Service Worker enregistré !'))
+                .catch(err => console.log('❌ SW erreur :', err));
             });
         }
 
-        // PWA Install Button Logic
         let deferredPrompt;
-        const installBtn = document.getElementById('install-pwa-btn');
+        const pwaBanner = document.getElementById('pwa-install-banner');
+        const pwaAcceptBtn = document.getElementById('pwa-accept-btn');
+        const pwaCloseBtn = document.getElementById('pwa-close-btn');
+
+        // Capture de l'event d'installation Chrome/Android
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            installBtn.classList.remove('hidden');
+            // Affiche la belle bannière avec animation
+            pwaBanner.classList.remove('hidden');
+            pwaBanner.classList.add('animate-slide-up');
         });
-        installBtn.addEventListener('click', async () => {
+
+        pwaAcceptBtn.addEventListener('click', async () => {
+            pwaBanner.classList.add('hidden');
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') installBtn.classList.add('hidden');
+                if (outcome === 'accepted') console.log('App installée !');
                 deferredPrompt = null;
             }
         });
 
-        // === FIREBASE CONFIG ===
+        pwaCloseBtn.addEventListener('click', () => {
+            pwaBanner.classList.add('hidden');
+        });
+
+        // ==========================================
+        // 2. FIREBASE CONFIG
+        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
             authDomain: "wikimind-3-comments.firebaseapp.com",
@@ -339,54 +376,46 @@
 
         const defaultThemes = ['Science', 'Histoire', 'Espace', 'Technologie', 'Art', 'Psychologie', 'Nature', 'Philosophie', 'Économie', 'Géographie'];
 
-        // Inject Themes UI
         function injectThemes() {
             let html = defaultThemes.map(t => `
                 <label class="cursor-pointer relative">
                     <input type="checkbox" value="${t}" class="checkbox-theme sr-only theme-cb">
                     <div class="border border-white/10 bg-white/5 rounded-xl p-2 md:p-3 text-center text-xs md:text-sm font-medium text-white/60 transition-all hover:bg-white/10">${t}</div>
-                </label>
-            `).join('');
+                </label>`).join('');
             document.getElementById('ob-themes-container').innerHTML = html;
             
             let htmlSet = defaultThemes.map(t => `
                 <label class="cursor-pointer relative">
                     <input type="checkbox" value="${t}" class="checkbox-theme sr-only theme-cb-set">
                     <div class="border border-white/10 bg-white/5 rounded-lg p-2 text-center text-xs font-medium text-white/60 transition-all hover:bg-white/10">${t}</div>
-                </label>
-            `).join('');
+                </label>`).join('');
             document.getElementById('set-themes-container').innerHTML = htmlSet;
         }
         injectThemes();
 
-        // UI Helpers
         window.showToast = (msg, type = 'info') => {
             const c = document.getElementById('toast-container');
             const t = document.createElement('div');
-            t.className = `px-4 py-3 rounded-lg text-sm font-medium shadow-xl flex items-center gap-3 animate-fade-in backdrop-blur-md border ${type === 'error' ? 'bg-red-500/20 text-red-200 border-red-500/30' : type === 'success' ? 'bg-green-500/20 text-green-200 border-green-500/30' : 'bg-white/10 text-white border-white/10'}`;
+            t.className = `px-4 py-3 rounded-xl text-sm font-bold shadow-xl flex items-center gap-3 animate-fade-in backdrop-blur-md border ${type === 'error' ? 'bg-red-500/20 text-red-200 border-red-500/30' : type === 'success' ? 'bg-green-500/20 text-green-200 border-green-500/30' : 'bg-white/10 text-white border-white/10'}`;
             t.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-triangle-exclamation' : type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i> <span>${msg}</span>`;
             c.appendChild(t);
             setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
         };
 
         const switchSection = (id) => {
-            ['loading-screen', 'auth-section', 'onboarding-section', 'dashboard-section'].forEach(s => {
-                document.getElementById(s).style.display = (s === id) ? 'flex' : 'none';
-            });
-            if(id === 'dashboard-section') document.getElementById('nav-tools').classList.remove('hidden');
-            else document.getElementById('nav-tools').classList.add('hidden');
+            ['loading-screen', 'auth-section', 'onboarding-section', 'dashboard-section'].forEach(s => { document.getElementById(s).style.display = (s === id) ? 'flex' : 'none'; });
+            document.getElementById('nav-tools').classList[id === 'dashboard-section' ? 'remove' : 'add']('hidden');
+            document.getElementById('nav-tools').classList[id === 'dashboard-section' ? 'add' : 'remove']('flex');
         };
 
         window.toggleSchoolFields = (prefix) => {
-            let val = prefix === 'ob' 
-                ? document.querySelector('input[name="goal"]:checked').value 
-                : document.getElementById('set-goal').value;
-            const container = document.getElementById(`${prefix}-school-fields`);
-            if (val === 'school') container.classList.remove('hidden');
-            else container.classList.add('hidden');
+            let val = prefix === 'ob' ? document.querySelector('input[name="goal"]:checked').value : document.getElementById('set-goal').value;
+            document.getElementById(`${prefix}-school-fields`).classList[val === 'school' ? 'remove' : 'add']('hidden');
         };
 
-        // AUTH
+        // ==========================================
+        // 3. AUTH & INIT LOGIC
+        // ==========================================
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
@@ -402,15 +431,13 @@
         window.loginGoogle = async () => { try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch (e) { window.showToast(e.message, "error"); } };
         document.getElementById('email-auth-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('auth-email').value, pwd = document.getElementById('auth-password').value;
             const btn = document.getElementById('auth-submit-btn'); btn.innerHTML = '<div class="loader mx-auto"></div>';
-            try { await signInWithEmailAndPassword(auth, email, pwd); } 
-            catch (er) { try { await createUserWithEmailAndPassword(auth, email, pwd); } catch(er2) { window.showToast(er2.message, "error"); } }
+            try { await signInWithEmailAndPassword(auth, document.getElementById('auth-email').value, document.getElementById('auth-password').value); } 
+            catch (er) { try { await createUserWithEmailAndPassword(auth, document.getElementById('auth-email').value, document.getElementById('auth-password').value); } catch(er2) { window.showToast(er2.message, "error"); } }
             btn.innerHTML = 'Connexion / Inscription';
         });
         window.logout = () => signOut(auth);
 
-        // DATA LOGIC
         const getTodayString = () => new Date().toISOString().split('T')[0];
 
         async function loadUserData() {
@@ -421,92 +448,59 @@
                     await handleStreakLogic(snap.val().stats);
                     populateSettingsModal();
                     switchSection('dashboard-section');
-                    
                     let goalText = userPrefs.goal === 'school' ? `🎓 ${userPrefs.schoolLevel}` : `🌍 Culture`;
                     document.getElementById('dashboard-topics').innerText = `${goalText} | ${userPrefs.topics.join(', ')}`;
                     
-                    setupLocalNotification(userPrefs.time);
+                    setupReliableNotification(userPrefs.time);
                     window.generateDailyInfo(false);
-                } else {
-                    switchSection('onboarding-section');
-                }
+                } else { switchSection('onboarding-section'); }
             } catch (err) { window.showToast("Erreur DB", "error"); }
         }
 
         window.savePreferences = async (prefix) => {
-            const btn = document.getElementById(`${prefix}-save-btn`);
-            const ogBtnHtml = btn.innerHTML;
-            
-            // Gather Topics
+            const btn = document.getElementById(`${prefix}-save-btn`); const ogBtnHtml = btn.innerHTML;
             let topics = Array.from(document.querySelectorAll(prefix === 'ob' ? '.theme-cb:checked' : '.theme-cb-set:checked')).map(cb => cb.value);
-            const autreCb = document.getElementById(`${prefix}-theme-autre-cb`);
-            if (autreCb.checked) {
-                const autreVal = document.getElementById(`${prefix}-theme-autre-input`).value.trim();
-                if(autreVal) topics.push(autreVal);
-            }
+            if (document.getElementById(`${prefix}-theme-autre-cb`).checked && document.getElementById(`${prefix}-theme-autre-input`).value.trim()) topics.push(document.getElementById(`${prefix}-theme-autre-input`).value.trim());
             if (topics.length === 0) return window.showToast("Choisissez au moins un thème.", "error");
 
-            // Gather Goal
             let goal = prefix === 'ob' ? document.querySelector('input[name="goal"]:checked').value : document.getElementById('set-goal').value;
-            let schoolLevel = goal === 'school' ? document.getElementById(`${prefix}-school-level`).value : null;
-            let specialties = goal === 'school' ? document.getElementById(`${prefix}-school-specs`).value : null;
-            let time = document.getElementById(`${prefix}-notif-time`).value;
-
+            userPrefs = { 
+                topics, time: document.getElementById(`${prefix}-notif-time`).value, goal, 
+                schoolLevel: goal === 'school' ? document.getElementById(`${prefix}-school-level`).value : null, 
+                specialties: goal === 'school' ? document.getElementById(`${prefix}-school-specs`).value : null 
+            };
+            
             btn.innerHTML = '<div class="loader mx-auto"></div>';
-            
-            userPrefs = { topics, time, goal, schoolLevel, specialties };
-            
             try {
                 if ("Notification" in window && Notification.permission !== "granted") await Notification.requestPermission();
                 await set(ref(db, `users/${currentUser.uid}/preferences`), userPrefs);
-                
-                // If it's onboarding, init stats
                 if(prefix === 'ob') await set(ref(db, `users/${currentUser.uid}/stats`), { streak: 1, lastLogin: getTodayString() });
                 
-                window.showToast("Préférences sauvegardées !", "success");
+                window.showToast("Sauvegardé !", "success");
                 if (prefix === 'set') {
                     document.getElementById('settings-modal').style.display = 'none';
-                    let goalText = userPrefs.goal === 'school' ? `🎓 ${userPrefs.schoolLevel}` : `🌍 Culture`;
-                    document.getElementById('dashboard-topics').innerText = `${goalText} | ${userPrefs.topics.join(', ')}`;
-                    setupLocalNotification(userPrefs.time);
-                    window.generateDailyInfo(true); // Force regenerate based on new settings
-                } else {
-                    await loadUserData();
-                }
-            } catch (err) { window.showToast(err.message, "error"); }
-            finally { btn.innerHTML = ogBtnHtml; }
+                    document.getElementById('dashboard-topics').innerText = `${userPrefs.goal === 'school' ? `🎓 ${userPrefs.schoolLevel}` : `🌍 Culture`} | ${userPrefs.topics.join(', ')}`;
+                    setupReliableNotification(userPrefs.time);
+                    window.generateDailyInfo(true); 
+                } else { await loadUserData(); }
+            } catch (err) { window.showToast(err.message, "error"); } finally { btn.innerHTML = ogBtnHtml; }
         };
 
         function populateSettingsModal() {
             if(!userPrefs) return;
-            document.getElementById('set-goal').value = userPrefs.goal;
-            window.toggleSchoolFields('set');
-            if(userPrefs.goal === 'school') {
-                document.getElementById('set-school-level').value = userPrefs.schoolLevel;
-                document.getElementById('set-school-specs').value = userPrefs.specialties || '';
-            }
+            document.getElementById('set-goal').value = userPrefs.goal; window.toggleSchoolFields('set');
+            if(userPrefs.goal === 'school') { document.getElementById('set-school-level').value = userPrefs.schoolLevel; document.getElementById('set-school-specs').value = userPrefs.specialties || ''; }
             document.getElementById('set-notif-time').value = userPrefs.time;
-            
-            // Check themes
             document.querySelectorAll('.theme-cb-set').forEach(cb => cb.checked = false);
-            document.getElementById('set-theme-autre-cb').checked = false;
-            document.getElementById('set-theme-autre-input').classList.add('hidden');
-            document.getElementById('set-theme-autre-input').value = '';
-
+            document.getElementById('set-theme-autre-cb').checked = false; document.getElementById('set-theme-autre-input').classList.add('hidden'); document.getElementById('set-theme-autre-input').value = '';
             userPrefs.topics.forEach(t => {
-                let found = false;
-                document.querySelectorAll('.theme-cb-set').forEach(cb => { if(cb.value === t) { cb.checked = true; found = true; }});
-                if(!found) {
-                    document.getElementById('set-theme-autre-cb').checked = true;
-                    document.getElementById('set-theme-autre-input').classList.remove('hidden');
-                    document.getElementById('set-theme-autre-input').value = t;
-                }
+                let found = false; document.querySelectorAll('.theme-cb-set').forEach(cb => { if(cb.value === t) { cb.checked = true; found = true; }});
+                if(!found) { document.getElementById('set-theme-autre-cb').checked = true; document.getElementById('set-theme-autre-input').classList.remove('hidden'); document.getElementById('set-theme-autre-input').value = t; }
             });
         }
 
         async function handleStreakLogic(stats) {
-            const today = getTodayString();
-            let streak = 1;
+            const today = getTodayString(); let streak = 1;
             if (stats && stats.lastLogin) {
                 const diffDays = Math.ceil(Math.abs(new Date(today) - new Date(stats.lastLogin)) / (1000 * 60 * 60 * 24)); 
                 if (diffDays === 0) streak = stats.streak; 
@@ -516,7 +510,9 @@
             document.getElementById('streak-count').innerText = streak;
         }
 
-        // IA MISTRAL
+        // ==========================================
+        // 4. IA MISTRAL GENERATION
+        // ==========================================
         async function callMistral(prompt) {
             try {
                 const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
@@ -544,14 +540,10 @@
             }
 
             let contextStr = userPrefs.goal === 'school' 
-                ? `L'utilisateur est un élève de niveau "${userPrefs.schoolLevel}". Il étudie ces spécialités : "${userPrefs.specialties || 'Général'}". Adapte rigoureusement ton vocabulaire et la profondeur technique à son niveau scolaire. Fais un lien avec ses études si possible.`
+                ? `L'utilisateur est un élève de niveau "${userPrefs.schoolLevel}". Il étudie ces spécialités : "${userPrefs.specialties || 'Général'}". Adapte rigoureusement ton vocabulaire et la profondeur technique à son niveau scolaire.`
                 : `L'objectif est d'enrichir sa culture générale pour briller en société, de manière accessible et fascinante.`;
 
-            const prompt = `Agis comme un professeur passionnant pour WikiMind Info. 
-Génère une leçon courte ou un fait bluffant sur l'un de ces thèmes : ${userPrefs.topics.join(', ')}.
-${contextStr}
-RÈGLE STRICTE : AUCUNE actualité ou politique. Que du savoir intemporel.
-Format requis :
+            const prompt = `Agis comme un professeur passionnant pour WikiMind Info. Génère une leçon courte ou un fait bluffant sur l'un de ces thèmes : ${userPrefs.topics.join(', ')}. ${contextStr} RÈGLE STRICTE : AUCUNE actualité. Que du savoir intemporel. Format requis :
 ### [Titre accrocheur]
 [1 ou 2 paragraphes d'explication]
 - **Le saviez-vous ?** [Anecdote finale]`;
@@ -575,33 +567,39 @@ Format requis :
             btn.innerHTML = 'Explorer'; btn.disabled = false; input.value = '';
         };
 
-        // NOTIFICATIONS LOCALES (Service Worker based & Timeout fallback)
-        let notifTimeout;
-        function setupLocalNotification(timeStr) {
-            clearTimeout(notifTimeout);
-            if (Notification.permission === "granted") {
-                const [h, m] = timeStr.split(':');
-                let target = new Date(); target.setHours(h, m, 0, 0);
-                if (target < new Date()) target.setDate(target.getDate() + 1);
-                
-                const ms = target - new Date();
-                
-                // Si le service worker est prêt, on essaye de déléguer via l'API Push/Sync (simplifié ici par une notif locale)
-                notifTimeout = setTimeout(() => {
-                    if('serviceWorker' in navigator) {
-                        navigator.serviceWorker.ready.then(reg => {
-                            reg.showNotification('WikiMind Info 🧠', {
-                                body: 'Votre dose de savoir quotidienne est prête !',
-                                icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Wikipedia-logo-v2.svg/192px-Wikipedia-logo-v2.svg.png',
-                                vibrate: [200, 100, 200]
-                            });
+        // ==========================================
+        // 5. NOTIFICATION EXACTE (Fixée)
+        // ==========================================
+        function setupReliableNotification(timeStr) {
+            if (!timeStr || Notification.permission !== "granted") return;
+            
+            const [targetH, targetM] = timeStr.split(':').map(Number);
+            const now = new Date();
+            let target = new Date();
+            target.setHours(targetH, targetM, 0, 0);
+
+            // Si l'heure est déjà passée aujourd'hui, on programme pour demain !
+            if (target <= now) target.setDate(target.getDate() + 1);
+
+            const msUntil = target.getTime() - now.getTime();
+            
+            if (window.notifTimeout) clearTimeout(window.notifTimeout);
+
+            window.notifTimeout = setTimeout(() => {
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.ready.then(reg => {
+                        reg.showNotification('WikiMind Info 🧠', {
+                            body: 'Votre savoir du jour vous attend ! Cliquez pour apprendre.',
+                            icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Wikipedia-logo-v2.svg/192px-Wikipedia-logo-v2.svg.png',
+                            vibrate: [200, 100, 200]
                         });
-                    } else {
-                        new Notification('WikiMind Info 🧠', { body: 'Votre savoir est prêt !' });
-                    }
-                    setupLocalNotification(timeStr); // Next day
-                }, ms);
-            }
+                    });
+                } else {
+                    new Notification('WikiMind Info 🧠', { body: 'Votre savoir du jour vous attend !' });
+                }
+                // Une fois affichée, on reprogramme pour le lendemain
+                setupReliableNotification(timeStr);
+            }, msUntil);
         }
 
         // BG Animation
