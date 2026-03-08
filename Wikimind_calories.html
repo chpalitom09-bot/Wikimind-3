@@ -27,12 +27,12 @@
                     animation: { 
                         'fade-in': 'fadeIn 0.3s ease-out forwards',
                         'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-                        'pop-icon': 'popIcon 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'
+                        'pop-icon': 'popIcon 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'
                     },
                     keyframes: { 
                         fadeIn: { '0%': { opacity: 0 }, '100%': { opacity: 1 } },
                         slideUp: { '0%': { opacity: 0, transform: 'translateY(20px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
-                        popIcon: { '0%': { transform: 'scale(1)' }, '50%': { transform: 'scale(1.35) translateY(-3px)' }, '100%': { transform: 'scale(1) translateY(0)' } }
+                        popIcon: { '0%': { transform: 'scale(1)' }, '50%': { transform: 'scale(1.3)' }, '100%': { transform: 'scale(1)' } }
                     }
                 }
             }
@@ -59,11 +59,17 @@
         /* Nav Animations */
         .nav-item { color: rgba(255,255,255,0.4); transition: color 0.3s ease; }
         .nav-item.active { color: #818cf8; }
-        .nav-item.active i { animation: popIcon 0.4s forwards; color: #818cf8; filter: drop-shadow(0 0 8px rgba(99,102,241,0.6)); }
+        .nav-item i { transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .nav-item.clicked i { transform: scale(1.4); color: #818cf8; filter: drop-shadow(0 0 8px rgba(99,102,241,0.6)); }
         .nav-item.active .nav-indicator { opacity: 1; transform: scale(1); }
 
         .ob-step { display: none; animation: slideUp 0.4s ease forwards; }
         .ob-step.active { display: block; }
+        
+        /* Dropdown suggestions */
+        .suggestion-list { max-height: 200px; overflow-y: auto; }
+        .suggestion-list::-webkit-scrollbar { width: 4px; }
+        .suggestion-list::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.5); border-radius: 4px; }
     </style>
 </head>
 <body class="selection:bg-brand-500 selection:text-white">
@@ -79,7 +85,7 @@
                     <i class="fa-solid fa-bolt text-white text-lg"></i>
                 </div>
                 <div>
-                    <h1 class="font-display font-bold text-xl tracking-tight leading-none">Calories <span class="text-white/40 font-normal text-xs">v3</span></h1>
+                    <h1 class="font-display font-bold text-xl tracking-tight leading-none">Calories <span class="text-white/40 font-normal text-xs">v4</span></h1>
                     <div id="sync-status" class="text-[10px] text-yellow-500 flex items-center gap-1 mt-0.5 font-bold"><i class="fa-solid fa-cloud-arrow-down"></i> Local</div>
                 </div>
             </div>
@@ -109,13 +115,11 @@
             </div>
 
             <div class="glass-panel p-6 rounded-3xl border-brand-500/20 shadow-xl shadow-brand-500/5 relative overflow-hidden min-h-[250px]">
-                <!-- Etape 1 -->
                 <div id="step-1" class="ob-step active">
                     <h3 class="font-display font-bold text-xl mb-4 text-white">Comment t'appelles-tu ?</h3>
                     <input type="text" id="ob-name" placeholder="Prénom ou Pseudo" class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-brand-500 transition text-sm">
                     <button onclick="nextStep(2)" class="w-full py-4 mt-6 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold uppercase tracking-wider transition">Continuer</button>
                 </div>
-                <!-- Etape 2 -->
                 <div id="step-2" class="ob-step">
                     <h3 class="font-display font-bold text-xl mb-4 text-white">Tes informations</h3>
                     <div class="space-y-4">
@@ -133,7 +137,6 @@
                         <button onclick="nextStep(3)" class="w-2/3 py-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold uppercase tracking-wider">Continuer</button>
                     </div>
                 </div>
-                <!-- Etape 3 -->
                 <div id="step-3" class="ob-step">
                     <h3 class="font-display font-bold text-xl mb-4 text-white">Ta morphologie</h3>
                     <div class="grid grid-cols-2 gap-4">
@@ -151,7 +154,6 @@
                         <button onclick="nextStep(4)" class="w-2/3 py-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold uppercase tracking-wider">Continuer</button>
                     </div>
                 </div>
-                <!-- Etape 4 -->
                 <div id="step-4" class="ob-step">
                     <h3 class="font-display font-bold text-xl mb-4 text-white">Ton Objectif</h3>
                     <div class="space-y-3">
@@ -173,7 +175,6 @@
                         <button onclick="calculateAndShowFinalStep()" class="w-2/3 py-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold uppercase tracking-wider">Continuer</button>
                     </div>
                 </div>
-                <!-- Etape 5 -->
                 <div id="step-5" class="ob-step">
                     <h3 class="font-display font-bold text-xl mb-2 text-white">Objectif Calorique</h3>
                     <p class="text-xs text-white/60 mb-4">L'IA WikiMind a calculé ceci. Tu peux l'écraser si tu as ton propre but.</p>
@@ -240,17 +241,23 @@
         </main>
 
         <!-- ========================================== -->
-        <!-- ADD FOOD (Local DB + Mistral + OFF v2) -->
+        <!-- ADD FOOD (Local DB Auto + Mistral) -->
         <!-- ========================================== -->
         <main id="view-add-food" class="view-content">
             <h2 class="text-2xl font-display font-bold mb-2">Ajouter un repas</h2>
-            <p class="text-white/50 text-xs mb-6">Moteur de recherche hybride (Local + Mistral + OFF).</p>
+            <p class="text-white/50 text-xs mb-6">Tape au moins 3 lettres pour chercher localement. Utilise la loupe pour demander à l'IA.</p>
             
-            <div class="glass-panel p-2 rounded-2xl flex gap-2 mb-6 border-brand-500/30 shadow-[0_0_20px_rgba(99,102,241,0.1)]">
-                <input type="text" id="food-search-input" placeholder="Ex: Riz blanc, ou code-barres..." class="flex-1 bg-transparent px-4 py-2 text-white focus:outline-none text-sm placeholder-white/30">
-                <button id="btn-search-food" class="bg-brand-600 hover:bg-brand-500 px-5 py-2 rounded-xl transition text-white text-sm shadow-lg shadow-brand-500/20">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                </button>
+            <div class="relative mb-6">
+                <div class="glass-panel p-2 rounded-2xl flex gap-2 border-brand-500/30 shadow-[0_0_20px_rgba(99,102,241,0.1)] relative z-20">
+                    <input type="text" id="food-search-input" placeholder="Ex: Banane, Riz..." autocomplete="off" class="flex-1 bg-transparent px-4 py-2 text-white focus:outline-none text-sm placeholder-white/30">
+                    <button id="btn-search-food" class="bg-brand-600 hover:bg-brand-500 px-5 py-2 rounded-xl transition text-white text-sm shadow-lg shadow-brand-500/20">
+                        <i class="fa-solid fa-robot"></i> IA
+                    </button>
+                </div>
+                <!-- Dropdown suggestions -->
+                <div id="search-suggestions-container" class="absolute top-full left-0 right-0 mt-2 z-30 hidden">
+                    <ul id="search-suggestions" class="glass-panel rounded-2xl border-white/10 bg-[#111111]/95 suggestion-list p-2 shadow-2xl"></ul>
+                </div>
             </div>
 
             <div class="mb-8">
@@ -270,24 +277,27 @@
 
             <div id="food-search-loader" class="hidden text-center py-10 animate-pulse flex-col items-center">
                 <div class="w-12 h-12 rounded-full bg-brand-500/20 text-brand-400 flex items-center justify-center text-xl mb-3 shadow-[0_0_20px_rgba(99,102,241,0.5)]">
-                    <i class="fa-solid fa-database fa-bounce"></i>
+                    <i class="fa-solid fa-robot fa-bounce"></i>
                 </div>
-                <span class="text-[10px] text-brand-300 uppercase tracking-widest font-bold">Analyse en cours...</span>
+                <span class="text-[10px] text-brand-300 uppercase tracking-widest font-bold">Mistral analyse...</span>
             </div>
 
-            <div id="food-search-result" class="hidden glass-panel rounded-3xl p-6 border-brand-500/40 bg-gradient-to-br from-brand-500/10 to-transparent animate-fade-in">
+            <div id="food-search-result" class="hidden glass-panel rounded-3xl p-6 border-brand-500/40 bg-gradient-to-br from-brand-500/10 to-transparent animate-fade-in relative z-10">
                 <div class="flex justify-between items-start mb-6">
                     <div>
                         <div id="res-food-source" class="text-[10px] uppercase tracking-widest font-bold mb-1">Source...</div>
                         <h4 class="font-display font-bold text-xl text-white mt-1 leading-tight"><span id="res-food-icon" class="mr-1"></span><span id="res-food-name">...</span></h4>
-                        <p class="text-xs text-white/60 mt-2">Valeur repère : <span id="res-food-base-kcal" class="font-bold text-white">0</span> kcal / 100g</p>
+                        <p class="text-xs text-white/60 mt-2">Base : <span id="res-food-base-kcal" class="font-bold text-white">0</span> kcal / 100g <span id="res-food-base-unit" class="text-[10px]"></span></p>
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-2 gap-4 mb-6">
-                    <div class="bg-black/40 rounded-2xl p-4 border border-white/5">
-                        <label class="text-[10px] text-white/50 uppercase tracking-widest mb-2 block text-center">Quantité (g/ml)</label>
-                        <input type="number" id="res-food-qty" value="100" class="w-full bg-transparent border-b-2 border-white/20 text-white focus:outline-none focus:border-brand-500 transition text-center font-display font-bold text-2xl pb-1">
+                <div class="grid grid-cols-2 gap-4 mb-6 items-end">
+                    <div class="bg-black/40 rounded-2xl p-4 border border-white/5 relative">
+                        <select id="res-food-unit" class="absolute top-2 right-2 bg-white/10 text-[10px] text-white rounded-lg px-2 py-1 outline-none border-none cursor-pointer appearance-none">
+                            <option value="g">Grammes</option>
+                        </select>
+                        <label class="text-[10px] text-white/50 uppercase tracking-widest mb-2 block text-center">Quantité</label>
+                        <input type="number" id="res-food-qty" value="100" class="w-full bg-transparent border-b-2 border-white/20 text-white focus:outline-none focus:border-brand-500 transition text-center font-display font-bold text-2xl pb-1 mt-1">
                     </div>
                     <div class="bg-brand-500/10 rounded-2xl p-4 border border-brand-500/20">
                         <label class="text-[10px] text-brand-300 uppercase tracking-widest mb-2 block text-center">Total Kcal</label>
@@ -366,6 +376,17 @@
             
             <div class="glass-panel p-6 rounded-3xl mb-6 space-y-5 border-white/5 bg-white/5">
                 <h3 class="text-xs font-bold uppercase tracking-widest text-brand-400 border-b border-white/10 pb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-bell"></i> Notifications
+                </h3>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-bold text-white">Activer les rappels</span>
+                    <button id="btn-enable-notifs" class="bg-brand-600 px-3 py-1 rounded-lg text-xs font-bold">Activer</button>
+                </div>
+                <p class="text-[10px] text-white/50">Reçois un rappel à 20h pour tes calories, et le dimanche à 19h pour le bilan.</p>
+            </div>
+
+            <div class="glass-panel p-6 rounded-3xl mb-6 space-y-5 border-white/5 bg-white/5">
+                <h3 class="text-xs font-bold uppercase tracking-widest text-brand-400 border-b border-white/10 pb-3 flex items-center gap-2">
                     <i class="fa-solid fa-fire"></i> Objectif Calories
                 </h3>
                 <div class="bg-black/40 rounded-xl p-4 border border-white/5">
@@ -426,27 +447,27 @@
         <!-- ========================================== -->
         <nav class="bottom-nav glass-panel border-t border-white/10 rounded-t-[32px] border-b-0 border-l-0 border-r-0 bg-[#0a0a0a]/90">
             <div class="flex justify-between items-center px-6 py-4">
-                <button onclick="switchView('dashboard')" class="nav-item active flex flex-col items-center w-12 group">
+                <button onclick="switchView('dashboard', this)" class="nav-item active flex flex-col items-center w-12 group">
                     <i class="fa-solid fa-house text-xl mb-1"></i>
                     <span class="text-[9px] font-bold uppercase tracking-widest">Accueil</span>
                     <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,1)]"></div>
                 </button>
-                <button onclick="switchView('add-food')" class="nav-item flex flex-col items-center w-12 group">
+                <button onclick="switchView('add-food', this)" class="nav-item flex flex-col items-center w-12 group">
                     <i class="fa-solid fa-utensils text-xl mb-1"></i>
                     <span class="text-[9px] font-bold uppercase tracking-widest">Repas</span>
                     <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,1)]"></div>
                 </button>
-                <button onclick="switchView('weight')" class="nav-item flex flex-col items-center w-12 group">
+                <button onclick="switchView('weight', this)" class="nav-item flex flex-col items-center w-12 group">
                     <i class="fa-solid fa-weight-scale text-xl mb-1"></i>
                     <span class="text-[9px] font-bold uppercase tracking-widest">Poids</span>
                     <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,1)]"></div>
                 </button>
-                <button onclick="switchView('chat')" class="nav-item flex flex-col items-center w-12 group">
+                <button onclick="switchView('chat', this)" class="nav-item flex flex-col items-center w-12 group">
                     <i class="fa-solid fa-robot text-xl mb-1"></i>
                     <span class="text-[9px] font-bold uppercase tracking-widest">IA</span>
                     <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,1)]"></div>
                 </button>
-                <button onclick="switchView('settings')" class="nav-item flex flex-col items-center w-12 group">
+                <button onclick="switchView('settings', this)" class="nav-item flex flex-col items-center w-12 group">
                     <i class="fa-solid fa-gear text-xl mb-1"></i>
                     <span class="text-[9px] font-bold uppercase tracking-widest">Profil</span>
                     <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,1)]"></div>
@@ -474,7 +495,7 @@
         let currentUser = null;
         let userData = null; 
         let authReady = false;
-        let localFoodDB = []; // Contiendra food.json
+        let localFoodDB = []; 
         const MISTRAL_KEY = "SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9";
         let weightChartInstance = null;
 
@@ -490,22 +511,18 @@
                 const res = await fetch('food.json');
                 if(res.ok) localFoodDB = await res.json();
             } catch(e) {
-                console.log("food.json non trouvé, utilisation DB vide.");
+                console.log("food.json non trouvé.");
             }
         }
         loadLocalDB();
 
-        // Navigation (avec reset de l'animation CSS)
-        window.switchView = (viewId) => {
+        // Navigation (avec effet de POP)
+        window.switchView = (viewId, element = null) => {
             document.querySelectorAll('.view-content').forEach(v => { v.style.display = 'none'; v.classList.remove('active'); });
             
-            // Retirer l'animation pour pouvoir la relancer
             document.querySelectorAll('.nav-item').forEach(n => {
                 n.classList.remove('active');
-                const i = n.querySelector('i');
-                i.style.animation = 'none';
-                i.offsetHeight; // Force reflow
-                i.style.animation = null; 
+                n.classList.remove('clicked');
             });
             
             const target = document.getElementById(`view-${viewId}`);
@@ -514,8 +531,13 @@
                 target.classList.add('active');
             }
             
-            const nav = document.querySelector(`.nav-item[onclick="switchView('${viewId}')"]`);
-            if(nav) nav.classList.add('active');
+            let navBtn = element;
+            if(!navBtn) navBtn = document.querySelector(`.nav-item[onclick*="switchView('${viewId}'"]`);
+            if(navBtn) {
+                navBtn.classList.add('active');
+                navBtn.classList.add('clicked');
+                setTimeout(() => navBtn.classList.remove('clicked'), 300);
+            }
 
             if(viewId === 'dashboard') renderDashboard();
             if(viewId === 'weight') renderWeightChart();
@@ -596,6 +618,52 @@
         });
 
         // ==========================================
+        // NOTIFICATIONS & SERVICE WORKER
+        // ==========================================
+        // Service Worker dynamically injected for PWA background tasks
+        const swBlob = new Blob([`
+            self.addEventListener('install', e => self.skipWaiting());
+            self.addEventListener('activate', e => self.clients.claim());
+        `], {type: 'application/javascript'});
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register(URL.createObjectURL(swBlob));
+        }
+
+        document.getElementById('btn-enable-notifs').addEventListener('click', () => {
+            if (!("Notification" in window)) return showToast("Notifications non supportées.", "error");
+            Notification.requestPermission().then(perm => {
+                if(perm === "granted") {
+                    showToast("Notifications activées !", "success");
+                    document.getElementById('btn-enable-notifs').innerText = "Activé";
+                    document.getElementById('btn-enable-notifs').className = "bg-emerald-600 px-3 py-1 rounded-lg text-xs font-bold";
+                }
+            });
+        });
+
+        // Routine interne pour vérifier les alertes
+        setInterval(() => {
+            if(Notification.permission !== "granted" || !userData) return;
+            const now = new Date();
+            const h = now.getHours(); const m = now.getMinutes(); const d = now.getDay();
+            const today = getTodayKey();
+
+            // Quotidien à 20h00
+            if (h === 20 && m === 0) {
+                if(localStorage.getItem('notif_20h_' + today)) return;
+                localStorage.setItem('notif_20h_' + today, '1');
+                const consumed = userData.foodHistory[today]?.reduce((s, i) => s + i.kcal, 0) || 0;
+                const rem = userData.targetKcal - consumed;
+                new Notification("WikiMind Calories", { body: `Il te reste ${rem} kcal aujourd'hui !`, icon: "192pixels.png" });
+            }
+            // Dimanche 19h00 (Bilan)
+            if (d === 0 && h === 19 && m === 0) {
+                if(localStorage.getItem('notif_sun_' + today)) return;
+                localStorage.setItem('notif_sun_' + today, '1');
+                new Notification("WikiMind Calories", { body: `C'est l'heure du bilan de ta semaine ! Ouvre l'application.`, icon: "192pixels.png" });
+            }
+        }, 60000);
+
+        // ==========================================
         // ONBOARDING
         // ==========================================
         window.nextStep = (step) => {
@@ -668,7 +736,7 @@
                                 <div class="w-8 h-8 rounded-full bg-brand-500/10 flex items-center justify-center text-sm">${f.icon || '🍴'}</div>
                                 <div>
                                     <div class="font-bold text-sm text-white/90 capitalize">${f.name}</div>
-                                    <div class="text-[10px] text-white/40 uppercase tracking-widest font-bold">${f.qty ? f.qty + ' g/ml' : 'Ajout rapide'}</div>
+                                    <div class="text-[10px] text-white/40 uppercase tracking-widest font-bold">${f.qtyLabel ? f.qtyLabel : 'Ajout rapide'}</div>
                                 </div>
                             </div>
                             <div class="flex items-center gap-4">
@@ -682,73 +750,83 @@
         window.deleteFood = async (index) => { userData.foodHistory[getTodayKey()].splice(index, 1); await saveData(); };
 
         // ==========================================
-        // RECHERCHE HYBRIDE (CASCADE MISTRAL -> OFF)
+        // RECHERCHE & GESTION DES UNITES
         // ==========================================
         let currentSearchedFood = null;
 
+        // Auto-suggestions DB locale au clavier
+        const searchInput = document.getElementById('food-search-input');
+        const suggContainer = document.getElementById('search-suggestions-container');
+        const suggList = document.getElementById('search-suggestions');
+
+        searchInput.addEventListener('input', (e) => {
+            const val = e.target.value.trim().toLowerCase();
+            suggList.innerHTML = '';
+            if (val.length >= 3) {
+                const matches = localFoodDB.filter(f => f.name.toLowerCase().includes(val));
+                if (matches.length > 0) {
+                    matches.slice(0, 8).forEach(match => {
+                        const li = document.createElement('li');
+                        li.className = "px-3 py-3 text-sm text-white border-b border-white/10 hover:bg-brand-500/20 cursor-pointer flex items-center gap-2 last:border-0";
+                        li.innerHTML = `<span>${match.emoji}</span> <span>${match.name}</span> <span class="text-xs text-white/40 ml-auto">${match.kcal_per_100g} kcal/100g</span>`;
+                        li.onclick = () => { selectFoodFromDB(match); suggContainer.classList.add('hidden'); searchInput.value = ''; };
+                        suggList.appendChild(li);
+                    });
+                    suggContainer.classList.remove('hidden');
+                } else {
+                    suggContainer.classList.add('hidden');
+                }
+            } else {
+                suggContainer.classList.add('hidden');
+            }
+        });
+
+        // Clique à l'extérieur pour fermer
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !suggContainer.contains(e.target)) { suggContainer.classList.add('hidden'); }
+        });
+
+        function selectFoodFromDB(food) {
+            currentSearchedFood = { name: food.name, kcal_per_100g: food.kcal_per_100g, icon: food.emoji, type: food.type || 'solid', weight_per_unit: food.weight_per_unit || 0 };
+            setSearchUI('<i class="fa-solid fa-bolt"></i> Local DB WikiMind', "text-yellow-400", currentSearchedFood);
+        }
+
+        // Recherche Mistral (Bouton Loupe/IA)
         document.getElementById('btn-search-food').addEventListener('click', async () => {
-            const query = document.getElementById('food-search-input').value.trim();
+            const query = searchInput.value.trim();
             if(!query) return;
 
+            suggContainer.classList.add('hidden');
             document.getElementById('food-search-result').classList.add('hidden');
             const loader = document.getElementById('food-search-loader');
             loader.classList.remove('hidden'); loader.classList.add('flex');
 
             try {
-                // ETAPE 1 : Base de Données Locale (Immédiat)
-                const queryLower = query.toLowerCase();
-                const localMatch = localFoodDB.find(f => f.name.toLowerCase().includes(queryLower) || queryLower.includes(f.name.toLowerCase()));
-                
-                if(localMatch) {
-                    currentSearchedFood = { name: localMatch.name, kcal_per_100g: localMatch.kcal_per_100g, icon: localMatch.emoji };
-                    setSearchUI('<i class="fa-solid fa-bolt"></i> Local DB WikiMind', "text-yellow-400", currentSearchedFood);
-                    return;
-                }
+                const prompt = `Donne la valeur calorifique pour 100 grammes de "${query}". Réponds STRICTEMENT au format JSON: {"name": "Nom", "kcal_per_100g": 120, "type": "type_ici", "weight_per_unit": X}. 
+                Si l'aliment se compte (ex: 1 pomme, 1 oeuf, 1 burger, 1 tranche), type="unit" et weight_per_unit=poids moyen en g.
+                Si c'est un liquide, type="liquid" et weight_per_unit=0.
+                Sinon type="solid" et weight_per_unit=0. Rien d'autre que du JSON.`;
 
-                // ETAPE 2 : Si c'est un Code Barre (Chiffres Uniquement) -> OFF Directement
-                if (/^\d+$/.test(query)) {
-                    const offRes = await fetch(`https://world.openfoodfacts.org/api/v2/search?code=${query}&fields=product_name,nutriments&page_size=1`);
-                    const offData = await offRes.json();
-                    if(offData.products && offData.products.length > 0 && offData.products[0].nutriments['energy-kcal_100g']) {
-                        currentSearchedFood = { name: offData.products[0].product_name, kcal_per_100g: offData.products[0].nutriments['energy-kcal_100g'], icon: '🛒' };
-                        setSearchUI('<i class="fa-solid fa-barcode"></i> Open Food Facts', "text-emerald-400", currentSearchedFood);
-                        return;
-                    }
-                }
-
-                // ETAPE 3 : Requête Texte -> Mistral en Maitre Absolu
-                const prompt = `Donne la valeur calorifique pour 100 grammes de l'aliment "${query}". Réponds STRICTEMENT en format JSON exact: {"name": "Nom", "kcal_per_100g": 120}. Aucune phrase supplémentaire.`;
                 const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
                     method: 'POST', headers: { 'Authorization': `Bearer ${MISTRAL_KEY}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ model: "mistral-small-latest", messages: [{role:"user", content:prompt}], temperature: 0.1 })
                 });
                 const data = await res.json();
                 
-                try {
-                    const cleanJson = data.choices[0].message.content.replace(/```json/gi, '').replace(/```/g, '').trim();
-                    const json = JSON.parse(cleanJson);
-                    if(!json.name || json.kcal_per_100g == null) throw new Error("JSON IA invalide");
-                    
-                    currentSearchedFood = { name: json.name, kcal_per_100g: json.kcal_per_100g, icon: '🤖' };
-                    setSearchUI('<i class="fa-solid fa-robot"></i> Mistral AI', "text-brand-400", currentSearchedFood);
-                } catch(e) {
-                    // Fallback de l'extrême : OFF V2 texte
-                    const offFall = await fetch(`https://world.openfoodfacts.org/api/v2/search?categories_tags_en=${encodeURIComponent(query)}&sort_by=unique_scans_n&fields=product_name,nutriments&page_size=1`);
-                    const fallData = await offFall.json();
-                    if(fallData.products && fallData.products.length > 0) {
-                        currentSearchedFood = { name: fallData.products[0].product_name, kcal_per_100g: fallData.products[0].nutriments['energy-kcal_100g'], icon: '🛒' };
-                        setSearchUI('<i class="fa-solid fa-search"></i> Open Food Facts (Fallback)', "text-emerald-400", currentSearchedFood);
-                    } else {
-                        throw new Error("Introuvable");
-                    }
-                }
+                const cleanJson = data.choices[0].message.content.replace(/```json/gi, '').replace(/```/g, '').trim();
+                const json = JSON.parse(cleanJson);
+                if(!json.name || json.kcal_per_100g == null) throw new Error("JSON IA invalide");
+                
+                currentSearchedFood = { name: json.name, kcal_per_100g: json.kcal_per_100g, icon: '🤖', type: json.type || 'solid', weight_per_unit: json.weight_per_unit || 0 };
+                setSearchUI('<i class="fa-solid fa-robot"></i> Mistral AI', "text-brand-400", currentSearchedFood);
 
             } catch(e) {
                 loader.classList.add('hidden'); loader.classList.remove('flex');
-                showToast("Aliment introuvable.", "error");
+                showToast("Aliment incompris par l'IA.", "error");
             }
         });
 
+        // Configuration de l'interface du résultat (Unités dynamiques)
         function setSearchUI(sourceHtml, sourceColorClass, food) {
             const loader = document.getElementById('food-search-loader');
             document.getElementById('res-food-source').innerHTML = sourceHtml;
@@ -756,30 +834,71 @@
             document.getElementById('res-food-icon').innerText = food.icon;
             document.getElementById('res-food-name').innerText = food.name;
             document.getElementById('res-food-base-kcal').innerText = food.kcal_per_100g;
+            
+            // Configuration du sélecteur d'unités
+            const unitSelect = document.getElementById('res-food-unit');
+            unitSelect.innerHTML = '';
+            
+            if (food.type === 'unit') {
+                unitSelect.innerHTML += `<option value="unit">Unité(s)</option>`;
+                unitSelect.innerHTML += `<option value="g">Grammes (g)</option>`;
+                document.getElementById('res-food-qty').value = "1";
+            } else if (food.type === 'liquid') {
+                unitSelect.innerHTML += `<option value="ml">Millilitres (ml)</option>`;
+                unitSelect.innerHTML += `<option value="g">Grammes (g)</option>`;
+                document.getElementById('res-food-qty').value = "100";
+            } else {
+                unitSelect.innerHTML += `<option value="g">Grammes (g)</option>`;
+                document.getElementById('res-food-qty').value = "100";
+            }
+
             updateFoodTotal();
             loader.classList.add('hidden'); loader.classList.remove('flex');
             document.getElementById('food-search-result').classList.remove('hidden');
         }
 
         document.getElementById('res-food-qty').addEventListener('input', updateFoodTotal);
+        document.getElementById('res-food-unit').addEventListener('change', () => {
+            const unit = document.getElementById('res-food-unit').value;
+            const input = document.getElementById('res-food-qty');
+            if(unit === 'unit') input.value = "1";
+            else if(input.value === "1" || input.value === "") input.value = "100";
+            updateFoodTotal();
+        });
+
         function updateFoodTotal() {
             if(!currentSearchedFood) return;
-            const qty = parseFloat(document.getElementById('res-food-qty').value) || 0;
-            const total = Math.round((currentSearchedFood.kcal_per_100g * qty) / 100);
+            const inputQty = parseFloat(document.getElementById('res-food-qty').value) || 0;
+            const unit = document.getElementById('res-food-unit').value;
+            
+            let weightInGrams = inputQty;
+            if (unit === 'unit') {
+                weightInGrams = inputQty * currentSearchedFood.weight_per_unit;
+            } // Si 'ml', on approxime à 1g = 1ml.
+
+            const total = Math.round((currentSearchedFood.kcal_per_100g * weightInGrams) / 100);
             document.getElementById('res-food-total').innerText = total;
+            document.getElementById('res-food-base-unit').innerText = (unit === 'unit') ? `(~${currentSearchedFood.weight_per_unit}g/u)` : '';
         }
 
         document.getElementById('btn-confirm-food').addEventListener('click', async () => {
             if(!currentSearchedFood) return;
-            const qty = parseFloat(document.getElementById('res-food-qty').value) || 0;
-            const totalKcal = Math.round((currentSearchedFood.kcal_per_100g * qty) / 100);
+            const inputQty = parseFloat(document.getElementById('res-food-qty').value) || 0;
+            const unit = document.getElementById('res-food-unit').value;
+            const unitText = document.getElementById('res-food-unit').options[document.getElementById('res-food-unit').selectedIndex].text;
+            
+            let weightInGrams = inputQty;
+            if (unit === 'unit') weightInGrams = inputQty * currentSearchedFood.weight_per_unit;
+            
+            const totalKcal = Math.round((currentSearchedFood.kcal_per_100g * weightInGrams) / 100);
+            const qtyLabel = `${inputQty} ${unitText}`;
             
             const today = getTodayKey();
             if(!userData.foodHistory[today]) userData.foodHistory[today] = [];
-            userData.foodHistory[today].push({ name: currentSearchedFood.name, qty: qty, kcal: totalKcal, icon: currentSearchedFood.icon, time: Date.now() });
+            userData.foodHistory[today].push({ name: currentSearchedFood.name, qtyLabel: qtyLabel, kcal: totalKcal, icon: currentSearchedFood.icon, time: Date.now() });
 
             await saveData(); showToast(`${currentSearchedFood.name} ajouté !`, "success");
-            document.getElementById('food-search-input').value = ''; document.getElementById('food-search-result').classList.add('hidden'); switchView('dashboard');
+            searchInput.value = ''; document.getElementById('food-search-result').classList.add('hidden'); switchView('dashboard');
         });
 
         document.getElementById('btn-manual-add').addEventListener('click', async () => {
@@ -788,7 +907,7 @@
             if(!kcal) return showToast("Entrez les Kcal", "error");
             const today = getTodayKey();
             if(!userData.foodHistory[today]) userData.foodHistory[today] = [];
-            userData.foodHistory[today].push({ name: name, qty: null, kcal: kcal, icon: '⚡', time: Date.now() });
+            userData.foodHistory[today].push({ name: name, qtyLabel: null, kcal: kcal, icon: '⚡', time: Date.now() });
             await saveData(); showToast(`${kcal} kcal ajoutées !`, "success");
             document.getElementById('manual-food-name').value = ''; document.getElementById('manual-food-kcal').value = ''; switchView('dashboard');
         });
@@ -836,7 +955,7 @@
             chatBox.scrollTop = chatBox.scrollHeight;
 
             const sysPrompt = `Tu es WikiMind Coach. User: ${userData.weight}kg, But: ${userData.goal}, Kcal/jour: ${userData.targetKcal}.
-Si ajout repas: ajoute [ACTION: {"type":"add_food", "food": "Nom", "kcal": X, "qty": Y}] à la fin.
+Si ajout repas: ajoute [ACTION: {"type":"add_food", "food": "Nom", "kcal": X, "qtyLabel": "Y g/ml"}] à la fin.
 Si modif poids: ajoute [ACTION: {"type":"update_weight", "weight": X}] à la fin.
 Sois bref et sympa.`;
 
@@ -856,7 +975,7 @@ Sois bref et sympa.`;
                         if(action.type === 'update_weight') { userData.weight = parseFloat(action.weight); userData.weightHistory[getTodayKey()] = userData.weight; saveData(); showToast(`Poids mis à jour à ${action.weight}kg !`, "success"); } 
                         else if(action.type === 'add_food') { 
                             if(!userData.foodHistory[getTodayKey()]) userData.foodHistory[getTodayKey()] = [];
-                            userData.foodHistory[getTodayKey()].push({ name: action.food, qty: action.qty, kcal: action.kcal, icon: '🤖', time: Date.now() }); saveData(); showToast(`${action.food} enregistré !`, "success"); 
+                            userData.foodHistory[getTodayKey()].push({ name: action.food, qtyLabel: action.qtyLabel, kcal: action.kcal, icon: '🤖', time: Date.now() }); saveData(); showToast(`${action.food} enregistré !`, "success"); 
                         }
                     } catch(e) {}
                     reply = reply.replace(/\[ACTION:.*?\]/, '').trim();
@@ -887,6 +1006,11 @@ Sois bref et sympa.`;
             toggleCustom.checked = userData.isCustomKcal;
             if(userData.isCustomKcal) { inputCustomDiv.classList.remove('hidden'); textAuto.classList.add('hidden'); document.getElementById('set-custom-kcal').value = userData.customTarget; } 
             else { inputCustomDiv.classList.add('hidden'); textAuto.classList.remove('hidden'); }
+            
+            if("Notification" in window && Notification.permission === "granted") {
+                document.getElementById('btn-enable-notifs').innerText = "Activé";
+                document.getElementById('btn-enable-notifs').className = "bg-emerald-600 px-3 py-1 rounded-lg text-xs font-bold";
+            }
         };
 
         window.saveSettings = async () => {
