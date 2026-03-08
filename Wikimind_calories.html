@@ -47,9 +47,6 @@
         .text-gradient { background: linear-gradient(135deg, #34d399 0%, #6366f1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         ::-webkit-scrollbar { width: 0px; background: transparent; }
         
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
         #app-container { height: 100dvh; display: flex; flex-direction: column; max-width: 600px; margin: 0 auto; position: relative; }
         .view-content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 120px; display: none; }
         
@@ -88,7 +85,7 @@
                     <i class="fa-solid fa-bolt text-white text-lg"></i>
                 </div>
                 <div>
-                    <h1 class="font-display font-bold text-xl tracking-tight leading-none">Calories <span class="text-white/40 font-normal text-xs">v4</span></h1>
+                    <h1 class="font-display font-bold text-xl tracking-tight leading-none">Calories <span class="text-white/40 font-normal text-xs">v5</span></h1>
                     <div id="sync-status" class="text-[10px] text-yellow-500 flex items-center gap-1 mt-0.5 font-bold"><i class="fa-solid fa-cloud-arrow-down"></i> Local</div>
                 </div>
             </div>
@@ -238,7 +235,7 @@
 
             <div class="flex justify-between items-end mb-4 px-1">
                 <h3 class="font-display font-bold text-lg">Journal du jour</h3>
-                <button onclick="switchView('add-food')" class="text-[10px] text-brand-400 font-bold uppercase tracking-wider bg-brand-500/10 px-3 py-1.5 rounded-full hover:bg-brand-500/20 transition"><i class="fa-solid fa-plus mr-1"></i>Ajouter</button>
+                <button onclick="addFoodTargetDate = getTodayKey(); switchView('add-food')" class="text-[10px] text-brand-400 font-bold uppercase tracking-wider bg-brand-500/10 px-3 py-1.5 rounded-full hover:bg-brand-500/20 transition"><i class="fa-solid fa-plus mr-1"></i>Ajouter</button>
             </div>
             <div id="food-list-today" class="space-y-3"></div>
         </main>
@@ -247,34 +244,44 @@
         <!-- AGENDA (NOUVEAU) -->
         <!-- ========================================== -->
         <main id="view-agenda" class="view-content">
-            <h2 class="text-2xl font-display font-bold mb-4">Agenda des Repas</h2>
+            <h2 class="text-2xl font-display font-bold mb-6">Agenda & Planification</h2>
             
-            <!-- Date Slider -->
-            <div id="agenda-date-slider" class="flex gap-3 overflow-x-auto pb-4 mb-4 hide-scrollbar snap-x">
-                <!-- JS Populated -->
-            </div>
-
-            <div class="glass-panel p-4 rounded-3xl mb-6 flex justify-between items-center bg-brand-500/10 border-brand-500/20">
-                <div>
-                    <h3 class="text-xs font-bold uppercase tracking-widest text-brand-300">Bilan du jour sélectionné</h3>
-                    <div class="text-2xl font-display font-bold text-white mt-1"><span id="agenda-total-kcal">0</span> <span class="text-xs text-white/50">/ <span id="agenda-target-kcal">0</span> kcal</span></div>
+            <div class="glass-panel p-4 rounded-3xl mb-6 flex items-center justify-between border border-white/10 bg-black/40 shadow-xl shadow-brand-500/5">
+                <button onclick="changeAgendaDate(-1)" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-brand-500/20 text-brand-300 transition flex items-center justify-center shadow-md"><i class="fa-solid fa-chevron-left"></i></button>
+                <div class="flex flex-col items-center relative cursor-pointer">
+                    <input type="date" id="agenda-date-picker" class="absolute opacity-0 w-full h-full cursor-pointer z-10" onchange="changeAgendaDateFromPicker(this.value)">
+                    <div id="agenda-date-display" class="font-display font-bold text-lg text-white">Aujourd'hui</div>
+                    <div id="agenda-date-sub" class="text-[10px] text-white/50 uppercase tracking-widest font-bold mt-0.5 text-center px-2 py-0.5 rounded-md bg-white/5">...</div>
                 </div>
-                <button onclick="planMealForAgenda()" class="bg-brand-600 hover:bg-brand-500 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition">
-                    <i class="fa-solid fa-plus"></i>
-                </button>
+                <button onclick="changeAgendaDate(1)" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-brand-500/20 text-brand-300 transition flex items-center justify-center shadow-md"><i class="fa-solid fa-chevron-right"></i></button>
             </div>
 
-            <h3 class="font-display font-bold text-lg mb-4">Repas prévus</h3>
-            <div id="agenda-meal-list" class="space-y-3">
-                <!-- JS Populated -->
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="bg-black/60 rounded-2xl p-4 border border-white/5 text-center relative overflow-hidden">
+                    <div class="absolute -right-4 -bottom-4 text-emerald-500/10 text-5xl"><i class="fa-solid fa-check-circle"></i></div>
+                    <div class="text-[10px] text-white/50 uppercase tracking-widest mb-1 font-bold relative z-10">Validé / Mangé</div>
+                    <div id="agenda-total-eaten" class="text-2xl font-display font-bold text-emerald-400 relative z-10">0 <span class="text-[10px] text-emerald-400/50">kcal</span></div>
+                </div>
+                <div class="bg-brand-500/10 rounded-2xl p-4 border border-brand-500/20 text-center relative overflow-hidden">
+                    <div class="absolute -right-4 -bottom-4 text-brand-500/10 text-5xl"><i class="fa-regular fa-clock"></i></div>
+                    <div class="text-[10px] text-brand-300 uppercase tracking-widest mb-1 font-bold relative z-10">Planifié</div>
+                    <div id="agenda-total-planned" class="text-2xl font-display font-bold text-brand-400 relative z-10">0 <span class="text-[10px] text-brand-400/50">kcal</span></div>
+                </div>
             </div>
+
+            <button onclick="openAddFoodForAgenda()" class="w-full py-4 mb-6 rounded-xl bg-gradient-to-r from-brand-600/30 to-brand-500/10 border border-brand-500/30 text-brand-200 font-bold uppercase tracking-wider text-xs flex justify-center items-center gap-2 hover:bg-brand-500/30 transition shadow-lg">
+                <i class="fa-solid fa-calendar-plus text-base"></i> Planifier un repas ce jour
+            </button>
+
+            <div id="agenda-food-list" class="space-y-3 pb-6"></div>
         </main>
 
         <!-- ========================================== -->
-        <!-- ADD FOOD -->
+        <!-- ADD FOOD (Local DB Auto + Mistral) -->
         <!-- ========================================== -->
         <main id="view-add-food" class="view-content">
             <h2 class="text-2xl font-display font-bold mb-2">Ajouter un repas</h2>
+            <div id="add-food-target-badge" class="mb-4 inline-block bg-brand-500/20 border border-brand-500/30 text-brand-300 text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full"><i class="fa-regular fa-calendar mr-1"></i> Pour aujourd'hui</div>
             <p class="text-white/50 text-xs mb-6">Tape au moins 3 lettres pour chercher localement. Utilise la loupe pour demander à l'IA.</p>
             
             <div class="relative mb-6">
@@ -336,7 +343,7 @@
                 </div>
                 
                 <button id="btn-confirm-food" class="w-full py-4 rounded-xl bg-white text-black font-display font-bold uppercase tracking-wider hover:bg-gray-200 transition shadow-lg">
-                    Ajouter au journal
+                    Enregistrer le repas
                 </button>
             </div>
         </main>
@@ -477,34 +484,34 @@
         <!-- ========================================== -->
         <nav class="bottom-nav glass-panel border-t border-white/10 rounded-t-[32px] border-b-0 border-l-0 border-r-0 bg-[#0a0a0a]/90">
             <div class="flex justify-between items-center px-4 py-4">
-                <button onclick="switchView('dashboard', this)" class="nav-item active flex flex-col items-center w-12 group">
+                <button onclick="switchView('dashboard', this)" class="nav-item active flex flex-col items-center w-10 group">
                     <i class="fa-solid fa-house text-xl mb-1"></i>
-                    <span class="text-[9px] font-bold uppercase tracking-widest">Accueil</span>
+                    <span class="text-[8px] font-bold uppercase tracking-widest">Accueil</span>
                     <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,1)]"></div>
                 </button>
-                <button onclick="switchView('agenda', this)" class="nav-item flex flex-col items-center w-12 group">
-                    <i class="fa-solid fa-calendar-days text-xl mb-1"></i>
-                    <span class="text-[9px] font-bold uppercase tracking-widest">Agenda</span>
-                    <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,1)]"></div>
-                </button>
-                <button onclick="switchView('add-food', this)" class="nav-item flex flex-col items-center w-12 group">
+                <button onclick="addFoodTargetDate = getTodayKey(); switchView('add-food', this)" class="nav-item flex flex-col items-center w-10 group">
                     <i class="fa-solid fa-utensils text-xl mb-1"></i>
-                    <span class="text-[9px] font-bold uppercase tracking-widest">Repas</span>
+                    <span class="text-[8px] font-bold uppercase tracking-widest">Repas</span>
                     <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,1)]"></div>
                 </button>
-                <button onclick="switchView('weight', this)" class="nav-item flex flex-col items-center w-12 group">
+                <button onclick="switchView('agenda', this)" class="nav-item flex flex-col items-center w-10 group">
+                    <i class="fa-solid fa-calendar-days text-xl mb-1"></i>
+                    <span class="text-[8px] font-bold uppercase tracking-widest">Agenda</span>
+                    <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,1)]"></div>
+                </button>
+                <button onclick="switchView('weight', this)" class="nav-item flex flex-col items-center w-10 group">
                     <i class="fa-solid fa-weight-scale text-xl mb-1"></i>
-                    <span class="text-[9px] font-bold uppercase tracking-widest">Poids</span>
+                    <span class="text-[8px] font-bold uppercase tracking-widest">Poids</span>
                     <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,1)]"></div>
                 </button>
-                <button onclick="switchView('chat', this)" class="nav-item flex flex-col items-center w-12 group">
+                <button onclick="switchView('chat', this)" class="nav-item flex flex-col items-center w-10 group">
                     <i class="fa-solid fa-robot text-xl mb-1"></i>
-                    <span class="text-[9px] font-bold uppercase tracking-widest">IA</span>
+                    <span class="text-[8px] font-bold uppercase tracking-widest">IA</span>
                     <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,1)]"></div>
                 </button>
-                <button onclick="switchView('settings', this)" class="nav-item flex flex-col items-center w-12 group">
+                <button onclick="switchView('settings', this)" class="nav-item flex flex-col items-center w-10 group">
                     <i class="fa-solid fa-gear text-xl mb-1"></i>
-                    <span class="text-[9px] font-bold uppercase tracking-widest">Profil</span>
+                    <span class="text-[8px] font-bold uppercase tracking-widest">Profil</span>
                     <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,1)]"></div>
                 </button>
             </div>
@@ -513,19 +520,18 @@
 
     <!-- SCRIPT LOGIQUE -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+        import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
 
-        // TON CONFIG FIREBASE
         const firebaseConfig = {
-            apiKey: "AIzaSyCvdNWcw6Jn-dJfulfMFuTHQUotHuwBDqQ",
-            authDomain: "cloud3-5a1ed.firebaseapp.com",
-            databaseURL: "https://cloud3-5a1ed-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "cloud3-5a1ed",
-            storageBucket: "cloud3-5a1ed.firebasestorage.app",
-            messagingSenderId: "1020714012609",
-            appId: "1:1020714012609:web:fafef4a7280c2f0e852940"
+            apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+            authDomain: "wikimind-3-comments.firebaseapp.com",
+            databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "wikimind-3-comments",
+            storageBucket: "wikimind-3-comments.firebasestorage.app",
+            messagingSenderId: "137479541640",
+            appId: "1:137479541640:web:4ed2510a9908055052e03d"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -538,17 +544,18 @@
         let localFoodDB = []; 
         const MISTRAL_KEY = "SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9";
         let weightChartInstance = null;
-        
-        // Variables pour l'agenda et la planification
-        window.targetAddDate = null; 
-        window.isPlanningMode = false;
+
+        // Variables Globales Ajoutées pour l'Agenda
         let currentAgendaDate = null;
+        window.addFoodTargetDate = null; // null = Aujourd'hui par défaut
 
         const getTodayKey = () => {
             const today = new Date();
             const offset = today.getTimezoneOffset() * 60000;
             return (new Date(today.getTime() - offset)).toISOString().split('T')[0];
         };
+
+        if(!currentAgendaDate) currentAgendaDate = getTodayKey();
 
         // Chargement de la Base de données locale (food.json)
         async function loadLocalDB() {
@@ -584,10 +591,16 @@
                 setTimeout(() => navBtn.classList.remove('clicked'), 300);
             }
 
-            // RAZ de la variable d'agenda si on quitte l'ajout
-            if(viewId !== 'add-food') {
-                window.targetAddDate = null;
-                window.isPlanningMode = false;
+            if(viewId === 'add-food') {
+                const badge = document.getElementById('add-food-target-badge');
+                if(!window.addFoodTargetDate || window.addFoodTargetDate === getTodayKey()) {
+                    badge.innerHTML = `<i class="fa-regular fa-calendar-check mr-1"></i> Pour aujourd'hui`;
+                    badge.className = "mb-4 inline-block bg-brand-500/20 border border-brand-500/30 text-brand-300 text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full";
+                } else {
+                    const dParts = window.addFoodTargetDate.split('-');
+                    badge.innerHTML = `<i class="fa-solid fa-clock mr-1"></i> Planifié pour le ${dParts[2]}/${dParts[1]}`;
+                    badge.className = "mb-4 inline-block bg-yellow-500/20 border border-yellow-500/30 text-yellow-300 text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full";
+                }
             }
 
             if(viewId === 'dashboard') renderDashboard();
@@ -626,7 +639,7 @@
                 document.querySelector('.bottom-nav').style.display = 'none';
                 window.switchView('onboarding');
             } else {
-                document.querySelector('.bottom-nav').style.display = 'block';
+                document.querySelector('.bottom-nav').style.display = 'flex';
                 checkNewDay();
                 window.switchView('dashboard');
             }
@@ -636,7 +649,6 @@
             if(!userData) return;
             if (currentUser) { await set(ref(db, `users/${currentUser.uid}`), userData); } 
             else { localStorage.setItem('wiki_calories_data', JSON.stringify(userData)); }
-            
             if(document.getElementById('view-dashboard').style.display !== 'none') renderDashboard();
             if(document.getElementById('view-agenda').style.display !== 'none') renderAgenda();
         }
@@ -664,167 +676,108 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud text-brand-400"></i> Synced (Secure)';
+                document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud text-brand-400"></i> Cloud Synced';
                 document.getElementById('sync-status').className = "text-[10px] text-brand-400 flex items-center gap-1 mt-0.5 font-bold";
-                if(user.photoURL) document.getElementById('user-avatar').src = user.photoURL;
-                if(!authReady) { authReady = true; await loadData(); }
-            } else {
-                try {
-                    await signInAnonymously(auth);
-                } catch (error) {
-                    console.error("Auth error", error);
-                    if(!authReady) { authReady = true; await loadData(); }
-                }
+                document.getElementById('user-avatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff`;
             }
+            if(!authReady) { authReady = true; await loadData(); }
         });
 
         // ==========================================
-        // ONBOARDING LOGIQUE (RESTAUREE)
+        // AGENDA (NOUVEAU) & TOGGLE REPAS
         // ==========================================
-        window.nextStep = (step) => {
-            if(step === 2 && !document.getElementById('ob-name').value.trim()) return showToast("Prénom requis", "error");
-            if(step === 3 && !document.getElementById('ob-dob').value) return showToast("Date de naissance requise", "error");
-            if(step === 4 && (!document.getElementById('ob-weight').value || !document.getElementById('ob-height').value)) return showToast("Poids et taille requis", "error");
-            
-            document.querySelectorAll('.ob-step').forEach(el => el.classList.remove('active'));
-            document.getElementById(`step-${step}`).classList.add('active');
-            document.getElementById('ob-progress').style.width = `${step * 20}%`;
+        window.changeAgendaDate = (offset) => {
+            let d = new Date(currentAgendaDate);
+            d.setDate(d.getDate() + offset);
+            currentAgendaDate = d.toISOString().split('T')[0];
+            document.getElementById('agenda-date-picker').value = currentAgendaDate;
+            renderAgenda();
         };
 
-        window.prevStep = (step) => {
-            document.querySelectorAll('.ob-step').forEach(el => el.classList.remove('active'));
-            document.getElementById(`step-${step}`).classList.add('active');
-            document.getElementById('ob-progress').style.width = `${step * 20}%`;
+        window.changeAgendaDateFromPicker = (val) => {
+            if(val) { currentAgendaDate = val; renderAgenda(); }
         };
 
-        window.calculateAndShowFinalStep = () => {
-            userData = { 
-                weight: parseFloat(document.getElementById('ob-weight').value), 
-                height: parseInt(document.getElementById('ob-height').value), 
-                dob: document.getElementById('ob-dob').value, 
-                sex: document.getElementById('ob-sex').value, 
-                goal: document.querySelector('input[name="ob-goal"]:checked').value, 
-                isCustomKcal: false 
-            };
-            document.getElementById('ob-calc-kcal').innerText = calculateTDEE();
-            nextStep(5);
+        window.openAddFoodForAgenda = () => {
+            window.addFoodTargetDate = currentAgendaDate;
+            window.switchView('add-food');
         };
 
-        window.finishOnboarding = async () => {
-            const customKcal = document.getElementById('ob-custom-kcal').value;
-            userData = {
-                onboarded: true, 
-                name: document.getElementById('ob-name').value, 
-                sex: document.getElementById('ob-sex').value,
-                dob: document.getElementById('ob-dob').value, 
-                weight: parseFloat(document.getElementById('ob-weight').value),
-                height: parseInt(document.getElementById('ob-height').value), 
-                goal: document.querySelector('input[name="ob-goal"]:checked').value,
-                isCustomKcal: customKcal ? true : false, 
-                customTarget: customKcal ? parseInt(customKcal) : null,
-                weightHistory: {}, 
-                foodHistory: {}
-            };
-            userData.weightHistory[getTodayKey()] = userData.weight; 
-            calculateTDEE(); 
+        window.toggleFoodStatus = async (dateStr, index) => {
+            if(!userData.foodHistory[dateStr]) return;
+            let food = userData.foodHistory[dateStr][index];
+            food.isEaten = !(food.isEaten !== false); // S'il est validé ou undefined, devient false. Si false, devient true.
             await saveData();
-            showToast("Profil configuré avec succès !", "success");
-            document.querySelector('.bottom-nav').style.display = 'block'; 
-            switchView('dashboard');
         };
 
-        // ==========================================
-        // AGENDA LOGIQUE
-        // ==========================================
+        window.deleteFood = async (dateStr, index) => { 
+            userData.foodHistory[dateStr].splice(index, 1); 
+            await saveData(); 
+        };
+
         function renderAgenda() {
             if(!userData) return;
-            if(!currentAgendaDate) currentAgendaDate = getTodayKey();
-
-            const slider = document.getElementById('agenda-date-slider');
-            slider.innerHTML = '';
-            const today = new Date();
+            if(!userData.foodHistory[currentAgendaDate]) userData.foodHistory[currentAgendaDate] = [];
             
-            for(let i = -14; i <= 14; i++) {
-                const d = new Date(today);
-                d.setDate(today.getDate() + i);
-                const offset = d.getTimezoneOffset() * 60000;
-                const dStr = (new Date(d.getTime() - offset)).toISOString().split('T')[0];
-                
-                const isSelected = dStr === currentAgendaDate;
-                const dayName = d.toLocaleDateString('fr-FR', {weekday: 'short'}).replace('.','');
-                const dayNum = d.getDate();
-                
-                const btn = document.createElement('button');
-                btn.className = `flex-shrink-0 w-16 h-20 rounded-2xl flex flex-col items-center justify-center border snap-center transition-all ${isSelected ? 'bg-brand-600 border-brand-400 text-white shadow-[0_0_15px_rgba(99,102,241,0.5)]' : 'bg-black/40 border-white/10 text-white/50 hover:bg-white/5'}`;
-                btn.innerHTML = `<span class="text-[10px] uppercase font-bold mb-1">${dayName}</span><span class="text-xl font-display font-bold">${dayNum}</span>`;
-                btn.onclick = () => { currentAgendaDate = dStr; renderAgenda(); };
-                slider.appendChild(btn);
-                
-                if(isSelected) {
-                    setTimeout(() => btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 50);
-                }
+            const today = getTodayKey();
+            const picker = document.getElementById('agenda-date-picker');
+            picker.value = currentAgendaDate;
+            
+            const dateObj = new Date(currentAgendaDate);
+            const todayObj = new Date(today);
+            const diffTime = dateObj - todayObj;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            const displayMain = document.getElementById('agenda-date-display');
+            const displaySub = document.getElementById('agenda-date-sub');
+            
+            if(diffDays === 0) displayMain.innerText = "Aujourd'hui";
+            else if(diffDays === 1) displayMain.innerText = "Demain";
+            else if(diffDays === -1) displayMain.innerText = "Hier";
+            else {
+                const options = { weekday: 'long', day: 'numeric', month: 'short' };
+                displayMain.innerText = dateObj.toLocaleDateString('fr-FR', options).replace(/^\w/, (c) => c.toUpperCase());
             }
+            displaySub.innerText = currentAgendaDate.split('-').reverse().join('/');
 
-            const meals = userData.foodHistory[currentAgendaDate] || [];
-            let total = 0;
-            const list = document.getElementById('agenda-meal-list');
-            list.innerHTML = '';
+            const foods = userData.foodHistory[currentAgendaDate] || [];
+            let eaten = 0; let planned = 0;
+
+            const list = document.getElementById('agenda-food-list'); list.innerHTML = '';
             
-            if(meals.length === 0) {
-                list.innerHTML = '<div class="text-center text-white/30 text-xs py-8 bg-white/5 rounded-2xl border border-dashed border-white/10">Aucun repas planifié ou enregistré ce jour.</div>';
+            if(foods.length === 0) {
+                list.innerHTML = `<div class="text-center text-white/30 text-xs py-10 bg-white/5 rounded-3xl border border-dashed border-white/10 flex flex-col items-center gap-2"><i class="fa-solid fa-calendar-xmark text-2xl mb-1"></i>Rien de prévu pour ce jour.</div>`;
             } else {
-                meals.forEach((f, index) => {
-                    const isPlanned = f.status === 'planned';
-                    total += f.kcal; 
-
+                foods.slice().reverse().forEach((f, index) => {
+                    const originalIndex = foods.length - 1 - index;
+                    const isEaten = f.isEaten !== false;
+                    
+                    if(isEaten) eaten += f.kcal; else planned += f.kcal;
+                    
+                    const borderClass = isEaten ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-dashed border-white/20 bg-black/40 opacity-70';
+                    const iconCheck = isEaten ? '<i class="fa-solid fa-circle-check text-emerald-400 text-xl shadow-[0_0_15px_rgba(52,211,153,0.4)] rounded-full"></i>' : '<i class="fa-regular fa-circle text-white/30 text-xl"></i>';
+                    
                     list.innerHTML += `
-                        <div class="glass-panel p-4 rounded-2xl flex flex-col bg-white/5 border-white/5 relative overflow-hidden animate-slide-up">
-                            ${isPlanned ? '<div class="absolute top-0 right-0 bg-yellow-500/20 text-yellow-400 text-[8px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">Planifié</div>' : '<div class="absolute top-0 right-0 bg-emerald-500/20 text-emerald-400 text-[8px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider"><i class="fa-solid fa-check"></i> Mangé</div>'}
-                            <div class="flex justify-between items-center">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full ${isPlanned ? 'bg-yellow-500/10' : 'bg-brand-500/10'} flex items-center justify-center text-lg">${f.icon || '🍴'}</div>
-                                    <div>
-                                        <div class="font-bold text-sm text-white/90 capitalize">${f.name}</div>
-                                        <div class="text-[10px] text-white/40 uppercase tracking-widest font-bold">${f.qtyLabel ? f.qtyLabel : 'Ajout rapide'}</div>
-                                    </div>
+                        <div class="glass-panel p-4 rounded-2xl flex justify-between items-center transition-all ${borderClass} animate-slide-up" style="animation-delay: ${index * 0.05}s;">
+                            <button onclick="toggleFoodStatus('${currentAgendaDate}', ${originalIndex})" class="flex items-center gap-3 flex-1 text-left">
+                                <div class="w-8 h-8 flex items-center justify-center transition-transform hover:scale-110">${iconCheck}</div>
+                                <div>
+                                    <div class="font-bold text-sm text-white capitalize flex items-center gap-2">${f.icon || '🍴'} ${f.name}</div>
+                                    <div class="text-[10px] text-white/40 uppercase tracking-widest font-bold mt-0.5">${f.qtyLabel ? f.qtyLabel : 'Ajout rapide'}</div>
                                 </div>
-                                <div class="font-display font-bold ${isPlanned ? 'text-yellow-400' : 'text-emerald-300'}">${f.kcal} <span class="text-[10px] opacity-50">kcal</span></div>
-                            </div>
-                            <div class="flex gap-2 mt-3 pt-3 border-t border-white/10">
-                                ${isPlanned ? `<button onclick="validateAgendaMeal('${currentAgendaDate}', ${index})" class="flex-1 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white py-2 rounded-xl text-xs font-bold transition flex justify-center items-center gap-2"><i class="fa-solid fa-check"></i> Valider</button>` : ''}
-                                <button onclick="deleteAgendaMeal('${currentAgendaDate}', ${index})" class="${isPlanned ? 'w-1/3' : 'w-full'} bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white py-2 rounded-xl text-xs font-bold transition flex justify-center items-center gap-2"><i class="fa-solid fa-trash"></i> Supprimer</button>
+                            </button>
+                            <div class="flex items-center gap-4">
+                                <div class="font-display font-bold ${isEaten ? 'text-emerald-300' : 'text-white/50'}">${f.kcal} <span class="text-[10px] opacity-50">kcal</span></div>
+                                <button onclick="deleteFood('${currentAgendaDate}', ${originalIndex})" class="w-8 h-8 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition flex items-center justify-center"><i class="fa-solid fa-trash-can text-sm"></i></button>
                             </div>
                         </div>`;
                 });
             }
-            
-            document.getElementById('agenda-total-kcal').innerText = total;
-            document.getElementById('agenda-target-kcal').innerText = userData.targetKcal || calculateTDEE();
+
+            document.getElementById('agenda-total-eaten').innerHTML = `${eaten} <span class="text-[10px] text-emerald-400/50">kcal</span>`;
+            document.getElementById('agenda-total-planned').innerHTML = `${planned} <span class="text-[10px] text-brand-400/50">kcal</span>`;
         }
 
-        window.validateAgendaMeal = async (date, index) => {
-            if(userData.foodHistory[date] && userData.foodHistory[date][index]) {
-                userData.foodHistory[date][index].status = 'eaten';
-                await saveData();
-                showToast("Repas validé !", "success");
-            }
-        };
-
-        window.deleteAgendaMeal = async (date, index) => {
-            if(confirm("Supprimer ce repas ?")) {
-                userData.foodHistory[date].splice(index, 1);
-                await saveData();
-                showToast("Repas supprimé.", "success");
-            }
-        };
-
-        window.planMealForAgenda = () => {
-            window.targetAddDate = currentAgendaDate;
-            window.isPlanningMode = true; 
-            const d = currentAgendaDate.split('-');
-            showToast(`Ajout/Planification pour le ${d[2]}/${d[1]}`, "info");
-            switchView('add-food');
-        };
 
         // ==========================================
         // DASHBOARD
@@ -832,10 +785,11 @@
         function renderDashboard() {
             if(!userData) return;
             document.getElementById('dash-name').innerText = userData.name; calculateTDEE(); 
-            const foods = userData.foodHistory[getTodayKey()] || [];
+            const today = getTodayKey();
+            const foods = userData.foodHistory[today] || [];
             
-            // On ne compte que les repas "mangés" pour la jauge
-            let consumed = foods.filter(f => f.status !== 'planned').reduce((sum, item) => sum + item.kcal, 0);
+            // On ne compte dans le cercle QUE ce qui a été VRAIMENT consommé (isEaten !== false)
+            let consumed = foods.reduce((sum, item) => sum + (item.isEaten !== false ? item.kcal : 0), 0);
             
             document.getElementById('dash-consumed').innerText = consumed;
             document.getElementById('dash-target').innerText = userData.targetKcal;
@@ -855,42 +809,35 @@
             else { circle.classList.remove('stroke-red-500'); circle.classList.add('stroke-emerald-400'); document.querySelector('.circular-chart').style.filter = 'drop-shadow(0 0 15px rgba(52, 211, 153, 0.3))'; }
 
             const list = document.getElementById('food-list-today'); list.innerHTML = '';
-            if(foods.length === 0) list.innerHTML = '<div class="text-center text-white/30 text-xs py-8 bg-white/5 rounded-2xl border border-dashed border-white/10">Aucun repas ajouté.</div>';
+            if(foods.length === 0) list.innerHTML = '<div class="text-center text-white/30 text-xs py-8 bg-white/5 rounded-2xl border border-dashed border-white/10">Aucun repas aujourd\'hui.</div>';
             else {
                 foods.slice().reverse().forEach((f, index) => {
                     const originalIndex = foods.length - 1 - index;
-                    const isPlanned = f.status === 'planned';
+                    const isEaten = f.isEaten !== false;
+                    const opacityClass = isEaten ? 'opacity-100 bg-white/5 border-white/5' : 'opacity-60 bg-black/40 border-dashed border-white/20';
+                    const statusIcon = isEaten ? '' : '<span class="text-[8px] bg-brand-500 text-white px-1.5 py-0.5 rounded ml-2 uppercase tracking-widest font-bold">À venir</span>';
 
                     list.innerHTML += `
-                        <div class="glass-panel p-4 rounded-2xl flex justify-between items-center bg-white/5 animate-slide-up ${isPlanned ? 'border-yellow-500/30' : 'border-white/5'}" style="animation-delay: ${index * 0.05}s;">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full ${isPlanned ? 'bg-yellow-500/20 text-yellow-400' : 'bg-brand-500/10 text-brand-300'} flex items-center justify-center text-sm">${f.icon || '🍴'}</div>
+                        <div class="glass-panel p-4 rounded-2xl flex justify-between items-center animate-slide-up ${opacityClass}" style="animation-delay: ${index * 0.05}s;">
+                            <button onclick="toggleFoodStatus('${today}', ${originalIndex})" class="flex items-center gap-3 text-left flex-1 group">
+                                <div class="w-8 h-8 rounded-full ${isEaten ? 'bg-brand-500/10 text-brand-300' : 'bg-white/5 text-white/30 group-hover:bg-brand-500/20'} flex items-center justify-center text-sm transition-all">${isEaten ? f.icon || '🍴' : '<i class="fa-regular fa-square"></i>'}</div>
                                 <div>
-                                    <div class="font-bold text-sm text-white/90 capitalize">${f.name} ${isPlanned ? '<span class="text-[8px] bg-yellow-500/20 text-yellow-400 px-1 py-0.5 rounded ml-1">Prévu</span>' : ''}</div>
+                                    <div class="font-bold text-sm text-white/90 capitalize">${f.name} ${statusIcon}</div>
                                     <div class="text-[10px] text-white/40 uppercase tracking-widest font-bold">${f.qtyLabel ? f.qtyLabel : 'Ajout rapide'}</div>
                                 </div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <div class="font-display font-bold ${isPlanned ? 'text-yellow-400' : 'text-emerald-300'} mr-2">${f.kcal} <span class="text-[10px] opacity-50">kcal</span></div>
-                                ${isPlanned ? `<button onclick="validateDashMeal(${originalIndex})" class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white transition flex items-center justify-center shadow-lg"><i class="fa-solid fa-check text-sm"></i></button>` : ''}
-                                <button onclick="deleteFood(${originalIndex})" class="w-8 h-8 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition flex items-center justify-center"><i class="fa-solid fa-xmark text-sm"></i></button>
+                            </button>
+                            <div class="flex items-center gap-4">
+                                <div class="font-display font-bold ${isEaten ? 'text-emerald-300' : 'text-white/40'}">${f.kcal} <span class="text-[10px] opacity-50">kcal</span></div>
+                                <button onclick="deleteFood('${today}', ${originalIndex})" class="w-8 h-8 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition flex items-center justify-center"><i class="fa-solid fa-xmark text-sm"></i></button>
                             </div>
                         </div>`;
                 });
             }
         }
-        
-        window.validateDashMeal = async (index) => {
-            userData.foodHistory[getTodayKey()][index].status = 'eaten';
-            await saveData();
-            showToast("Repas validé !", "success");
-        };
-
-        window.deleteFood = async (index) => { userData.foodHistory[getTodayKey()].splice(index, 1); await saveData(); };
 
 
         // ==========================================
-        // RECHERCHE & AJOUT DE REPAS
+        // RECHERCHE & GESTION DES UNITES
         // ==========================================
         let currentSearchedFood = null;
 
@@ -1007,9 +954,7 @@
             const unit = document.getElementById('res-food-unit').value;
             
             let weightInGrams = inputQty;
-            if (unit === 'unit') {
-                weightInGrams = inputQty * currentSearchedFood.weight_per_unit;
-            }
+            if (unit === 'unit') { weightInGrams = inputQty * currentSearchedFood.weight_per_unit; } 
 
             const total = Math.round((currentSearchedFood.kcal_per_100g * weightInGrams) / 100);
             document.getElementById('res-food-total').innerText = total;
@@ -1028,16 +973,21 @@
             const totalKcal = Math.round((currentSearchedFood.kcal_per_100g * weightInGrams) / 100);
             const qtyLabel = `${inputQty} ${unitText}`;
             
-            const targetDate = window.targetAddDate || getTodayKey();
-            const status = window.isPlanningMode ? 'planned' : 'eaten';
+            // Logic d'ajout avec Agenda en ligne de mire
+            const targetDate = window.addFoodTargetDate || getTodayKey();
+            const isEatenStatus = targetDate <= getTodayKey(); // Si planifié dans le futur, c'est non consommé par défaut
 
             if(!userData.foodHistory[targetDate]) userData.foodHistory[targetDate] = [];
-            userData.foodHistory[targetDate].push({ name: currentSearchedFood.name, qtyLabel: qtyLabel, kcal: totalKcal, icon: currentSearchedFood.icon, time: Date.now(), status: status });
+            userData.foodHistory[targetDate].push({ 
+                name: currentSearchedFood.name, qtyLabel: qtyLabel, kcal: totalKcal, 
+                icon: currentSearchedFood.icon, time: Date.now(), isEaten: isEatenStatus 
+            });
 
             await saveData(); showToast(`${currentSearchedFood.name} ajouté !`, "success");
             searchInput.value = ''; document.getElementById('food-search-result').classList.add('hidden'); 
             
-            if(window.isPlanningMode) switchView('agenda');
+            // Redirection intelligente
+            if(window.addFoodTargetDate && window.addFoodTargetDate !== getTodayKey()) switchView('agenda');
             else switchView('dashboard');
         });
 
@@ -1046,16 +996,18 @@
             const kcal = parseInt(document.getElementById('manual-food-kcal').value);
             if(!kcal) return showToast("Entrez les Kcal", "error");
             
-            const targetDate = window.targetAddDate || getTodayKey();
-            const status = window.isPlanningMode ? 'planned' : 'eaten';
+            const targetDate = window.addFoodTargetDate || getTodayKey();
+            const isEatenStatus = targetDate <= getTodayKey();
 
             if(!userData.foodHistory[targetDate]) userData.foodHistory[targetDate] = [];
-            userData.foodHistory[targetDate].push({ name: name, qtyLabel: null, kcal: kcal, icon: '⚡', time: Date.now(), status: status });
-            
+            userData.foodHistory[targetDate].push({ 
+                name: name, qtyLabel: null, kcal: kcal, icon: '⚡', time: Date.now(), isEaten: isEatenStatus 
+            });
+
             await saveData(); showToast(`${kcal} kcal ajoutées !`, "success");
             document.getElementById('manual-food-name').value = ''; document.getElementById('manual-food-kcal').value = ''; 
             
-            if(window.isPlanningMode) switchView('agenda');
+            if(window.addFoodTargetDate && window.addFoodTargetDate !== getTodayKey()) switchView('agenda');
             else switchView('dashboard');
         });
 
@@ -1122,7 +1074,7 @@ Sois bref et sympa.`;
                         if(action.type === 'update_weight') { userData.weight = parseFloat(action.weight); userData.weightHistory[getTodayKey()] = userData.weight; saveData(); showToast(`Poids mis à jour à ${action.weight}kg !`, "success"); } 
                         else if(action.type === 'add_food') { 
                             if(!userData.foodHistory[getTodayKey()]) userData.foodHistory[getTodayKey()] = [];
-                            userData.foodHistory[getTodayKey()].push({ name: action.food, qtyLabel: action.qtyLabel, kcal: action.kcal, icon: '🤖', time: Date.now(), status: 'eaten' }); saveData(); showToast(`${action.food} enregistré !`, "success"); 
+                            userData.foodHistory[getTodayKey()].push({ name: action.food, qtyLabel: action.qtyLabel, kcal: action.kcal, icon: '🤖', time: Date.now(), isEaten: true }); saveData(); showToast(`${action.food} enregistré !`, "success"); 
                         }
                     } catch(e) {}
                     reply = reply.replace(/\[ACTION:.*?\]/, '').trim();
@@ -1135,7 +1087,7 @@ Sois bref et sympa.`;
         });
 
         // ==========================================
-        // PARAMETRES & BACKGROUND ANIMATION
+        // PARAMETRES
         // ==========================================
         const toggleCustom = document.getElementById('set-custom-toggle');
         const inputCustomDiv = document.getElementById('set-custom-input-div');
@@ -1153,11 +1105,6 @@ Sois bref et sympa.`;
             toggleCustom.checked = userData.isCustomKcal;
             if(userData.isCustomKcal) { inputCustomDiv.classList.remove('hidden'); textAuto.classList.add('hidden'); document.getElementById('set-custom-kcal').value = userData.customTarget; } 
             else { inputCustomDiv.classList.add('hidden'); textAuto.classList.remove('hidden'); }
-            
-            if("Notification" in window && Notification.permission === "granted") {
-                document.getElementById('btn-enable-notifs').innerText = "Activé";
-                document.getElementById('btn-enable-notifs').className = "bg-emerald-600 px-3 py-1 rounded-lg text-xs font-bold";
-            }
         };
 
         window.saveSettings = async () => {
@@ -1174,6 +1121,35 @@ Sois bref et sympa.`;
                 localStorage.removeItem('wiki_calories_data'); location.reload();
             }
         };
+
+        // ==========================================
+        // BACKGROUND ANIMATION & NOTIFICATIONS
+        // ==========================================
+        document.getElementById('btn-enable-notifs').addEventListener('click', () => {
+            if (!("Notification" in window)) return showToast("Notifications non supportées.", "error");
+            Notification.requestPermission().then(perm => {
+                if(perm === "granted") {
+                    showToast("Notifications activées !", "success");
+                    document.getElementById('btn-enable-notifs').innerText = "Activé";
+                    document.getElementById('btn-enable-notifs').className = "bg-emerald-600 px-3 py-1 rounded-lg text-xs font-bold";
+                }
+            });
+        });
+
+        setInterval(() => {
+            if(Notification.permission !== "granted" || !userData) return;
+            const now = new Date();
+            const h = now.getHours(); const m = now.getMinutes(); const d = now.getDay();
+            const today = getTodayKey();
+
+            if (h === 20 && m === 0) {
+                if(localStorage.getItem('notif_20h_' + today)) return;
+                localStorage.setItem('notif_20h_' + today, '1');
+                const consumed = userData.foodHistory[today]?.reduce((s, i) => s + (i.isEaten !== false ? i.kcal : 0), 0) || 0;
+                const rem = userData.targetKcal - consumed;
+                new Notification("WikiMind Calories", { body: `Il te reste ${rem} kcal aujourd'hui !`, icon: "192pixels.png" });
+            }
+        }, 60000);
 
         const canvas = document.getElementById('aurora-bg'); const ctx = canvas.getContext('2d');
         let width, height; const orbs = [ { x: 0.3, y: 0.3, r: 0.6, color: 'rgba(99, 102, 241, 0.08)', vx: 0.0006, vy: 0.0004 }, { x: 0.7, y: 0.7, r: 0.5, color: 'rgba(52, 211, 153, 0.05)', vx: -0.0004, vy: 0.0007 } ];
