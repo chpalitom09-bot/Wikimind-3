@@ -517,7 +517,7 @@
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // TON NOUVEAU CONFIG FIREBASE
+        // TON CONFIG FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyCvdNWcw6Jn-dJfulfMFuTHQUotHuwBDqQ",
             authDomain: "cloud3-5a1ed.firebaseapp.com",
@@ -669,7 +669,6 @@
                 if(user.photoURL) document.getElementById('user-avatar').src = user.photoURL;
                 if(!authReady) { authReady = true; await loadData(); }
             } else {
-                // Créer un compte Anonyme unique pour sécuriser cet appareil sur la BDD
                 try {
                     await signInAnonymously(auth);
                 } catch (error) {
@@ -678,6 +677,61 @@
                 }
             }
         });
+
+        // ==========================================
+        // ONBOARDING LOGIQUE (RESTAUREE)
+        // ==========================================
+        window.nextStep = (step) => {
+            if(step === 2 && !document.getElementById('ob-name').value.trim()) return showToast("Prénom requis", "error");
+            if(step === 3 && !document.getElementById('ob-dob').value) return showToast("Date de naissance requise", "error");
+            if(step === 4 && (!document.getElementById('ob-weight').value || !document.getElementById('ob-height').value)) return showToast("Poids et taille requis", "error");
+            
+            document.querySelectorAll('.ob-step').forEach(el => el.classList.remove('active'));
+            document.getElementById(`step-${step}`).classList.add('active');
+            document.getElementById('ob-progress').style.width = `${step * 20}%`;
+        };
+
+        window.prevStep = (step) => {
+            document.querySelectorAll('.ob-step').forEach(el => el.classList.remove('active'));
+            document.getElementById(`step-${step}`).classList.add('active');
+            document.getElementById('ob-progress').style.width = `${step * 20}%`;
+        };
+
+        window.calculateAndShowFinalStep = () => {
+            userData = { 
+                weight: parseFloat(document.getElementById('ob-weight').value), 
+                height: parseInt(document.getElementById('ob-height').value), 
+                dob: document.getElementById('ob-dob').value, 
+                sex: document.getElementById('ob-sex').value, 
+                goal: document.querySelector('input[name="ob-goal"]:checked').value, 
+                isCustomKcal: false 
+            };
+            document.getElementById('ob-calc-kcal').innerText = calculateTDEE();
+            nextStep(5);
+        };
+
+        window.finishOnboarding = async () => {
+            const customKcal = document.getElementById('ob-custom-kcal').value;
+            userData = {
+                onboarded: true, 
+                name: document.getElementById('ob-name').value, 
+                sex: document.getElementById('ob-sex').value,
+                dob: document.getElementById('ob-dob').value, 
+                weight: parseFloat(document.getElementById('ob-weight').value),
+                height: parseInt(document.getElementById('ob-height').value), 
+                goal: document.querySelector('input[name="ob-goal"]:checked').value,
+                isCustomKcal: customKcal ? true : false, 
+                customTarget: customKcal ? parseInt(customKcal) : null,
+                weightHistory: {}, 
+                foodHistory: {}
+            };
+            userData.weightHistory[getTodayKey()] = userData.weight; 
+            calculateTDEE(); 
+            await saveData();
+            showToast("Profil configuré avec succès !", "success");
+            document.querySelector('.bottom-nav').style.display = 'block'; 
+            switchView('dashboard');
+        };
 
         // ==========================================
         // AGENDA LOGIQUE
