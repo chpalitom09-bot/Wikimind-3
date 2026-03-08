@@ -2,20 +2,22 @@
 <html lang="fr" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#050505">
     <title>WikiMind Calories</title>
     
     <!-- PWA -->
     <link rel="manifest" href="calories.json">
-    <meta name="theme-color" content="#050505">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="192pixels.png">
 
-    <!-- Styles & Fonts -->
+    <!-- Tailwind & Fonts & Icons -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
     
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -23,323 +25,342 @@
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
                     colors: {
-                        glass: { panel: 'rgba(20, 20, 20, 0.8)', border: 'rgba(255, 255, 255, 0.08)' },
-                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8', dark: '#312e81' },
-                        cal: { low: '#10b981', mid: '#f59e0b', high: '#ef4444' }
+                        glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
+                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' },
+                        calories: { bg: '#10b981', text: '#34d399' } // Vert fluo
                     },
                     animation: { 
-                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                        'fade-in': 'fadeIn 0.3s ease-out forwards',
                         'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards'
                     },
                     keyframes: { 
                         fadeIn: { '0%': { opacity: 0 }, '100%': { opacity: 1 } },
-                        slideUp: { '0%': { transform: 'translateY(100%)' }, '100%': { transform: 'translateY(0)' } }
+                        slideUp: { '0%': { opacity: 0, transform: 'translateY(20px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } }
                     }
                 }
             }
         }
     </script>
     <style>
-        body { background-color: #050505; color: #ffffff; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #050505; color: #ffffff; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
         .glass-panel {
             background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         }
-        .app-container { max-width: 480px; margin: 0 auto; min-height: 100vh; position: relative; padding-bottom: 90px; }
+        .text-gradient { background: linear-gradient(135deg, #34d399 0%, #6366f1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        /* Circular Progress */
-        .progress-ring__circle { transition: stroke-dashoffset 0.5s ease-in-out; transform: rotate(-90deg); transform-origin: 50% 50%; }
+        /* Cacher la scrollbar */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
         
-        /* Custom Inputs */
-        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.5; }
+        /* App Layout */
+        #app-container { height: 100dvh; display: flex; flex-direction: column; max-width: 600px; margin: 0 auto; position: relative; }
+        .view-content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 100px; display: none; }
+        .view-content.active { display: block; animation: fadeIn 0.3s ease-out forwards; }
         
-        /* Loader */
-        .loader-dots div { animation-timing-function: cubic-bezier(0, 1, 1, 0); }
-        .loader-dots div:nth-child(1) { left: 8px; animation: loader-dots1 0.6s infinite; }
-        .loader-dots div:nth-child(2) { left: 8px; animation: loader-dots2 0.6s infinite; }
-        .loader-dots div:nth-child(3) { left: 32px; animation: loader-dots2 0.6s infinite; }
-        .loader-dots div:nth-child(4) { left: 56px; animation: loader-dots3 0.6s infinite; }
-        @keyframes loader-dots1 { 0% { transform: scale(0); } 100% { transform: scale(1); } }
-        @keyframes loader-dots3 { 0% { transform: scale(1); } 100% { transform: scale(0); } }
-        @keyframes loader-dots2 { 0% { transform: translate(0, 0); } 100% { transform: translate(24px, 0); } }
-
-        /* Modal Transitions */
-        .modal { display: none; position: fixed; inset: 0; z-index: 50; align-items: flex-end; justify-content: center; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); }
-        .modal.active { display: flex; animation: fadeIn 0.2s forwards; }
-        .modal-content { width: 100%; max-width: 480px; background: #111; border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 24px; border-top: 1px solid rgba(255,255,255,0.1); transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-        .modal.active .modal-content { transform: translateY(0); }
+        /* Progress Circle */
+        .circular-chart { display: block; margin: 0 auto; max-width: 80%; max-height: 250px; }
+        .circle-bg { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 3.8; }
+        .circle { fill: none; stroke-width: 2.8; stroke-linecap: round; transition: stroke-dasharray 1s ease-out; }
+        
+        /* Bottom Nav */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; max-width: 600px; margin: 0 auto; padding-bottom: env(safe-area-inset-bottom); z-index: 50; }
+        .nav-item.active { color: #6366f1; }
+        .nav-item.active .nav-indicator { opacity: 1; transform: scale(1); }
     </style>
 </head>
 <body class="selection:bg-brand-500 selection:text-white">
 
-    <!-- APP CONTAINER -->
-    <div class="app-container">
-        
-        <!-- HEADER -->
-        <header class="flex justify-between items-center p-6 pt-8 sticky top-0 z-30 bg-[#050505]/80 backdrop-blur-md">
+    <!-- AURORA BG -->
+    <canvas id="aurora-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
+
+    <!-- TOASTS -->
+    <div id="toast-container" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-[100] flex flex-col gap-2 w-[90%] max-w-[400px]"></div>
+
+    <div id="app-container">
+        <!-- TOP BAR -->
+        <header class="pt-12 pb-4 px-6 glass-panel rounded-b-3xl sticky top-0 z-40 flex justify-between items-center border-t-0 border-l-0 border-r-0">
             <div class="flex items-center gap-3">
-                <div class="w-8 h-8 bg-gradient-to-tr from-brand-400 to-brand-600 rounded-lg flex items-center justify-center shadow-lg shadow-brand-500/20">
-                    <i class="fa-solid fa-fire-flame-curved text-white text-sm"></i>
+                <div class="w-8 h-8 bg-gradient-to-tr from-green-400 to-brand-500 rounded-lg flex items-center justify-center shadow-lg shadow-brand-500/30">
+                    <i class="fa-solid fa-fire text-white text-sm"></i>
                 </div>
                 <div>
-                    <h1 class="font-display font-bold text-lg leading-none">WM Calories</h1>
-                    <p id="header-date" class="text-xs text-white/40 font-mono mt-0.5">...</p>
+                    <h1 class="font-display font-bold text-lg tracking-tight leading-none">Calories <span class="text-white/40 font-normal text-xs">v3.0</span></h1>
+                    <div id="sync-status" class="text-[10px] text-yellow-500 flex items-center gap-1 mt-0.5"><i class="fa-solid fa-cloud-arrow-down"></i> Local</div>
                 </div>
             </div>
-            <div onclick="toggleSettings()" class="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center cursor-pointer hover:bg-white/10 transition">
-                <img id="user-avatar" src="https://ui-avatars.com/api/?name=User&background=333&color=fff" class="w-full h-full rounded-full object-cover opacity-80">
-            </div>
+            <a href="Wikimind_user.html" id="user-avatar-link">
+                <img id="user-avatar" src="https://ui-avatars.com/api/?name=Guest&background=333&color=fff" class="w-9 h-9 rounded-full border border-white/20 object-cover">
+            </a>
         </header>
 
-        <!-- DASHBOARD -->
-        <main class="px-6 space-y-8 animate-fade-in">
-            
-            <!-- KPI RING -->
-            <div class="relative flex justify-center py-4">
-                <div class="relative w-64 h-64">
-                    <svg class="w-full h-full" viewBox="0 0 100 100">
-                        <!-- Track -->
-                        <circle class="text-white/5 stroke-current" stroke-width="8" cx="50" cy="50" r="40" fill="transparent"></circle>
-                        <!-- Progress -->
-                        <circle id="kcal-ring" class="text-brand-500 stroke-current progress-ring__circle" stroke-width="8" stroke-linecap="round" cx="50" cy="50" r="40" fill="transparent" stroke-dasharray="251.2" stroke-dashoffset="251.2"></circle>
-                    </svg>
-                    <div class="absolute inset-0 flex flex-col items-center justify-center">
-                        <span id="kcal-remaining" class="text-4xl font-display font-bold text-white tracking-tighter">0</span>
-                        <span class="text-xs text-white/40 uppercase tracking-widest mt-1">Restantes</span>
-                        <div class="flex items-center gap-2 mt-2 text-xs text-white/60 bg-white/5 px-3 py-1 rounded-full">
-                            <i class="fa-solid fa-bullseye text-brand-400"></i>
-                            <span id="kcal-goal-display">0</span>
+        <!-- LOADER -->
+        <div id="app-loader" class="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center">
+            <i class="fa-solid fa-circle-notch fa-spin text-4xl text-brand-500 mb-4"></i>
+            <p class="font-display font-bold text-sm tracking-widest uppercase">Initialisation...</p>
+        </div>
+
+        <!-- ONBOARDING VIEW -->
+        <main id="view-onboarding" class="view-content flex flex-col justify-center min-h-full">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-display font-bold text-gradient mb-2">Bienvenue</h2>
+                <p class="text-white/60 text-sm">Configurons votre profil pour un suivi sur-mesure.</p>
+            </div>
+            <form id="onboarding-form" class="space-y-4 animate-slide-up">
+                <div class="glass-panel p-5 rounded-2xl space-y-4">
+                    <div>
+                        <label class="text-xs text-white/60 uppercase tracking-widest font-bold mb-1 block">Prénom</label>
+                        <input type="text" id="ob-name" required class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 transition">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs text-white/60 uppercase tracking-widest font-bold mb-1 block">Sexe</label>
+                            <select id="ob-sex" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 transition appearance-none">
+                                <option value="H" class="bg-gray-900">Homme</option>
+                                <option value="F" class="bg-gray-900">Femme</option>
+                            </select>
                         </div>
+                        <div>
+                            <label class="text-xs text-white/60 uppercase tracking-widest font-bold mb-1 block">Date Naissance</label>
+                            <input type="date" id="ob-dob" required class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 transition [color-scheme:dark]">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs text-white/60 uppercase tracking-widest font-bold mb-1 block">Poids (kg)</label>
+                            <input type="number" step="0.1" id="ob-weight" required class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 transition">
+                        </div>
+                        <div>
+                            <label class="text-xs text-white/60 uppercase tracking-widest font-bold mb-1 block">Taille (cm)</label>
+                            <input type="number" id="ob-height" required class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 transition">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-white/60 uppercase tracking-widest font-bold mb-1 block">Objectif</label>
+                        <select id="ob-goal" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 transition appearance-none">
+                            <option value="lose" class="bg-gray-900">Perdre du poids</option>
+                            <option value="maintain" class="bg-gray-900" selected>Maintenir mon poids</option>
+                            <option value="gain" class="bg-gray-900">Prendre de la masse</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-display font-bold uppercase tracking-wider transition shadow-lg shadow-brand-500/30">
+                    Démarrer l'analyse
+                </button>
+            </form>
+        </main>
+
+        <!-- DASHBOARD VIEW -->
+        <main id="view-dashboard" class="view-content active">
+            <h2 class="text-2xl font-display font-bold mb-6">Bonjour, <span id="dash-name" class="text-brand-glow">...</span> 👋</h2>
+            
+            <!-- Widget Circulaire -->
+            <div class="glass-panel rounded-3xl p-6 mb-6 relative overflow-hidden flex flex-col items-center">
+                <div class="absolute top-0 right-0 p-24 bg-brand-500/10 blur-[50px] rounded-full"></div>
+                <h3 class="text-xs text-white/50 uppercase tracking-widest font-bold mb-2 z-10">Bilan du jour</h3>
+                
+                <div class="relative w-48 h-48 z-10 flex items-center justify-center mb-2">
+                    <svg viewBox="0 0 36 36" class="circular-chart w-full h-full absolute inset-0 -rotate-90">
+                        <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path id="dash-circle" class="circle stroke-brand-500" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    </svg>
+                    <div class="text-center">
+                        <div id="dash-consumed" class="text-4xl font-display font-bold text-white">0</div>
+                        <div class="text-[10px] text-white/50 uppercase tracking-widest mt-1">/ <span id="dash-target">2000</span> kcal</div>
+                    </div>
+                </div>
+                
+                <div class="w-full flex justify-between px-4 z-10">
+                    <div class="text-center">
+                        <div class="text-[10px] text-white/50 uppercase tracking-widest mb-1">Restant</div>
+                        <div id="dash-remaining" class="text-lg font-bold text-green-400">2000</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-[10px] text-white/50 uppercase tracking-widest mb-1">Objectif</div>
+                        <div id="dash-goal-text" class="text-lg font-bold text-brand-300">Maintien</div>
                     </div>
                 </div>
             </div>
 
-            <!-- MACROS -->
-            <div class="grid grid-cols-3 gap-4">
-                <div class="glass-panel p-4 rounded-2xl flex flex-col items-center">
-                    <span class="text-[10px] text-blue-400 font-bold uppercase mb-1">Protéines</span>
-                    <div class="w-full bg-white/10 h-1.5 rounded-full mb-2 overflow-hidden"><div id="bar-prot" class="h-full bg-blue-500 w-0 transition-all duration-1000"></div></div>
-                    <span id="val-prot" class="text-lg font-bold">0g</span>
-                </div>
-                <div class="glass-panel p-4 rounded-2xl flex flex-col items-center">
-                    <span class="text-[10px] text-pink-400 font-bold uppercase mb-1">Glucides</span>
-                    <div class="w-full bg-white/10 h-1.5 rounded-full mb-2 overflow-hidden"><div id="bar-carb" class="h-full bg-pink-500 w-0 transition-all duration-1000"></div></div>
-                    <span id="val-carb" class="text-lg font-bold">0g</span>
-                </div>
-                <div class="glass-panel p-4 rounded-2xl flex flex-col items-center">
-                    <span class="text-[10px] text-yellow-400 font-bold uppercase mb-1">Lipides</span>
-                    <div class="w-full bg-white/10 h-1.5 rounded-full mb-2 overflow-hidden"><div id="bar-fat" class="h-full bg-yellow-500 w-0 transition-all duration-1000"></div></div>
-                    <span id="val-fat" class="text-lg font-bold">0g</span>
-                </div>
+            <!-- Liste des aliments du jour -->
+            <div class="flex justify-between items-end mb-4">
+                <h3 class="font-display font-bold text-lg">Aujourd'hui</h3>
+                <button onclick="switchView('add-food')" class="text-xs text-brand-400 font-bold uppercase tracking-wider"><i class="fa-solid fa-plus mr-1"></i>Ajouter</button>
             </div>
-
-            <!-- TODAY'S LIST -->
-            <div>
-                <div class="flex justify-between items-end mb-4">
-                    <h2 class="text-xl font-display font-bold">Aujourd'hui</h2>
-                    <button onclick="openWeightModal()" class="text-xs text-brand-glow hover:text-white transition flex items-center gap-1">
-                        <i class="fa-solid fa-weight-scale"></i> <span id="current-weight-display">-- kg</span>
-                    </button>
-                </div>
-                <div id="food-list" class="space-y-3 pb-20">
-                    <!-- Items will be injected here -->
-                    <div class="text-center py-10 text-white/20 text-sm">Aucun aliment ajouté.</div>
-                </div>
+            <div id="food-list-today" class="space-y-3">
+                <!-- Généré en JS -->
             </div>
         </main>
 
-        <!-- FLOATING ACTION BUTTON -->
-        <button onclick="openAddFood()" class="fixed bottom-6 right-6 w-14 h-14 bg-brand-600 hover:bg-brand-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-brand-500/40 transition-all transform hover:scale-105 active:scale-95 z-40">
-            <i class="fa-solid fa-plus text-xl"></i>
-        </button>
-
-        <!-- AI ASSISTANT BUTTON (Left) -->
-        <button onclick="openAssistant()" class="fixed bottom-6 left-6 w-12 h-12 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center shadow-lg transition-all transform hover:scale-105 active:scale-95 z-40">
-            <i class="fa-solid fa-sparkles text-brand-glow"></i>
-        </button>
-
-    </div>
-
-    <!-- MODALS -->
-    
-    <!-- 1. ONBOARDING MODAL -->
-    <div id="modal-onboarding" class="modal z-[60]" style="background: #000;">
-        <div class="w-full h-full flex flex-col justify-center px-8 max-w-md mx-auto relative">
-            <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 opacity-30">
-                <div class="absolute top-[-10%] right-[-10%] w-64 h-64 bg-brand-600 rounded-full blur-[80px]"></div>
-                <div class="absolute bottom-[-10%] left-[-10%] w-64 h-64 bg-purple-600 rounded-full blur-[80px]"></div>
+        <!-- ADD FOOD VIEW -->
+        <main id="view-add-food" class="view-content">
+            <h2 class="text-2xl font-display font-bold mb-2">Ajouter un aliment</h2>
+            <p class="text-white/50 text-xs mb-6">Recherche intelligente propulsée par l'IA Mistral.</p>
+            
+            <div class="glass-panel p-2 rounded-2xl flex gap-2 mb-6">
+                <input type="text" id="food-search-input" placeholder="Ex: 150g de riz blanc, une pomme..." class="flex-1 bg-transparent px-4 py-2 text-white focus:outline-none text-sm placeholder-white/30">
+                <button id="btn-search-food" class="bg-brand-600 hover:bg-brand-500 px-4 py-2 rounded-xl transition text-white text-sm shadow-lg shadow-brand-500/20">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
             </div>
 
-            <div class="mb-8">
-                <h2 class="text-4xl font-display font-bold mb-2">Bienvenue.</h2>
-                <p class="text-white/60">Configurons votre profil WikiMind pour des résultats précis.</p>
+            <div id="food-search-result" class="hidden glass-panel rounded-2xl p-5 border-brand-500/30 bg-brand-500/5 animate-fade-in">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h4 id="res-food-name" class="font-bold text-lg text-brand-100">...</h4>
+                        <p class="text-xs text-white/50"><span id="res-food-base-kcal">0</span> kcal / 100g</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                </div>
+                
+                <div class="flex items-end gap-4 mb-6">
+                    <div class="flex-1">
+                        <label class="text-[10px] text-white/50 uppercase tracking-widest mb-1 block">Quantité (g ou ml)</label>
+                        <input type="number" id="res-food-qty" value="100" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 transition text-center font-bold">
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-[10px] text-white/50 uppercase tracking-widest mb-1 block">Total kcal</label>
+                        <div id="res-food-total" class="w-full bg-white/5 border border-brand-500/30 rounded-xl p-3 text-brand-400 text-center font-bold">0</div>
+                    </div>
+                </div>
+                
+                <button id="btn-confirm-food" class="w-full py-3 rounded-xl bg-white text-black font-display font-bold uppercase tracking-wider hover:bg-gray-200 transition">
+                    Ajouter au journal
+                </button>
+            </div>
+            
+            <div id="food-search-loader" class="hidden text-center py-10 text-brand-400/60 animate-pulse flex flex-col items-center">
+                <i class="fa-solid fa-robot text-3xl mb-3"></i>
+                <span class="text-xs uppercase tracking-widest font-bold">Analyse en cours...</span>
+            </div>
+        </main>
+
+        <!-- WEIGHT VIEW -->
+        <main id="view-weight" class="view-content">
+            <h2 class="text-2xl font-display font-bold mb-6">Suivi du Poids</h2>
+            
+            <div class="glass-panel p-5 rounded-2xl mb-6 flex items-center justify-between">
+                <div>
+                    <div class="text-[10px] text-white/50 uppercase tracking-widest mb-1">Pesée du jour</div>
+                    <div class="flex items-end gap-2">
+                        <input type="number" step="0.1" id="input-daily-weight" class="bg-transparent border-b-2 border-white/20 w-24 text-3xl font-bold text-white focus:outline-none focus:border-brand-500 text-center pb-1">
+                        <span class="text-white/50 pb-2">kg</span>
+                    </div>
+                </div>
+                <button id="btn-save-weight" class="w-12 h-12 rounded-full bg-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/30 text-white">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
             </div>
 
-            <form id="onboarding-form" class="space-y-5">
-                <!-- Step 1 -->
-                <div class="step-group space-y-4">
-                    <label class="block text-sm font-medium text-white/80">Date de naissance</label>
-                    <input type="date" id="ob-dob" required class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-brand-500 outline-none">
+            <div class="glass-panel p-4 rounded-2xl w-full">
+                <h3 class="text-xs text-white/50 uppercase tracking-widest font-bold mb-4">Évolution (7 derniers jours)</h3>
+                <canvas id="weight-chart" width="400" height="250"></canvas>
+            </div>
+        </main>
+
+        <!-- CHAT IA VIEW -->
+        <main id="view-chat" class="view-content flex flex-col h-full relative">
+            <div class="flex-1 overflow-y-auto space-y-4 mb-20" id="chat-messages">
+                <div class="bg-white/5 border border-white/10 rounded-2xl rounded-tl-none p-4 max-w-[85%] self-start text-white/80 text-sm shadow-lg">
+                    Bonjour ! Je suis l'IA WikiMind Nutrition. Posez-moi vos questions, ou demandez-moi d'ajouter un aliment ou de modifier votre poids !
+                </div>
+            </div>
+            <div class="absolute bottom-20 left-4 right-4 glass-panel p-2 rounded-2xl flex gap-2 border border-brand-500/30 bg-black/50">
+                <input type="text" id="chat-input" placeholder="Message WikiMind..." class="flex-1 bg-transparent px-3 py-2 text-white focus:outline-none text-sm placeholder-white/30">
+                <button id="btn-chat-send" class="bg-brand-600 w-10 h-10 rounded-xl flex items-center justify-center text-white transition hover:scale-105">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+        </main>
+
+        <!-- SETTINGS VIEW -->
+        <main id="view-settings" class="view-content">
+            <h2 class="text-2xl font-display font-bold mb-6">Paramètres</h2>
+            
+            <div class="glass-panel p-5 rounded-2xl mb-6 space-y-4">
+                <h3 class="text-sm font-bold border-b border-white/10 pb-2 text-brand-300">Mon Profil</h3>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] text-white/50 uppercase tracking-widest block mb-1">Prénom</label>
+                        <input type="text" id="set-name" class="w-full bg-white/5 rounded-lg p-2 text-sm focus:border-brand-500 focus:outline-none border border-transparent">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-white/50 uppercase tracking-widest block mb-1">Sexe</label>
+                        <select id="set-sex" class="w-full bg-white/5 rounded-lg p-2 text-sm focus:border-brand-500 focus:outline-none border border-transparent appearance-none">
+                            <option value="H" class="bg-gray-900">Homme</option>
+                            <option value="F" class="bg-gray-900">Femme</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-white/80 mb-2">Poids (kg)</label>
-                        <input type="number" id="ob-weight" step="0.1" placeholder="70" required class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-brand-500 outline-none">
+                        <label class="text-[10px] text-white/50 uppercase tracking-widest block mb-1">Taille (cm)</label>
+                        <input type="number" id="set-height" class="w-full bg-white/5 rounded-lg p-2 text-sm focus:border-brand-500 focus:outline-none border border-transparent">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-white/80 mb-2">Taille (cm)</label>
-                        <input type="number" id="ob-height" placeholder="175" required class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-brand-500 outline-none">
+                        <label class="text-[10px] text-white/50 uppercase tracking-widest block mb-1">Objectif</label>
+                        <select id="set-goal" class="w-full bg-white/5 rounded-lg p-2 text-sm focus:border-brand-500 focus:outline-none border border-transparent appearance-none">
+                            <option value="lose" class="bg-gray-900">Perdre</option>
+                            <option value="maintain" class="bg-gray-900">Maintenir</option>
+                            <option value="gain" class="bg-gray-900">Prendre</option>
+                        </select>
                     </div>
                 </div>
 
-                <div class="step-group space-y-2">
-                    <label class="block text-sm font-medium text-white/80">Sexe</label>
-                    <div class="grid grid-cols-2 gap-4">
-                        <label class="cursor-pointer">
-                            <input type="radio" name="ob-gender" value="male" checked class="peer hidden">
-                            <div class="p-3 rounded-xl bg-white/5 border border-white/10 text-center peer-checked:bg-brand-600/20 peer-checked:border-brand-500 transition">Homme</div>
-                        </label>
-                        <label class="cursor-pointer">
-                            <input type="radio" name="ob-gender" value="female" class="peer hidden">
-                            <div class="p-3 rounded-xl bg-white/5 border border-white/10 text-center peer-checked:bg-brand-600/20 peer-checked:border-brand-500 transition">Femme</div>
-                        </label>
-                    </div>
-                </div>
+                <button onclick="saveSettings()" class="w-full py-2 mt-2 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold uppercase tracking-wider transition">Sauvegarder les modifs</button>
+            </div>
 
-                <div class="step-group space-y-2">
-                    <label class="block text-sm font-medium text-white/80">Objectif</label>
-                    <select id="ob-goal" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-brand-500 outline-none">
-                        <option value="lose" class="bg-black">Perdre du poids (-500 kcal)</option>
-                        <option value="maintain" class="bg-black" selected>Maintenir</option>
-                        <option value="gain" class="bg-black">Prendre de la masse (+400 kcal)</option>
-                    </select>
-                </div>
+            <div class="glass-panel p-5 rounded-2xl border-red-500/20">
+                <h3 class="text-sm font-bold text-red-400 mb-2">Zone Danger</h3>
+                <p class="text-[10px] text-white/50 mb-4">La suppression efface toutes vos données locales (et cloud si connecté).</p>
+                <button onclick="deleteAccount()" class="w-full py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/40 text-xs font-bold uppercase tracking-wider transition">Supprimer mes données</button>
+            </div>
+        </main>
 
-                <button type="submit" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-brand-600/20 mt-4 transition">
-                    Commencer
+        <!-- BOTTOM NAVIGATION -->
+        <nav class="bottom-nav glass-panel border-t border-white/10 rounded-t-3xl border-b-0 border-l-0 border-r-0 pb-safe">
+            <div class="flex justify-between items-center px-6 py-4">
+                <button onclick="switchView('dashboard')" class="nav-item active flex flex-col items-center text-white/40 transition group relative w-12">
+                    <i class="fa-solid fa-house text-xl mb-1 group-hover:text-brand-400 transition"></i>
+                    <span class="text-[10px] font-bold">Accueil</span>
+                    <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300"></div>
                 </button>
-            </form>
-            <div id="login-options" class="mt-6 pt-6 border-t border-white/10 text-center">
-                <p class="text-xs text-white/40 mb-4">Ou connectez-vous pour synchroniser</p>
-                <button onclick="signInGoogle()" class="w-full bg-white text-black font-bold py-3 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-200 transition">
-                    <i class="fa-brands fa-google"></i> Continuer avec Google
+                <button onclick="switchView('add-food')" class="nav-item flex flex-col items-center text-white/40 transition group relative w-12">
+                    <i class="fa-solid fa-utensils text-xl mb-1 group-hover:text-brand-400 transition"></i>
+                    <span class="text-[10px] font-bold">Repas</span>
+                    <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300"></div>
                 </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 2. ADD FOOD MODAL -->
-    <div id="modal-add-food" class="modal">
-        <div class="modal-content min-h-[80vh]">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-display font-bold">Ajouter un aliment</h3>
-                <button onclick="closeModal('modal-add-food')" class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50 hover:text-white"><i class="fa-solid fa-times"></i></button>
-            </div>
-
-            <!-- Search -->
-            <div class="relative mb-6">
-                <input type="text" id="food-search-input" placeholder="Ex: Banane, Pizza, Poulet 150g..." 
-                    class="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-4 text-white focus:border-brand-500 outline-none">
-                <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-white/30"></i>
-                <button onclick="searchFood()" class="absolute right-2 top-2 bottom-2 bg-brand-600 px-4 rounded-lg text-sm font-bold">Chercher</button>
-            </div>
-
-            <!-- AI Result Area -->
-            <div id="ai-loading" class="hidden text-center py-8">
-                <div class="loader-dots relative w-20 h-5 mx-auto"><div></div><div></div><div></div><div></div></div>
-                <p class="text-xs text-brand-glow mt-2 animate-pulse">L'IA Mistral analyse la base de données...</p>
-            </div>
-
-            <div id="food-result" class="hidden bg-white/5 rounded-xl p-4 border border-brand-500/30">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h4 id="res-name" class="font-bold text-lg capitalize">Nom Aliment</h4>
-                        <p class="text-xs text-white/50">Estimé par IA (pour 100g)</p>
-                    </div>
-                    <div class="text-right">
-                        <span id="res-kcal" class="text-xl font-display font-bold text-brand-400">0</span>
-                        <span class="text-xs text-white/50 block">kcal</span>
-                    </div>
-                </div>
-                <div class="grid grid-cols-3 gap-2 text-center text-xs mb-4">
-                    <div class="bg-black/20 p-2 rounded">P: <span id="res-prot" class="font-bold text-blue-400">0</span>g</div>
-                    <div class="bg-black/20 p-2 rounded">G: <span id="res-carb" class="font-bold text-pink-400">0</span>g</div>
-                    <div class="bg-black/20 p-2 rounded">L: <span id="res-fat" class="font-bold text-yellow-400">0</span>g</div>
-                </div>
-                
-                <div class="mb-4">
-                    <label class="text-xs text-white/60 mb-1 block">Quantité (grammes)</label>
-                    <div class="flex items-center gap-4">
-                        <input type="range" id="res-qty-slider" min="10" max="500" value="100" step="5" class="flex-1 accent-brand-500">
-                        <input type="number" id="res-qty-input" value="100" class="w-20 bg-black/40 border border-white/10 rounded-lg p-2 text-center text-white font-bold">
-                    </div>
-                </div>
-
-                <button onclick="confirmAddFood()" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 rounded-lg transition">
-                    <i class="fa-solid fa-plus mr-2"></i> Ajouter au journal
+                <button onclick="switchView('weight')" class="nav-item flex flex-col items-center text-white/40 transition group relative w-12">
+                    <i class="fa-solid fa-weight-scale text-xl mb-1 group-hover:text-brand-400 transition"></i>
+                    <span class="text-[10px] font-bold">Poids</span>
+                    <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300"></div>
+                </button>
+                <button onclick="switchView('chat')" class="nav-item flex flex-col items-center text-white/40 transition group relative w-12">
+                    <i class="fa-solid fa-robot text-xl mb-1 group-hover:text-brand-400 transition"></i>
+                    <span class="text-[10px] font-bold">IA</span>
+                    <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300"></div>
+                </button>
+                <button onclick="switchView('settings')" class="nav-item flex flex-col items-center text-white/40 transition group relative w-12">
+                    <i class="fa-solid fa-gear text-xl mb-1 group-hover:text-brand-400 transition"></i>
+                    <span class="text-[10px] font-bold">Réglages</span>
+                    <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300"></div>
                 </button>
             </div>
-            
-            <div id="recent-foods" class="mt-8">
-                <h4 class="text-sm font-bold text-white/40 uppercase mb-3">Récents</h4>
-                <!-- Local storage history could go here -->
-            </div>
-        </div>
-    </div>
-
-    <!-- 3. ASSISTANT / SETTINGS MODAL -->
-    <div id="modal-settings" class="modal">
-        <div class="modal-content min-h-[60vh]">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-display font-bold"><i class="fa-solid fa-robot text-brand-glow mr-2"></i>Assistant WikiMind</h3>
-                <button onclick="closeModal('modal-settings')" class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50 hover:text-white"><i class="fa-solid fa-times"></i></button>
-            </div>
-
-            <div class="h-64 overflow-y-auto bg-white/5 rounded-xl p-4 mb-4 space-y-3" id="chat-history">
-                <div class="bg-brand-600/20 p-3 rounded-xl rounded-tl-none text-sm text-white/90">
-                    Bonjour ! Je peux vous aider à modifier votre poids, analyser vos repas ou donner des conseils. Dites par exemple : "Change mon poids à 72kg".
-                </div>
-            </div>
-
-            <div class="flex gap-2 mb-8">
-                <input type="text" id="chat-input" placeholder="Parler à l'IA..." class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-500 outline-none">
-                <button onclick="sendChat()" class="bg-brand-600 w-12 rounded-xl text-white flex items-center justify-center hover:bg-brand-500 transition"><i class="fa-solid fa-paper-plane"></i></button>
-            </div>
-
-            <div class="border-t border-white/10 pt-6">
-                <h4 class="text-sm font-bold text-white/40 uppercase mb-4">Paramètres du compte</h4>
-                <div id="auth-section-settings">
-                    <!-- Injected via JS -->
-                </div>
-                <button onclick="resetData()" class="w-full mt-4 border border-red-500/30 text-red-400 py-3 rounded-xl text-sm font-bold hover:bg-red-500/10 transition">
-                    Effacer les données locales & Reset
-                </button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- 4. WEIGHT MODAL -->
-    <div id="modal-weight" class="modal">
-        <div class="modal-content">
-             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-display font-bold">Mise à jour Poids</h3>
-                <button onclick="closeModal('modal-weight')" class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50 hover:text-white"><i class="fa-solid fa-times"></i></button>
-            </div>
-            <input type="number" id="new-weight-input" step="0.1" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-center text-3xl font-bold text-white focus:border-brand-500 outline-none mb-4">
-            <button onclick="updateWeightManual()" class="w-full bg-white text-black font-bold py-3 rounded-xl hover:bg-gray-200 transition">Enregistrer</button>
-        </div>
+        </nav>
     </div>
 
     <!-- LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, set, get, update, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // --- CONFIGURATION ---
-        const MISTRAL_API_KEY = "SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9";
-        
+        // ==========================================
+        // CONFIG FIREBASE
+        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
             authDomain: "wikimind-3-comments.firebaseapp.com",
@@ -349,429 +370,463 @@
             messagingSenderId: "137479541640",
             appId: "1:137479541640:web:4ed2510a9908055052e03d"
         };
-
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
-        const googleProvider = new GoogleAuthProvider();
 
-        // --- STATE MANAGER ---
+        // ==========================================
+        // ETAT GLOBAL
+        // ==========================================
         let currentUser = null;
-        let userProfile = JSON.parse(localStorage.getItem('wm_profile')) || null;
-        let dailyLogs = JSON.parse(localStorage.getItem('wm_logs')) || {};
-        let todayKey = new Date().toISOString().split('T')[0];
-        
-        // --- UI UTILS ---
-        window.closeModal = (id) => {
-            document.getElementById(id).classList.remove('active');
-        }
-        window.openModal = (id) => {
-            document.getElementById(id).classList.add('active');
-        }
-        window.toggleSettings = () => window.openModal('modal-settings');
-        window.openAddFood = () => window.openModal('modal-add-food');
-        window.openAssistant = () => window.openModal('modal-settings');
-        window.openWeightModal = () => {
-            document.getElementById('new-weight-input').value = userProfile ? userProfile.weight : 70;
-            window.openModal('modal-weight');
-        }
+        let userData = null; 
+        const MISTRAL_KEY = "SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9";
+        let weightChartInstance = null;
 
-        // --- AUTH LOGIC ---
-        window.signInGoogle = async () => {
-            try {
-                await signInWithPopup(auth, googleProvider);
-                // Auth state observer will handle the rest
-            } catch (error) {
-                console.error("Auth error:", error);
-                alert("Erreur connexion: " + error.message);
-            }
+        // ==========================================
+        // UI HELPERS
+        // ==========================================
+        window.showToast = (msg, type = "info") => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const color = type === 'error' ? 'border-red-500 text-red-200 bg-red-500/20' : 
+                          type === 'success' ? 'border-green-500 text-green-200 bg-green-500/20' : 
+                          'border-brand-500 text-brand-200 bg-brand-500/20';
+            toast.className = `px-4 py-3 rounded-xl border backdrop-blur-md shadow-xl text-xs font-bold animate-slide-up flex items-center gap-2 ${color}`;
+            toast.innerHTML = `<i class="fa-solid fa-${type === 'error' ? 'triangle-exclamation' : type === 'success' ? 'check' : 'info-circle'}"></i> ${msg}`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = 0; setTimeout(() => toast.remove(), 300); }, 3000);
         };
 
-        window.logout = async () => {
-            await signOut(auth);
-            location.reload();
+        window.switchView = (viewId) => {
+            document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            const target = document.getElementById(`view-${viewId}`);
+            if(target) target.classList.add('active');
+            
+            const nav = document.querySelector(`.nav-item[onclick="switchView('${viewId}')"]`);
+            if(nav) nav.classList.add('active');
+
+            if(viewId === 'dashboard') renderDashboard();
+            if(viewId === 'weight') renderWeightChart();
+            if(viewId === 'settings') populateSettings();
         };
 
-        onAuthStateChanged(auth, async (user) => {
-            currentUser = user;
-            if (user) {
-                document.getElementById('user-avatar').src = user.photoURL;
-                document.getElementById('auth-section-settings').innerHTML = `
-                    <div class="flex items-center gap-3 mb-4 p-3 bg-white/5 rounded-lg">
-                        <img src="${user.photoURL}" class="w-10 h-10 rounded-full">
-                        <div class="overflow-hidden">
-                            <div class="font-bold truncate">${user.displayName}</div>
-                            <div class="text-xs text-white/40 truncate">${user.email}</div>
-                        </div>
-                    </div>
-                    <button onclick="logout()" class="w-full bg-white/10 py-2 rounded-lg text-xs font-bold hover:bg-white/20">Se déconnecter</button>
-                `;
-                
-                // SYNC FROM DB
-                const snapshot = await get(ref(db, 'users/' + user.uid));
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    if(data.profile) {
-                        userProfile = data.profile;
-                        localStorage.setItem('wm_profile', JSON.stringify(userProfile));
-                    }
-                    if(data.logs) {
-                        dailyLogs = data.logs;
-                        localStorage.setItem('wm_logs', JSON.stringify(dailyLogs));
-                    }
-                    if(document.getElementById('modal-onboarding').classList.contains('active')) {
-                        window.closeModal('modal-onboarding');
-                    }
-                } else if (userProfile) {
-                    // Sync Local to Cloud if cloud is empty
-                    saveToCloud();
-                } else {
-                    // New user, show onboarding
-                    window.openModal('modal-onboarding');
-                }
+        // PWA INIT
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./calories-sw.js').catch(err => console.error("SW fail:", err));
+        }
+
+        // ==========================================
+        // GESTION DES DONNEES (HYBRIDE)
+        // ==========================================
+        const getTodayKey = () => new Date().toISOString().split('T')[0];
+
+        async function loadData() {
+            if (currentUser) {
+                const snap = await get(child(ref(db), `users/${currentUser.uid}`));
+                if (snap.exists()) userData = snap.val();
+                else userData = null;
             } else {
-                document.getElementById('auth-section-settings').innerHTML = `
-                    <button onclick="signInGoogle()" class="w-full bg-white text-black py-3 rounded-xl font-bold flex items-center justify-center gap-2">
-                        <i class="fa-brands fa-google"></i> Connexion Google
-                    </button>
-                `;
-                if (!userProfile) window.openModal('modal-onboarding');
+                const local = localStorage.getItem('wiki_calories_data');
+                userData = local ? JSON.parse(local) : null;
+            }
+
+            document.getElementById('app-loader').style.display = 'none';
+
+            if (!userData || !userData.onboarded) {
+                document.querySelector('.bottom-nav').style.display = 'none';
+                switchView('onboarding');
+            } else {
+                document.querySelector('.bottom-nav').style.display = 'block';
+                checkNewDay();
+                switchView('dashboard');
+            }
+        }
+
+        async function saveData() {
+            if (currentUser) {
+                await set(ref(db, `users/${currentUser.uid}`), userData);
+            } else {
+                localStorage.setItem('wiki_calories_data', JSON.stringify(userData));
             }
             renderDashboard();
-        });
-
-        function saveToCloud() {
-            if (currentUser) {
-                update(ref(db, 'users/' + currentUser.uid), {
-                    profile: userProfile,
-                    logs: dailyLogs
-                });
-            }
-            localStorage.setItem('wm_profile', JSON.stringify(userProfile));
-            localStorage.setItem('wm_logs', JSON.stringify(dailyLogs));
         }
 
-        // --- ONBOARDING SUBMIT ---
-        document.getElementById('onboarding-form').addEventListener('submit', (e) => {
+        function checkNewDay() {
+            const today = getTodayKey();
+            if(!userData.foodHistory) userData.foodHistory = {};
+            if(!userData.foodHistory[today]) {
+                userData.foodHistory[today] = [];
+                saveData();
+            }
+        }
+
+        // ==========================================
+        // CALCUL NUTRITION (Mifflin-St Jeor)
+        // ==========================================
+        function calculateTDEE() {
+            if(!userData) return 2000;
+            const dob = new Date(userData.dob);
+            const ageDate = new Date(Date.now() - dob.getTime());
+            const age = Math.abs(ageDate.getUTCFullYear() - 1970);
+            
+            let bmr = (10 * userData.weight) + (6.25 * userData.height) - (5 * age);
+            bmr += userData.sex === 'H' ? 5 : -161;
+            
+            let tdee = bmr * 1.2; // Sedentary par defaut
+            
+            if(userData.goal === 'lose') tdee -= 500;
+            if(userData.goal === 'gain') tdee += 300;
+            
+            userData.targetKcal = Math.round(tdee);
+            return userData.targetKcal;
+        }
+
+        // ==========================================
+        // AUTH STATE
+        // ==========================================
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud text-brand-400"></i> Cloud';
+                document.getElementById('sync-status').className = "text-[10px] text-brand-400 flex items-center gap-1 mt-0.5";
+                document.getElementById('user-avatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff`;
+            } else {
+                currentUser = null;
+                document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-hard-drive"></i> Local';
+            }
+            loadData();
+        });
+
+        // ==========================================
+        // ONBOARDING
+        // ==========================================
+        document.getElementById('onboarding-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            userProfile = {
+            userData = {
+                onboarded: true,
+                name: document.getElementById('ob-name').value,
+                sex: document.getElementById('ob-sex').value,
                 dob: document.getElementById('ob-dob').value,
                 weight: parseFloat(document.getElementById('ob-weight').value),
-                height: parseFloat(document.getElementById('ob-height').value),
-                gender: document.querySelector('input[name="ob-gender"]:checked').value,
-                goal: document.getElementById('ob-goal').value
+                height: parseInt(document.getElementById('ob-height').value),
+                goal: document.getElementById('ob-goal').value,
+                weightHistory: {},
+                foodHistory: {}
             };
-            
-            // Set initial weight log
-            if(!dailyLogs[todayKey]) dailyLogs[todayKey] = { foods: [], weight: userProfile.weight };
-            else dailyLogs[todayKey].weight = userProfile.weight;
-
-            saveToCloud();
-            window.closeModal('modal-onboarding');
-            renderDashboard();
+            userData.weightHistory[getTodayKey()] = userData.weight;
+            calculateTDEE();
+            await saveData();
+            document.querySelector('.bottom-nav').style.display = 'block';
+            switchView('dashboard');
+            window.showToast("Profil créé !", "success");
         });
 
-        // --- CORE CALCULATIONS ---
-        function calculateTarget() {
-            if (!userProfile) return 2000;
-            const today = new Date();
-            const birthDate = new Date(userProfile.dob);
-            let age = today.getFullYear() - birthDate.getFullYear();
-            
-            // Mifflin-St Jeor
-            let bmr = (10 * userProfile.weight) + (6.25 * userProfile.height) - (5 * age);
-            bmr += (userProfile.gender === 'male') ? 5 : -161;
-            
-            // Sedentary base (x1.2) + goal adjustment
-            let tdee = bmr * 1.25; 
-            
-            if (userProfile.goal === 'lose') tdee -= 500;
-            if (userProfile.goal === 'gain') tdee += 400;
-            
-            return Math.round(tdee);
-        }
-
-        // --- DASHBOARD RENDER ---
+        // ==========================================
+        // DASHBOARD RENDER
+        // ==========================================
         function renderDashboard() {
-            if(!userProfile) return;
+            if(!userData) return;
+            document.getElementById('dash-name').innerText = userData.name;
+            calculateTDEE();
             
-            document.getElementById('header-date').innerText = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-            document.getElementById('current-weight-display').innerText = `${userProfile.weight} kg`;
+            const today = getTodayKey();
+            const foods = userData.foodHistory[today] || [];
+            let consumed = foods.reduce((sum, item) => sum + item.kcal, 0);
+            
+            document.getElementById('dash-consumed').innerText = consumed;
+            document.getElementById('dash-target').innerText = userData.targetKcal;
+            
+            const remaining = userData.targetKcal - consumed;
+            const remainingEl = document.getElementById('dash-remaining');
+            remainingEl.innerText = Math.abs(remaining) + (remaining < 0 ? ' (Excès)' : '');
+            remainingEl.className = `text-lg font-bold ${remaining < 0 ? 'text-red-400' : 'text-green-400'}`;
+            
+            const goalTexts = { 'lose': 'Perte', 'maintain': 'Maintien', 'gain': 'Prise masse' };
+            document.getElementById('dash-goal-text').innerText = goalTexts[userData.goal];
 
-            // Init today if not exists
-            if (!dailyLogs[todayKey]) dailyLogs[todayKey] = { foods: [], weight: userProfile.weight };
-            const todayData = dailyLogs[todayKey];
+            // Circle logic
+            let percent = Math.min((consumed / userData.targetKcal) * 100, 100);
+            document.getElementById('dash-circle').setAttribute('stroke-dasharray', `${percent}, 100`);
+            if(percent > 90) document.getElementById('dash-circle').classList.replace('stroke-brand-500', 'stroke-red-500');
+            else document.getElementById('dash-circle').classList.replace('stroke-red-500', 'stroke-brand-500');
 
-            // Calc Totals
-            let totalKcal = 0, totalP = 0, totalC = 0, totalF = 0;
-            const listContainer = document.getElementById('food-list');
-            listContainer.innerHTML = '';
-
-            if (todayData.foods && todayData.foods.length > 0) {
-                todayData.foods.forEach((food, index) => {
-                    totalKcal += food.kcal;
-                    totalP += food.protein;
-                    totalC += food.carbs;
-                    totalF += food.fat;
-
-                    const el = document.createElement('div');
-                    el.className = "bg-white/5 border border-white/5 rounded-xl p-4 flex justify-between items-center";
-                    el.innerHTML = `
-                        <div>
-                            <div class="font-bold text-sm capitalize">${food.name}</div>
-                            <div class="text-xs text-white/40">${food.quantity}g • P:${Math.round(food.protein)} G:${Math.round(food.carbs)} L:${Math.round(food.fat)}</div>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <span class="font-display font-bold text-brand-glow">${Math.round(food.kcal)}</span>
-                            <button onclick="window.removeFood(${index})" class="text-white/20 hover:text-red-400"><i class="fa-solid fa-trash"></i></button>
+            // Render list
+            const list = document.getElementById('food-list-today');
+            list.innerHTML = '';
+            if(foods.length === 0) {
+                list.innerHTML = '<div class="text-center text-white/30 text-xs py-4">Aucun repas ajouté.</div>';
+            } else {
+                foods.slice().reverse().forEach((f, index) => {
+                    const originalIndex = foods.length - 1 - index;
+                    list.innerHTML += `
+                        <div class="glass-panel p-3 rounded-xl flex justify-between items-center bg-white/5 animate-fade-in">
+                            <div>
+                                <div class="font-bold text-sm">${f.name}</div>
+                                <div class="text-[10px] text-white/50">${f.qty} g/ml</div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="font-bold text-brand-300">${f.kcal} kcal</div>
+                                <button onclick="deleteFood(${originalIndex})" class="text-white/20 hover:text-red-400 p-1"><i class="fa-solid fa-trash text-xs"></i></button>
+                            </div>
                         </div>
                     `;
-                    listContainer.appendChild(el);
                 });
-            } else {
-                listContainer.innerHTML = `<div class="text-center py-10 text-white/20 text-sm flex flex-col items-center gap-2"><i class="fa-solid fa-carrot text-2xl mb-2 opacity-50"></i>Aucun aliment aujourd'hui.</div>`;
             }
-
-            const target = calculateTarget();
-            const consumed = Math.round(totalKcal);
-            const remaining = target - consumed;
-
-            // Update Ring
-            const ring = document.getElementById('kcal-ring');
-            const radius = ring.r.baseVal.value;
-            const circumference = radius * 2 * Math.PI;
-            const offset = circumference - (Math.min(consumed, target) / target) * circumference;
-            
-            ring.style.strokeDasharray = `${circumference} ${circumference}`;
-            ring.style.strokeDashoffset = offset;
-            
-            // Colors based on limit
-            if(consumed > target) ring.classList.replace('text-brand-500', 'text-red-500');
-            else ring.classList.replace('text-red-500', 'text-brand-500');
-
-            // Text Updates
-            animateValue("kcal-remaining", parseInt(document.getElementById('kcal-remaining').innerText), remaining, 500);
-            document.getElementById('kcal-goal-display').innerText = `Obj: ${target}`;
-            
-            // Macros
-            document.getElementById('val-prot').innerText = Math.round(totalP) + 'g';
-            document.getElementById('val-carb').innerText = Math.round(totalC) + 'g';
-            document.getElementById('val-fat').innerText = Math.round(totalF) + 'g';
-            
-            document.getElementById('bar-prot').style.width = Math.min((totalP / 150) * 100, 100) + '%'; // Arbitrary bases for visuals
-            document.getElementById('bar-carb').style.width = Math.min((totalC / 200) * 100, 100) + '%';
-            document.getElementById('bar-fat').style.width = Math.min((totalF / 70) * 100, 100) + '%';
         }
 
-        window.removeFood = (index) => {
-            if(confirm("Supprimer cet aliment ?")) {
-                dailyLogs[todayKey].foods.splice(index, 1);
-                saveToCloud();
-                renderDashboard();
-            }
+        window.deleteFood = async (index) => {
+            userData.foodHistory[getTodayKey()].splice(index, 1);
+            await saveData();
         };
 
-        function animateValue(id, start, end, duration) {
-            const range = end - start;
-            let current = start;
-            const increment = end > start ? 1 : -1;
-            const stepTime = Math.abs(Math.floor(duration / range));
-            const obj = document.getElementById(id);
-            if(range === 0) { obj.innerText = end; return; }
-            
-            const timer = setInterval(function() {
-                current += increment;
-                obj.innerText = current;
-                if (current == end) clearInterval(timer);
-            }, Math.max(stepTime, 10));
-        }
+        // ==========================================
+        // AJOUT ALIMENT IA MISTRAL
+        // ==========================================
+        let currentSearchedFood = null;
 
-        // --- FOOD SEARCH AI ---
-        let tempFoodData = null;
+        document.getElementById('btn-search-food').addEventListener('click', async () => {
+            const query = document.getElementById('food-search-input').value.trim();
+            if(!query) return;
 
-        window.searchFood = async () => {
-            const query = document.getElementById('food-search-input').value;
-            if (!query) return;
+            document.getElementById('food-search-result').classList.add('hidden');
+            document.getElementById('food-search-loader').classList.remove('hidden');
 
-            document.getElementById('ai-loading').classList.remove('hidden');
-            document.getElementById('food-result').classList.add('hidden');
+            const prompt = `L'utilisateur cherche l'aliment : "${query}".
+Donne la valeur calorifique pour 100 grammes de cet aliment.
+Réponds STRICTEMENT ET UNIQUEMENT sous forme de JSON valide avec ces 2 clés :
+"name" (Nom propre et court de l'aliment)
+"kcal_per_100g" (Nombre entier des calories pour 100g)
+Aucun texte avant ni après.`;
 
             try {
-                const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+                const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${MISTRAL_API_KEY}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        model: "mistral-small-latest",
-                        messages: [
-                            { role: "system", content: "You are a nutrition API. Return ONLY raw JSON object (no markdown) for the food requested per 100g: { \"name\": \"Standard Name (fr)\", \"kcal\": number, \"protein\": number, \"carbs\": number, \"fat\": number }. If query contains quantity (e.g. 200g), ignore it for the JSON values (keep 100g base) but user will adjust later." },
-                            { role: "user", content: query }
-                        ],
-                        temperature: 0.2
-                    })
+                    headers: { 'Authorization': `Bearer ${MISTRAL_KEY}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: "mistral-small-latest", messages: [{role:"user", content:prompt}], temperature: 0.1 })
                 });
+                const data = await res.json();
+                const content = data.choices[0].message.content.trim().replace(/```json/g, '').replace(/```/g, '');
+                
+                const json = JSON.parse(content);
+                currentSearchedFood = json;
+                
+                document.getElementById('res-food-name').innerText = json.name;
+                document.getElementById('res-food-base-kcal').innerText = json.kcal_per_100g;
+                updateFoodTotal();
 
-                const data = await response.json();
-                let content = data.choices[0].message.content;
-                // Cleanup potentially markdown
-                content = content.replace(/```json/g, '').replace(/```/g, '').trim();
-                
-                tempFoodData = JSON.parse(content);
-                
-                // Display
-                document.getElementById('res-name').innerText = tempFoodData.name;
-                document.getElementById('res-kcal').innerText = tempFoodData.kcal;
-                document.getElementById('res-prot').innerText = tempFoodData.protein;
-                document.getElementById('res-carb').innerText = tempFoodData.carbs;
-                document.getElementById('res-fat').innerText = tempFoodData.fat;
-                
-                document.getElementById('res-qty-input').value = 100;
-                document.getElementById('res-qty-slider').value = 100;
-                
-                document.getElementById('ai-loading').classList.add('hidden');
-                document.getElementById('food-result').classList.remove('hidden');
-
-            } catch (e) {
-                console.error(e);
-                alert("Erreur IA: " + e.message);
-                document.getElementById('ai-loading').classList.add('hidden');
+                document.getElementById('food-search-loader').classList.add('hidden');
+                document.getElementById('food-search-result').classList.remove('hidden');
+            } catch(e) {
+                document.getElementById('food-search-loader').classList.add('hidden');
+                window.showToast("Erreur IA. Veuillez réessayer.", "error");
             }
-        };
+        });
 
-        // Inputs sync
-        const slider = document.getElementById('res-qty-slider');
-        const number = document.getElementById('res-qty-input');
-        
-        const updateValues = (qty) => {
-            if(!tempFoodData) return;
-            const ratio = qty / 100;
-            document.getElementById('res-kcal').innerText = Math.round(tempFoodData.kcal * ratio);
-            document.getElementById('res-prot').innerText = Math.round(tempFoodData.protein * ratio * 10) / 10;
-            document.getElementById('res-carb').innerText = Math.round(tempFoodData.carbs * ratio * 10) / 10;
-            document.getElementById('res-fat').innerText = Math.round(tempFoodData.fat * ratio * 10) / 10;
+        document.getElementById('res-food-qty').addEventListener('input', updateFoodTotal);
+
+        function updateFoodTotal() {
+            if(!currentSearchedFood) return;
+            const qty = parseFloat(document.getElementById('res-food-qty').value) || 0;
+            const total = Math.round((currentSearchedFood.kcal_per_100g * qty) / 100);
+            document.getElementById('res-food-total').innerText = total;
         }
 
-        slider.addEventListener('input', (e) => { number.value = e.target.value; updateValues(e.target.value); });
-        number.addEventListener('input', (e) => { slider.value = e.target.value; updateValues(e.target.value); });
+        document.getElementById('btn-confirm-food').addEventListener('click', async () => {
+            if(!currentSearchedFood) return;
+            const qty = parseFloat(document.getElementById('res-food-qty').value) || 0;
+            const totalKcal = Math.round((currentSearchedFood.kcal_per_100g * qty) / 100);
+            
+            const today = getTodayKey();
+            if(!userData.foodHistory[today]) userData.foodHistory[today] = [];
+            
+            userData.foodHistory[today].push({
+                name: currentSearchedFood.name, qty: qty, kcal: totalKcal, time: Date.now()
+            });
 
-        window.confirmAddFood = () => {
-            if(!tempFoodData) return;
-            const qty = parseFloat(document.getElementById('res-qty-input').value);
-            const ratio = qty / 100;
+            await saveData();
+            window.showToast(`${currentSearchedFood.name} ajouté !`, "success");
             
-            const newFood = {
-                name: tempFoodData.name,
-                quantity: qty,
-                kcal: tempFoodData.kcal * ratio,
-                protein: tempFoodData.protein * ratio,
-                carbs: tempFoodData.carbs * ratio,
-                fat: tempFoodData.fat * ratio
-            };
-            
-            dailyLogs[todayKey].foods.push(newFood);
-            saveToCloud();
-            renderDashboard();
-            window.closeModal('modal-add-food');
             document.getElementById('food-search-input').value = '';
-            document.getElementById('food-result').classList.add('hidden');
-        };
+            document.getElementById('food-search-result').classList.add('hidden');
+            switchView('dashboard');
+        });
 
-        // --- MANUAL WEIGHT UPDATE ---
-        window.updateWeightManual = () => {
-            const w = parseFloat(document.getElementById('new-weight-input').value);
-            if(w && w > 0) {
-                userProfile.weight = w;
-                dailyLogs[todayKey].weight = w;
-                saveToCloud();
-                renderDashboard();
-                window.closeModal('modal-weight');
-            }
-        };
+        // ==========================================
+        // GESTION POIDS
+        // ==========================================
+        document.getElementById('btn-save-weight').addEventListener('click', async () => {
+            const w = parseFloat(document.getElementById('input-daily-weight').value);
+            if(!w) return;
+            userData.weight = w;
+            userData.weightHistory[getTodayKey()] = w;
+            await saveData();
+            renderWeightChart();
+            window.showToast("Poids enregistré !", "success");
+        });
 
-        // --- AI ASSISTANT CHAT & ACTIONS ---
-        window.sendChat = async () => {
+        function renderWeightChart() {
+            if(!userData || !userData.weightHistory) return;
+            document.getElementById('input-daily-weight').value = userData.weight;
+
+            const dates = Object.keys(userData.weightHistory).sort();
+            const recentDates = dates.slice(-7);
+            const labels = recentDates.map(d => d.split('-').slice(1).join('/'));
+            const data = recentDates.map(d => userData.weightHistory[d]);
+
+            const ctx = document.getElementById('weight-chart').getContext('2d');
+            if(weightChartInstance) weightChartInstance.destroy();
+
+            weightChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Poids (kg)',
+                        data: data,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#fff',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        x: { ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // ==========================================
+        // CHAT IA COACH
+        // ==========================================
+        let chatHistory = [];
+        
+        async function handleChat() {
             const input = document.getElementById('chat-input');
             const text = input.value.trim();
             if(!text) return;
-            
-            const chatHistory = document.getElementById('chat-history');
-            chatHistory.innerHTML += `<div class="bg-white/10 p-3 rounded-xl rounded-tr-none text-sm ml-auto max-w-[85%] mb-2">${text}</div>`;
-            input.value = '';
-            chatHistory.scrollTop = chatHistory.scrollHeight;
 
-            // Prompt engineering for actions
-            const prompt = `
-            Context: User profile (Weight: ${userProfile.weight}kg, Goal: ${userProfile.goal}). 
-            User message: "${text}".
-            
-            If the user wants to update their weight (e.g., "I weigh 75kg now"), return ONLY JSON: {"action": "update_weight", "value": 75}.
-            If the user wants to clear data, return ONLY JSON: {"action": "reset_data"}.
-            Otherwise, act as a helpful nutritionist and answer shortly in French. No JSON.
-            `;
+            const chatBox = document.getElementById('chat-messages');
+            chatBox.innerHTML += `<div class="bg-brand-600 rounded-2xl rounded-tr-none p-3 max-w-[85%] self-end ml-auto text-white text-sm shadow-lg animate-fade-in">${text}</div>`;
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            chatBox.innerHTML += `<div id="chat-typing" class="text-xs text-brand-glow animate-pulse">WikiMind réfléchit...</div>`;
+
+            const sysPrompt = `Tu es WikiMind Nutrition, un coach bienveillant. L'utilisateur pèse ${userData.weight}kg, objectif: ${userData.goal}, kcal cible: ${userData.targetKcal}.
+S'il te demande explicitement de modifier son poids, ajoute à la fin de ta réponse ce code exact: [ACTION: {"type":"update_weight", "weight": X}] (où X est le chiffre).
+S'il te demande d'ajouter un aliment mangé, ajoute: [ACTION: {"type":"add_food", "food": "Nom", "kcal": Y, "qty": Z}] (où Y est kcal total estimé, Z quantité en g).
+Sinon, réponds normalement, sois concis et motivant.`;
+
+            const messages = [{role: "system", content: sysPrompt}, ...chatHistory, {role: "user", content: text}];
 
             try {
-                const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+                const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${MISTRAL_API_KEY}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ model: "mistral-small-latest", messages: [{role:"user", content: prompt}] })
+                    headers: { 'Authorization': `Bearer ${MISTRAL_KEY}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: "mistral-small-latest", messages: messages })
                 });
-                
-                const data = await response.json();
+                const data = await res.json();
                 let reply = data.choices[0].message.content;
 
-                // Check for JSON action
-                try {
-                    if(reply.includes('{') && reply.includes('}')) {
-                        const jsonStart = reply.indexOf('{');
-                        const jsonEnd = reply.lastIndexOf('}') + 1;
-                        const actionData = JSON.parse(reply.substring(jsonStart, jsonEnd));
-                        
-                        if(actionData.action === 'update_weight') {
-                            userProfile.weight = actionData.value;
-                            dailyLogs[todayKey].weight = actionData.value;
-                            saveToCloud();
-                            renderDashboard();
-                            reply = `C'est noté ! J'ai mis à jour votre poids à ${actionData.value}kg.`;
-                        } else if (actionData.action === 'reset_data') {
-                            // Don't execute immediately for safety, just guide
-                            reply = "Pour réinitialiser vos données, veuillez utiliser le bouton rouge 'Effacer les données' en bas des paramètres.";
+                document.getElementById('chat-typing').remove();
+
+                // Check for action tag
+                const actionMatch = reply.match(/\[ACTION:\s*(\{.*?\})\s*\]/);
+                if (actionMatch) {
+                    try {
+                        const action = JSON.parse(actionMatch[1]);
+                        if(action.type === 'update_weight' && action.weight) {
+                            userData.weight = action.weight;
+                            userData.weightHistory[getTodayKey()] = action.weight;
+                            saveData();
+                            window.showToast("Poids mis à jour via IA.", "success");
+                        } else if(action.type === 'add_food') {
+                            const today = getTodayKey();
+                            if(!userData.foodHistory[today]) userData.foodHistory[today] = [];
+                            userData.foodHistory[today].push({ name: action.food, qty: action.qty, kcal: action.kcal, time: Date.now() });
+                            saveData();
+                            window.showToast(`${action.food} ajouté au journal !`, "success");
                         }
-                    }
-                } catch(e) { /* Not JSON, standard reply */ }
+                    } catch(e) { console.error("Action parsing error", e); }
+                    reply = reply.replace(/\[ACTION:.*?\]/, '').trim();
+                }
 
-                chatHistory.innerHTML += `<div class="bg-brand-600/20 p-3 rounded-xl rounded-tl-none text-sm text-white/90 mr-auto max-w-[85%] mb-2">${reply}</div>`;
-                chatHistory.scrollTop = chatHistory.scrollHeight;
+                chatHistory.push({role: "user", content: text}, {role: "assistant", content: reply});
+                if(chatHistory.length > 6) chatHistory = chatHistory.slice(-6);
 
-            } catch (e) {
-                chatHistory.innerHTML += `<div class="text-red-400 text-xs">Erreur IA</div>`;
+                chatBox.innerHTML += `<div class="bg-white/5 border border-white/10 rounded-2xl rounded-tl-none p-3 max-w-[85%] self-start text-white/80 text-sm shadow-lg whitespace-pre-wrap animate-fade-in">${reply}</div>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            } catch(e) {
+                document.getElementById('chat-typing').remove();
+                window.showToast("Erreur réseau.", "error");
+            }
+        }
+
+        document.getElementById('btn-chat-send').addEventListener('click', handleChat);
+        document.getElementById('chat-input').addEventListener('keydown', (e) => { if(e.key === 'Enter') handleChat(); });
+
+        // ==========================================
+        // PARAMETRES
+        // ==========================================
+        window.populateSettings = () => {
+            if(!userData) return;
+            document.getElementById('set-name').value = userData.name;
+            document.getElementById('set-sex').value = userData.sex;
+            document.getElementById('set-height').value = userData.height;
+            document.getElementById('set-goal').value = userData.goal;
+        };
+
+        window.saveSettings = async () => {
+            userData.name = document.getElementById('set-name').value;
+            userData.sex = document.getElementById('set-sex').value;
+            userData.height = parseInt(document.getElementById('set-height').value);
+            userData.goal = document.getElementById('set-goal').value;
+            await saveData();
+            window.showToast("Profil mis à jour", "success");
+        };
+
+        window.deleteAccount = async () => {
+            if(confirm("Action irréversible. Confirmer ?")) {
+                if(currentUser) {
+                    await set(ref(db, `users/${currentUser.uid}`), null);
+                }
+                localStorage.removeItem('wiki_calories_data');
+                location.reload();
             }
         };
 
-        window.resetData = () => {
-            if(confirm("Attention: Cette action effacera toutes vos données locales et cloud. Continuer ?")) {
-                userProfile = null;
-                dailyLogs = {};
-                localStorage.removeItem('wm_profile');
-                localStorage.removeItem('wm_logs');
-                if(currentUser) {
-                    set(ref(db, 'users/' + currentUser.uid), null);
-                }
-                location.reload();
-            }
+        // --- AURORA ANIMATION BACKGROUND ---
+        const canvas = document.getElementById('aurora-bg');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        const orbs = [
+            { x: 0.2, y: 0.2, r: 0.5, color: 'rgba(79, 70, 229, 0.1)', vx: 0.0005, vy: 0.0005 },
+            { x: 0.8, y: 0.8, r: 0.6, color: 'rgba(16, 185, 129, 0.08)', vx: -0.0004, vy: 0.0006 }
+        ];
+        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+        function animateBg() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, width, height);
+            orbs.forEach(orb => {
+                orb.x += orb.vx; orb.y += orb.vy;
+                if(orb.x < -0.2 || orb.x > 1.2) orb.vx *= -1;
+                if(orb.y < -0.2 || orb.y > 1.2) orb.vy *= -1;
+                const g = ctx.createRadialGradient(orb.x * width, orb.y * height, 0, orb.x * width, orb.y * height, orb.r * width);
+                g.addColorStop(0, orb.color); g.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = g; ctx.fillRect(0, 0, width, height);
+            });
+            requestAnimationFrame(animateBg);
         }
-
-        // --- SERVICE WORKER REGISTRATION ---
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./calories-sw.js')
-                .then(() => console.log('SW Registered'))
-                .catch(err => console.log('SW Error', err));
-        }
-
-        // Init
-        renderDashboard();
-
+        window.addEventListener('resize', resize); resize(); animateBg();
     </script>
 </body>
 </html>
