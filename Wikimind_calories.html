@@ -27,7 +27,7 @@
                     colors: {
                         glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
                         brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' },
-                        calories: { bg: '#10b981', text: '#34d399' } // Vert fluo
+                        emerald: { 400: '#34d399', 500: '#10b981' }
                     },
                     animation: { 
                         'fade-in': 'fadeIn 0.3s ease-out forwards',
@@ -49,23 +49,24 @@
         }
         .text-gradient { background: linear-gradient(135deg, #34d399 0%, #6366f1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        /* Cacher la scrollbar */
         ::-webkit-scrollbar { width: 0px; background: transparent; }
         
         /* App Layout */
         #app-container { height: 100dvh; display: flex; flex-direction: column; max-width: 600px; margin: 0 auto; position: relative; }
-        .view-content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 100px; display: none; }
-        .view-content.active { display: block; animation: fadeIn 0.3s ease-out forwards; }
+        .view-content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 120px; display: none; }
         
         /* Progress Circle */
         .circular-chart { display: block; margin: 0 auto; max-width: 80%; max-height: 250px; }
-        .circle-bg { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 3.8; }
-        .circle { fill: none; stroke-width: 2.8; stroke-linecap: round; transition: stroke-dasharray 1s ease-out; }
+        .circle-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 3.8; }
+        .circle { fill: none; stroke-width: 2.8; stroke-linecap: round; transition: stroke-dasharray 1s cubic-bezier(0.16, 1, 0.3, 1); }
         
         /* Bottom Nav */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; max-width: 600px; margin: 0 auto; padding-bottom: env(safe-area-inset-bottom); z-index: 50; }
         .nav-item.active { color: #6366f1; }
         .nav-item.active .nav-indicator { opacity: 1; transform: scale(1); }
+        
+        /* Loader global */
+        #app-loader { transition: opacity 0.5s ease; }
     </style>
 </head>
 <body class="selection:bg-brand-500 selection:text-white">
@@ -76,290 +77,358 @@
     <!-- TOASTS -->
     <div id="toast-container" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-[100] flex flex-col gap-2 w-[90%] max-w-[400px]"></div>
 
+    <!-- APP WRAPPER -->
     <div id="app-container">
-        <!-- TOP BAR -->
+        
+        <!-- HEADER -->
         <header class="pt-12 pb-4 px-6 glass-panel rounded-b-3xl sticky top-0 z-40 flex justify-between items-center border-t-0 border-l-0 border-r-0">
             <div class="flex items-center gap-3">
-                <div class="w-8 h-8 bg-gradient-to-tr from-green-400 to-brand-500 rounded-lg flex items-center justify-center shadow-lg shadow-brand-500/30">
-                    <i class="fa-solid fa-fire text-white text-sm"></i>
+                <div class="w-10 h-10 bg-gradient-to-tr from-emerald-400 to-brand-500 rounded-xl flex items-center justify-center shadow-lg shadow-brand-500/30">
+                    <i class="fa-solid fa-bolt text-white text-lg"></i>
                 </div>
                 <div>
-                    <h1 class="font-display font-bold text-lg tracking-tight leading-none">Calories <span class="text-white/40 font-normal text-xs">v3.0</span></h1>
+                    <h1 class="font-display font-bold text-xl tracking-tight leading-none">Calories <span class="text-white/40 font-normal text-xs">v3</span></h1>
                     <div id="sync-status" class="text-[10px] text-yellow-500 flex items-center gap-1 mt-0.5"><i class="fa-solid fa-cloud-arrow-down"></i> Local</div>
                 </div>
             </div>
-            <a href="Wikimind_user.html" id="user-avatar-link">
-                <img id="user-avatar" src="https://ui-avatars.com/api/?name=Guest&background=333&color=fff" class="w-9 h-9 rounded-full border border-white/20 object-cover">
+            <a href="Wikimind_user.html" id="user-avatar-link" class="relative group">
+                <img id="user-avatar" src="https://ui-avatars.com/api/?name=Guest&background=333&color=fff" class="w-10 h-10 rounded-full border-2 border-white/10 object-cover group-hover:border-brand-500 transition-all">
             </a>
         </header>
 
-        <!-- LOADER -->
-        <div id="app-loader" class="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center">
-            <i class="fa-solid fa-circle-notch fa-spin text-4xl text-brand-500 mb-4"></i>
-            <p class="font-display font-bold text-sm tracking-widest uppercase">Initialisation...</p>
+        <!-- FULLSCREEN LOADER -->
+        <div id="app-loader" class="absolute inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center">
+            <div class="w-16 h-16 border-4 border-brand-500/20 border-t-brand-500 rounded-full animate-spin mb-4 shadow-[0_0_30px_rgba(99,102,241,0.5)]"></div>
+            <p class="font-display font-bold text-sm tracking-widest uppercase text-brand-glow animate-pulse">Synchronisation...</p>
         </div>
 
-        <!-- ONBOARDING VIEW -->
-        <main id="view-onboarding" class="view-content flex flex-col justify-center min-h-full">
-            <div class="text-center mb-8">
-                <h2 class="text-3xl font-display font-bold text-gradient mb-2">Bienvenue</h2>
-                <p class="text-white/60 text-sm">Configurons votre profil pour un suivi sur-mesure.</p>
+        <!-- ========================================== -->
+        <!-- VUE: ONBOARDING -->
+        <!-- ========================================== -->
+        <main id="view-onboarding" class="view-content flex-col justify-center min-h-full pb-0">
+            <div class="text-center mb-8 animate-slide-up">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-brand-500/20 text-brand-400 mb-4 shadow-[0_0_30px_rgba(99,102,241,0.3)]">
+                    <i class="fa-solid fa-fingerprint text-3xl"></i>
+                </div>
+                <h2 class="text-3xl font-display font-bold text-gradient mb-2">Profil Biométrique</h2>
+                <p class="text-white/60 text-sm px-4">L'IA WikiMind a besoin de ces données pour calculer votre métabolisme de base (TDEE).</p>
             </div>
-            <form id="onboarding-form" class="space-y-4 animate-slide-up">
-                <div class="glass-panel p-5 rounded-2xl space-y-4">
+            <form id="onboarding-form" class="space-y-4 animate-slide-up" style="animation-delay: 0.1s;">
+                <div class="glass-panel p-6 rounded-3xl space-y-5 border-brand-500/20 shadow-xl shadow-brand-500/5">
                     <div>
-                        <label class="text-xs text-white/60 uppercase tracking-widest font-bold mb-1 block">Prénom</label>
-                        <input type="text" id="ob-name" required class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 transition">
+                        <label class="text-[10px] text-white/50 uppercase tracking-widest font-bold mb-1.5 block">Prénom ou Pseudo</label>
+                        <input type="text" id="ob-name" required class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 transition text-sm">
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="text-xs text-white/60 uppercase tracking-widest font-bold mb-1 block">Sexe</label>
-                            <select id="ob-sex" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 transition appearance-none">
+                            <label class="text-[10px] text-white/50 uppercase tracking-widest font-bold mb-1.5 block">Sexe</label>
+                            <select id="ob-sex" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 transition appearance-none text-sm">
                                 <option value="H" class="bg-gray-900">Homme</option>
                                 <option value="F" class="bg-gray-900">Femme</option>
                             </select>
                         </div>
                         <div>
-                            <label class="text-xs text-white/60 uppercase tracking-widest font-bold mb-1 block">Date Naissance</label>
-                            <input type="date" id="ob-dob" required class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 transition [color-scheme:dark]">
+                            <label class="text-[10px] text-white/50 uppercase tracking-widest font-bold mb-1.5 block">Date Naissance</label>
+                            <input type="date" id="ob-dob" required class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 transition [color-scheme:dark] text-sm">
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="text-xs text-white/60 uppercase tracking-widest font-bold mb-1 block">Poids (kg)</label>
-                            <input type="number" step="0.1" id="ob-weight" required class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 transition">
+                            <label class="text-[10px] text-white/50 uppercase tracking-widest font-bold mb-1.5 block">Poids (kg)</label>
+                            <input type="number" step="0.1" id="ob-weight" required placeholder="Ex: 75.5" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 transition text-sm">
                         </div>
                         <div>
-                            <label class="text-xs text-white/60 uppercase tracking-widest font-bold mb-1 block">Taille (cm)</label>
-                            <input type="number" id="ob-height" required class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 transition">
+                            <label class="text-[10px] text-white/50 uppercase tracking-widest font-bold mb-1.5 block">Taille (cm)</label>
+                            <input type="number" id="ob-height" required placeholder="Ex: 180" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 transition text-sm">
                         </div>
                     </div>
                     <div>
-                        <label class="text-xs text-white/60 uppercase tracking-widest font-bold mb-1 block">Objectif</label>
-                        <select id="ob-goal" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 transition appearance-none">
-                            <option value="lose" class="bg-gray-900">Perdre du poids</option>
-                            <option value="maintain" class="bg-gray-900" selected>Maintenir mon poids</option>
-                            <option value="gain" class="bg-gray-900">Prendre de la masse</option>
+                        <label class="text-[10px] text-white/50 uppercase tracking-widest font-bold mb-1.5 block">Objectif Principal</label>
+                        <select id="ob-goal" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-brand-300 font-bold focus:outline-none focus:border-brand-500 transition appearance-none text-sm">
+                            <option value="lose" class="bg-gray-900 text-white">🔥 Perdre du poids</option>
+                            <option value="maintain" class="bg-gray-900 text-white" selected>⚖️ Maintenir mon poids</option>
+                            <option value="gain" class="bg-gray-900 text-white">💪 Prendre de la masse</option>
                         </select>
                     </div>
                 </div>
-                <button type="submit" class="w-full py-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-display font-bold uppercase tracking-wider transition shadow-lg shadow-brand-500/30">
-                    Démarrer l'analyse
+                <button type="submit" class="w-full py-4 mt-4 rounded-2xl bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-display font-bold uppercase tracking-wider transition shadow-lg shadow-brand-500/30">
+                    Générer mon profil
                 </button>
             </form>
         </main>
 
-        <!-- DASHBOARD VIEW -->
-        <main id="view-dashboard" class="view-content active">
+        <!-- ========================================== -->
+        <!-- VUE: DASHBOARD -->
+        <!-- ========================================== -->
+        <main id="view-dashboard" class="view-content">
             <h2 class="text-2xl font-display font-bold mb-6">Bonjour, <span id="dash-name" class="text-brand-glow">...</span> 👋</h2>
             
-            <!-- Widget Circulaire -->
-            <div class="glass-panel rounded-3xl p-6 mb-6 relative overflow-hidden flex flex-col items-center">
-                <div class="absolute top-0 right-0 p-24 bg-brand-500/10 blur-[50px] rounded-full"></div>
-                <h3 class="text-xs text-white/50 uppercase tracking-widest font-bold mb-2 z-10">Bilan du jour</h3>
+            <!-- Widget Circulaire Premium -->
+            <div class="glass-panel rounded-3xl p-6 mb-8 relative overflow-hidden flex flex-col items-center border border-white/10 shadow-2xl">
+                <div class="absolute -top-20 -right-20 p-32 bg-brand-500/10 blur-[60px] rounded-full"></div>
                 
-                <div class="relative w-48 h-48 z-10 flex items-center justify-center mb-2">
-                    <svg viewBox="0 0 36 36" class="circular-chart w-full h-full absolute inset-0 -rotate-90">
+                <div class="w-full flex justify-between items-center z-10 mb-4 px-2">
+                    <h3 class="text-[10px] text-white/50 uppercase tracking-widest font-bold">Bilan Calorique</h3>
+                    <span id="dash-goal-badge" class="px-2 py-1 rounded-md bg-white/5 text-[10px] font-bold text-white/70 border border-white/10">Maintien</span>
+                </div>
+                
+                <div class="relative w-56 h-56 z-10 flex items-center justify-center mb-4">
+                    <svg viewBox="0 0 36 36" class="circular-chart w-full h-full absolute inset-0 -rotate-90 drop-shadow-[0_0_15px_rgba(52,211,153,0.3)]">
                         <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        <path id="dash-circle" class="circle stroke-brand-500" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path id="dash-circle" class="circle stroke-emerald-400" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                     </svg>
-                    <div class="text-center">
-                        <div id="dash-consumed" class="text-4xl font-display font-bold text-white">0</div>
-                        <div class="text-[10px] text-white/50 uppercase tracking-widest mt-1">/ <span id="dash-target">2000</span> kcal</div>
+                    <div class="text-center mt-2">
+                        <div id="dash-consumed" class="text-5xl font-display font-bold text-white tracking-tighter drop-shadow-md">0</div>
+                        <div class="text-[11px] text-white/50 uppercase tracking-widest mt-1">/ <span id="dash-target" class="font-bold text-white/80">2000</span> kcal</div>
                     </div>
                 </div>
                 
-                <div class="w-full flex justify-between px-4 z-10">
-                    <div class="text-center">
-                        <div class="text-[10px] text-white/50 uppercase tracking-widest mb-1">Restant</div>
-                        <div id="dash-remaining" class="text-lg font-bold text-green-400">2000</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-[10px] text-white/50 uppercase tracking-widest mb-1">Objectif</div>
-                        <div id="dash-goal-text" class="text-lg font-bold text-brand-300">Maintien</div>
+                <div class="glass-panel w-full p-3 rounded-2xl flex justify-between items-center z-10 bg-black/40 border-0">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                            <i class="fa-solid fa-leaf text-xs"></i>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-white/50 uppercase tracking-widest font-bold">Reste à manger</div>
+                            <div id="dash-remaining" class="text-lg font-bold text-emerald-400 leading-none mt-0.5">2000 kcal</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Liste des aliments du jour -->
-            <div class="flex justify-between items-end mb-4">
-                <h3 class="font-display font-bold text-lg">Aujourd'hui</h3>
-                <button onclick="switchView('add-food')" class="text-xs text-brand-400 font-bold uppercase tracking-wider"><i class="fa-solid fa-plus mr-1"></i>Ajouter</button>
+            <div class="flex justify-between items-end mb-4 px-1">
+                <h3 class="font-display font-bold text-lg">Journal du jour</h3>
+                <button onclick="switchView('add-food')" class="text-[10px] text-brand-400 font-bold uppercase tracking-wider bg-brand-500/10 px-3 py-1.5 rounded-full hover:bg-brand-500/20 transition"><i class="fa-solid fa-plus mr-1"></i>Ajouter</button>
             </div>
+            
             <div id="food-list-today" class="space-y-3">
                 <!-- Généré en JS -->
             </div>
         </main>
 
-        <!-- ADD FOOD VIEW -->
+        <!-- ========================================== -->
+        <!-- VUE: ADD FOOD -->
+        <!-- ========================================== -->
         <main id="view-add-food" class="view-content">
-            <h2 class="text-2xl font-display font-bold mb-2">Ajouter un aliment</h2>
-            <p class="text-white/50 text-xs mb-6">Recherche intelligente propulsée par l'IA Mistral.</p>
+            <h2 class="text-2xl font-display font-bold mb-2">Ajouter un repas</h2>
+            <p class="text-white/50 text-xs mb-6">Recherche intelligente par l'IA Mistral.</p>
             
-            <div class="glass-panel p-2 rounded-2xl flex gap-2 mb-6">
+            <!-- Recherche IA -->
+            <div class="glass-panel p-2 rounded-2xl flex gap-2 mb-6 border-brand-500/30 shadow-[0_0_20px_rgba(99,102,241,0.1)]">
                 <input type="text" id="food-search-input" placeholder="Ex: 150g de riz blanc, une pomme..." class="flex-1 bg-transparent px-4 py-2 text-white focus:outline-none text-sm placeholder-white/30">
-                <button id="btn-search-food" class="bg-brand-600 hover:bg-brand-500 px-4 py-2 rounded-xl transition text-white text-sm shadow-lg shadow-brand-500/20">
+                <button id="btn-search-food" class="bg-brand-600 hover:bg-brand-500 px-5 py-2 rounded-xl transition text-white text-sm shadow-lg shadow-brand-500/20">
                     <i class="fa-solid fa-magnifying-glass"></i>
                 </button>
             </div>
 
-            <div id="food-search-result" class="hidden glass-panel rounded-2xl p-5 border-brand-500/30 bg-brand-500/5 animate-fade-in">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h4 id="res-food-name" class="font-bold text-lg text-brand-100">...</h4>
-                        <p class="text-xs text-white/50"><span id="res-food-base-kcal">0</span> kcal / 100g</p>
-                    </div>
-                    <div class="w-10 h-10 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400">
+            <!-- Ajout Rapide Manuel -->
+            <div class="mb-8">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="h-px bg-white/10 flex-1"></div>
+                    <span class="text-[10px] text-white/30 uppercase tracking-widest font-bold">Ou ajout rapide</span>
+                    <div class="h-px bg-white/10 flex-1"></div>
+                </div>
+                <div class="glass-panel p-3 rounded-2xl flex gap-3 items-center bg-white/5">
+                    <input type="text" id="manual-food-name" placeholder="Nom (ex: Café)" class="w-1/2 bg-transparent border-b border-white/20 px-2 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+                    <input type="number" id="manual-food-kcal" placeholder="Kcal (ex: 50)" class="w-1/3 bg-transparent border-b border-white/20 px-2 py-2 text-sm text-white focus:outline-none focus:border-brand-500 text-center">
+                    <button id="btn-manual-add" class="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 text-white transition flex items-center justify-center">
                         <i class="fa-solid fa-check"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loader IA -->
+            <div id="food-search-loader" class="hidden text-center py-10 animate-pulse flex-col items-center">
+                <div class="w-12 h-12 rounded-full bg-brand-500/20 text-brand-400 flex items-center justify-center text-xl mb-3 shadow-[0_0_20px_rgba(99,102,241,0.5)]">
+                    <i class="fa-solid fa-robot fa-bounce"></i>
+                </div>
+                <span class="text-[10px] text-brand-300 uppercase tracking-widest font-bold">Analyse Mistral en cours...</span>
+            </div>
+
+            <!-- Résultat IA -->
+            <div id="food-search-result" class="hidden glass-panel rounded-3xl p-6 border-brand-500/40 bg-gradient-to-br from-brand-500/10 to-transparent animate-fade-in">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <div class="text-[10px] text-brand-400 uppercase tracking-widest font-bold mb-1"><i class="fa-solid fa-sparkles"></i> Base de données IA</div>
+                        <h4 id="res-food-name" class="font-display font-bold text-2xl text-white">...</h4>
+                        <p class="text-xs text-white/60 mt-1">Valeur repère : <span id="res-food-base-kcal" class="font-bold text-white">0</span> kcal / 100g</p>
                     </div>
                 </div>
                 
-                <div class="flex items-end gap-4 mb-6">
-                    <div class="flex-1">
-                        <label class="text-[10px] text-white/50 uppercase tracking-widest mb-1 block">Quantité (g ou ml)</label>
-                        <input type="number" id="res-food-qty" value="100" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 transition text-center font-bold">
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-black/40 rounded-2xl p-4 border border-white/5">
+                        <label class="text-[10px] text-white/50 uppercase tracking-widest mb-2 block text-center">Quantité (g/ml)</label>
+                        <input type="number" id="res-food-qty" value="100" class="w-full bg-transparent border-b-2 border-white/20 text-white focus:outline-none focus:border-brand-500 transition text-center font-display font-bold text-2xl pb-1">
                     </div>
-                    <div class="flex-1">
-                        <label class="text-[10px] text-white/50 uppercase tracking-widest mb-1 block">Total kcal</label>
-                        <div id="res-food-total" class="w-full bg-white/5 border border-brand-500/30 rounded-xl p-3 text-brand-400 text-center font-bold">0</div>
+                    <div class="bg-brand-500/10 rounded-2xl p-4 border border-brand-500/20">
+                        <label class="text-[10px] text-brand-300 uppercase tracking-widest mb-2 block text-center">Total Kcal</label>
+                        <div id="res-food-total" class="w-full text-center font-display font-bold text-3xl text-brand-400">0</div>
                     </div>
                 </div>
                 
-                <button id="btn-confirm-food" class="w-full py-3 rounded-xl bg-white text-black font-display font-bold uppercase tracking-wider hover:bg-gray-200 transition">
+                <button id="btn-confirm-food" class="w-full py-4 rounded-xl bg-white text-black font-display font-bold uppercase tracking-wider hover:bg-gray-200 transition shadow-lg">
                     Ajouter au journal
                 </button>
             </div>
-            
-            <div id="food-search-loader" class="hidden text-center py-10 text-brand-400/60 animate-pulse flex flex-col items-center">
-                <i class="fa-solid fa-robot text-3xl mb-3"></i>
-                <span class="text-xs uppercase tracking-widest font-bold">Analyse en cours...</span>
-            </div>
         </main>
 
-        <!-- WEIGHT VIEW -->
+        <!-- ========================================== -->
+        <!-- VUE: WEIGHT -->
+        <!-- ========================================== -->
         <main id="view-weight" class="view-content">
             <h2 class="text-2xl font-display font-bold mb-6">Suivi du Poids</h2>
             
-            <div class="glass-panel p-5 rounded-2xl mb-6 flex items-center justify-between">
-                <div>
-                    <div class="text-[10px] text-white/50 uppercase tracking-widest mb-1">Pesée du jour</div>
-                    <div class="flex items-end gap-2">
-                        <input type="number" step="0.1" id="input-daily-weight" class="bg-transparent border-b-2 border-white/20 w-24 text-3xl font-bold text-white focus:outline-none focus:border-brand-500 text-center pb-1">
-                        <span class="text-white/50 pb-2">kg</span>
+            <div class="glass-panel p-6 rounded-3xl mb-8 flex items-center justify-between border-t border-white/10 relative overflow-hidden">
+                <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-brand-500/20 blur-3xl rounded-full"></div>
+                <div class="z-10">
+                    <div class="text-[10px] text-white/50 uppercase tracking-widest mb-2 font-bold">Pesée d'aujourd'hui</div>
+                    <div class="flex items-end gap-1">
+                        <input type="number" step="0.1" id="input-daily-weight" class="bg-transparent border-b-2 border-white/20 w-28 text-4xl font-display font-bold text-white focus:outline-none focus:border-brand-500 pb-1">
+                        <span class="text-white/50 pb-2 text-sm font-bold">kg</span>
                     </div>
                 </div>
-                <button id="btn-save-weight" class="w-12 h-12 rounded-full bg-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/30 text-white">
-                    <i class="fa-solid fa-plus"></i>
+                <button id="btn-save-weight" class="z-10 w-14 h-14 rounded-full bg-gradient-to-tr from-brand-600 to-brand-400 flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.4)] text-white hover:scale-105 transition-transform">
+                    <i class="fa-solid fa-check text-xl"></i>
                 </button>
             </div>
 
-            <div class="glass-panel p-4 rounded-2xl w-full">
-                <h3 class="text-xs text-white/50 uppercase tracking-widest font-bold mb-4">Évolution (7 derniers jours)</h3>
+            <h3 class="font-display font-bold text-lg mb-4">Évolution (7 jours)</h3>
+            <div class="glass-panel p-4 rounded-3xl w-full border-white/5 shadow-xl bg-black/40">
                 <canvas id="weight-chart" width="400" height="250"></canvas>
             </div>
         </main>
 
-        <!-- CHAT IA VIEW -->
-        <main id="view-chat" class="view-content flex flex-col h-full relative">
-            <div class="flex-1 overflow-y-auto space-y-4 mb-20" id="chat-messages">
-                <div class="bg-white/5 border border-white/10 rounded-2xl rounded-tl-none p-4 max-w-[85%] self-start text-white/80 text-sm shadow-lg">
-                    Bonjour ! Je suis l'IA WikiMind Nutrition. Posez-moi vos questions, ou demandez-moi d'ajouter un aliment ou de modifier votre poids !
+        <!-- ========================================== -->
+        <!-- VUE: CHAT IA -->
+        <!-- ========================================== -->
+        <main id="view-chat" class="view-content flex-col h-full relative pb-0 pt-0">
+            <!-- Header Chat -->
+            <div class="py-4 border-b border-white/10 flex items-center gap-3 sticky top-0 bg-[#050505]/90 backdrop-blur-md z-10 -mx-5 px-5">
+                <div class="w-10 h-10 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <div>
+                    <h2 class="font-display font-bold text-lg leading-none">WikiMind Coach</h2>
+                    <span class="text-[10px] text-green-400 font-bold uppercase tracking-widest"><i class="fa-solid fa-circle text-[6px] align-middle mr-1"></i>En ligne</span>
                 </div>
             </div>
-            <div class="absolute bottom-20 left-4 right-4 glass-panel p-2 rounded-2xl flex gap-2 border border-brand-500/30 bg-black/50">
-                <input type="text" id="chat-input" placeholder="Message WikiMind..." class="flex-1 bg-transparent px-3 py-2 text-white focus:outline-none text-sm placeholder-white/30">
-                <button id="btn-chat-send" class="bg-brand-600 w-10 h-10 rounded-xl flex items-center justify-center text-white transition hover:scale-105">
+
+            <!-- Messages -->
+            <div class="flex-1 overflow-y-auto space-y-4 py-4 -mx-5 px-5" id="chat-messages" style="padding-bottom: 140px;">
+                <div class="bg-white/5 border border-white/10 rounded-2xl rounded-tl-none p-4 max-w-[85%] self-start text-white/80 text-sm shadow-lg">
+                    Bonjour ! Je suis votre assistant WikiMind. Vous pouvez me poser des questions sur la nutrition, ou me dire :<br><br>
+                    <span class="text-brand-300">"Ajoute moi un muffin au chocolat"</span><br>
+                    <span class="text-brand-300">"Mon poids ce matin est de 71.2 kg"</span><br><br>
+                    Je mettrai à jour vos données automatiquement !
+                </div>
+            </div>
+
+            <!-- Input area -->
+            <div class="absolute bottom-[90px] left-5 right-5 glass-panel p-2 rounded-2xl flex gap-2 border border-brand-500/30 bg-black/80 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-20">
+                <input type="text" id="chat-input" placeholder="Écrivez à WikiMind..." class="flex-1 bg-transparent px-3 py-2 text-white focus:outline-none text-sm placeholder-white/30">
+                <button id="btn-chat-send" class="bg-brand-600 hover:bg-brand-500 w-10 h-10 rounded-xl flex items-center justify-center text-white transition shadow-lg shadow-brand-500/30">
                     <i class="fa-solid fa-paper-plane"></i>
                 </button>
             </div>
         </main>
 
-        <!-- SETTINGS VIEW -->
+        <!-- ========================================== -->
+        <!-- VUE: SETTINGS -->
+        <!-- ========================================== -->
         <main id="view-settings" class="view-content">
             <h2 class="text-2xl font-display font-bold mb-6">Paramètres</h2>
             
-            <div class="glass-panel p-5 rounded-2xl mb-6 space-y-4">
-                <h3 class="text-sm font-bold border-b border-white/10 pb-2 text-brand-300">Mon Profil</h3>
+            <div class="glass-panel p-6 rounded-3xl mb-6 space-y-5 border-white/5 bg-white/5">
+                <h3 class="text-xs font-bold uppercase tracking-widest text-brand-400 border-b border-white/10 pb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-user"></i> Mon Profil
+                </h3>
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="text-[10px] text-white/50 uppercase tracking-widest block mb-1">Prénom</label>
-                        <input type="text" id="set-name" class="w-full bg-white/5 rounded-lg p-2 text-sm focus:border-brand-500 focus:outline-none border border-transparent">
+                        <label class="text-[10px] text-white/50 uppercase tracking-widest block mb-1.5 font-bold">Prénom</label>
+                        <input type="text" id="set-name" class="w-full bg-black/40 rounded-xl p-3 text-sm focus:border-brand-500 focus:outline-none border border-transparent">
                     </div>
                     <div>
-                        <label class="text-[10px] text-white/50 uppercase tracking-widest block mb-1">Sexe</label>
-                        <select id="set-sex" class="w-full bg-white/5 rounded-lg p-2 text-sm focus:border-brand-500 focus:outline-none border border-transparent appearance-none">
-                            <option value="H" class="bg-gray-900">Homme</option>
-                            <option value="F" class="bg-gray-900">Femme</option>
+                        <label class="text-[10px] text-white/50 uppercase tracking-widest block mb-1.5 font-bold">Sexe</label>
+                        <select id="set-sex" class="w-full bg-black/40 rounded-xl p-3 text-sm focus:border-brand-500 focus:outline-none border border-transparent appearance-none">
+                            <option value="H">Homme</option>
+                            <option value="F">Femme</option>
                         </select>
                     </div>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="text-[10px] text-white/50 uppercase tracking-widest block mb-1">Taille (cm)</label>
-                        <input type="number" id="set-height" class="w-full bg-white/5 rounded-lg p-2 text-sm focus:border-brand-500 focus:outline-none border border-transparent">
+                        <label class="text-[10px] text-white/50 uppercase tracking-widest block mb-1.5 font-bold">Taille (cm)</label>
+                        <input type="number" id="set-height" class="w-full bg-black/40 rounded-xl p-3 text-sm focus:border-brand-500 focus:outline-none border border-transparent">
                     </div>
                     <div>
-                        <label class="text-[10px] text-white/50 uppercase tracking-widest block mb-1">Objectif</label>
-                        <select id="set-goal" class="w-full bg-white/5 rounded-lg p-2 text-sm focus:border-brand-500 focus:outline-none border border-transparent appearance-none">
-                            <option value="lose" class="bg-gray-900">Perdre</option>
-                            <option value="maintain" class="bg-gray-900">Maintenir</option>
-                            <option value="gain" class="bg-gray-900">Prendre</option>
+                        <label class="text-[10px] text-white/50 uppercase tracking-widest block mb-1.5 font-bold">Objectif</label>
+                        <select id="set-goal" class="w-full bg-black/40 rounded-xl p-3 text-sm focus:border-brand-500 focus:outline-none border border-transparent appearance-none text-brand-300 font-bold">
+                            <option value="lose">Perdre du poids</option>
+                            <option value="maintain">Maintenir</option>
+                            <option value="gain">Prendre masse</option>
                         </select>
                     </div>
                 </div>
 
-                <button onclick="saveSettings()" class="w-full py-2 mt-2 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold uppercase tracking-wider transition">Sauvegarder les modifs</button>
+                <button onclick="saveSettings()" class="w-full py-3 mt-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold uppercase tracking-wider transition flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-floppy-disk"></i> Enregistrer
+                </button>
             </div>
 
-            <div class="glass-panel p-5 rounded-2xl border-red-500/20">
-                <h3 class="text-sm font-bold text-red-400 mb-2">Zone Danger</h3>
-                <p class="text-[10px] text-white/50 mb-4">La suppression efface toutes vos données locales (et cloud si connecté).</p>
-                <button onclick="deleteAccount()" class="w-full py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/40 text-xs font-bold uppercase tracking-wider transition">Supprimer mes données</button>
+            <div class="glass-panel p-6 rounded-3xl border-red-500/20 bg-red-500/5">
+                <h3 class="text-xs font-bold text-red-400 mb-2 uppercase tracking-widest flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Zone Danger
+                </h3>
+                <p class="text-[10px] text-white/50 mb-4 leading-relaxed">Cette action supprimera toutes vos données caloriques (locales et cloud). Action irréversible.</p>
+                <button onclick="deleteAccount()" class="w-full py-3 rounded-xl bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/40 text-xs font-bold uppercase tracking-wider transition">Effacer mes données</button>
             </div>
         </main>
 
+        <!-- ========================================== -->
         <!-- BOTTOM NAVIGATION -->
-        <nav class="bottom-nav glass-panel border-t border-white/10 rounded-t-3xl border-b-0 border-l-0 border-r-0 pb-safe">
+        <!-- ========================================== -->
+        <nav class="bottom-nav glass-panel border-t border-white/10 rounded-t-[32px] border-b-0 border-l-0 border-r-0 bg-[#0a0a0a]/90">
             <div class="flex justify-between items-center px-6 py-4">
                 <button onclick="switchView('dashboard')" class="nav-item active flex flex-col items-center text-white/40 transition group relative w-12">
-                    <i class="fa-solid fa-house text-xl mb-1 group-hover:text-brand-400 transition"></i>
-                    <span class="text-[10px] font-bold">Accueil</span>
-                    <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300"></div>
+                    <i class="fa-solid fa-house text-xl mb-1 group-hover:text-brand-400 transition-colors"></i>
+                    <span class="text-[9px] font-bold uppercase tracking-widest">Accueil</span>
+                    <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,1)]"></div>
                 </button>
                 <button onclick="switchView('add-food')" class="nav-item flex flex-col items-center text-white/40 transition group relative w-12">
-                    <i class="fa-solid fa-utensils text-xl mb-1 group-hover:text-brand-400 transition"></i>
-                    <span class="text-[10px] font-bold">Repas</span>
-                    <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300"></div>
+                    <i class="fa-solid fa-utensils text-xl mb-1 group-hover:text-brand-400 transition-colors"></i>
+                    <span class="text-[9px] font-bold uppercase tracking-widest">Repas</span>
+                    <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,1)]"></div>
                 </button>
                 <button onclick="switchView('weight')" class="nav-item flex flex-col items-center text-white/40 transition group relative w-12">
-                    <i class="fa-solid fa-weight-scale text-xl mb-1 group-hover:text-brand-400 transition"></i>
-                    <span class="text-[10px] font-bold">Poids</span>
-                    <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300"></div>
+                    <i class="fa-solid fa-weight-scale text-xl mb-1 group-hover:text-brand-400 transition-colors"></i>
+                    <span class="text-[9px] font-bold uppercase tracking-widest">Poids</span>
+                    <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,1)]"></div>
                 </button>
                 <button onclick="switchView('chat')" class="nav-item flex flex-col items-center text-white/40 transition group relative w-12">
-                    <i class="fa-solid fa-robot text-xl mb-1 group-hover:text-brand-400 transition"></i>
-                    <span class="text-[10px] font-bold">IA</span>
-                    <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300"></div>
+                    <i class="fa-solid fa-robot text-xl mb-1 group-hover:text-brand-400 transition-colors"></i>
+                    <span class="text-[9px] font-bold uppercase tracking-widest">IA</span>
+                    <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,1)]"></div>
                 </button>
                 <button onclick="switchView('settings')" class="nav-item flex flex-col items-center text-white/40 transition group relative w-12">
-                    <i class="fa-solid fa-gear text-xl mb-1 group-hover:text-brand-400 transition"></i>
-                    <span class="text-[10px] font-bold">Réglages</span>
-                    <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300"></div>
+                    <i class="fa-solid fa-gear text-xl mb-1 group-hover:text-brand-400 transition-colors"></i>
+                    <span class="text-[9px] font-bold uppercase tracking-widest">Profil</span>
+                    <div class="nav-indicator absolute -bottom-4 w-1 h-1 bg-brand-500 rounded-full opacity-0 scale-0 transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,1)]"></div>
                 </button>
             </div>
         </nav>
     </div>
 
-    <!-- LOGIC -->
+    <!-- LOGIC SCRIPT -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         // ==========================================
-        // CONFIG FIREBASE
+        // CONFIG FIREBASE (WikiMind 3.0)
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
@@ -379,49 +448,64 @@
         // ==========================================
         let currentUser = null;
         let userData = null; 
+        let authReady = false;
         const MISTRAL_KEY = "SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9";
         let weightChartInstance = null;
 
-        // ==========================================
-        // UI HELPERS
-        // ==========================================
-        window.showToast = (msg, type = "info") => {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            const color = type === 'error' ? 'border-red-500 text-red-200 bg-red-500/20' : 
-                          type === 'success' ? 'border-green-500 text-green-200 bg-green-500/20' : 
-                          'border-brand-500 text-brand-200 bg-brand-500/20';
-            toast.className = `px-4 py-3 rounded-xl border backdrop-blur-md shadow-xl text-xs font-bold animate-slide-up flex items-center gap-2 ${color}`;
-            toast.innerHTML = `<i class="fa-solid fa-${type === 'error' ? 'triangle-exclamation' : type === 'success' ? 'check' : 'info-circle'}"></i> ${msg}`;
-            container.appendChild(toast);
-            setTimeout(() => { toast.style.opacity = 0; setTimeout(() => toast.remove(), 300); }, 3000);
+        // Fonction pour récupérer la date du jour en HEURE LOCALE (Évite les bugs UTC)
+        const getTodayKey = () => {
+            const today = new Date();
+            const offset = today.getTimezoneOffset() * 60000;
+            return (new Date(today.getTime() - offset)).toISOString().split('T')[0];
         };
 
+        // ==========================================
+        // SYSTEME DE NAVIGATION (CORRIGÉ ET ROBUSTE)
+        // ==========================================
         window.switchView = (viewId) => {
-            document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
+            // Cacher toutes les vues via le style JS en ligne pour outrepasser n'importe quelle classe
+            document.querySelectorAll('.view-content').forEach(v => {
+                v.style.display = 'none';
+                v.classList.remove('active');
+            });
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             
+            // Afficher la cible
             const target = document.getElementById(`view-${viewId}`);
-            if(target) target.classList.add('active');
+            if(target) {
+                // L'onboarding et le chat ont besoin de flex pour le layout interne
+                target.style.display = (viewId === 'onboarding' || viewId === 'chat') ? 'flex' : 'block';
+                // Petit hack pour forcer le reflow et relancer l'animation
+                void target.offsetWidth;
+                target.classList.add('active');
+            }
             
+            // Activer l'icone de la navbar
             const nav = document.querySelector(`.nav-item[onclick="switchView('${viewId}')"]`);
             if(nav) nav.classList.add('active');
 
+            // Lancer les fonctions spécifiques à la vue
             if(viewId === 'dashboard') renderDashboard();
             if(viewId === 'weight') renderWeightChart();
             if(viewId === 'settings') populateSettings();
         };
 
-        // PWA INIT
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./calories-sw.js').catch(err => console.error("SW fail:", err));
-        }
+        window.showToast = (msg, type = "info") => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const color = type === 'error' ? 'border-red-500 text-red-200 bg-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 
+                          type === 'success' ? 'border-emerald-500 text-emerald-200 bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 
+                          'border-brand-500 text-brand-200 bg-brand-500/20 shadow-[0_0_15px_rgba(99,102,241,0.3)]';
+            const icon = type === 'error' ? 'triangle-exclamation' : type === 'success' ? 'check-circle' : 'bolt';
+            toast.className = `px-4 py-3 rounded-xl border backdrop-blur-xl shadow-xl text-xs font-bold animate-slide-up flex items-center gap-2 ${color}`;
+            toast.innerHTML = `<i class="fa-solid fa-${icon} text-lg"></i> ${msg}`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = 0; setTimeout(() => toast.remove(), 300); }, 3000);
+        };
 
         // ==========================================
         // GESTION DES DONNEES (HYBRIDE)
         // ==========================================
-        const getTodayKey = () => new Date().toISOString().split('T')[0];
-
         async function loadData() {
             if (currentUser) {
                 const snap = await get(child(ref(db), `users/${currentUser.uid}`));
@@ -432,25 +516,31 @@
                 userData = local ? JSON.parse(local) : null;
             }
 
-            document.getElementById('app-loader').style.display = 'none';
+            // Fading out loader
+            const loader = document.getElementById('app-loader');
+            loader.style.opacity = '0';
+            setTimeout(() => loader.style.display = 'none', 500);
 
             if (!userData || !userData.onboarded) {
                 document.querySelector('.bottom-nav').style.display = 'none';
-                switchView('onboarding');
+                window.switchView('onboarding');
             } else {
                 document.querySelector('.bottom-nav').style.display = 'block';
                 checkNewDay();
-                switchView('dashboard');
+                window.switchView('dashboard');
             }
         }
 
         async function saveData() {
+            if(!userData) return;
             if (currentUser) {
                 await set(ref(db, `users/${currentUser.uid}`), userData);
             } else {
                 localStorage.setItem('wiki_calories_data', JSON.stringify(userData));
             }
-            renderDashboard();
+            if(document.getElementById('view-dashboard').style.display !== 'none') {
+                renderDashboard();
+            }
         }
 
         function checkNewDay() {
@@ -458,23 +548,24 @@
             if(!userData.foodHistory) userData.foodHistory = {};
             if(!userData.foodHistory[today]) {
                 userData.foodHistory[today] = [];
-                saveData();
+                saveData(); // Sauvegarde l'initialisation du nouveau jour
             }
         }
 
-        // ==========================================
-        // CALCUL NUTRITION (Mifflin-St Jeor)
-        // ==========================================
+        // Equation de Mifflin-St Jeor
         function calculateTDEE() {
             if(!userData) return 2000;
             const dob = new Date(userData.dob);
-            const ageDate = new Date(Date.now() - dob.getTime());
-            const age = Math.abs(ageDate.getUTCFullYear() - 1970);
+            const today = new Date();
+            let age = today.getFullYear() - dob.getFullYear();
+            if (today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())) {
+                age--;
+            }
             
             let bmr = (10 * userData.weight) + (6.25 * userData.height) - (5 * age);
             bmr += userData.sex === 'H' ? 5 : -161;
             
-            let tdee = bmr * 1.2; // Sedentary par defaut
+            let tdee = bmr * 1.2; // Sedentary (on garde ça simple)
             
             if(userData.goal === 'lose') tdee -= 500;
             if(userData.goal === 'gain') tdee += 300;
@@ -486,17 +577,21 @@
         // ==========================================
         // AUTH STATE
         // ==========================================
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud text-brand-400"></i> Cloud';
-                document.getElementById('sync-status').className = "text-[10px] text-brand-400 flex items-center gap-1 mt-0.5";
+                document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-cloud text-brand-400"></i> Cloud Synced';
+                document.getElementById('sync-status').className = "text-[10px] text-brand-400 flex items-center gap-1 mt-0.5 font-bold";
                 document.getElementById('user-avatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff`;
             } else {
                 currentUser = null;
-                document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-hard-drive"></i> Local';
+                document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-hard-drive"></i> Local Storage';
             }
-            loadData();
+            
+            if(!authReady) {
+                authReady = true;
+                await loadData();
+            }
         });
 
         // ==========================================
@@ -518,13 +613,14 @@
             userData.weightHistory[getTodayKey()] = userData.weight;
             calculateTDEE();
             await saveData();
+            
+            window.showToast("Profil créé avec succès !", "success");
             document.querySelector('.bottom-nav').style.display = 'block';
-            switchView('dashboard');
-            window.showToast("Profil créé !", "success");
+            window.switchView('dashboard');
         });
 
         // ==========================================
-        // DASHBOARD RENDER
+        // DASHBOARD
         // ==========================================
         function renderDashboard() {
             if(!userData) return;
@@ -535,40 +631,62 @@
             const foods = userData.foodHistory[today] || [];
             let consumed = foods.reduce((sum, item) => sum + item.kcal, 0);
             
-            document.getElementById('dash-consumed').innerText = consumed;
+            // Animation des chiffres
+            const consumedEl = document.getElementById('dash-consumed');
+            let currentVal = parseInt(consumedEl.innerText) || 0;
+            if(currentVal !== consumed) { consumedEl.innerText = consumed; } // Simplifié pour la fluidité
+            
             document.getElementById('dash-target').innerText = userData.targetKcal;
             
             const remaining = userData.targetKcal - consumed;
             const remainingEl = document.getElementById('dash-remaining');
-            remainingEl.innerText = Math.abs(remaining) + (remaining < 0 ? ' (Excès)' : '');
-            remainingEl.className = `text-lg font-bold ${remaining < 0 ? 'text-red-400' : 'text-green-400'}`;
+            remainingEl.innerText = Math.abs(remaining) + (remaining < 0 ? ' kcal (Excès)' : ' kcal');
+            remainingEl.className = `text-xl font-display font-bold leading-none mt-1 ${remaining < 0 ? 'text-red-400' : 'text-emerald-400'}`;
             
-            const goalTexts = { 'lose': 'Perte', 'maintain': 'Maintien', 'gain': 'Prise masse' };
-            document.getElementById('dash-goal-text').innerText = goalTexts[userData.goal];
+            const goalTexts = { 'lose': 'Perte', 'maintain': 'Maintien', 'gain': 'Prise de masse' };
+            document.getElementById('dash-goal-badge').innerText = goalTexts[userData.goal];
 
-            // Circle logic
+            // Cercle SVG
             let percent = Math.min((consumed / userData.targetKcal) * 100, 100);
             document.getElementById('dash-circle').setAttribute('stroke-dasharray', `${percent}, 100`);
-            if(percent > 90) document.getElementById('dash-circle').classList.replace('stroke-brand-500', 'stroke-red-500');
-            else document.getElementById('dash-circle').classList.replace('stroke-red-500', 'stroke-brand-500');
+            
+            const circle = document.getElementById('dash-circle');
+            if(percent > 100 || remaining < 0) {
+                circle.classList.remove('stroke-emerald-400');
+                circle.classList.add('stroke-red-500');
+                document.querySelector('.circular-chart').style.filter = 'drop-shadow(0 0 15px rgba(239, 68, 68, 0.4))';
+            } else {
+                circle.classList.remove('stroke-red-500');
+                circle.classList.add('stroke-emerald-400');
+                document.querySelector('.circular-chart').style.filter = 'drop-shadow(0 0 15px rgba(52, 211, 153, 0.3))';
+            }
 
-            // Render list
+            // Liste des aliments
             const list = document.getElementById('food-list-today');
             list.innerHTML = '';
             if(foods.length === 0) {
-                list.innerHTML = '<div class="text-center text-white/30 text-xs py-4">Aucun repas ajouté.</div>';
+                list.innerHTML = '<div class="text-center text-white/30 text-xs py-8 bg-white/5 rounded-2xl border border-dashed border-white/10">Aucun repas ajouté aujourd\'hui.</div>';
             } else {
+                // On clone, inverse, et génère l'HTML avec un léger délai d'animation (stagger)
                 foods.slice().reverse().forEach((f, index) => {
                     const originalIndex = foods.length - 1 - index;
+                    const delay = index * 0.05;
                     list.innerHTML += `
-                        <div class="glass-panel p-3 rounded-xl flex justify-between items-center bg-white/5 animate-fade-in">
-                            <div>
-                                <div class="font-bold text-sm">${f.name}</div>
-                                <div class="text-[10px] text-white/50">${f.qty} g/ml</div>
-                            </div>
+                        <div class="glass-panel p-4 rounded-2xl flex justify-between items-center bg-white/5 animate-slide-up border-white/5" style="animation-delay: ${delay}s; opacity: 0;">
                             <div class="flex items-center gap-3">
-                                <div class="font-bold text-brand-300">${f.kcal} kcal</div>
-                                <button onclick="deleteFood(${originalIndex})" class="text-white/20 hover:text-red-400 p-1"><i class="fa-solid fa-trash text-xs"></i></button>
+                                <div class="w-8 h-8 rounded-full bg-brand-500/10 text-brand-400 flex items-center justify-center text-xs">
+                                    <i class="fa-solid fa-utensils"></i>
+                                </div>
+                                <div>
+                                    <div class="font-bold text-sm text-white/90 capitalize">${f.name}</div>
+                                    <div class="text-[10px] text-white/40 uppercase tracking-widest font-bold">${f.qty ? f.qty + ' g/ml' : 'Ajout rapide'}</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="font-display font-bold text-emerald-300">${f.kcal} <span class="text-[10px] text-emerald-400/50">kcal</span></div>
+                                <button onclick="deleteFood(${originalIndex})" class="w-8 h-8 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition flex items-center justify-center">
+                                    <i class="fa-solid fa-xmark text-sm"></i>
+                                </button>
                             </div>
                         </div>
                     `;
@@ -582,9 +700,17 @@
         };
 
         // ==========================================
-        // AJOUT ALIMENT IA MISTRAL
+        // AJOUT ALIMENT (IA + MANUEL)
         // ==========================================
         let currentSearchedFood = null;
+
+        // Fonction Robuste pour parser la réponse IA
+        function parseMistralJSON(text) {
+            try {
+                let clean = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+                return JSON.parse(clean);
+            } catch(e) { return null; }
+        }
 
         document.getElementById('btn-search-food').addEventListener('click', async () => {
             const query = document.getElementById('food-search-input').value.trim();
@@ -592,13 +718,12 @@
 
             document.getElementById('food-search-result').classList.add('hidden');
             document.getElementById('food-search-loader').classList.remove('hidden');
+            document.getElementById('food-search-loader').classList.add('flex');
 
-            const prompt = `L'utilisateur cherche l'aliment : "${query}".
-Donne la valeur calorifique pour 100 grammes de cet aliment.
-Réponds STRICTEMENT ET UNIQUEMENT sous forme de JSON valide avec ces 2 clés :
-"name" (Nom propre et court de l'aliment)
-"kcal_per_100g" (Nombre entier des calories pour 100g)
-Aucun texte avant ni après.`;
+            const prompt = `Donne la valeur calorifique pour 100 grammes de l'aliment "${query}".
+Réponds STRICTEMENT sous forme de JSON valide. Ne dis RIEN D'AUTRE.
+Exemple de format attendu :
+{"name": "Nom Court", "kcal_per_100g": 120}`;
 
             try {
                 const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
@@ -607,20 +732,23 @@ Aucun texte avant ni après.`;
                     body: JSON.stringify({ model: "mistral-small-latest", messages: [{role:"user", content:prompt}], temperature: 0.1 })
                 });
                 const data = await res.json();
-                const content = data.choices[0].message.content.trim().replace(/```json/g, '').replace(/```/g, '');
                 
-                const json = JSON.parse(content);
+                const json = parseMistralJSON(data.choices[0].message.content);
+                
+                if(!json || !json.name || json.kcal_per_100g == null) throw new Error("Format Invalide");
+
                 currentSearchedFood = json;
-                
                 document.getElementById('res-food-name').innerText = json.name;
                 document.getElementById('res-food-base-kcal').innerText = json.kcal_per_100g;
                 updateFoodTotal();
 
                 document.getElementById('food-search-loader').classList.add('hidden');
+                document.getElementById('food-search-loader').classList.remove('flex');
                 document.getElementById('food-search-result').classList.remove('hidden');
             } catch(e) {
                 document.getElementById('food-search-loader').classList.add('hidden');
-                window.showToast("Erreur IA. Veuillez réessayer.", "error");
+                document.getElementById('food-search-loader').classList.remove('flex');
+                window.showToast("Erreur IA ou aliment non trouvé.", "error");
             }
         });
 
@@ -633,6 +761,7 @@ Aucun texte avant ni après.`;
             document.getElementById('res-food-total').innerText = total;
         }
 
+        // Ajout via IA Confirm
         document.getElementById('btn-confirm-food').addEventListener('click', async () => {
             if(!currentSearchedFood) return;
             const qty = parseFloat(document.getElementById('res-food-qty').value) || 0;
@@ -650,11 +779,32 @@ Aucun texte avant ni après.`;
             
             document.getElementById('food-search-input').value = '';
             document.getElementById('food-search-result').classList.add('hidden');
-            switchView('dashboard');
+            window.switchView('dashboard');
+        });
+
+        // Ajout Manuel Direct
+        document.getElementById('btn-manual-add').addEventListener('click', async () => {
+            const name = document.getElementById('manual-food-name').value.trim() || 'Repas manuel';
+            const kcal = parseInt(document.getElementById('manual-food-kcal').value);
+            if(!kcal || isNaN(kcal)) return window.showToast("Veuillez entrer les Kcal", "error");
+
+            const today = getTodayKey();
+            if(!userData.foodHistory[today]) userData.foodHistory[today] = [];
+            
+            userData.foodHistory[today].push({
+                name: name, qty: null, kcal: kcal, time: Date.now()
+            });
+
+            await saveData();
+            window.showToast(`${kcal} kcal ajoutées !`, "success");
+            
+            document.getElementById('manual-food-name').value = '';
+            document.getElementById('manual-food-kcal').value = '';
+            window.switchView('dashboard');
         });
 
         // ==========================================
-        // GESTION POIDS
+        // GESTION POIDS & GRAPHIQUE
         // ==========================================
         document.getElementById('btn-save-weight').addEventListener('click', async () => {
             const w = parseFloat(document.getElementById('input-daily-weight').value);
@@ -663,7 +813,7 @@ Aucun texte avant ni après.`;
             userData.weightHistory[getTodayKey()] = w;
             await saveData();
             renderWeightChart();
-            window.showToast("Poids enregistré !", "success");
+            window.showToast("Poids sauvegardé avec succès !", "success");
         });
 
         function renderWeightChart() {
@@ -672,11 +822,19 @@ Aucun texte avant ni après.`;
 
             const dates = Object.keys(userData.weightHistory).sort();
             const recentDates = dates.slice(-7);
-            const labels = recentDates.map(d => d.split('-').slice(1).join('/'));
+            const labels = recentDates.map(d => {
+                const parts = d.split('-');
+                return `${parts[2]}/${parts[1]}`; // DD/MM
+            });
             const data = recentDates.map(d => userData.weightHistory[d]);
 
             const ctx = document.getElementById('weight-chart').getContext('2d');
             if(weightChartInstance) weightChartInstance.destroy();
+
+            // Rendu Premium Chart.js
+            const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+            gradient.addColorStop(0, 'rgba(99, 102, 241, 0.4)');
+            gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
 
             weightChartInstance = new Chart(ctx, {
                 type: 'line',
@@ -685,20 +843,23 @@ Aucun texte avant ni après.`;
                     datasets: [{
                         label: 'Poids (kg)',
                         data: data,
-                        borderColor: '#6366f1',
-                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        borderColor: '#818cf8', // brand-glow
+                        backgroundColor: gradient,
                         borderWidth: 3,
                         pointBackgroundColor: '#fff',
+                        pointBorderColor: '#4f46e5',
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
                         fill: true,
-                        tension: 0.4
+                        tension: 0.4 // Courbe douce
                     }]
                 },
                 options: {
                     responsive: true,
                     plugins: { legend: { display: false } },
                     scales: {
-                        y: { ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                        x: { ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { display: false } }
+                        y: { ticks: { color: 'rgba(255,255,255,0.4)', font: { family: 'Space Grotesk' } }, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false } },
+                        x: { ticks: { color: 'rgba(255,255,255,0.4)', font: { family: 'Space Grotesk' } }, grid: { display: false }, border: { display: false } }
                     }
                 }
             });
@@ -715,16 +876,19 @@ Aucun texte avant ni après.`;
             if(!text) return;
 
             const chatBox = document.getElementById('chat-messages');
-            chatBox.innerHTML += `<div class="bg-brand-600 rounded-2xl rounded-tr-none p-3 max-w-[85%] self-end ml-auto text-white text-sm shadow-lg animate-fade-in">${text}</div>`;
+            chatBox.innerHTML += `<div class="bg-brand-600 rounded-2xl rounded-tr-none p-4 max-w-[85%] self-end ml-auto text-white text-sm shadow-[0_5px_15px_rgba(99,102,241,0.3)] animate-slide-up">${text}</div>`;
             input.value = '';
             chatBox.scrollTop = chatBox.scrollHeight;
 
-            chatBox.innerHTML += `<div id="chat-typing" class="text-xs text-brand-glow animate-pulse">WikiMind réfléchit...</div>`;
+            const typingId = 'typing-' + Date.now();
+            chatBox.innerHTML += `<div id="${typingId}" class="text-[10px] text-brand-glow animate-pulse uppercase tracking-widest font-bold mt-2 ml-2"><i class="fa-solid fa-circle-notch fa-spin mr-1"></i>WikiMind analyse...</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
 
-            const sysPrompt = `Tu es WikiMind Nutrition, un coach bienveillant. L'utilisateur pèse ${userData.weight}kg, objectif: ${userData.goal}, kcal cible: ${userData.targetKcal}.
-S'il te demande explicitement de modifier son poids, ajoute à la fin de ta réponse ce code exact: [ACTION: {"type":"update_weight", "weight": X}] (où X est le chiffre).
-S'il te demande d'ajouter un aliment mangé, ajoute: [ACTION: {"type":"add_food", "food": "Nom", "kcal": Y, "qty": Z}] (où Y est kcal total estimé, Z quantité en g).
-Sinon, réponds normalement, sois concis et motivant.`;
+            const sysPrompt = `Tu es WikiMind Coach, un expert nutrition. User: ${userData.weight}kg, But: ${userData.goal}, Kcal/jour: ${userData.targetKcal}.
+Si l'user dit "je pèse X kg" ou te demande de MAJ son poids, AJOUTE À LA FIN de ta réponse : [ACTION: {"type":"update_weight", "weight": X}]
+Si l'user dit avoir mangé un truc, AJOUTE À LA FIN de ta réponse : [ACTION: {"type":"add_food", "food": "Nom de l'aliment", "kcal": Y, "qty": Z}] (où Y est le total kcal estimé et Z la quantité en g).
+Ne mets ces balises QUE si c'est une demande CLAIRE d'ajout/modification.
+Sinon, agis juste comme un coach bienveillant, clair et très concis.`;
 
             const messages = [{role: "system", content: sysPrompt}, ...chatHistory, {role: "user", content: text}];
 
@@ -737,37 +901,37 @@ Sinon, réponds normalement, sois concis et motivant.`;
                 const data = await res.json();
                 let reply = data.choices[0].message.content;
 
-                document.getElementById('chat-typing').remove();
+                document.getElementById(typingId).remove();
 
-                // Check for action tag
+                // Interception des Actions cachées
                 const actionMatch = reply.match(/\[ACTION:\s*(\{.*?\})\s*\]/);
                 if (actionMatch) {
                     try {
                         const action = JSON.parse(actionMatch[1]);
                         if(action.type === 'update_weight' && action.weight) {
-                            userData.weight = action.weight;
-                            userData.weightHistory[getTodayKey()] = action.weight;
+                            userData.weight = parseFloat(action.weight);
+                            userData.weightHistory[getTodayKey()] = userData.weight;
                             saveData();
-                            window.showToast("Poids mis à jour via IA.", "success");
+                            window.showToast(`Poids mis à jour à ${action.weight}kg !`, "success");
                         } else if(action.type === 'add_food') {
                             const today = getTodayKey();
                             if(!userData.foodHistory[today]) userData.foodHistory[today] = [];
                             userData.foodHistory[today].push({ name: action.food, qty: action.qty, kcal: action.kcal, time: Date.now() });
                             saveData();
-                            window.showToast(`${action.food} ajouté au journal !`, "success");
+                            window.showToast(`${action.food} enregistré au journal !`, "success");
                         }
-                    } catch(e) { console.error("Action parsing error", e); }
-                    reply = reply.replace(/\[ACTION:.*?\]/, '').trim();
+                    } catch(e) { console.error("Action parse err", e); }
+                    reply = reply.replace(/\[ACTION:.*?\]/, '').trim(); // Nettoie la réponse affichée
                 }
 
                 chatHistory.push({role: "user", content: text}, {role: "assistant", content: reply});
-                if(chatHistory.length > 6) chatHistory = chatHistory.slice(-6);
+                if(chatHistory.length > 8) chatHistory = chatHistory.slice(-8); // Garde la mémoire légère
 
-                chatBox.innerHTML += `<div class="bg-white/5 border border-white/10 rounded-2xl rounded-tl-none p-3 max-w-[85%] self-start text-white/80 text-sm shadow-lg whitespace-pre-wrap animate-fade-in">${reply}</div>`;
+                chatBox.innerHTML += `<div class="bg-white/5 border border-white/10 rounded-2xl rounded-tl-none p-4 max-w-[85%] self-start text-white/90 text-sm shadow-xl whitespace-pre-wrap animate-slide-up mt-2">${reply}</div>`;
                 chatBox.scrollTop = chatBox.scrollHeight;
             } catch(e) {
-                document.getElementById('chat-typing').remove();
-                window.showToast("Erreur réseau.", "error");
+                document.getElementById(typingId).remove();
+                window.showToast("Le réseau neuronal est encombré.", "error");
             }
         }
 
@@ -775,14 +939,14 @@ Sinon, réponds normalement, sois concis et motivant.`;
         document.getElementById('chat-input').addEventListener('keydown', (e) => { if(e.key === 'Enter') handleChat(); });
 
         // ==========================================
-        // PARAMETRES
+        // PARAMETRES (Profil & Supression)
         // ==========================================
         window.populateSettings = () => {
             if(!userData) return;
-            document.getElementById('set-name').value = userData.name;
-            document.getElementById('set-sex').value = userData.sex;
-            document.getElementById('set-height').value = userData.height;
-            document.getElementById('set-goal').value = userData.goal;
+            document.getElementById('set-name').value = userData.name || '';
+            document.getElementById('set-sex').value = userData.sex || 'H';
+            document.getElementById('set-height').value = userData.height || '';
+            document.getElementById('set-goal').value = userData.goal || 'maintain';
         };
 
         window.saveSettings = async () => {
@@ -790,27 +954,30 @@ Sinon, réponds normalement, sois concis et motivant.`;
             userData.sex = document.getElementById('set-sex').value;
             userData.height = parseInt(document.getElementById('set-height').value);
             userData.goal = document.getElementById('set-goal').value;
+            calculateTDEE(); // Recalcule l'objectif avec les nouveaux paramètres
             await saveData();
-            window.showToast("Profil mis à jour", "success");
+            window.showToast("Paramètres sauvegardés !", "success");
         };
 
         window.deleteAccount = async () => {
-            if(confirm("Action irréversible. Confirmer ?")) {
+            if(confirm("Action irréversible. Toutes vos données seront effacées. Continuer ?")) {
                 if(currentUser) {
                     await set(ref(db, `users/${currentUser.uid}`), null);
                 }
                 localStorage.removeItem('wiki_calories_data');
-                location.reload();
+                location.reload(); // Recharge l'app
             }
         };
 
-        // --- AURORA ANIMATION BACKGROUND ---
+        // ==========================================
+        // AURORA BACKGROUND ANIMATION
+        // ==========================================
         const canvas = document.getElementById('aurora-bg');
         const ctx = canvas.getContext('2d');
         let width, height;
         const orbs = [
-            { x: 0.2, y: 0.2, r: 0.5, color: 'rgba(79, 70, 229, 0.1)', vx: 0.0005, vy: 0.0005 },
-            { x: 0.8, y: 0.8, r: 0.6, color: 'rgba(16, 185, 129, 0.08)', vx: -0.0004, vy: 0.0006 }
+            { x: 0.3, y: 0.3, r: 0.6, color: 'rgba(99, 102, 241, 0.08)', vx: 0.0006, vy: 0.0004 },
+            { x: 0.7, y: 0.7, r: 0.5, color: 'rgba(52, 211, 153, 0.05)', vx: -0.0004, vy: 0.0007 }
         ];
         function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
         function animateBg() {
@@ -818,8 +985,8 @@ Sinon, réponds normalement, sois concis et motivant.`;
             ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, width, height);
             orbs.forEach(orb => {
                 orb.x += orb.vx; orb.y += orb.vy;
-                if(orb.x < -0.2 || orb.x > 1.2) orb.vx *= -1;
-                if(orb.y < -0.2 || orb.y > 1.2) orb.vy *= -1;
+                if(orb.x < -0.3 || orb.x > 1.3) orb.vx *= -1;
+                if(orb.y < -0.3 || orb.y > 1.3) orb.vy *= -1;
                 const g = ctx.createRadialGradient(orb.x * width, orb.y * height, 0, orb.x * width, orb.y * height, orb.r * width);
                 g.addColorStop(0, orb.color); g.addColorStop(1, 'rgba(0,0,0,0)');
                 ctx.fillStyle = g; ctx.fillRect(0, 0, width, height);
