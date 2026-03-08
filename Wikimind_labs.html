@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WikiMind Labs 🧪</title>
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-29XYBNJ2CB"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-29XYBNJ2CB');
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
+                    colors: {
+                        glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
+                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' },
+                        lab: { 500: '#10b981', glow: '#34d399' } /* Couleur spécifique au lab : Emeraude */
+                    },
+                    animation: { 
+                        'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                    },
+                    keyframes: { 
+                        fadeInUp: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #050505; color: #ffffff; overflow-x: hidden; }
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+        /* Dégradé spécifique au lab (Emeraude/Bleu) */
+        .text-gradient-lab { background: linear-gradient(135deg, #ffffff 0%, #34d399 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .search-active .module-card { opacity: 0.3; filter: blur(2px); transition: all 0.3s; }
+        .search-active .module-card.match { opacity: 1; filter: blur(0); border-color: #10b981; transform: scale(1.02); }
+        
+        /* Grille de fond type laboratoire */
+        .lab-grid {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+    </style>
+</head>
+<body class="selection:bg-lab-500 selection:text-white lab-grid">
+
+    <!-- AURORA BG (Modifié pour des teintes plus expérimentales) -->
+    <canvas id="aurora-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
+
+    <!-- NAVBAR -->
+    <nav class="fixed top-0 w-full z-50 px-6 py-6 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto flex justify-between items-center glass-panel rounded-full px-6 py-3 border-lab-500/20">
+            <a href="index.html" class="flex items-center gap-3 group">
+                <div class="w-8 h-8 bg-gradient-to-tr from-lab-500 to-gray-900 rounded-lg flex items-center justify-center border border-lab-500/50">
+                    <span class="font-bold text-white text-xs">🧪</span>
+                </div>
+                <span class="font-display font-bold text-lg tracking-tight">WikiMind <span class="text-lab-500 font-normal">Labs</span></span>
+            </a>
+
+            <!-- Search Bar -->
+            <div class="hidden md:flex flex-1 max-w-md mx-8 relative group">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fa-solid fa-flask text-white/40 group-focus-within:text-lab-500 transition-colors"></i>
+                </div>
+                <input type="text" id="app-search" placeholder="Rechercher une expérience..." 
+                       class="block w-full pl-10 pr-3 py-1.5 border border-white/10 rounded-full leading-5 bg-white/5 text-white placeholder-white/30 focus:outline-none focus:bg-white/10 focus:border-lab-500 sm:text-sm transition-all">
+            </div>
+
+            <!-- Auth State (Identique à index.html pour la continuité) -->
+            <div id="auth-container" class="flex items-center gap-4">
+                <a href="Wikimind_user.html" id="login-btn" class="px-5 py-2 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-gray-200 transition-colors">
+                    Connexion
+                </a>
+                <div id="user-logged" class="hidden flex items-center gap-3">
+                    <div class="text-right hidden md:block">
+                        <div id="user-name-display" class="text-xs font-bold text-white">Utilisateur</div>
+                        <div class="text-[10px] text-lab-500">● Testeur</div>
+                    </div>
+                    <a href="Wikimind_user.html" class="relative group">
+                        <img id="nav-avatar" src="" class="w-9 h-9 rounded-full border border-white/20 object-cover bg-gray-800">
+                        <div class="absolute inset-0 rounded-full border border-lab-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="relative pt-32 pb-20 px-4 md:px-6">
+        
+        <!-- HERO LABS -->
+        <section class="max-w-7xl mx-auto text-center min-h-[40vh] flex flex-col justify-center items-center">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-lab-500/30 bg-lab-500/10 text-lab-glow text-[10px] uppercase font-bold tracking-[0.2em] mb-8 animate-fade-in-up">
+                <span class="w-1.5 h-1.5 rounded-full bg-lab-500 animate-pulse-slow"></span>
+                 Zone Expérimentale Alpha
+            </div>
+
+            <h1 class="text-5xl md:text-8xl font-display font-bold leading-tight mb-6 tracking-tighter animate-fade-in-up" style="animation-delay: 0.1s;">
+               Bienvenue dans le<br>
+                <span class="text-gradient-lab">Laboratoire.</span>
+            </h1>
+
+            <p class="text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-10 font-light leading-relaxed animate-fade-in-up" style="animation-delay: 0.2s;">
+                Découvrez, testez et cassez nos prototypes. WikiMind Labs rassemble toutes nos expériences en cours de développement avant leur intégration officielle.
+            </p>
+
+            <div class="flex flex-col md:flex-row items-center justify-center gap-4 animate-fade-in-up" style="animation-delay: 0.3s;">
+                <a href="#experiments" class="px-8 py-4 rounded-xl bg-lab-600/20 backdrop-blur-md border border-lab-500/50 text-lab-glow font-display font-bold text-sm uppercase tracking-wider hover:bg-lab-600/40 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-microscope"></i> Voir les prototypes
+                </a>
+                <a href="index.html" class="px-8 py-4 rounded-xl bg-white/5 backdrop-blur-md border border-white/10 text-white font-display font-bold text-sm uppercase tracking-wider hover:bg-white/10 transition-all">
+                    Retour à l'accueil
+                </a>
+            </div>
+        </section>
+
+        <!-- EXPERIMENTS GRID -->
+        <section id="experiments" class="max-w-7xl mx-auto py-12 border-t border-white/5 mt-10">
+            <div class="flex justify-between items-end mb-8 px-2">
+                <div>
+                    <h2 class="text-3xl font-display font-bold flex items-center gap-3">
+                        Expériences actives <span class="flex h-3 w-3 relative"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-lab-500 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-lab-500"></span></span>
+                    </h2>
+                    <p class="text-white/40 text-sm mt-1">Ces outils sont instables et mis à jour fréquemment.</p>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr" id="modules-container">
+                
+                <!-- PROTOTYPE 1 : Neural Canvas -->
+                <a href="#" class="module-card glass-panel rounded-3xl p-6 relative overflow-hidden group cursor-pointer hover:border-pink-500/50 hover:shadow-[0_0_20px_rgba(236,72,153,0.15)] transition-all duration-300" data-name="neural canvas mindmap carte mentale">
+                    <div class="absolute top-0 right-0 p-24 bg-pink-500/5 blur-[60px] rounded-full group-hover:bg-pink-500/10 transition-all duration-500"></div>
+                    <div class="absolute top-4 right-4 bg-white/10 border border-white/10 text-[9px] px-2 py-1 rounded font-bold uppercase tracking-wider text-white/50 group-hover:text-pink-400 group-hover:border-pink-500/30 transition-colors">BETA</div>
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-pink-500/20 to-pink-500/5 border border-pink-500/20 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform duration-300">🕸️</div>
+                        <h3 class="text-xl font-display font-bold mb-2 group-hover:text-pink-300 transition-colors">Neural Canvas</h3>
+                        <p class="text-white/60 text-xs leading-relaxed mb-4 flex-grow">Génération de cartes mentales interactives et infinies pilotées par Mistral AI.</p>
+                        <div class="flex items-center text-[10px] text-pink-400 font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">Initier <i class="fa-solid fa-arrow-right ml-1"></i></div>
+                    </div>
+                </a>
+
+                <!-- PROTOTYPE 2 : Voice Nexus -->
+                <a href="#" class="module-card glass-panel rounded-3xl p-6 relative overflow-hidden group cursor-pointer hover:border-emerald-500/50 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] transition-all duration-300" data-name="voice nexus vocal audio">
+                    <div class="absolute top-0 right-0 p-24 bg-emerald-500/5 blur-[60px] rounded-full group-hover:bg-emerald-500/10 transition-all duration-500"></div>
+                    <div class="absolute top-4 right-4 bg-white/10 border border-white/10 text-[9px] px-2 py-1 rounded font-bold uppercase tracking-wider text-white/50 group-hover:text-emerald-400 group-hover:border-emerald-500/30 transition-colors">ALPHA</div>
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 border border-emerald-500/20 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform duration-300">🎙️</div>
+                        <h3 class="text-xl font-display font-bold mb-2 group-hover:text-emerald-300 transition-colors">Voice Nexus</h3>
+                        <p class="text-white/60 text-xs leading-relaxed mb-4 flex-grow">Interface 100% vocale. Discutez avec l'IA comme si vous étiez au téléphone.</p>
+                        <div class="flex items-center text-[10px] text-emerald-400 font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">Parler <i class="fa-solid fa-arrow-right ml-1"></i></div>
+                    </div>
+                </a>
+
+                <!-- PROTOTYPE 3 : Vision AR -->
+                <a href="#" class="module-card glass-panel rounded-3xl p-6 relative overflow-hidden group cursor-pointer hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.15)] transition-all duration-300" data-name="vision ar camera image scan">
+                    <div class="absolute top-0 right-0 p-24 bg-cyan-500/5 blur-[60px] rounded-full group-hover:bg-cyan-500/10 transition-all duration-500"></div>
+                    <div class="absolute top-4 right-4 bg-white/10 border border-white/10 text-[9px] px-2 py-1 rounded font-bold uppercase tracking-wider text-white/50 group-hover:text-cyan-400 group-hover:border-cyan-500/30 transition-colors">EXP</div>
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 border border-cyan-500/20 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform duration-300">👁️</div>
+                        <h3 class="text-xl font-display font-bold mb-2 group-hover:text-cyan-300 transition-colors">Vision Lens</h3>
+                        <p class="text-white/60 text-xs leading-relaxed mb-4 flex-grow">Prenez en photo vos équations ou vos cours, l'IA les résout et les numérise.</p>
+                        <div class="flex items-center text-[10px] text-cyan-400 font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">Scanner <i class="fa-solid fa-arrow-right ml-1"></i></div>
+                    </div>
+                </a>
+
+                <!-- PROTOTYPE 4 : Agent Builder -->
+                <a href="#" class="module-card glass-panel rounded-3xl p-6 relative overflow-hidden group cursor-pointer hover:border-orange-500/50 hover:shadow-[0_0_20px_rgba(249,115,22,0.15)] transition-all duration-300" data-name="agent builder bot createur">
+                    <div class="absolute top-0 right-0 p-24 bg-orange-500/5 blur-[60px] rounded-full group-hover:bg-orange-500/10 transition-all duration-500"></div>
+                    <div class="absolute top-4 right-4 bg-white/10 border border-white/10 text-[9px] px-2 py-1 rounded font-bold uppercase tracking-wider text-white/50 group-hover:text-orange-400 group-hover:border-orange-500/30 transition-colors">BETA</div>
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500/20 to-orange-500/5 border border-orange-500/20 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform duration-300">🤖</div>
+                        <h3 class="text-xl font-display font-bold mb-2 group-hover:text-orange-300 transition-colors">Agent Builder</h3>
+                        <p class="text-white/60 text-xs leading-relaxed mb-4 flex-grow">Entraînez votre propre version de WikiMind sur vos propres documents PDF.</p>
+                        <div class="flex items-center text-[10px] text-orange-400 font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">Créer <i class="fa-solid fa-arrow-right ml-1"></i></div>
+                    </div>
+                </a>
+
+                 <!-- Ajoute d'autres projets ici au besoin -->
+                 <div class="module-card glass-panel rounded-3xl p-6 relative overflow-hidden border-dashed border-white/20 flex flex-col items-center justify-center text-center opacity-50 hover:opacity-100 transition-opacity">
+                    <div class="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center text-xl mb-3 text-white/40">
+                        <i class="fa-solid fa-plus"></i>
+                    </div>
+                    <h3 class="text-sm font-display font-bold text-white/70">Nouvelle expérience</h3>
+                    <p class="text-[10px] text-white/40 mt-1">En cours de développement...</p>
+                 </div>
+            </div>
+        </section>
+
+        <!-- AVERTISSEMENT -->
+        <section class="max-w-4xl mx-auto mt-16 px-4">
+            <div class="glass-panel p-6 rounded-2xl border-l-4 border-yellow-500 flex gap-4 items-start">
+                <div class="text-yellow-500 text-2xl mt-1"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div>
+                    <h4 class="font-bold text-lg mb-1">Avertissement de stabilité</h4>
+                    <p class="text-sm text-white/60 leading-relaxed">
+                        Les applications présentes dans WikiMind Labs sont des prototypes. Elles peuvent comporter des bugs, perdre des données ou cesser de fonctionner sans préavis. Ne stockez aucune information critique ici.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-white/10 py-10 bg-black z-10 relative mt-12">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="text-center md:text-left flex items-center gap-3">
+                <div>
+                    <div class="font-display font-bold uppercase tracking-tight text-sm text-white">WikiMind Project</div>
+                    <div class="text-xs text-white/40 mt-1">© 2026 Tous droits réservés.</div>
+                </div>
+                <span class="px-2 py-0.5 rounded bg-white/10 text-white/50 text-[9px] font-bold uppercase">Labs Edition</span>
+            </div>
+            <div class="flex gap-6 text-xs font-bold uppercase tracking-widest text-white/40">
+                <a href="index.html" class="hover:text-white transition">Application Centrale</a>
+                <a href="https://github.com/chpalitom09-bot" target="_blank" class="hover:text-white transition">GitHub</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- FIREBASE & LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        // ==========================================
+        // CONFIG AUTHENTIFICATION (Identique à index.html pour le SSO)
+        // ==========================================
+        const authConfig = {
+            apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+            authDomain: "wikimind-3-comments.firebaseapp.com",
+            projectId: "wikimind-3-comments",
+            appId: "1:137479541640:web:4ed2510a9908055052e03d"
+        };
+        const authApp = initializeApp(authConfig); 
+        const auth = getAuth(authApp);
+
+        // Gestion de l'état de connexion (Même logique que sur l'accueil)
+        onAuthStateChanged(auth, (user) => {
+            const loginBtn = document.getElementById('login-btn');
+            const userLogged = document.getElementById('user-logged');
+            if (user) {
+                if(loginBtn) loginBtn.classList.add('hidden');
+                if(userLogged) { userLogged.classList.remove('hidden'); userLogged.classList.add('flex'); }
+                
+                const photoUrl = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=10b981&color=fff&bold=true`;
+                document.getElementById('nav-avatar').src = photoUrl;
+                document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
+            } else {
+                if(loginBtn) loginBtn.classList.remove('hidden');
+                if(userLogged) { userLogged.classList.add('hidden'); userLogged.classList.remove('flex'); }
+            }
+        });
+
+        // --- SEARCH BAR LOGIC ---
+        const searchInput = document.getElementById('app-search');
+        const modulesContainer = document.getElementById('modules-container');
+        const cards = document.querySelectorAll('.module-card:not(.border-dashed)'); // Exclure la carte "Ajouter"
+        if(searchInput && modulesContainer) {
+            searchInput.addEventListener('input', (e) => {
+                const val = e.target.value.toLowerCase();
+                if (val.length > 0) modulesContainer.classList.add('search-active');
+                else modulesContainer.classList.remove('search-active');
+                cards.forEach(card => {
+                    const dataName = card.getAttribute('data-name');
+                    if (dataName && dataName.includes(val)) card.classList.add('match');
+                    else card.classList.remove('match');
+                });
+            });
+        }
+
+        // --- AURORA ANIMATION (Modifiée pour le lab) ---
+        const canvas = document.getElementById('aurora-bg');
+        if(canvas) {
+            const ctx = canvas.getContext('2d');
+            let width, height;
+            // Couleurs plus "scientifiques/labs" (Emeraude, Cyan, Violet)
+            const orbs = [
+                { x: 0.2, y: 0.2, r: 0.4, color: 'rgba(16, 185, 129, 0.1)', vx: 0.0005, vy: 0.0005 }, // Emerald
+                { x: 0.8, y: 0.3, r: 0.5, color: 'rgba(6, 182, 212, 0.1)', vx: -0.0006, vy: 0.0004 }, // Cyan
+                { x: 0.5, y: 0.8, r: 0.45, color: 'rgba(99, 102, 241, 0.08)', vx: 0.0003, vy: -0.0005 } // Indigo
+            ];
+            function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                // Fond légèrement différent pour le lab
+                ctx.fillStyle = '#030712'; // gray-950
+                ctx.fillRect(0, 0, width, height);
+                orbs.forEach(orb => {
+                    orb.x += orb.vx; orb.y += orb.vy;
+                    if(orb.x < -0.2 || orb.x > 1.2) orb.vx *= -1;
+                    if(orb.y < -0.2 || orb.y > 1.2) orb.vy *= -1;
+                    const g = ctx.createRadialGradient(orb.x * width, orb.y * height, 0, orb.x * width, orb.y * height, orb.r * width);
+                    g.addColorStop(0, orb.color); g.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = g; ctx.fillRect(0, 0, width, height);
+                });
+                requestAnimationFrame(animate);
+            }
+            window.addEventListener('resize', resize); resize(); animate();
+        }
+    </script>
+</body>
+</html>
