@@ -76,6 +76,34 @@
         /* Range selector */
         .range-btn { padding: 6px 14px; border-radius: 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.5); transition: all 0.2s; cursor: pointer; }
         .range-btn.active { background: rgba(99,102,241,0.25); border-color: rgba(99,102,241,0.5); color: #818cf8; }
+
+        /* Chat animations */
+        @keyframes chatBotAppear {
+            0% { opacity: 0; transform: translateY(12px) scale(0.96); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes chatUserAppear {
+            0% { opacity: 0; transform: translateY(10px) translateX(10px); }
+            100% { opacity: 1; transform: translateY(0) translateX(0); }
+        }
+        @keyframes typingDot {
+            0%, 80%, 100% { transform: scale(0.5); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        .chat-bot-msg { animation: chatBotAppear 0.4s cubic-bezier(0.16,1,0.3,1) forwards; }
+        .chat-user-msg { animation: chatUserAppear 0.3s cubic-bezier(0.16,1,0.3,1) forwards; }
+        .typing-dot { width: 7px; height: 7px; background: #818cf8; border-radius: 50%; display: inline-block; animation: typingDot 1.2s infinite ease-in-out; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        /* Agenda */
+        @keyframes agendaFadeIn {
+            0% { opacity: 0; transform: translateX(-10px); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
+        .agenda-item { animation: agendaFadeIn 0.35s cubic-bezier(0.16,1,0.3,1) forwards; }
+        .plan-confirmed { background: rgba(16,185,129,0.15) !important; border-color: rgba(16,185,129,0.3) !important; }
+        .plan-pending { background: rgba(99,102,241,0.1) !important; border-color: rgba(99,102,241,0.2) !important; }
     </style>
 </head>
 <body class="selection:bg-brand-500 selection:text-white">
@@ -307,10 +335,16 @@
         <!-- ADD FOOD -->
         <!-- ========================================== -->
         <main id="view-add-food" class="view-content">
-            <h2 class="text-2xl font-display font-bold mb-2">Ajouter un repas</h2>
+            <div class="flex items-center justify-between mb-2">
+                <h2 class="text-2xl font-display font-bold">Ajouter un repas</h2>
+                <button onclick="switchView('agenda', document.querySelector('.nav-item[onclick*=\"agenda\"]'))" class="flex items-center gap-1.5 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/20 text-brand-300 text-[10px] font-bold px-3 py-2 rounded-xl transition">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    <span>Agenda</span>
+                </button>
+            </div>
             <p class="text-white/50 text-xs mb-6">Tape au moins 3 lettres pour chercher localement. Utilise la loupe pour demander à l'IA.</p>
             
-            <div class="relative mb-6">
+            <div class="relative mb-4">
                 <div class="glass-panel p-2 rounded-2xl flex gap-2 border-brand-500/30 shadow-[0_0_20px_rgba(99,102,241,0.1)] relative z-20">
                     <input type="text" id="food-search-input" placeholder="Ex: Banane, Riz..." autocomplete="off" class="flex-1 bg-transparent px-4 py-2 text-white focus:outline-none text-sm placeholder-white/30">
                     <button id="btn-search-food" class="bg-brand-600 hover:bg-brand-500 px-5 py-2 rounded-xl transition text-white text-sm shadow-lg shadow-brand-500/20">
@@ -320,6 +354,10 @@
                 <div id="search-suggestions-container" class="absolute top-full left-0 right-0 mt-2 z-30 hidden">
                     <ul id="search-suggestions" class="glass-panel rounded-2xl border-white/10 bg-[#111111]/95 suggestion-list p-2 shadow-2xl"></ul>
                 </div>
+            </div>
+            <div class="flex items-center gap-2 mb-6 px-1">
+                <i class="fa-solid fa-database text-yellow-400 text-[10px]"></i>
+                <span class="text-[10px] text-white/40">Résultats locaux : base de données <span class="text-yellow-400 font-bold">WikiMind Food</span> · Aliments non trouvés : Mistral AI</span>
             </div>
 
             <div class="mb-8">
@@ -416,21 +454,38 @@
         <!-- ========================================== -->
         <main id="view-chat" class="view-content flex-col h-full relative pb-0 pt-0">
             <div class="py-4 border-b border-white/10 flex items-center gap-3 sticky top-0 bg-[#050505]/90 backdrop-blur-md z-10 -mx-5 px-5">
-                <div class="w-10 h-10 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400">
+                <div class="w-10 h-10 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400 relative">
                     <i class="fa-solid fa-robot"></i>
+                    <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-[#050505] animate-pulse"></span>
                 </div>
-                <div>
+                <div class="flex-1">
                     <h2 class="font-display font-bold text-lg leading-none">WikiMind Coach</h2>
-                    <span class="text-[10px] text-green-400 font-bold uppercase tracking-widest"><i class="fa-solid fa-circle text-[6px] align-middle mr-1"></i>En ligne</span>
+                    <span class="text-[10px] text-green-400 font-bold uppercase tracking-widest"><i class="fa-solid fa-circle text-[6px] align-middle mr-1"></i>En ligne • Mistral AI</span>
+                </div>
+                <button id="btn-suggest-calories" onclick="suggestCaloriesMeal()" class="bg-brand-500/20 hover:bg-brand-500/40 border border-brand-500/30 text-brand-300 text-[10px] font-bold px-3 py-1.5 rounded-full transition flex items-center gap-1.5 flex-shrink-0">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <span>Que manger ?</span>
+                </button>
+            </div>
+
+            <!-- Notice WikiMind Food DB -->
+            <div class="mx-0 mt-3 mb-1 px-0">
+                <div class="flex items-start gap-2 bg-yellow-500/5 border border-yellow-500/20 rounded-2xl p-3">
+                    <i class="fa-solid fa-database text-yellow-400 text-xs mt-0.5 flex-shrink-0"></i>
+                    <p class="text-[10px] text-yellow-200/60 leading-relaxed">La majorité des aliments non générés par IA proviennent de la base de données <span class="text-yellow-400 font-bold">WikiMind Food</span> — une base nutritionnelle locale.</p>
                 </div>
             </div>
 
-            <div class="flex-1 overflow-y-auto space-y-4 py-4 -mx-5 px-5" id="chat-messages" style="padding-bottom: 140px;">
-                <div class="bg-white/5 border border-white/10 rounded-2xl rounded-tl-none p-4 max-w-[85%] self-start text-white/80 text-sm shadow-lg">
+            <div class="flex-1 overflow-y-auto space-y-3 py-4 -mx-5 px-5" id="chat-messages" style="padding-bottom: 150px;">
+                <div class="chat-bot-msg bg-white/5 border border-white/10 rounded-2xl rounded-tl-none p-4 max-w-[85%] self-start text-white/80 text-sm shadow-lg" style="animation: chatBotAppear 0.4s cubic-bezier(0.16,1,0.3,1) forwards;">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-5 h-5 rounded-full bg-brand-500/30 flex items-center justify-center"><i class="fa-solid fa-robot text-brand-400 text-[9px]"></i></div>
+                        <span class="text-[10px] font-bold text-brand-400 uppercase tracking-widest">WikiMind Coach</span>
+                    </div>
                     Bonjour ! Je suis l'IA WikiMind. Demande-moi des recettes, ou dis-moi :<br><br>
                     <span class="text-brand-300">"J'ai mangé un mac do"</span><br>
                     <span class="text-brand-300">"Je pèse 72.5 kg ce matin"</span><br><br>
-                    J'ajusterai tes stats auto !
+                    J'ajusterai tes stats auto ! Tu peux aussi cliquer sur <strong class="text-brand-300">"Que manger ?"</strong> pour des suggestions selon tes calories restantes.
                 </div>
             </div>
 
@@ -439,6 +494,76 @@
                 <button id="btn-chat-send" class="bg-brand-600 hover:bg-brand-500 w-10 h-10 rounded-xl flex items-center justify-center text-white transition shadow-lg shadow-brand-500/30">
                     <i class="fa-solid fa-paper-plane"></i>
                 </button>
+            </div>
+        </main>
+
+        <!-- ========================================== -->
+        <!-- AGENDA ALIMENTAIRE -->
+        <!-- ========================================== -->
+        <main id="view-agenda" class="view-content">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-display font-bold">Agenda <span class="text-gradient">Repas</span></h2>
+                <div class="flex items-center gap-2">
+                    <button id="agenda-prev-day" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white transition flex items-center justify-center text-xs"><i class="fa-solid fa-chevron-left"></i></button>
+                    <span id="agenda-date-label" class="text-xs font-bold text-white/70 min-w-[80px] text-center"></span>
+                    <button id="agenda-next-day" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white transition flex items-center justify-center text-xs"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </div>
+
+            <!-- Tabs: historique / planifier -->
+            <div class="flex gap-2 mb-6">
+                <button id="tab-history" onclick="switchAgendaTab('history')" class="agenda-tab flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition bg-brand-500/20 border border-brand-500/50 text-brand-300">
+                    <i class="fa-solid fa-clock-rotate-left mr-1"></i>Historique
+                </button>
+                <button id="tab-plan" onclick="switchAgendaTab('plan')" class="agenda-tab flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition bg-white/5 border border-white/10 text-white/50">
+                    <i class="fa-solid fa-calendar-plus mr-1"></i>Planifier
+                </button>
+            </div>
+
+            <!-- Historique du jour sélectionné -->
+            <div id="agenda-history-panel">
+                <div id="agenda-food-list" class="space-y-3 mb-4"></div>
+                <div id="agenda-empty" class="hidden text-center text-white/30 text-xs py-10 bg-white/5 rounded-2xl border border-dashed border-white/10">
+                    <i class="fa-solid fa-bowl-food text-2xl mb-2 block opacity-30"></i>
+                    Aucun repas ce jour-là.
+                </div>
+                <div id="agenda-daily-total" class="glass-panel p-4 rounded-2xl flex items-center justify-between border-white/5 bg-white/5 hidden">
+                    <span class="text-xs font-bold text-white/50 uppercase tracking-widest">Total du jour</span>
+                    <span id="agenda-total-kcal" class="font-display font-bold text-brand-400 text-xl"></span>
+                </div>
+            </div>
+
+            <!-- Panel planification -->
+            <div id="agenda-plan-panel" class="hidden">
+                <div class="glass-panel p-5 rounded-3xl mb-4 border-white/5 bg-white/5">
+                    <h3 class="text-xs font-bold uppercase tracking-widest text-brand-400 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-plus-circle"></i> Planifier un repas
+                    </h3>
+                    <div class="space-y-3">
+                        <input type="text" id="plan-food-name" placeholder="Nom de l'aliment" class="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 text-sm">
+                        <div class="flex gap-3">
+                            <input type="number" id="plan-food-kcal" placeholder="Kcal estimées" class="flex-1 bg-black/40 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 text-sm">
+                            <select id="plan-meal-type" class="flex-1 bg-black/40 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-brand-500 text-sm appearance-none">
+                                <option value="🌅 Matin">🌅 Matin</option>
+                                <option value="☀️ Midi">☀️ Midi</option>
+                                <option value="🌆 Goûter">🌆 Goûter</option>
+                                <option value="🌙 Soir">🌙 Soir</option>
+                            </select>
+                        </div>
+                        <button onclick="addPlanEntry()" class="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white font-bold text-xs uppercase tracking-wider transition shadow-lg shadow-brand-500/20 hover:opacity-90">
+                            <i class="fa-solid fa-calendar-plus mr-2"></i>Planifier ce repas
+                        </button>
+                    </div>
+                </div>
+
+                <div id="plan-list-container">
+                    <h3 class="text-xs font-bold uppercase tracking-widest text-white/40 mb-3 px-1">Repas prévus ce jour</h3>
+                    <div id="plan-food-list" class="space-y-3"></div>
+                    <div id="plan-empty" class="hidden text-center text-white/30 text-xs py-10 bg-white/5 rounded-2xl border border-dashed border-white/10">
+                        <i class="fa-solid fa-calendar-xmark text-2xl mb-2 block opacity-30"></i>
+                        Aucun repas planifié.
+                    </div>
+                </div>
             </div>
         </main>
 
@@ -547,7 +672,7 @@
 
         <!-- BOTTOM NAVIGATION -->
         <nav class="bottom-nav glass-panel border-t border-white/10 rounded-t-[32px] border-b-0 border-l-0 border-r-0 bg-[#0a0a0a]/90">
-            <div class="flex justify-between items-center px-6 py-4">
+            <div class="flex justify-between items-center px-4 py-4">
                 <button onclick="switchView('dashboard', this)" class="nav-item active flex flex-col items-center w-12 group">
                     <i class="fa-solid fa-house text-xl mb-1"></i>
                     <span class="text-[9px] font-bold uppercase tracking-widest">Accueil</span>
@@ -555,6 +680,10 @@
                 <button onclick="switchView('add-food', this)" class="nav-item flex flex-col items-center w-12 group">
                     <i class="fa-solid fa-utensils text-xl mb-1"></i>
                     <span class="text-[9px] font-bold uppercase tracking-widest">Repas</span>
+                </button>
+                <button onclick="switchView('agenda', this)" class="nav-item flex flex-col items-center w-12 group">
+                    <i class="fa-solid fa-calendar-days text-xl mb-1"></i>
+                    <span class="text-[9px] font-bold uppercase tracking-widest">Agenda</span>
                 </button>
                 <button onclick="switchView('weight', this)" class="nav-item flex flex-col items-center w-12 group">
                     <i class="fa-solid fa-weight-scale text-xl mb-1"></i>
@@ -708,6 +837,7 @@
             if (viewId === 'dashboard') renderDashboard();
             if (viewId === 'weight') renderWeightChart();
             if (viewId === 'settings') populateSettings();
+            if (viewId === 'agenda') renderAgenda();
         };
 
         // ===== DATA LOAD/SAVE =====
@@ -1023,7 +1153,7 @@
 
         function selectFoodFromDB(food) {
             currentSearchedFood = { name: food.name, kcal_per_100g: food.kcal_per_100g, icon: food.emoji, type: food.type || 'solid', weight_per_unit: food.weight_per_unit || 0 };
-            setSearchUI('<i class="fa-solid fa-bolt"></i> Local DB WikiMind', "text-yellow-400", currentSearchedFood);
+            setSearchUI('<i class="fa-solid fa-database"></i> WikiMind Food DB', "text-yellow-400", currentSearchedFood);
         }
 
         document.getElementById('btn-search-food').addEventListener('click', async () => {
@@ -1212,17 +1342,70 @@
         document.getElementById('btn-chat-send').addEventListener('click', sendChatMsg);
         document.getElementById('chat-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChatMsg(); });
 
+        function appendBotMsg(html) {
+            const chatBox = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = "chat-bot-msg bg-white/5 border border-white/10 rounded-2xl rounded-tl-none p-4 max-w-[85%] self-start text-white/90 text-sm shadow-xl mt-2";
+            div.innerHTML = `<div class="flex items-center gap-2 mb-2"><div class="w-5 h-5 rounded-full bg-brand-500/30 flex items-center justify-center"><i class="fa-solid fa-robot text-brand-400 text-[9px]"></i></div><span class="text-[10px] font-bold text-brand-400 uppercase tracking-widest">WikiMind</span></div>${html}`;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function appendUserMsg(text) {
+            const chatBox = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = "chat-user-msg bg-brand-600 rounded-2xl rounded-tr-none p-4 max-w-[85%] self-end ml-auto text-white text-sm shadow-[0_5px_15px_rgba(99,102,241,0.3)]";
+            div.innerText = text;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const chatBox = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            const id = 'typing-' + Date.now();
+            div.id = id;
+            div.className = "bg-white/5 border border-white/10 rounded-2xl rounded-tl-none p-4 max-w-[70px] self-start flex items-center gap-1.5 mt-2";
+            div.innerHTML = `<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>`;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return id;
+        }
+
+        window.suggestCaloriesMeal = async () => {
+            if (!userData) return;
+            const today = getTodayKey();
+            const consumed = (userData.foodHistory[today] || []).reduce((s, i) => s + i.kcal, 0);
+            const remaining = userData.targetKcal - consumed;
+            if (remaining <= 0) {
+                appendBotMsg(`Tu as déjà atteint ou dépassé ton objectif de <strong>${userData.targetKcal} kcal</strong> aujourd'hui. Reste hydraté(e) et repose-toi bien ! 💧`);
+                return;
+            }
+            const prompt = `Il reste ${remaining} kcal à l'utilisateur aujourd'hui (objectif: ${userData.targetKcal} kcal, consommé: ${consumed} kcal). Son objectif est ${userData.goal === 'lose' ? 'perdre du poids' : userData.goal === 'gain' ? 'prendre de la masse' : 'maintenir son poids'}. Suggère 3 repas ou collations équilibrés qui rentrent dans ce budget calorique. Réponds en français, de façon claire et motivante, avec des emojis.`;
+            const typingId = showTypingIndicator();
+            try {
+                const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+                    method: 'POST', headers: { 'Authorization': `Bearer ${MISTRAL_KEY}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: "mistral-small-latest", messages: [{ role: "user", content: prompt }], temperature: 0.7 })
+                });
+                const data = await res.json();
+                const reply = data.choices[0].message.content;
+                document.getElementById(typingId)?.remove();
+                appendBotMsg(reply.replace(/\n/g, '<br>'));
+            } catch(e) {
+                document.getElementById(typingId)?.remove();
+                showToast("Erreur réseau.", "error");
+            }
+        };
+
         async function sendChatMsg() {
             const input = document.getElementById('chat-input');
             const text = input.value.trim();
             if (!text) return;
-            const chatBox = document.getElementById('chat-messages');
-            chatBox.innerHTML += `<div class="bg-brand-600 rounded-2xl rounded-tr-none p-4 max-w-[85%] self-end ml-auto text-white text-sm shadow-[0_5px_15px_rgba(99,102,241,0.3)]">${text}</div>`;
-            input.value = ''; chatBox.scrollTop = chatBox.scrollHeight;
+            appendUserMsg(text);
+            input.value = '';
             
-            const typingId = 'typing-' + Date.now();
-            chatBox.innerHTML += `<div id="${typingId}" class="text-[10px] text-brand-glow animate-pulse font-bold mt-2 ml-2">WikiMind analyse...</div>`;
-            chatBox.scrollTop = chatBox.scrollHeight;
+            const typingId = showTypingIndicator();
 
             const sysPrompt = `Tu es WikiMind Coach. User: ${userData?.weight || '?'}kg, But: ${userData?.goal || '?'}, Kcal/jour: ${userData?.targetKcal || '?'}.
 Si ajout repas: ajoute [ACTION: {"type":"add_food", "food": "Nom", "kcal": X, "qtyLabel": "Y g/ml"}] à la fin.
@@ -1236,8 +1419,7 @@ Sois bref et sympa.`;
                 });
                 const data = await res.json();
                 let reply = data.choices[0].message.content;
-                const typingEl = document.getElementById(typingId);
-                if (typingEl) typingEl.remove();
+                document.getElementById(typingId)?.remove();
 
                 const actionMatch = reply.match(/\[ACTION:\s*(\{.*?\})\s*\]/);
                 if (actionMatch) {
@@ -1259,11 +1441,9 @@ Sois bref et sympa.`;
 
                 chatHistory.push({ role: "user", content: text }, { role: "assistant", content: reply });
                 if (chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
-                chatBox.innerHTML += `<div class="bg-white/5 border border-white/10 rounded-2xl rounded-tl-none p-4 max-w-[85%] self-start text-white/90 text-sm shadow-xl mt-2">${reply}</div>`;
-                chatBox.scrollTop = chatBox.scrollHeight;
+                appendBotMsg(reply.replace(/\n/g, '<br>'));
             } catch(e) {
-                const typingEl = document.getElementById(typingId);
-                if (typingEl) typingEl.remove();
+                document.getElementById(typingId)?.remove();
                 showToast("Erreur réseau.", "error");
             }
         }
@@ -1326,6 +1506,178 @@ Sois bref et sympa.`;
                 location.reload();
             }
         };
+
+        // ===== AGENDA =====
+        let agendaCurrentDate = getTodayKey();
+        let agendaTab = 'history';
+
+        function getAgendaKey(dateKey) { return `agenda_plan_${dateKey}`; }
+
+        function loadAgendaPlans(dateKey) {
+            try {
+                const stored = localStorage.getItem(getAgendaKey(dateKey));
+                return stored ? JSON.parse(stored) : [];
+            } catch(e) { return []; }
+        }
+
+        function saveAgendaPlans(dateKey, plans) {
+            try {
+                localStorage.setItem(getAgendaKey(dateKey), JSON.stringify(plans));
+                // Try Firebase sync
+                if (currentUser && typeof set !== 'undefined' && typeof ref !== 'undefined') {
+                    try { set(ref(db, `users/${currentUser.uid}/agendaPlans/${dateKey.replace(/-/g,'_')}`), plans); } catch(e) {}
+                }
+            } catch(e) {}
+        }
+
+        function formatAgendaDate(dateKey) {
+            const d = new Date(dateKey + 'T12:00:00');
+            const today = getTodayKey();
+            const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowKey = tomorrow.toISOString().split('T')[0];
+            if (dateKey === today) return "Aujourd'hui";
+            if (dateKey === tomorrowKey) return "Demain";
+            return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+        }
+
+        window.switchAgendaTab = (tab) => {
+            agendaTab = tab;
+            document.getElementById('tab-history').className = tab === 'history'
+                ? 'agenda-tab flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition bg-brand-500/20 border border-brand-500/50 text-brand-300'
+                : 'agenda-tab flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition bg-white/5 border border-white/10 text-white/50';
+            document.getElementById('tab-plan').className = tab === 'plan'
+                ? 'agenda-tab flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition bg-brand-500/20 border border-brand-500/50 text-brand-300'
+                : 'agenda-tab flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition bg-white/5 border border-white/10 text-white/50';
+            document.getElementById('agenda-history-panel').classList.toggle('hidden', tab !== 'history');
+            document.getElementById('agenda-plan-panel').classList.toggle('hidden', tab !== 'plan');
+            renderAgenda();
+        };
+
+        window.addPlanEntry = () => {
+            const name = document.getElementById('plan-food-name').value.trim();
+            const kcal = parseInt(document.getElementById('plan-food-kcal').value);
+            const meal = document.getElementById('plan-meal-type').value;
+            if (!name || !kcal) return showToast("Nom et calories requis", "error");
+            const plans = loadAgendaPlans(agendaCurrentDate);
+            plans.push({ id: Date.now(), name, kcal, meal, confirmed: false });
+            saveAgendaPlans(agendaCurrentDate, plans);
+            document.getElementById('plan-food-name').value = '';
+            document.getElementById('plan-food-kcal').value = '';
+            showToast(`${name} planifié !`, "success");
+            renderAgendaPlanList();
+        };
+
+        window.togglePlanConfirm = (id) => {
+            const plans = loadAgendaPlans(agendaCurrentDate);
+            const entry = plans.find(p => p.id === id);
+            if (!entry) return;
+            const today = getTodayKey();
+            if (agendaCurrentDate !== today) return showToast("Tu ne peux confirmer que pour aujourd'hui.", "error");
+            entry.confirmed = !entry.confirmed;
+            if (entry.confirmed) {
+                // Add to food history
+                if (!userData.foodHistory[today]) userData.foodHistory[today] = [];
+                userData.foodHistory[today].push({ name: entry.name, qtyLabel: entry.meal, kcal: entry.kcal, icon: '📅', time: Date.now() });
+                saveData();
+                showToast(`${entry.name} confirmé et ajouté au journal !`, "success");
+            } else {
+                // Remove last matching entry from today
+                const idx = userData.foodHistory[today]?.findLastIndex?.(f => f.name === entry.name && f.icon === '📅');
+                if (idx !== undefined && idx >= 0) { userData.foodHistory[today].splice(idx, 1); saveData(); }
+            }
+            saveAgendaPlans(agendaCurrentDate, plans);
+            renderAgendaPlanList();
+        };
+
+        window.deletePlanEntry = (id) => {
+            const plans = loadAgendaPlans(agendaCurrentDate).filter(p => p.id !== id);
+            saveAgendaPlans(agendaCurrentDate, plans);
+            renderAgendaPlanList();
+        };
+
+        function renderAgendaPlanList() {
+            const plans = loadAgendaPlans(agendaCurrentDate);
+            const list = document.getElementById('plan-food-list');
+            const empty = document.getElementById('plan-empty');
+            const today = getTodayKey();
+            const isFuture = agendaCurrentDate > today;
+            const isToday = agendaCurrentDate === today;
+            if (!list) return;
+            list.innerHTML = '';
+            if (plans.length === 0) {
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+            plans.forEach((p, i) => {
+                const div = document.createElement('div');
+                div.className = `agenda-item glass-panel p-4 rounded-2xl flex items-center gap-3 border ${p.confirmed ? 'plan-confirmed' : 'plan-pending'}`;
+                div.style.animationDelay = `${i * 0.06}s`;
+                const confirmBtn = isToday ? `<button onclick="togglePlanConfirm(${p.id})" class="w-8 h-8 rounded-full flex items-center justify-center transition ${p.confirmed ? 'bg-emerald-500/30 text-emerald-400' : 'bg-white/10 text-white/40 hover:bg-brand-500/30 hover:text-brand-300'}" title="${p.confirmed ? 'Annuler' : 'Confirmer'}"><i class="fa-solid ${p.confirmed ? 'fa-check' : 'fa-circle-check'} text-sm"></i></button>` : '';
+                div.innerHTML = `
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-0.5">
+                            <span class="text-[10px] font-bold text-white/40 uppercase tracking-widest">${p.meal}</span>
+                            ${p.confirmed ? '<span class="text-[9px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full">✓ Mangé</span>' : ''}
+                        </div>
+                        <div class="font-bold text-sm text-white/90 truncate">${p.name}</div>
+                    </div>
+                    <div class="font-display font-bold text-brand-400 text-sm flex-shrink-0">${p.kcal} <span class="text-[10px] text-brand-400/50">kcal</span></div>
+                    ${confirmBtn}
+                    <button onclick="deletePlanEntry(${p.id})" class="w-7 h-7 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-xmark text-xs"></i></button>`;
+                list.appendChild(div);
+            });
+        }
+
+        function renderAgenda() {
+            if (!userData) return;
+            document.getElementById('agenda-date-label').innerText = formatAgendaDate(agendaCurrentDate);
+            if (agendaTab === 'history') {
+                const foods = userData.foodHistory?.[agendaCurrentDate] || [];
+                const list = document.getElementById('agenda-food-list');
+                const empty = document.getElementById('agenda-empty');
+                const totalEl = document.getElementById('agenda-daily-total');
+                list.innerHTML = '';
+                if (foods.length === 0) {
+                    empty.classList.remove('hidden');
+                    totalEl.classList.add('hidden');
+                } else {
+                    empty.classList.add('hidden');
+                    totalEl.classList.remove('hidden');
+                    let total = 0;
+                    foods.forEach((f, i) => {
+                        total += f.kcal;
+                        const div = document.createElement('div');
+                        div.className = `agenda-item glass-panel p-4 rounded-2xl flex items-center gap-3 border border-white/5 bg-white/5`;
+                        div.style.animationDelay = `${i * 0.05}s`;
+                        div.innerHTML = `
+                            <div class="w-8 h-8 rounded-full bg-brand-500/10 flex items-center justify-center text-sm flex-shrink-0">${f.icon || '🍴'}</div>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-bold text-sm text-white/90 truncate capitalize">${f.name}</div>
+                                <div class="text-[10px] text-white/40 uppercase tracking-widest font-bold">${f.qtyLabel || 'Ajout rapide'}</div>
+                            </div>
+                            <div class="font-display font-bold text-emerald-300 flex-shrink-0">${f.kcal} <span class="text-[10px] text-emerald-400/50">kcal</span></div>`;
+                        list.appendChild(div);
+                    });
+                    document.getElementById('agenda-total-kcal').innerText = `${total} kcal`;
+                }
+            } else {
+                renderAgendaPlanList();
+            }
+        }
+
+        document.getElementById('agenda-prev-day').addEventListener('click', () => {
+            const d = new Date(agendaCurrentDate + 'T12:00:00');
+            d.setDate(d.getDate() - 1);
+            agendaCurrentDate = d.toISOString().split('T')[0];
+            renderAgenda();
+        });
+        document.getElementById('agenda-next-day').addEventListener('click', () => {
+            const d = new Date(agendaCurrentDate + 'T12:00:00');
+            d.setDate(d.getDate() + 1);
+            agendaCurrentDate = d.toISOString().split('T')[0];
+            renderAgenda();
+        });
 
         // ===== AURORA BG =====
         const canvas = document.getElementById('aurora-bg');
