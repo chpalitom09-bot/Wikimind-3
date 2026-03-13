@@ -15,7 +15,7 @@
             darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
+                    fontFamily: { sans:['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
                     colors: {
                         glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
                         brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' },
@@ -111,7 +111,7 @@
         <div class="mb-12 animate-fade-in-up">
             <h1 class="text-4xl md:text-5xl font-display font-bold mb-4">Espace de travail</h1>
             <p class="text-white/60 max-w-2xl text-lg">Suite bureautique cloud & locale. <br>
-                <span id="guest-warning" class="text-yellow-400/80 text-sm hidden">⚠️ Mode Invité : Création gratuite mais fichiers conservés 3 jours uniquement.</span>
+                <span id="guest-warning" class="text-yellow-400/80 text-sm hidden">⚠️ Mode Invité : Création gratuite mais fichiers conservés 3 jours uniquement. Connectez-vous pour partager !</span>
             </p>
         </div>
 
@@ -176,7 +176,7 @@
 
     <!-- MODAL CREATE FILE -->
     <div id="create-modal" class="modal">
-        <div class="glass-panel p-8 rounded-2xl w-full max-w-md relative animate-fade-in-up border border-white/10">
+        <div class="glass-panel p-8 rounded-2xl w-full max-w-md relative animate-fade-in-up border border-white/10 shadow-2xl">
             <button onclick="closeCreateModal()" class="absolute top-4 right-4 text-white/40 hover:text-white">
                 <i class="fa-solid fa-xmark"></i>
             </button>
@@ -208,11 +208,46 @@
         </div>
     </div>
 
+    <!-- SHARE MODAL -->
+    <div id="share-modal" class="modal">
+        <div class="glass-panel p-8 rounded-2xl w-full max-w-lg relative animate-fade-in-up border border-white/10 shadow-2xl">
+            <button onclick="closeShareModal()" class="absolute top-4 right-4 text-white/40 hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h2 class="text-xl font-display font-bold text-white mb-2">Partager le fichier</h2>
+            <p class="text-sm text-white/60 mb-6">Choisissez comment vous souhaitez partager ce fichier.</p>
+
+            <!-- Option 1: Collaboration -->
+            <div class="mb-4 p-4 bg-white/5 rounded-lg border border-white/10">
+                <h3 class="font-bold text-brand-400 mb-1 flex items-center gap-2">
+                    <i class="fa-solid fa-users"></i> Mode Collaboration
+                </h3>
+                <p class="text-xs text-white/50 mb-3">Toute personne avec ce lien modifiera ce fichier en direct.</p>
+                <div class="flex gap-2">
+                    <input type="text" id="link-edit" readonly class="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none">
+                    <button onclick="copyToClipboard('link-edit')" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-bold transition">Copier</button>
+                </div>
+            </div>
+
+            <!-- Option 2: Copie -->
+            <div class="p-4 bg-white/5 rounded-lg border border-white/10">
+                <h3 class="font-bold text-green-400 mb-1 flex items-center gap-2">
+                    <i class="fa-solid fa-copy"></i> Mode Modèle (Copie)
+                </h3>
+                <p class="text-xs text-white/50 mb-3">Toute personne avec ce lien obtiendra sa propre copie personnelle.</p>
+                <div class="flex gap-2">
+                    <input type="text" id="link-copy" readonly class="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none">
+                    <button onclick="copyToClipboard('link-copy')" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg text-xs font-bold transition">Copier</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- FIREBASE LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, push, onValue, set, remove, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, push, onValue, set, update, remove, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         // CONFIG USER
         const firebaseConfig = {
@@ -318,9 +353,9 @@
                 
                 // Coloration dynamique selon le solde
                 if(bal < 0) {
-                    tokenDisplay.className = "flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-[10px] text-red-500 uppercase tracking-widest font-bold mr-4";
+                    tokenDisplay.className = "flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-[10px] text-red-500 uppercase tracking-widest font-bold hover:bg-red-500/20 transition-colors";
                 } else {
-                    tokenDisplay.className = "flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-[10px] text-yellow-500 uppercase tracking-widest font-bold mr-4 hover:bg-yellow-500/20 transition-colors";
+                    tokenDisplay.className = "flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-[10px] text-yellow-500 uppercase tracking-widest font-bold hover:bg-yellow-500/20 transition-colors";
                 }
             });
         }
@@ -379,6 +414,13 @@
                 const div = document.createElement('div');
                 div.className = "group flex items-center justify-between p-4 rounded-xl hover:bg-white/5 transition-all cursor-pointer border border-transparent hover:border-white/5";
                 
+                // Afficher le bouton partager uniquement si on est connecté (Firebase)
+                const shareBtn = source === 'firebase' ? `
+                    <button onclick="event.stopPropagation(); openShareModal('${file.id}', '${file.type}', '${source}')" class="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-brand-400 transition-all" title="Partager">
+                        <i class="fa-solid fa-share-nodes text-xs"></i>
+                    </button>
+                ` : '';
+
                 div.innerHTML = `
                     <div class="flex items-center gap-4 flex-1" onclick="openFile('${file.type}', '${file.id}', '${source}')">
                         <div class="w-10 h-10 rounded-lg flex items-center justify-center text-lg bg-white/5 text-white/50 group-hover:text-white transition-colors">
@@ -389,9 +431,12 @@
                             <p class="text-[10px] text-white/40 uppercase tracking-wide mt-0.5">${file.type} • ${dateStr}</p>
                         </div>
                     </div>
-                    <button onclick="deleteFile('${file.id}', '${source}')" class="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-red-400 transition-all">
-                        <i class="fa-solid fa-trash text-xs"></i>
-                    </button>
+                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                        ${shareBtn}
+                        <button onclick="event.stopPropagation(); deleteFile('${file.id}', '${source}')" class="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-red-400 transition-all" title="Supprimer">
+                            <i class="fa-solid fa-trash text-xs"></i>
+                        </button>
+                    </div>
                 `;
                 filesContainer.appendChild(div);
             });
@@ -406,7 +451,7 @@
             `;
         }
 
-        // --- ACTIONS ---
+        // --- ACTIONS CRÉATION ---
 
         window.openCreateModal = (type) => {
             const modal = document.getElementById('create-modal');
@@ -516,6 +561,53 @@
             redirectToApp(type, id, source);
         };
 
+        // --- PARTAGE DEPUIS LE DASHBOARD ---
+        window.openShareModal = async (fileId, fileType, source) => {
+            if (source !== 'firebase' || !currentUser) {
+                window.showToast("Le partage n'est disponible que pour les fichiers connectés.", "error");
+                return;
+            }
+
+            document.getElementById('share-modal').classList.add('active');
+
+            // Autorisation DB auto
+            await update(ref(db, `users/${currentUser.uid}/files/${fileId}`), {
+                isShared: true,
+                allowEdit: true
+            });
+
+            // Déterminer la bonne URL d'app
+            let page = "";
+            switch(fileType) {
+                case 'writer': page = "Wikimind_writter.html"; break; 
+                case 'calc': page = "Wikimind_calc.html"; break;
+                case 'impress': page = "Wikimind_impress.html"; break;
+                case 'draw': page = "Wikimind_draw.html"; break;
+                default: page = "Wikimind_writter.html";
+            }
+
+            // Générer le lien de base (ex: https://monsite.com/Wikimind_writter.html)
+            let currentUrl = window.location.href.split('?')[0];
+            let baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/') + 1) + page;
+
+            const editUrl = `${baseUrl}?id=${fileId}&source=firebase&owner=${currentUser.uid}`;
+            const copyUrl = `${baseUrl}?id=${fileId}&source=firebase&owner=${currentUser.uid}&mode=copy`;
+
+            document.getElementById('link-edit').value = editUrl;
+            document.getElementById('link-copy').value = copyUrl;
+        };
+
+        window.closeShareModal = () => {
+            document.getElementById('share-modal').classList.remove('active');
+        };
+
+        window.copyToClipboard = (elementId) => {
+            const el = document.getElementById(elementId);
+            el.select();
+            document.execCommand('copy');
+            window.showToast('Lien copié dans le presse-papiers !', 'success');
+        };
+
         // --- FONCTION DE REDIRECTION ---
         function redirectToApp(type, id, source) {
             let page = "";
@@ -559,7 +651,7 @@
         if(canvas) {
             const ctx = canvas.getContext('2d');
             let width, height;
-            const orbs = [
+            const orbs =[
                 { x: 0.2, y: 0.2, r: 0.4, color: 'rgba(79, 70, 229, 0.15)', vx: 0.0005, vy: 0.0005 },
                 { x: 0.8, y: 0.3, r: 0.5, color: 'rgba(59, 130, 246, 0.15)', vx: -0.0006, vy: 0.0004 }
             ];
