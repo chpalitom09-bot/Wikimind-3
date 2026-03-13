@@ -18,7 +18,7 @@
                     fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
                     colors: {
                         glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
-                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' },
+                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8', 400: '#818cf8' },
                         office: { draw: '#a855f7' } // Violet Draw
                     }
                 }
@@ -85,12 +85,17 @@
                     <input type="text" id="doc-name" value="Chargement..." class="bg-transparent text-white font-bold text-sm focus:outline-none focus:border-b border-brand-500 w-64 px-1">
                     <div class="flex items-center gap-2 mt-0.5 text-[10px] text-white/40">
                         <span id="save-status"><i class="fa-solid fa-cloud-arrow-up mr-1"></i> Synchronisé</span>
+                        <span id="shared-badge" class="hidden text-brand-400 font-bold ml-1"><i class="fa-solid fa-link"></i> Partagé</span>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="flex items-center gap-4">
+            <!-- Bouton Partager (caché par défaut, affiché si on est proprio) -->
+            <button id="btn-share" onclick="openShareModal()" class="hidden px-4 py-1.5 rounded-full bg-white/10 text-white border border-white/20 text-xs font-bold hover:bg-white/20 transition-colors items-center gap-2">
+                <i class="fa-solid fa-share-nodes"></i> Partager
+            </button>
             <button onclick="toggleSidebar()" class="px-4 py-1.5 rounded-full bg-brand-600/20 text-brand-glow border border-brand-500/30 text-xs font-bold hover:bg-brand-600/40 transition-colors flex items-center gap-2">
                 <i class="fa-solid fa-wand-magic-sparkles"></i> WikiMind AI
             </button>
@@ -203,11 +208,46 @@
         </aside>
     </div>
 
+    <!-- SHARE MODAL -->
+    <div id="share-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center">
+        <div class="glass-panel rounded-xl p-6 max-w-lg w-full border border-white/20 shadow-2xl relative">
+            <button onclick="closeShareModal()" class="absolute top-4 right-4 text-white/50 hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h2 class="text-xl font-display font-bold text-white mb-2">Partager le dessin</h2>
+            <p class="text-sm text-white/60 mb-6">Choisissez comment vous souhaitez partager ce fichier.</p>
+
+            <!-- Option 1: Collaboration -->
+            <div class="mb-4 p-4 bg-white/5 rounded-lg border border-white/10">
+                <h3 class="font-bold text-office-draw mb-1 flex items-center gap-2">
+                    <i class="fa-solid fa-users"></i> Mode Collaboration (Dessin partagé)
+                </h3>
+                <p class="text-xs text-white/50 mb-3">Toute personne avec ce lien dessinera sur ce canevas en direct avec vous.</p>
+                <div class="flex gap-2">
+                    <input type="text" id="link-edit" readonly class="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none">
+                    <button onclick="copyToClipboard('link-edit')" class="px-4 py-2 bg-office-draw hover:bg-purple-500 text-white rounded-lg text-xs font-bold transition">Copier</button>
+                </div>
+            </div>
+
+            <!-- Option 2: Copie -->
+            <div class="p-4 bg-white/5 rounded-lg border border-white/10">
+                <h3 class="font-bold text-green-400 mb-1 flex items-center gap-2">
+                    <i class="fa-solid fa-copy"></i> Mode Modèle (Copie personnelle)
+                </h3>
+                <p class="text-xs text-white/50 mb-3">Toute personne avec ce lien obtiendra sa propre copie du dessin sans modifier l'original.</p>
+                <div class="flex gap-2">
+                    <input type="text" id="link-copy" readonly class="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none">
+                    <button onclick="copyToClipboard('link-copy')" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg text-xs font-bold transition">Copier</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- FIREBASE & LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, get, update, push, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         // FIREBASE CONFIG
         const firebaseConfig = {
@@ -231,6 +271,10 @@
         let fileId = new URLSearchParams(window.location.search).get('id');
         let source = new URLSearchParams(window.location.search).get('source');
         
+        // PARAMÈTRES DE PARTAGE
+        let ownerId = new URLSearchParams(window.location.search).get('owner') || null;
+        let shareMode = new URLSearchParams(window.location.search).get('mode') || null;
+
         // CANVAS ENGINE
         const canvas = document.getElementById('draw-canvas');
         const ctx = canvas.getContext('2d');
@@ -244,13 +288,15 @@
         
         // History (Undo/Redo)
         let undoStack = [];
-        let redoStack = [];
+        let redoStack =[];
         const MAX_HISTORY = 20;
 
         // UI Elements
         const docNameInput = document.getElementById('doc-name');
         const saveStatus = document.getElementById('save-status');
         const navAvatar = document.getElementById('nav-avatar');
+        const btnShare = document.getElementById('btn-share');
+        const sharedBadge = document.getElementById('shared-badge');
         let saveTimeout = null;
         let isSaving = false;
 
@@ -270,9 +316,39 @@
 
         // 2. LOAD/SAVE LOGIC
         function loadDocument() {
-            if (source === 'firebase' && currentUser) {
-                get(ref(db, `users/${currentUser.uid}/files/${fileId}`)).then((snap) => {
-                    if (snap.exists()) applyData(snap.val());
+            if (source === 'firebase') {
+                if (!currentUser) return; // Attendre la connexion
+                
+                let targetUid = ownerId ? ownerId : currentUser.uid;
+                
+                // Si on modifie le fichier de quelqu'un d'autre
+                if (ownerId && ownerId !== currentUser.uid && shareMode !== 'copy') {
+                    sharedBadge.classList.remove('hidden');
+                }
+                
+                // Afficher le bouton partager seulement si on est le propriétaire
+                if (!ownerId || ownerId === currentUser.uid) {
+                    btnShare.classList.remove('hidden');
+                    btnShare.classList.add('flex');
+                }
+
+                get(ref(db, `users/${targetUid}/files/${fileId}`)).then((snap) => {
+                    if (snap.exists()) {
+                        const data = snap.val();
+                        
+                        // Si le mode est "copy", on duplique le fichier pour l'utilisateur
+                        if (shareMode === 'copy' && ownerId && ownerId !== currentUser.uid) {
+                            duplicateToWorkspace(data);
+                            return; 
+                        }
+                        applyData(data);
+                    } else {
+                        alert("Fichier introuvable ou vous n'avez pas l'autorisation d'y accéder.");
+                        window.location.href = "Wikimind_office.html";
+                    }
+                }).catch(err => {
+                    alert("Erreur de permission : Vérifiez les règles de la base de données.");
+                    console.error(err);
                 });
             } else if (source === 'local') {
                 const files = JSON.parse(localStorage.getItem('wikimind_guest_files') || '{}');
@@ -286,10 +362,29 @@
                 const img = new Image();
                 img.onload = () => {
                     ctx.drawImage(img, 0, 0);
-                    undoStack = []; redoStack = []; // Reset history on load
+                    undoStack = []; redoStack =[]; // Reset history on load
                     saveState();
                 };
                 img.src = data.content;
+            }
+        }
+
+        async function duplicateToWorkspace(originalData) {
+            try {
+                alert("Copie du modèle dans votre espace en cours...");
+                const newDocRef = push(ref(db, `users/${currentUser.uid}/files`));
+                await set(newDocRef, {
+                    name: originalData.name + " (Copie)",
+                    content: originalData.content || "",
+                    updatedAt: Date.now(),
+                    createdAt: Date.now(),
+                    isShared: false,
+                    allowEdit: false
+                });
+                window.location.href = `Wikimind_draw.html?id=${newDocRef.key}&source=firebase`;
+            } catch(e) {
+                console.error(e);
+                alert("Erreur lors de la copie du fichier.");
             }
         }
 
@@ -312,7 +407,8 @@
 
             try {
                 if (source === 'firebase' && currentUser) {
-                    await update(ref(db, `users/${currentUser.uid}/files/${fileId}`), {
+                    let targetUid = ownerId ? ownerId : currentUser.uid;
+                    await update(ref(db, `users/${targetUid}/files/${fileId}`), {
                         content: contentStr, name: name, updatedAt: timestamp
                     });
                 } else if (source === 'local') {
@@ -333,6 +429,33 @@
                 isSaving = false;
             }
         }
+
+        // PARTAGE LOGIC
+        window.openShareModal = async () => {
+            document.getElementById('share-modal').classList.remove('hidden');
+            
+            if (source === 'firebase' && currentUser && (!ownerId || ownerId === currentUser.uid)) {
+                await update(ref(db, `users/${currentUser.uid}/files/${fileId}`), {
+                    isShared: true,
+                    allowEdit: true
+                });
+            }
+            
+            const baseUrl = window.location.origin + window.location.pathname;
+            const editUrl = `${baseUrl}?id=${fileId}&source=firebase&owner=${currentUser.uid}`;
+            const copyUrl = `${baseUrl}?id=${fileId}&source=firebase&owner=${currentUser.uid}&mode=copy`;
+            
+            document.getElementById('link-edit').value = editUrl;
+            document.getElementById('link-copy').value = copyUrl;
+        };
+
+        window.closeShareModal = () => document.getElementById('share-modal').classList.add('hidden');
+        window.copyToClipboard = (elementId) => {
+            const el = document.getElementById(elementId);
+            el.select();
+            document.execCommand('copy');
+            alert('Lien copié dans le presse-papiers !');
+        };
 
         // 3. DRAWING TOOLS LOGIC
         window.setTool = (tool) => {
@@ -455,7 +578,7 @@
             // Push current state to undo stack
             if(undoStack.length >= MAX_HISTORY) undoStack.shift();
             undoStack.push(canvas.toDataURL());
-            redoStack = []; // Clear redo on new action
+            redoStack =[]; // Clear redo on new action
         }
 
         window.undo = () => {
@@ -607,7 +730,7 @@
         if(bgCanvas) {
             const bgCtx = bgCanvas.getContext('2d');
             let width, height;
-            const orbs = [
+            const orbs =[
                 { x: 0.3, y: 0.3, r: 0.5, color: 'rgba(168, 85, 247, 0.1)', vx: 0.0003, vy: 0.0004 }, // Violet
                 { x: 0.7, y: 0.6, r: 0.6, color: 'rgba(79, 70, 229, 0.08)', vx: -0.0004, vy: 0.0003 }
             ];
