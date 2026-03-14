@@ -453,6 +453,24 @@
   .instruction-item-del { cursor: pointer; color: #aaa; font-size: 14px; flex-shrink: 0; background: none; border: none; transition: .2s; }
   .instruction-item-del:hover { color: #ef4444; }
 
+  /* ─── PROFILE AVATAR WITH PLAN RING ─── */
+  .plan-chip-avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800;
+    background: var(--select-bg); color: var(--text);
+    overflow: hidden; flex-shrink: 0;
+    box-shadow: 0 0 0 3px #d1d5db; /* default grey ring */
+    transition: box-shadow .3s;
+    cursor: pointer;
+  }
+  .plan-chip-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+  .plan-chip-avatar.ring-free    { box-shadow: 0 0 0 3px #9ca3af; }
+  .plan-chip-avatar.ring-plus    { box-shadow: 0 0 0 3px #111111; }
+  .dark-mode .plan-chip-avatar.ring-plus { box-shadow: 0 0 0 3px #ffffff; }
+  .plan-chip-avatar.ring-pro     { box-shadow: 0 0 0 3px #22c55e; }
+  .plan-chip-avatar.ring-premium { box-shadow: 0 0 0 3px #f59e0b; }
+
   @media (max-width: 640px) {
     #canvas-panel.open { width: 100%; }
     .plans-grid { grid-template-columns: 1fr; }
@@ -555,9 +573,12 @@ onAuthStateChanged(auth, async user => {
   </div>
 
   <!-- Plan chip top right -->
-  <div id="plan-chip">
+  <div id="plan-chip" onclick="openModal('plan-modal')">
+    <div class="plan-chip-avatar ring-free" id="tb-avatar" title="Mon forfait">
+      <span id="tb-avatar-initials">?</span>
+    </div>
     <span class="plan-badge plan-free" id="tb-badge">Free</span>
-    <span class="upgrade-link" onclick="openModal('plan-modal')">&#x2191; Mettre à niveau</span>
+    <span class="upgrade-link">&#x2191; Mettre à niveau</span>
   </div>
 
   <!-- Welcome -->
@@ -905,7 +926,10 @@ async function doRegister() {
   try {
     const cred = await fb.createUserWithEmailAndPassword(fb.auth, e, p);
     await fb.set(fb.ref(fb.db, `users/${cred.user.uid}`), {
-      name: n, FORFAIT: 2, plan: 2, createdAt: Date.now()
+      name: n,
+      photoURL: cred.user.photoURL || '',
+      FORFAIT: 2,
+      createdAt: Date.now()
     });
   } catch(ex) { showAuthErr(fbErr(ex.code)); }
 }
@@ -951,6 +975,12 @@ async function bootUser(user) {
   S.user = user;
   if (!user.isGuest) {
     await loadProfile(user.uid);
+    // Save/update photoURL from Google if present
+    if (user.photoURL && window._fb?.db) {
+      try {
+        await window._fb.set(window._fb.ref(window._fb.db, `users/${user.uid}/photoURL`), user.photoURL);
+      } catch(e) {}
+    }
     await loadChats(user.uid);
   }
   updateUserUI();
@@ -965,12 +995,21 @@ async function loadProfile(uid) {
     const snap = await fb.get(fb.ref(fb.db, `users/${uid}`));
     if (snap.exists()) {
       const d = snap.val();
-      S.plan = d.FORFAIT || d.plan || 2;
+      // FORFAIT is the canonical field (1=Free,2=Plus,3=Pro,4=Premium)
+      S.plan = d.FORFAIT ?? d.plan ?? 2;
       if (d.name) S.user.displayName = d.name;
+      if (d.photoURL) S.user.photoURL = d.photoURL;
+      // Ensure FORFAIT is always written
+      if (d.FORFAIT == null) {
+        await fb.set(fb.ref(fb.db, `users/${uid}/FORFAIT`), S.plan);
+      }
     } else {
+      // New user — give AI Plus, set FORFAIT=2
       await fb.set(fb.ref(fb.db, `users/${uid}`), {
         name: S.user.displayName || 'Utilisateur',
-        FORFAIT: 2, plan: 2, createdAt: Date.now()
+        photoURL: S.user.photoURL || '',
+        FORFAIT: 2,
+        createdAt: Date.now()
       });
       S.plan = 2;
     }
@@ -1002,6 +1041,20 @@ function updateUserUI() {
     el.textContent = pn; el.className = 'plan-badge ' + pc;
   });
 
+  // Profile avatar top-right with plan ring
+  const ringClass = { 1:'ring-free', 2:'ring-plus', 3:'ring-pro', 4:'ring-premium' }[S.plan] || 'ring-free';
+  const avatarEl = G('tb-avatar');
+  if (avatarEl) {
+    avatarEl.className = `plan-chip-avatar ${ringClass}`;
+    // Try to show Google photo
+    const photoURL = u.photoURL || null;
+    if (photoURL) {
+      avatarEl.innerHTML = `<img src="${photoURL}" alt="${esc(nm)}" onerror="this.parentElement.innerHTML='<span id=tb-avatar-initials>${nm.charAt(0).toUpperCase()}</span>'">`;
+    } else {
+      avatarEl.innerHTML = `<span id="tb-avatar-initials">${nm.charAt(0).toUpperCase()}</span>`;
+    }
+  }
+
   updateModelOptions();
 
   // Customize modal visibility
@@ -1013,11 +1066,8 @@ function updateUserUI() {
   if (advLocked) advLocked.style.display = S.plan <  2 ? 'block' : 'none';
 
   // Show/hide import buttons based on plan
-  // Plus+: Wikimind Office import
   G('btn-office-import').style.display = S.plan >= 2 ? 'flex' : 'none';
-  // Pro+: document file import
   G('btn-file-import').style.display   = S.plan >= 3 ? 'flex' : 'none';
-  // Premium: image import
   G('btn-img-import').style.display    = S.plan >= 4 ? 'flex' : 'none';
 
   renderPlansGrid();
@@ -1316,17 +1366,26 @@ function formatMarkdown(text) {
   if (!text) return '';
   const mathPlaceholders = [];
   let i = 0;
-  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, m) => { mathPlaceholders.push(['$$',m]); return `__MATH${i++}__`; });
-  text = text.replace(/\$([^$\n]+?)\$/g, (_, m)  => { mathPlaceholders.push(['$',m]);   return `__MATH${i++}__`; });
+  // Use a token that marked won't touch (no underscores, no special chars)
+  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, m) => { mathPlaceholders.push(['$$',m]); return `WMATHBLOCK${i++}END`; });
+  text = text.replace(/\$([^$\n]+?)\$/g, (_, m)  => { mathPlaceholders.push(['$',m]);   return `WMATHINLINE${i++}END`; });
 
   marked.setOptions({ breaks: true, gfm: true });
   let html = marked.parse(text);
 
-  mathPlaceholders.forEach(([t, m], idx) => {
-    const safe = m.replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    html = html.replace(`__MATH${idx}__`, t==='$$'
-      ? `<span class="katex-display-wrap">\\[${safe}\\]</span>`
-      : `\\(${safe}\\)`);
+  // Restore math — replace each token back with KaTeX delimiters
+  let bi = 0, ii = 0;
+  html = html.replace(/WMATHBLOCK(\d+)END/g, (_, idx) => {
+    const m = mathPlaceholders[parseInt(idx)];
+    if (!m) return '';
+    const safe = m[1].replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `<span class="wm-math-block">\\[${safe}\\]</span>`;
+  });
+  html = html.replace(/WMATHINLINE(\d+)END/g, (_, idx) => {
+    const m = mathPlaceholders[parseInt(idx)];
+    if (!m) return '';
+    const safe = m[1].replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `\\(${safe}\\)`;
   });
 
   html = html.replace(/<pre><code( class="language-([^"]*)")?>([\s\S]*?)<\/code><\/pre>/g,
@@ -1340,18 +1399,23 @@ function formatMarkdown(text) {
 }
 
 function applyMath(el) {
-  if (!el || typeof renderMathInElement === 'undefined') return;
-  try {
-    renderMathInElement(el, {
-      delimiters: [
-        { left: '$$', right: '$$', display: true },
-        { left: '\\[', right: '\\]', display: true },
-        { left: '$', right: '$', display: false },
-        { left: '\\(', right: '\\)', display: false },
-      ],
-      throwOnError: false
-    });
-  } catch(e) {}
+  if (!el) return;
+  const doRender = () => {
+    if (typeof renderMathInElement === 'undefined') return;
+    try {
+      renderMathInElement(el, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '\\[', right: '\\]', display: true },
+          { left: '$', right: '$', display: false },
+          { left: '\\(', right: '\\)', display: false },
+        ],
+        throwOnError: false
+      });
+    } catch(e) {}
+  };
+  if (window._katexReady) doRender();
+  else window.addEventListener('load', doRender, { once: true });
 }
 
 function applyHljs(el) {
@@ -1398,10 +1462,12 @@ function removeAttachment(i) {
 }
 
 // ── Wikimind Office import (Plus+) ──
+// Store fetched office files here to avoid encoding issues in onclick
+window._officeFilesCache = {};
+
 function openOfficeImport() {
   if (S.plan < 2) { toast('Wikimind Office — plan AI Plus requis'); openModal('plan-modal'); return; }
   if (!S.user || S.user.isGuest) { toast('Connectez-vous pour accéder à Wikimind Office'); return; }
-  // Reset to app selector view
   G('office-app-selector').style.display = 'block';
   G('office-file-browser').style.display = 'none';
   openModal('office-modal');
@@ -1416,25 +1482,38 @@ async function loadOfficeFiles(appType) {
 
   try {
     const snap = await fb.get(fb.ref(fb.db, `users/${S.user.uid}/files`));
-    if (!snap.exists()) { listEl.innerHTML = '<div class="office-loading">Aucun fichier trouvé dans Wikimind Office.</div>'; return; }
+    if (!snap.exists()) {
+      listEl.innerHTML = '<div class="office-loading">Aucun fichier trouvé dans Wikimind Office.</div>';
+      return;
+    }
 
     const files = snap.val();
-    const filtered = Object.entries(files).filter(([, f]) => f.appType === appType || f.type === appType);
+    // Support multiple field names used by Wikimind Office
+    const filtered = Object.entries(files).filter(([, f]) =>
+      f.appType === appType || f.type === appType || f.app === appType
+    );
 
     if (!filtered.length) {
       listEl.innerHTML = `<div class="office-loading">Aucun fichier ${appType} trouvé.</div>`;
       return;
     }
 
+    // Cache files so onclick can access them safely by key
+    window._officeFilesCache = {};
+    filtered.forEach(([id, f]) => { window._officeFilesCache[id] = f; });
+
     const appIcons = { writer:'📄', calc:'📊', impress:'📦', draw:'✏️' };
-    listEl.innerHTML = filtered.map(([id, f]) => `
-      <div class="office-file-item" onclick="importOfficeFile('${id}', ${JSON.stringify(esc(f.title||f.name||'Sans titre'))}, ${JSON.stringify(esc(f.content||''))})">
-        <span style="font-size:20px">${appIcons[appType]||'📄'}</span>
-        <span class="office-file-item-name">${esc(f.title||f.name||'Sans titre')}</span>
-        <span class="office-file-item-type">${appType}</span>
-      </div>`).join('');
+    listEl.innerHTML = filtered.map(([id, f]) => {
+      const title = f.title || f.name || f.filename || 'Sans titre';
+      return `
+        <div class="office-file-item" onclick="importOfficeFile('${id}')">
+          <span style="font-size:20px">${appIcons[appType]||'📄'}</span>
+          <span class="office-file-item-name">${esc(title)}</span>
+          <span class="office-file-item-type">${appType}</span>
+        </div>`;
+    }).join('');
   } catch(e) {
-    listEl.innerHTML = `<div class="office-loading">Erreur de chargement : ${esc(e.message)}</div>`;
+    listEl.innerHTML = `<div class="office-loading">Erreur : ${esc(e.message)}</div>`;
   }
 }
 
@@ -1443,15 +1522,18 @@ function backToOfficeApps() {
   G('office-file-browser').style.display = 'none';
 }
 
-function importOfficeFile(id, name, content) {
-  // Decode escaped content
-  const decoded = name.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
-  const decodedContent = content.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+function importOfficeFile(id) {
+  const f = window._officeFilesCache[id];
+  if (!f) { toast('Fichier introuvable'); return; }
 
-  S.attachments.push({ type: 'text', name: decoded, content: decodedContent, source: 'office' });
+  const name = f.title || f.name || f.filename || 'Fichier Office';
+  // Try multiple possible content fields from Wikimind Office
+  const content = f.content || f.text || f.body || f.data || JSON.stringify(f);
+
+  S.attachments.push({ type: 'text', name, content: String(content).substring(0, 40000), source: 'office' });
   updateAttachmentPreview();
   closeModal('office-modal');
-  toast(`"${decoded}" ajouté`);
+  toast(`"${name}" ajouté`);
   G('user-input').focus();
 }
 
