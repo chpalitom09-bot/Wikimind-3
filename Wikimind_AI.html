@@ -86,8 +86,26 @@ a{text-decoration:none;color:inherit;}
 .float-btn:hover{background:var(--select-bg);transform:scale(1.05);}
 .float-btn svg{width:16px;height:16px;}
 
-/* Model selector — clean up old duplicate */
+/* Model selector — custom styled select */
 #model-select-wrap{display:flex;align-items:center;position:relative;}
+#model-select{
+  appearance:none;-webkit-appearance:none;
+  background:var(--select-bg);border:1.5px solid var(--border2);
+  padding:6px 26px 6px 10px;font-size:11px;font-weight:700;color:var(--text);
+  outline:none;cursor:pointer;font-family:'Inter',sans-serif;
+  text-transform:uppercase;letter-spacing:.06em;
+  border-radius:10px;max-width:185px;
+  transition:border-color .2s, box-shadow .2s;
+}
+#model-select:hover{border-color:#999;}
+#model-select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(17,17,17,.08);}
+.dark-mode #model-select:focus{box-shadow:0 0 0 3px rgba(255,255,255,.1);}
+#model-select option{background:var(--bg);color:var(--text);font-weight:700;}
+#model-select-wrap::after{
+  content:'';position:absolute;right:9px;top:50%;transform:translateY(-50%);
+  width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;
+  border-top:5px solid #999;pointer-events:none;transition:.2s;
+}
 
 /* Plan chip / avatar top-right */
 #plan-chip{position:absolute;top:24px;right:24px;z-index:50;display:flex;align-items:center;gap:8px;cursor:pointer;}
@@ -180,7 +198,7 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 #user-input{width:100%;padding:18px 20px 12px 20px;background:transparent;color:var(--text);outline:none;resize:none;font-size:1rem;line-height:1.5;min-height:58px;max-height:180px;font-family:'Inter',sans-serif;}
 #user-input::placeholder{color:#bbb;}
 .input-footer{display:flex;justify-content:space-between;align-items:center;padding:8px 16px 14px;gap:8px;}
-.input-footer-left{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.input-footer-left{display:flex;gap:4px;align-items:center;flex-wrap:nowrap;}
 .inp-icon-btn{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#aaa;transition:.2s;background:none;border:none;font-size:18px;position:relative;}
 .inp-icon-btn:hover{color:var(--text);background:var(--select-bg);}
 .inp-icon-btn.active-btn{color:var(--text);background:var(--select-bg);}
@@ -204,46 +222,33 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 .canvas-active-dot{position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:#22c55e;display:none;}
 .canvas-active-dot.show{display:block;}
 
-/* Import + button & flyout menu */
-.import-btn-wrap{position:relative;}
-.import-plus-btn{font-size:20px;font-weight:300;}
-.import-menu{
-  position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%) scaleY(0);transform-origin:bottom center;
-  background:var(--bg);border:1px solid var(--border2);border-radius:14px;
-  padding:6px;display:flex;flex-direction:column;gap:2px;
-  box-shadow:0 8px 30px rgba(0,0,0,.12);min-width:170px;
-  opacity:0;pointer-events:none;transition:transform .22s cubic-bezier(.4,0,.2,1),opacity .18s;
-  z-index:200;
+/* ── IMPORT BUTTONS INLINE ──
+   Les boutons d'import apparaissent sur la même ligne que les autres icônes
+   avec une animation de révélation (scale + opacity)
+*/
+.import-inline-group{
+  display:flex;align-items:center;gap:2px;overflow:hidden;
+  max-width:0;opacity:0;
+  transition:max-width .35s cubic-bezier(.4,0,.2,1), opacity .25s ease;
+  pointer-events:none;
 }
-.import-menu.open{transform:translateX(-50%) scaleY(1);opacity:1;pointer-events:all;}
-.import-menu-item{
-  display:flex;align-items:center;gap:10px;padding:9px 13px;border-radius:9px;
-  border:none;background:none;cursor:pointer;color:var(--text);font-size:12px;font-weight:600;
-  font-family:'Inter',sans-serif;text-align:left;transition:.15s;width:100%;
+.import-inline-group.open{
+  max-width:160px;opacity:1;pointer-events:all;
 }
-.import-menu-item:hover{background:var(--select-bg);}
-.import-menu-item svg{flex-shrink:0;color:#888;}
-@keyframes plusRotate{from{transform:rotate(0deg);}to{transform:rotate(135deg);}}
-@keyframes plusRotateBack{from{transform:rotate(135deg);}to{transform:rotate(0deg);}}
-.import-plus-btn.open #import-plus-icon{transform:rotate(135deg);}
-
-/* Model select — custom dropdown */
-#model-select-wrap{display:flex;align-items:center;position:relative;}
-#model-select{
-  appearance:none;-webkit-appearance:none;
-  background:var(--select-bg);border:1px solid var(--border2);
-  padding:5px 28px 5px 10px;font-size:11px;font-weight:700;color:var(--text);
-  outline:none;cursor:pointer;font-family:'Inter',sans-serif;
-  text-transform:uppercase;letter-spacing:.06em;transition:.2s;
-  border-radius:10px;max-width:180px;
+/* Le bouton + tourne de 135° quand ouvert */
+#btn-import-plus svg{transition:transform .3s cubic-bezier(.4,0,.2,1);}
+#btn-import-plus.open svg{transform:rotate(135deg);}
+/* Tooltip label sur chaque bouton import */
+.imp-btn-wrap{position:relative;display:flex;align-items:center;}
+.imp-btn-wrap .imp-tooltip{
+  position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:var(--accent);color:var(--accent-inv);
+  font-size:10px;font-weight:700;white-space:nowrap;
+  padding:4px 8px;border-radius:6px;
+  opacity:0;pointer-events:none;transition:opacity .15s;
+  letter-spacing:.04em;
 }
-#model-select:hover{border-color:#888;}
-#model-select option{background:var(--bg);color:var(--text);}
-#model-select-wrap::after{
-  content:'';position:absolute;right:9px;top:50%;transform:translateY(-50%);
-  width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;
-  border-top:5px solid #888;pointer-events:none;
-}
+.imp-btn-wrap:hover .imp-tooltip{opacity:1;}
 
 /* CANVAS PANEL */
 #canvas-panel{width:0;overflow:hidden;background:var(--sidebar);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:width .3s cubic-bezier(.4,0,.2,1);}
@@ -262,7 +267,6 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 .canvas-toolbar{display:flex;gap:6px;padding:10px 14px;border-top:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;}
 .cvs-tool{background:var(--select-bg);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;transition:.2s;color:var(--text);}
 .cvs-tool:hover{background:var(--text);color:var(--bg);}
-/* Canvas Office creation chips */
 .cvs-create-btns{display:flex;gap:4px;padding:8px 14px 0;flex-wrap:wrap;flex-shrink:0;}
 .cvs-create-chip{background:none;border:1px solid var(--border2);border-radius:20px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;transition:.2s;color:#888;display:flex;align-items:center;gap:4px;}
 .cvs-create-chip:hover{border-color:var(--text);color:var(--text);}
@@ -280,66 +284,31 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 .modal-btn.secondary{background:var(--select-bg);color:var(--text);border:1px solid var(--border2);}
 .modal-btn.secondary:hover{background:var(--border2);}
 
-/* Plans grid — OLD kept for fallback, new page overlay below */
-.plans-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.plan-card{border:1px solid var(--border2);border-radius:14px;padding:16px;transition:.2s;cursor:pointer;}
-.plan-card:hover{border-color:var(--text);}
-.plan-card.current{border-color:var(--text);background:var(--select-bg);}
-.plan-card-name{font-size:14px;font-weight:800;margin-bottom:3px;}
-.plan-card-price{font-size:18px;font-weight:900;margin-bottom:6px;}
-.plan-card-feats{font-size:11px;color:#888;display:flex;flex-direction:column;gap:4px;}
-.plan-card-feats li{list-style:none;display:flex;gap:5px;align-items:flex-start;}
-.plan-card-feats li::before{content:'✓';color:var(--text);font-weight:900;flex-shrink:0;}
-.plan-subscribe-btn{width:100%;margin-top:10px;padding:8px;border-radius:8px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;border:none;transition:.2s;background:var(--accent);color:var(--accent-inv);}
-.plan-subscribe-btn:hover{opacity:.8;}
-.plan-subscribe-btn:disabled{opacity:.4;cursor:not-allowed;}
-
 /* Plans page overlay */
-#plans-overlay{
-  position:fixed;inset:0;z-index:200;background:var(--bg);
-  display:none;flex-direction:column;overflow-y:auto;
-  animation:overlayIn .3s cubic-bezier(.4,0,.2,1);
-}
-#plans-overlay.show{display:flex;}
+#plans-overlay{position:fixed;inset:0;z-index:200;background:var(--bg);display:none;flex-direction:column;overflow-y:auto;}
+#plans-overlay.show{display:flex;animation:overlayIn .3s cubic-bezier(.4,0,.2,1);}
 @keyframes overlayIn{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
-.plans-overlay-header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:24px 32px;border-bottom:1px solid var(--border);
-  position:sticky;top:0;background:var(--bg);z-index:10;flex-shrink:0;
-}
+.plans-overlay-header{display:flex;align-items:center;justify-content:space-between;padding:24px 32px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:10;flex-shrink:0;}
 .plans-overlay-header h2{font-size:26px;font-weight:900;text-transform:uppercase;letter-spacing:-.04em;}
-.plans-overlay-close{
-  width:38px;height:38px;border-radius:50%;background:var(--select-bg);border:none;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text);transition:.2s;
-}
+.plans-overlay-close{width:38px;height:38px;border-radius:50%;background:var(--select-bg);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text);transition:.2s;}
 .plans-overlay-close:hover{background:var(--border2);}
 .plans-overlay-body{flex:1;padding:32px;max-width:1000px;width:100%;margin:0 auto;}
 .plans-token-bal{font-size:13px;color:#888;margin-bottom:24px;padding:12px 16px;background:var(--select-bg);border-radius:12px;display:none;}
-
-/* Comparison table */
 .plan-compare-wrap{overflow-x:auto;}
 .plan-compare{width:100%;border-collapse:separate;border-spacing:0;}
-.plan-compare th,.plan-compare td{padding:14px 16px;text-align:center;font-size:13px;border-bottom:1px solid var(--border);}
+.plan-compare th,.plan-compare td{padding:13px 16px;text-align:center;font-size:13px;border-bottom:1px solid var(--border);}
 .plan-compare th:first-child,.plan-compare td:first-child{text-align:left;font-weight:600;color:#888;font-size:12px;width:220px;}
-.plan-compare thead th{font-weight:900;font-size:14px;text-transform:uppercase;letter-spacing:-.02em;padding-bottom:6px;border-bottom:none;}
-.plan-compare thead .plan-col-price{font-size:22px;font-weight:900;padding-top:4px;padding-bottom:2px;border-bottom:none;}
-.plan-compare thead .plan-col-sub{font-size:11px;color:#888;font-weight:600;padding-top:2px;padding-bottom:16px;border-bottom:1px solid var(--border);}
-.plan-compare thead .plan-col-badge{padding-top:16px;border-bottom:none;}
+.plan-compare thead th{font-weight:900;font-size:14px;text-transform:uppercase;letter-spacing:-.02em;padding-bottom:4px;border-bottom:none;}
 .plan-compare .plan-col-current{background:var(--select-bg);}
 .plan-compare tbody tr:last-child td{border-bottom:none;}
-.plan-compare tfoot td{border-top:1px solid var(--border);border-bottom:none;padding-top:20px;}
-.check-yes{color:#22c55e;font-size:16px;}
+.check-yes{color:#22c55e;font-size:16px;font-weight:900;}
 .check-no{color:#d1d5db;font-size:16px;}
 .dark-mode .check-no{color:#374151;}
-.plan-compare-subscribe{
-  width:100%;padding:10px;border-radius:10px;font-size:11px;font-weight:800;
-  text-transform:uppercase;letter-spacing:.08em;cursor:pointer;border:none;
-  transition:.2s;background:var(--accent);color:var(--accent-inv);
-}
+.plan-compare-subscribe{width:100%;padding:10px;border-radius:10px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;border:none;transition:.2s;background:var(--accent);color:var(--accent-inv);}
 .plan-compare-subscribe:hover{opacity:.8;}
 .plan-compare-subscribe:disabled{background:var(--select-bg);color:#888;cursor:not-allowed;}
 
-/* Search results */
+/* Search */
 .search-result{padding:8px 10px;border-radius:8px;cursor:pointer;transition:.2s;}
 .search-result:hover{background:var(--select-bg);}
 .search-result-title{font-size:13px;font-weight:600;margin-bottom:2px;}
@@ -356,8 +325,6 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 .toggle-dot{width:16px;height:16px;background:white;border-radius:50%;position:absolute;top:2px;left:2px;transition:.3s;}
 .dark-mode .toggle-bg{background:#22c55e;}
 .dark-mode .toggle-dot{left:22px;}
-.toggle-active .toggle-bg{background:#22c55e;}
-.toggle-active .toggle-dot{left:22px;}
 
 /* Toast */
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:var(--accent-inv);padding:10px 20px;border-radius:10px;font-size:12px;font-weight:700;z-index:9999;opacity:0;transition:.25s;pointer-events:none;}
@@ -410,6 +377,28 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 /* AI tool call indicator */
 .tool-call-chip{display:inline-flex;align-items:center;gap:6px;background:var(--select-bg);border:1px solid var(--border2);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:#888;margin-bottom:8px;}
 .tool-call-chip.done{color:#22c55e;border-color:rgba(34,197,94,.3);}
+
+/* Plans grid fallback */
+.plans-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.plan-card{border:1px solid var(--border2);border-radius:14px;padding:16px;transition:.2s;}
+.plan-card.current{border-color:var(--text);background:var(--select-bg);}
+.plan-card-name{font-size:14px;font-weight:800;margin-bottom:3px;}
+.plan-card-price{font-size:18px;font-weight:900;margin-bottom:6px;}
+.plan-subscribe-btn{width:100%;margin-top:10px;padding:8px;border-radius:8px;font-size:10px;font-weight:800;text-transform:uppercase;cursor:pointer;border:none;transition:.2s;background:var(--accent);color:var(--accent-inv);}
+.plan-subscribe-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+/* Whisper download popup */
+#whisper-modal .modal-content{max-width:400px;text-align:center;}
+.whisper-progress-bar{width:100%;height:8px;background:var(--border2);border-radius:20px;overflow:hidden;margin:16px 0 8px;}
+.whisper-progress-fill{height:100%;background:var(--accent);border-radius:20px;width:0%;transition:width .3s ease;}
+.whisper-progress-label{font-size:12px;color:#888;font-weight:600;}
+
+/* Google Drive file picker */
+.gdrive-file-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);cursor:pointer;transition:.2s;font-size:13px;}
+.gdrive-file-item:hover{background:var(--select-bg);border-color:var(--text);}
+.gdrive-file-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.gdrive-file-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
+.gdrive-file-type{font-size:10px;color:#999;font-weight:700;text-transform:uppercase;}
 
 @media(max-width:640px){
   #canvas-panel.open{width:100%;}
@@ -509,36 +498,60 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
       <textarea id="user-input" rows="1" placeholder="Demandez n'importe quoi…" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
       <div class="input-footer">
         <div class="input-footer-left">
+
           <!-- Canvas toggle -->
           <button class="inp-icon-btn" id="btn-canvas-toggle" onclick="toggleCanvasMode()" title="Activer le Canvas">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
             <span class="canvas-active-dot" id="canvas-active-dot"></span>
           </button>
-          <!-- Import + button -->
-          <div class="import-btn-wrap" id="import-btn-wrap" style="display:none;position:relative;">
-            <button class="inp-icon-btn import-plus-btn" id="btn-import-plus" onclick="toggleImportMenu(event)" title="Importer">
-              <svg id="import-plus-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="transition:transform .3s ease"><path d="M12 5v14M5 12h14"/></svg>
-            </button>
-            <div class="import-menu" id="import-menu">
-              <button class="import-menu-item" id="imenu-office" onclick="openOfficeImport();closeImportMenu()" style="display:none">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                <span>Wikimind Office</span>
+
+          <!-- Bouton + qui déploie les icônes inline -->
+          <button class="inp-icon-btn" id="btn-import-plus" onclick="toggleImportInline(event)" title="Importer" style="display:none">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+
+          <!-- Groupe d'icônes import inline (se déroulent sur la même ligne) -->
+          <div class="import-inline-group" id="import-inline-group">
+
+            <div class="imp-btn-wrap" id="imp-wrap-office" style="display:none">
+              <button class="inp-icon-btn" onclick="openOfficeImport();closeImportInline()" title="Wikimind Office">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
               </button>
-              <button class="import-menu-item" id="imenu-file" onclick="triggerFileImport();closeImportMenu()" style="display:none">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                <span>Fichiers</span>
-              </button>
-              <button class="import-menu-item" id="imenu-img" onclick="triggerImageImport();closeImportMenu()" style="display:none">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                <span>Image</span>
-              </button>
-              <button class="import-menu-item" id="imenu-media" onclick="triggerMediaImport();closeImportMenu()" style="display:none">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-                <span>Vidéo / Audio</span>
-              </button>
+              <span class="imp-tooltip">Office</span>
             </div>
-          </div>
+
+            <div class="imp-btn-wrap" id="imp-wrap-gdrive" style="display:none">
+              <button class="inp-icon-btn" onclick="openGDriveImport();closeImportInline()" title="Google Drive">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 17H2l4-7h12l4 7z"/><path d="M2 17l4-7"/><path d="M15 3L9 17"/><path d="M9 3l6 14"/><path d="M9 3h6"/></svg>
+              </button>
+              <span class="imp-tooltip">Drive</span>
+            </div>
+
+            <div class="imp-btn-wrap" id="imp-wrap-file" style="display:none">
+              <button class="inp-icon-btn" onclick="triggerFileImport();closeImportInline()" title="Fichiers">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              </button>
+              <span class="imp-tooltip">Fichiers</span>
+            </div>
+
+            <div class="imp-btn-wrap" id="imp-wrap-img" style="display:none">
+              <button class="inp-icon-btn" onclick="triggerImageImport();closeImportInline()" title="Image">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </button>
+              <span class="imp-tooltip">Image</span>
+            </div>
+
+            <div class="imp-btn-wrap" id="imp-wrap-media" style="display:none">
+              <button class="inp-icon-btn" onclick="triggerMediaImport();closeImportInline()" title="Vidéo / Audio">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+              </button>
+              <span class="imp-tooltip">Vidéo/Audio</span>
+            </div>
+
+          </div><!-- end import-inline-group -->
+
           <div class="inp-divider"></div>
+
           <div id="model-select-wrap">
             <select id="model-select" onchange="onModelChange()">
               <option value="flash">WIKIMIND FLASH</option>
@@ -571,11 +584,10 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
       </button>
     </div>
   </div>
-  <!-- Quick Office create buttons -->
   <div class="cvs-create-btns" id="cvs-create-btns" style="display:none">
-    <button class="cvs-create-chip" onclick="createOfficeDocFromCanvas('writer')" title="Créer dans Writer">📄 Writer</button>
-    <button class="cvs-create-chip" onclick="createOfficeDocFromCanvas('calc')" title="Créer dans Calc">📊 Calc</button>
-    <button class="cvs-create-chip" onclick="createOfficeDocFromCanvas('impress')" title="Créer dans Impress">📦 Impress</button>
+    <button class="cvs-create-chip" onclick="createOfficeDocFromCanvas('writer')">📄 Writer</button>
+    <button class="cvs-create-chip" onclick="createOfficeDocFromCanvas('calc')">📊 Calc</button>
+    <button class="cvs-create-chip" onclick="createOfficeDocFromCanvas('impress')">📦 Impress</button>
   </div>
   <div class="canvas-tabs">
     <button class="cvstab active" onclick="switchCvsTab('edit')">Éditer</button>
@@ -727,17 +739,17 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
         <div class="connector-icon" style="background:#fee2e2;color:#dc2626">✉️</div>
         <div class="connector-info">
           <div class="connector-name">Gmail</div>
-          <div class="connector-status" id="conn-gmail-status">Bientôt disponible</div>
+          <div class="connector-status" id="conn-gmail-status">Déconnecté</div>
         </div>
-        <button class="connector-toggle connect" disabled style="opacity:.4">Connecter</button>
+        <button class="connector-toggle connect" id="conn-gmail-btn" onclick="connectGmail()">Connecter</button>
       </div>
       <div class="connector-item" id="conn-gdrive">
         <div class="connector-icon" style="background:#dcfce7;color:#16a34a">📂</div>
         <div class="connector-info">
           <div class="connector-name">Google Drive</div>
-          <div class="connector-status" id="conn-gdrive-status">Bientôt disponible</div>
+          <div class="connector-status" id="conn-gdrive-status">Déconnecté</div>
         </div>
-        <button class="connector-toggle connect" disabled style="opacity:.4">Connecter</button>
+        <button class="connector-toggle connect" id="conn-gdrive-btn" onclick="connectGDrive()">Connecter</button>
       </div>
       <div class="connector-item" id="conn-notion">
         <div class="connector-icon" style="background:var(--select-bg);color:var(--text)">📝</div>
@@ -748,7 +760,7 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
         <button class="connector-toggle connect" disabled style="opacity:.4">Connecter</button>
       </div>
     </div>
-    <p style="font-size:11px;color:#aaa;margin-top:16px;text-align:center">Plus de connecteurs arrivent bientôt. Wikimind Office est toujours actif dès AI Plus.</p>
+    <p style="font-size:11px;color:#aaa;margin-top:16px;text-align:center">Wikimind Office est toujours actif dès AI Plus. Gmail & Drive utilisent l'API Google.</p>
   </div>
 </div>
 
@@ -784,13 +796,48 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
   </div>
 </div>
 
+<!-- GOOGLE DRIVE MODAL -->
+<div class="modal" id="gdrive-modal" onclick="closeModal('gdrive-modal')">
+  <div class="modal-content" style="max-width:520px" onclick="event.stopPropagation()">
+    <h3>Google Drive</h3>
+    <p style="font-size:12px;color:#888;margin-bottom:16px">Sélectionnez un fichier depuis votre Google Drive.</p>
+    <div id="gdrive-search-wrap" style="margin-bottom:12px">
+      <input type="text" class="modal-input" id="gdrive-search" placeholder="Rechercher dans Drive…" oninput="filterGDriveFiles(this.value)" style="padding:10px 14px;font-size:13px;">
+    </div>
+    <div id="gdrive-file-list" style="display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;"></div>
+  </div>
+</div>
+
+<!-- WHISPER DOWNLOAD POPUP -->
+<div class="modal" id="whisper-modal">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div style="font-size:32px;margin-bottom:12px">🎙️</div>
+    <h3 style="margin-bottom:8px">Modèle IA audio</h3>
+    <p style="font-size:13px;color:#888;margin-bottom:20px">WikiMind utilise <strong>Whisper</strong> (Transformers.js) pour transcrire vos fichiers vidéo et audio directement dans votre navigateur.<br><br>Le modèle (~100 Mo) sera téléchargé une seule fois et mis en cache localement.</p>
+    <div class="whisper-progress-bar" id="whisper-prog-bar" style="display:none">
+      <div class="whisper-progress-fill" id="whisper-prog-fill"></div>
+    </div>
+    <div class="whisper-progress-label" id="whisper-prog-label" style="display:none"></div>
+    <div id="whisper-modal-btns" style="display:flex;flex-direction:column;gap:8px;margin-top:16px">
+      <button class="modal-btn primary" onclick="startWhisperDownload()">Télécharger et utiliser</button>
+      <button class="modal-btn secondary" onclick="closeModal('whisper-modal')">Annuler</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <!-- ========== MAIN SCRIPT ========== -->
 <script>
 const MISTRAL_KEY = 'SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9';
-const PLAN_PRICES_MT = { 2: 11, 3: 22, 4: 39 }; // MT/mois (1 MT=1.16€ → Plus=12€, Pro=25€, Premium≈45€)
+const PLAN_PRICES_MT = { 2: 11, 3: 22, 4: 39 };
 const PROMO_END = new Date('2025-04-14T23:59:59');
+
+// Google OAuth config
+const GOOGLE_CLIENT_ID_GMAIL  = '137479541640-q9knb58clom9heua36mtigdcb33epicu.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID_GDRIVE = '137479541640-0poomk21skq92sh04leb4b997qdqpg2s.apps.googleusercontent.com';
+const GMAIL_SCOPES  = 'https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.readonly';
+const GDRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 
 const MISTRAL_MODELS = {
   flash:   { id:'mistral-small-latest',  label:'Wikimind Flash'     },
@@ -807,6 +854,9 @@ const S = {
   importedInstructions:[], attachments:[],
   writingAnim:false, tokens:0,
   connectors:{ office:true, gmail:false, gdrive:false, notion:false },
+  gmailToken:null, gdriveToken:null,
+  gdriveFiles:[],
+  importInlineOpen:false,
 };
 
 const G  = id => document.getElementById(id);
@@ -818,8 +868,11 @@ window.addEventListener('load', () => {
   updateHlTheme(); syncDarkToggle();
   S.writingAnim = localStorage.getItem('wm_writing_anim')==='1';
   syncWritingAnimToggle();
-  // Restore connectors
   try { const c=localStorage.getItem('wm_connectors'); if(c) S.connectors=JSON.parse(c); } catch(e){}
+  // Restore google tokens from session
+  try { S.gmailToken=sessionStorage.getItem('wm_gmail_token')||null; S.gdriveToken=sessionStorage.getItem('wm_gdrive_token')||null; } catch(e){}
+  if(S.gmailToken) S.connectors.gmail=true;
+  if(S.gdriveToken) S.connectors.gdrive=true;
   setTimeout(()=>{ if(!S.user) openModal('auth-modal'); }, 600);
   renderPlansGrid();
   G('user-input').addEventListener('input',()=>autoResize(G('user-input')));
@@ -861,6 +914,7 @@ function skipAuth(){ closeModal('auth-modal'); S.plan=1; bootUser({uid:'guest_'+
 async function doSignOut(){
   const fb=window._fb; if(fb?.auth) try{await fb.signOut(fb.auth);}catch(e){}
   S.user=null; S.msgs=[]; S.chatId=null; S.chats=[];
+  S.gmailToken=null; S.gdriveToken=null;
   renderHistory(); showWelcome(); closeModal('settings-modal'); openModal('auth-modal');
 }
 
@@ -902,9 +956,7 @@ function loadTokenBalance(uid){
 }
 function updateTokenDisplay(){
   const el=G('plan-token-display-ov'); if(el) el.textContent=`${S.tokens} MT`;
-  const el2=G('plan-token-display'); if(el2) el2.textContent=`${S.tokens} MT`;
   const bal=G('plans-token-bal-ov'); if(bal) bal.style.display=S.user&&!S.user.isGuest?'block':'none';
-  const bal2=G('plan-token-balance'); if(bal2) bal2.style.display=S.user&&!S.user.isGuest?'block':'none';
 }
 
 async function loadChats(uid){
@@ -934,16 +986,20 @@ function updateUserUI(){
   if(shopBtn) shopBtn.style.display=S.plan>=2?'block':'none';
   if(advParams) advParams.style.display=S.plan>=2?'block':'none';
   if(advLocked) advLocked.style.display=S.plan<2?'block':'none';
-  // Import menu items visibility
-  const im_office=G('imenu-office'),im_file=G('imenu-file'),im_img=G('imenu-img'),im_media=G('imenu-media');
-  if(im_office) im_office.style.display=S.plan>=2?'flex':'none';
-  if(im_file) im_file.style.display=S.plan>=3?'flex':'none';
-  if(im_img) im_img.style.display=S.plan>=4?'flex':'none';
-  if(im_media) im_media.style.display=S.plan>=4?'flex':'none';
-  // Show + button if any import available
-  const importWrap=G('import-btn-wrap'); if(importWrap) importWrap.style.display=S.plan>=2?'flex':'none';
-  // Show Office create chips in canvas if connected
+  // Import inline buttons visibility
+  const plusBtn=G('btn-import-plus');
+  const showImport=S.plan>=2;
+  if(plusBtn) plusBtn.style.display=showImport?'flex':'none';
+  const wrap=id=>G(id); 
+  if(wrap('imp-wrap-office')) wrap('imp-wrap-office').style.display=S.plan>=2?'flex':'none';
+  if(wrap('imp-wrap-gdrive')) wrap('imp-wrap-gdrive').style.display=S.plan>=2&&S.connectors.gdrive?'flex':'none';
+  if(wrap('imp-wrap-file'))   wrap('imp-wrap-file').style.display=S.plan>=3?'flex':'none';
+  if(wrap('imp-wrap-img'))    wrap('imp-wrap-img').style.display=S.plan>=4?'flex':'none';
+  if(wrap('imp-wrap-media'))  wrap('imp-wrap-media').style.display=S.plan>=4?'flex':'none';
+  // Canvas create btns
   G('cvs-create-btns').style.display=S.plan>=2&&S.connectors.office?'flex':'none';
+  // Connector UI sync
+  syncConnectorUI('gmail'); syncConnectorUI('gdrive');
   renderPlansGrid(); renderInstructions(); updateTokenDisplay();
 }
 
@@ -966,32 +1022,34 @@ function openModal(id){
   if(id==='plan-modal'){openPlansOverlay();return;}
   const m=G(id);if(m)m.classList.add('show');
 }
+function closeModal(id){const m=G(id);if(m)m.classList.remove('show');}
 function openPlansOverlay(){renderPlansGrid();G('plans-overlay').classList.add('show');}
 function closePlansOverlay(){G('plans-overlay').classList.remove('show');}
+document.addEventListener('click',e=>{document.querySelectorAll('.modal.show').forEach(m=>{if(e.target===m)m.classList.remove('show');});});
 
 // ── PLAN SUBSCRIPTION ──
 function renderPlansGrid(){
-  const now=new Date();
-  const promoActive=now<PROMO_END;
+  const now=new Date(); const promoActive=now<PROMO_END;
   const plans=[
-    {key:'free',id:1,label:'Free',price:'0€',mt:0,cls:'plan-free',promo:null},
-    {key:'plus',id:2,label:'AI Plus',price:'12€/mois',mt:11,cls:'plan-plus',promo:'1 mois offert dès le 1er paiement'},
-    {key:'pro',id:3,label:'AI Pro',price:'25€/mois',mt:22,cls:'plan-pro',promo:'1 mois offert dès le 1er paiement'},
-    {key:'premium',id:4,label:'AI Premium',price:promoActive?'45€/mois':'52€/mois',mt:39,cls:'plan-premium',promo:promoActive?'★ Promo -7€ jusqu\'au 14 avril':''},
+    {key:'free',id:1,label:'Free',price:'0€',mt:0,promo:null},
+    {key:'plus',id:2,label:'AI Plus',price:'12€/mois',mt:11,promo:'1 mois offert dès le 1er paiement'},
+    {key:'pro',id:3,label:'AI Pro',price:'25€/mois',mt:22,promo:'1 mois offert dès le 1er paiement'},
+    {key:'premium',id:4,label:'AI Premium',price:promoActive?'45€/mois':'52€/mois',mt:39,promo:promoActive?'★ Promo -7€ jusqu\'au 14 avril':''},
   ];
-  // Feature rows: [label, free, plus, pro, premium]
   const rows=[
     ['Modèle Flash','✓','✓','✓','✓'],
     ['Modèle Medium','✗','✓','✓','✓'],
     ['Modèle Work','✗','1/h','✓','✓'],
     ['Mode Réflexion','✗','1/h','3/h','Illimité'],
     ['Canvas IA','✗','✓','Avancé','Premium'],
-    ['Historique des conversations','Local','Firebase','Firebase','Firebase'],
+    ['Historique','Local','Firebase','Firebase','Firebase'],
     ['Messages / minute','4','10','15','Illimité'],
     ['Import Wikimind Office','✗','✓','✓','✓'],
-    ['Import fichiers (PDF, ODT…)','✗','✗','✓','✓'],
+    ['Import Google Drive','✗','✓','✓','✓'],
+    ['Import fichiers (PDF…)','✗','✗','✓','✓'],
     ['Import images','✗','✗','✗','✓'],
     ['Analyse vidéo / audio','✗','✗','✗','✓'],
+    ['Intégration Gmail','✗','✓','✓','✓'],
     ['Création Office par l\'IA','✗','✗','✓','✓'],
     ['Mode Appel Wikimind','✗','✗','✓','✓'],
     ['Plugins premium','✗','✗','✗','✓'],
@@ -1001,24 +1059,27 @@ function renderPlansGrid(){
   const yes='<span class="check-yes">✓</span>';
   const no='<span class="check-no">✗</span>';
   function cell(v){return v==='✓'?yes:v==='✗'?no:`<span style="font-size:12px;font-weight:700">${v}</span>`;}
-  // Token balance row
   const balEl=G('plans-token-bal-ov'); if(balEl) balEl.style.display=S.user&&!S.user.isGuest?'block':'none';
   const dispEl=G('plan-token-display-ov'); if(dispEl) dispEl.textContent=`${S.tokens} MT`;
   table.innerHTML=`
     <thead>
       <tr>
         <th></th>
-        ${plans.map(p=>`<th class="${S.plan===p.id?'plan-col-current':''}">${p.label}${p.promo?`<div style="font-size:9px;font-weight:700;color:#888;margin-top:3px">🎁 ${p.promo}</div>`:''}</th>`).join('')}
+        ${plans.map(p=>`<th class="${S.plan===p.id?'plan-col-current':''}" style="font-size:15px">${p.label}${p.promo?`<div style="font-size:9px;font-weight:600;color:#888;margin-top:3px">🎁 ${p.promo}</div>`:''}</th>`).join('')}
       </tr>
       <tr>
         <td></td>
-        ${plans.map(p=>`<td class="plan-col-price ${S.plan===p.id?'plan-col-current':''}" style="font-size:20px;font-weight:900">${p.price}</td>`).join('')}
+        ${plans.map(p=>`<td class="${S.plan===p.id?'plan-col-current':''}" style="font-size:20px;font-weight:900;border-bottom:none">${p.price}</td>`).join('')}
       </tr>
       <tr>
         <td style="border-bottom:1px solid var(--border)"></td>
         ${plans.map(p=>`<td class="${S.plan===p.id?'plan-col-current':''}" style="padding-bottom:16px;border-bottom:1px solid var(--border)">
-          ${S.plan===p.id?`<span style="font-size:10px;font-weight:800;text-transform:uppercase;background:var(--select-bg);padding:3px 10px;border-radius:20px">Actuel</span>`:p.id>1&&!S.user?.isGuest?`<button class="plan-compare-subscribe" onclick="subscribePlan(${p.id},${p.mt})" ${S.tokens<p.mt?'title="Tokens insuffisants"':''} style="${S.tokens<p.mt?'background:var(--select-bg);color:#888':''}">
-            ${S.tokens>=p.mt?`S'abonner (${p.mt} MT)`:`Tokens insuff. (${p.mt} requis)`}</button>`:`<button class="plan-compare-subscribe" disabled>Connectez-vous</button>`}
+          ${S.plan===p.id
+            ?`<span style="font-size:10px;font-weight:800;text-transform:uppercase;background:var(--select-bg);padding:3px 10px;border-radius:20px">Actuel</span>`
+            :p.id>1&&!S.user?.isGuest
+              ?`<button class="plan-compare-subscribe" onclick="subscribePlan(${p.id},${p.mt})" ${S.tokens<p.mt?'style="background:var(--select-bg);color:#888"':''}>
+                  ${S.tokens>=p.mt?`S'abonner (${p.mt} MT)`:`Tokens insuff. (${p.mt} requis)`}</button>`
+              :`<button class="plan-compare-subscribe" disabled>Connectez-vous</button>`}
         </td>`).join('')}
       </tr>
     </thead>
@@ -1027,8 +1088,7 @@ function renderPlansGrid(){
         <td>${r[0]}</td>
         ${plans.map((p,i)=>`<td class="${S.plan===p.id?'plan-col-current':''}">${cell(r[i+1])}</td>`).join('')}
       </tr>`).join('')}
-    </tbody>
-  `;
+    </tbody>`;
 }
 
 async function subscribePlan(planId, mtCost){
@@ -1038,18 +1098,12 @@ async function subscribePlan(planId, mtCost){
   const planNames={2:'AI Plus',3:'AI Pro',4:'AI Premium'};
   if(!confirm(`S'abonner au forfait ${planNames[planId]} pour ${mtCost} MT (≈${(mtCost*1.16).toFixed(0)}€) ?`)) return;
   try{
-    // Debit tokens
     await fb.runTransaction(fb.ref(fb.db,`users/${S.user.uid}/tokens`),(bal)=>(bal||0)-mtCost);
-    // Update FORFAIT
     await fb.set(fb.ref(fb.db,`users/${S.user.uid}/FORFAIT`),planId);
-    // Log subscription
-    await fb.set(fb.ref(fb.db,`users/${S.user.uid}/subscription`),{
-      plan:planId,mtPaid:mtCost,startedAt:Date.now(),renewAt:Date.now()+30*24*3600*1000
-    });
+    await fb.set(fb.ref(fb.db,`users/${S.user.uid}/subscription`),{plan:planId,mtPaid:mtCost,startedAt:Date.now(),renewAt:Date.now()+30*24*3600*1000});
     S.plan=planId; S.tokens-=mtCost;
     updateUserUI(); updateTokenDisplay(); renderPlansGrid();
     toast(`🎉 Forfait ${planNames[planId]} activé !`);
-    // First month bonus — add mtCost as gift
     await fb.runTransaction(fb.ref(fb.db,`users/${S.user.uid}/tokens`),(bal)=>(bal||0)+mtCost);
     S.tokens+=mtCost; updateTokenDisplay(); renderPlansGrid();
     toast('🎁 1 mois offert crédité en bonus !');
@@ -1109,7 +1163,6 @@ function renderMsg(msg, doScroll=true){
       msg.images.forEach(src=>{const img=document.createElement('img');img.src=src;img.className='chat-image';imgWrap.appendChild(img);});
       wrap.appendChild(imgWrap);
     }
-    // Canvas notice
     if(msg._canvasMode){
       const notice=document.createElement('div'); notice.className='canvas-notice';
       notice.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg> Mode Canvas actif';
@@ -1128,7 +1181,6 @@ function renderMsg(msg, doScroll=true){
     ea.innerHTML=`<textarea id="edit-ta-${msgIdx}" rows="2">${esc(msg.content)}</textarea><div class="edit-btns"><button class="action-btn" onclick="cancelEdit(${msgIdx})" style="color:#aaa">Annuler</button><button class="modal-btn primary" style="width:auto;padding:6px 16px;font-size:11px" onclick="submitEdit(${msgIdx})">Envoyer</button></div>`;
     wrap.appendChild(ea); cc.appendChild(wrap);
   }else{
-    // Tool call chips
     if(msg.toolCalls?.length){
       msg.toolCalls.forEach(tc=>{
         const chip=document.createElement('div'); chip.className='tool-call-chip done';
@@ -1210,10 +1262,28 @@ function updateAttachmentPreview(){
   const prev=G('attachment-preview');
   if(!S.attachments.length){prev.classList.remove('has-files');prev.innerHTML='';return;}
   prev.classList.add('has-files');
-  prev.innerHTML=S.attachments.map((a,i)=>`<div class="attach-chip"><span>${a.type==='image'?'🖼️':'📄'}</span><span>${esc(a.name)}</span><span class="attach-chip-del" onclick="removeAttachment(${i})">✕</span></div>`).join('');
+  prev.innerHTML=S.attachments.map((a,i)=>`<div class="attach-chip"><span>${a.type==='image'?'🖼️':a.type==='media'?'🎬':'📄'}</span><span>${esc(a.name)}</span><span class="attach-chip-del" onclick="removeAttachment(${i})">✕</span></div>`).join('');
 }
 function removeAttachment(i){S.attachments.splice(i,1);updateAttachmentPreview();}
 
+// ── IMPORT INLINE (boutons sur la même ligne) ──
+function toggleImportInline(e){
+  e.stopPropagation();
+  const group=G('import-inline-group');
+  const btn=G('btn-import-plus');
+  S.importInlineOpen=!S.importInlineOpen;
+  group.classList.toggle('open',S.importInlineOpen);
+  btn.classList.toggle('open',S.importInlineOpen);
+}
+function closeImportInline(){
+  if(!S.importInlineOpen) return;
+  S.importInlineOpen=false;
+  G('import-inline-group')?.classList.remove('open');
+  G('btn-import-plus')?.classList.remove('open');
+}
+document.addEventListener('click',()=>closeImportInline());
+
+// ── OFFICE IMPORT ──
 window._officeFilesCache={};
 function openOfficeImport(){
   if(S.plan<2){toast('Wikimind Office — plan AI Plus requis');openPlansOverlay();return;}
@@ -1248,6 +1318,8 @@ function importOfficeFile(id){
   S.attachments.push({type:'text',name,content:String(content).substring(0,40000),source:'office'});
   updateAttachmentPreview(); closeModal('office-modal'); toast(`"${name}" ajouté`); G('user-input').focus();
 }
+
+// ── FILE / IMAGE IMPORT ──
 function triggerFileImport(){if(S.plan<3){toast('Import fichiers — plan AI Pro requis');openPlansOverlay();return;}G('file-input-docs').click();}
 async function onFileImport(e){
   for(const file of Array.from(e.target.files)){
@@ -1275,6 +1347,263 @@ async function onImageImport(e){
   updateAttachmentPreview(); e.target.value='';
 }
 
+// ── MEDIA IMPORT (Whisper / Transformers.js) ──
+function triggerMediaImport(){
+  if(S.plan<4){toast('Analyse vidéo/audio — plan AI Premium requis');openPlansOverlay();return;}
+  // Si le modèle est déjà chargé, ouvrir directement
+  if(window._transformersPipeline){G('file-input-media').click();return;}
+  // Sinon afficher la popup de téléchargement
+  openModal('whisper-modal');
+}
+
+window._whisperPending=false;
+async function startWhisperDownload(){
+  G('whisper-modal-btns').style.display='none';
+  G('whisper-prog-bar').style.display='block';
+  G('whisper-prog-label').style.display='block';
+  G('whisper-prog-label').textContent='Chargement du module Transformers.js…';
+  G('whisper-prog-fill').style.width='5%';
+  try{
+    const{pipeline,env}=await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js');
+    env.allowLocalModels=false;
+    G('whisper-prog-fill').style.width='20%';
+    G('whisper-prog-label').textContent='Téléchargement du modèle Whisper (~100 Mo)…';
+    // Progress callback
+    window._transformersPipeline=await pipeline(
+      'automatic-speech-recognition',
+      'Xenova/whisper-small',
+      {
+        quantized:true,
+        progress_callback:(prog)=>{
+          if(prog.status==='progress'&&prog.total){
+            const pct=Math.round(20+(prog.loaded/prog.total)*75);
+            G('whisper-prog-fill').style.width=pct+'%';
+            G('whisper-prog-label').textContent=`Téléchargement… ${pct}%`;
+          }
+        }
+      }
+    );
+    G('whisper-prog-fill').style.width='100%';
+    G('whisper-prog-label').textContent='✓ Modèle prêt !';
+    setTimeout(()=>{
+      closeModal('whisper-modal');
+      G('whisper-prog-bar').style.display='none';
+      G('whisper-prog-label').style.display='none';
+      G('whisper-modal-btns').style.display='flex';
+      G('whisper-prog-fill').style.width='0%';
+      G('file-input-media').click();
+    },800);
+  }catch(err){
+    G('whisper-prog-label').textContent='Erreur : '+err.message;
+    G('whisper-modal-btns').style.display='flex';
+  }
+}
+
+async function onMediaImport(e){
+  for(const file of Array.from(e.target.files)){
+    const sizeMB=file.size/1024/1024;
+    if(sizeMB>200){toast(`${file.name} trop volumineux (max 200 Mo)`);continue;}
+    toast(`⏳ Transcription de ${file.name}…`);
+    try{
+      const transcript=await transcribeWithWhisper(file);
+      // Le contenu est stocké comme pièce jointe "cachée" — l'utilisateur voit le chip mais pas le texte brut
+      S.attachments.push({type:'media',name:file.name,content:transcript,hidden:true});
+      toast(`✓ ${file.name} transcrit — prêt pour l'IA`);
+    }catch(err){toast(`Erreur transcription : ${err.message}`);}
+  }
+  updateAttachmentPreview(); e.target.value='';
+}
+
+async function transcribeWithWhisper(file){
+  if(!window._transformersPipeline) throw new Error('Whisper non chargé');
+  const url=URL.createObjectURL(file);
+  try{
+    const result=await window._transformersPipeline(url,{language:'fr',task:'transcribe',chunk_length_s:30,stride_length_s:5});
+    const text=typeof result.text==='string'?result.text:(result.chunks||[]).map(c=>c.text).join(' ');
+    return`[TRANSCRIPTION_WIKIMIND:${file.name}]\n${text}\n[/TRANSCRIPTION_WIKIMIND]`;
+  }finally{URL.revokeObjectURL(url);}
+}
+
+// ── GOOGLE OAUTH HELPERS ──
+function launchGoogleOAuth(clientId, scopes, callbackName){
+  const redirectUri=window.location.origin+window.location.pathname;
+  const state=btoa(JSON.stringify({cb:callbackName,ts:Date.now()}));
+  const url=`https://accounts.google.com/o/oauth2/v2/auth`+
+    `?client_id=${encodeURIComponent(clientId)}`+
+    `&redirect_uri=${encodeURIComponent(redirectUri)}`+
+    `&response_type=token`+
+    `&scope=${encodeURIComponent(scopes)}`+
+    `&state=${encodeURIComponent(state)}`+
+    `&prompt=consent`;
+  const popup=window.open(url,'google_oauth','width=520,height=620,left=200,top=100');
+  // Poll for token in hash
+  const poll=setInterval(()=>{
+    try{
+      const h=popup?.location?.hash||'';
+      if(h.includes('access_token')){
+        clearInterval(poll); popup.close();
+        const params=new URLSearchParams(h.substring(1));
+        const token=params.get('access_token');
+        window[callbackName](token);
+      }
+      if(popup?.closed){clearInterval(poll);}
+    }catch(err){}
+  },500);
+}
+
+function connectGmail(){
+  if(S.connectors.gmail){toggleGoogleConnector('gmail');return;}
+  toast('Connexion à Gmail en cours…');
+  launchGoogleOAuth(GOOGLE_CLIENT_ID_GMAIL, GMAIL_SCOPES, 'onGmailToken');
+}
+window.onGmailToken=function(token){
+  S.gmailToken=token;
+  try{sessionStorage.setItem('wm_gmail_token',token);}catch(e){}
+  S.connectors.gmail=true;
+  localStorage.setItem('wm_connectors',JSON.stringify(S.connectors));
+  syncConnectorUI('gmail');
+  updateUserUI();
+  toast('✓ Gmail connecté !');
+};
+
+function connectGDrive(){
+  if(S.connectors.gdrive){toggleGoogleConnector('gdrive');return;}
+  toast('Connexion à Google Drive en cours…');
+  launchGoogleOAuth(GOOGLE_CLIENT_ID_GDRIVE, GDRIVE_SCOPES, 'onGDriveToken');
+}
+window.onGDriveToken=function(token){
+  S.gdriveToken=token;
+  try{sessionStorage.setItem('wm_gdrive_token',token);}catch(e){}
+  S.connectors.gdrive=true;
+  localStorage.setItem('wm_connectors',JSON.stringify(S.connectors));
+  syncConnectorUI('gdrive');
+  updateUserUI();
+  toast('✓ Google Drive connecté !');
+};
+
+function toggleGoogleConnector(name){
+  S.connectors[name]=false;
+  if(name==='gmail'){S.gmailToken=null;try{sessionStorage.removeItem('wm_gmail_token');}catch(e){}}
+  if(name==='gdrive'){S.gdriveToken=null;try{sessionStorage.removeItem('wm_gdrive_token');}catch(e){}}
+  localStorage.setItem('wm_connectors',JSON.stringify(S.connectors));
+  syncConnectorUI(name); updateUserUI();
+  toast(`${name} déconnecté`);
+}
+
+function syncConnectorUI(name){
+  const item=G(`conn-${name}`);
+  const status=G(`conn-${name}-status`);
+  const btn=G(`conn-${name}-btn`);
+  if(!item) return;
+  const connected=S.connectors[name];
+  item.classList.toggle('connected',connected);
+  if(status){status.textContent=connected?'Connecté':'Déconnecté';status.className='connector-status'+(connected?' on':'');}
+  if(btn){btn.textContent=connected?'Déconnecter':'Connecter';btn.className='connector-toggle '+(connected?'disconnect':'connect');btn.onclick=connected?()=>toggleGoogleConnector(name):(name==='gmail'?connectGmail:connectGDrive);}
+}
+
+// ── GOOGLE DRIVE IMPORT ──
+function openGDriveImport(){
+  if(S.plan<2){toast('Google Drive — plan AI Plus requis');openPlansOverlay();return;}
+  if(!S.connectors.gdrive||!S.gdriveToken){toast('Connectez Google Drive dans les Connecteurs');openModal('connectors-modal');return;}
+  openModal('gdrive-modal');
+  loadGDriveFiles();
+}
+async function loadGDriveFiles(){
+  const listEl=G('gdrive-file-list');
+  listEl.innerHTML='<div style="text-align:center;padding:24px;color:#aaa;font-size:13px">Chargement de Drive…</div>';
+  try{
+    const res=await fetch('https://www.googleapis.com/drive/v3/files?pageSize=50&orderBy=modifiedTime+desc&fields=files(id,name,mimeType,modifiedTime,size)',{
+      headers:{Authorization:'Bearer '+S.gdriveToken}
+    });
+    if(!res.ok) throw new Error('Erreur API Drive ('+res.status+')');
+    const data=await res.json();
+    S.gdriveFiles=data.files||[];
+    renderGDriveFiles(S.gdriveFiles);
+  }catch(err){
+    listEl.innerHTML=`<div style="text-align:center;padding:24px;color:#aaa;font-size:13px">Erreur : ${esc(err.message)}</div>`;
+    if(err.message.includes('401')){S.gdriveToken=null;S.connectors.gdrive=false;updateUserUI();}
+  }
+}
+function renderGDriveFiles(files){
+  const listEl=G('gdrive-file-list');
+  if(!files.length){listEl.innerHTML='<div style="text-align:center;padding:24px;color:#aaa;font-size:13px">Aucun fichier trouvé.</div>';return;}
+  const mime2icon={
+    'application/vnd.google-apps.document':'📄',
+    'application/vnd.google-apps.spreadsheet':'📊',
+    'application/vnd.google-apps.presentation':'📦',
+    'application/pdf':'📕',
+    'text/plain':'📝',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'📄',
+    'image/jpeg':'🖼️','image/png':'🖼️','image/gif':'🖼️',
+  };
+  listEl.innerHTML=files.map(f=>{
+    const icon=mime2icon[f.mimeType]||'📁';
+    const date=f.modifiedTime?new Date(f.modifiedTime).toLocaleDateString('fr-FR'):'';
+    return`<div class="gdrive-file-item" onclick="importGDriveFile('${f.id}','${esc(f.name)}','${f.mimeType}')">
+      <div class="gdrive-file-icon">${icon}</div>
+      <span class="gdrive-file-name">${esc(f.name)}</span>
+      <span class="gdrive-file-type" style="font-size:10px;color:#aaa">${date}</span>
+    </div>`;
+  }).join('');
+}
+function filterGDriveFiles(q){
+  const filtered=q?S.gdriveFiles.filter(f=>f.name.toLowerCase().includes(q.toLowerCase())):S.gdriveFiles;
+  renderGDriveFiles(filtered);
+}
+async function importGDriveFile(id,name,mimeType){
+  toast(`📥 Import de ${name}…`);
+  try{
+    let content='';
+    // Google Docs → export as text
+    const exportMap={
+      'application/vnd.google-apps.document':'text/plain',
+      'application/vnd.google-apps.spreadsheet':'text/csv',
+      'application/vnd.google-apps.presentation':'text/plain',
+    };
+    const exportMime=exportMap[mimeType];
+    if(exportMime){
+      const res=await fetch(`https://www.googleapis.com/drive/v3/files/${id}/export?mimeType=${encodeURIComponent(exportMime)}`,{headers:{Authorization:'Bearer '+S.gdriveToken}});
+      if(!res.ok) throw new Error('Export impossible ('+res.status+')');
+      content=await res.text();
+    }else{
+      // Download raw file
+      const res=await fetch(`https://www.googleapis.com/drive/v3/files/${id}?alt=media`,{headers:{Authorization:'Bearer '+S.gdriveToken}});
+      if(!res.ok) throw new Error('Téléchargement impossible ('+res.status+')');
+      content=await res.text();
+    }
+    S.attachments.push({type:'text',name,content:`[Google Drive: ${name}]\n${content.substring(0,40000)}`});
+    updateAttachmentPreview();
+    closeModal('gdrive-modal');
+    toast(`✓ "${name}" importé depuis Drive`);
+    G('user-input').focus();
+  }catch(err){toast(`Erreur Drive : ${err.message}`);}
+}
+
+// ── GMAIL INTEGRATION ──
+function detectEmailIntent(text){
+  const t=text.toLowerCase();
+  const keywords=['mail','email','e-mail','courriel','message','envoie','envoyer','écris','rédige','compose','brouillon','draft','gmail'];
+  return keywords.some(k=>t.includes(k));
+}
+async function createGmailDraft(subject,body,to=''){
+  if(!S.gmailToken) return null;
+  try{
+    const email=`To: ${to}\r\nSubject: ${subject}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${body}`;
+    const encoded=btoa(unescape(encodeURIComponent(email))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    const res=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts',{
+      method:'POST',
+      headers:{Authorization:'Bearer '+S.gmailToken,'Content-Type':'application/json'},
+      body:JSON.stringify({message:{raw:encoded}})
+    });
+    if(!res.ok){
+      if(res.status===401){S.gmailToken=null;S.connectors.gmail=false;updateUserUI();throw new Error('Token Gmail expiré — reconnectez Gmail');}
+      throw new Error('Erreur Gmail '+res.status);
+    }
+    const data=await res.json();
+    return data.id;
+  }catch(err){console.error('Gmail draft error:',err);throw err;}
+}
+
 // ── OFFICE DOC CREATION BY AI ──
 async function createOfficeDocByAI(appType, title, content){
   const fb=window._fb; if(!fb?.db||!S.user||S.user.isGuest) return null;
@@ -1283,13 +1612,11 @@ async function createOfficeDocByAI(appType, title, content){
     const fileData={name:title,type:appType,appType,createdAt:Date.now(),updatedAt:Date.now(),content:content||'',createdByAI:true};
     const newRef=fb.ref(fb.db,`users/${S.user.uid}/files/${Date.now()}_ai`);
     await fb.set(newRef,fileData);
-    // Deduct 1 MT for AI file creation
     await fb.runTransaction(fb.ref(fb.db,`users/${S.user.uid}/tokens`),(bal)=>(bal||0)-1);
     S.tokens=Math.max(0,S.tokens-1); updateTokenDisplay();
     return{id:newRef.key,title,appType};
   }catch(e){console.error('createOfficeDocByAI:',e);return null;}
 }
-
 async function createOfficeDocFromCanvas(appType){
   if(!S.canvasOpen||!S.plan>=2){ toast('Canvas non actif'); return; }
   const content=G('canvas-editor').value; if(!content.trim()){toast('Canvas vide');return;}
@@ -1298,63 +1625,6 @@ async function createOfficeDocFromCanvas(appType){
   const result=await createOfficeDocByAI(appType,title,content);
   if(result){ toast(`✓ "${title}" créé dans Wikimind Office`); }
   else{ toast('Erreur création (connectez-vous et vérifiez les tokens)'); }
-}
-
-// ── IMPORT MENU ──
-function toggleImportMenu(e){
-  e.stopPropagation();
-  const menu=G('import-menu');
-  const btn=G('btn-import-plus');
-  const icon=G('import-plus-icon');
-  const isOpen=menu.classList.contains('open');
-  if(isOpen){closeImportMenu();}
-  else{
-    menu.classList.add('open');
-    btn.classList.add('open');
-    icon.style.transform='rotate(135deg)';
-  }
-}
-function closeImportMenu(){
-  const menu=G('import-menu'); if(!menu)return;
-  const btn=G('btn-import-plus'); const icon=G('import-plus-icon');
-  menu.classList.remove('open');
-  if(btn) btn.classList.remove('open');
-  if(icon) icon.style.transform='rotate(0deg)';
-}
-document.addEventListener('click',()=>closeImportMenu());
-
-function triggerMediaImport(){
-  if(S.plan<4){toast('Analyse vidéo/audio — plan AI Premium requis');openPlansOverlay();return;}
-  G('file-input-media').click();
-}
-async function onMediaImport(e){
-  for(const file of Array.from(e.target.files)){
-    const sizeMB=file.size/1024/1024;
-    if(sizeMB>50){toast(`${file.name} trop volumineux (max 50 Mo)`);continue;}
-    toast(`⏳ Analyse de ${file.name}…`);
-    try{
-      const transcript=await analyzeMediaWithTransformers(file);
-      S.attachments.push({type:'text',name:file.name,content:transcript});
-      toast(`✓ ${file.name} analysé`);
-    }catch(err){toast(`Erreur analyse : ${err.message}`);}
-  }
-  updateAttachmentPreview(); e.target.value='';
-}
-async function analyzeMediaWithTransformers(file){
-  // Transcription via Transformers.js (Whisper)
-  try{
-    if(!window._transformersPipeline){
-      toast('Chargement du modèle Whisper…');
-      const {pipeline}=await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js');
-      window._transformersPipeline=await pipeline('automatic-speech-recognition','Xenova/whisper-small',{quantized:true});
-    }
-    const url=URL.createObjectURL(file);
-    const result=await window._transformersPipeline(url,{language:'fr',task:'transcribe'});
-    URL.revokeObjectURL(url);
-    return`[Transcription: ${file.name}]\n${result.text}`;
-  }catch(err){
-    return`[Média: ${file.name}]\n(Transcription Whisper indisponible dans cet environnement — ${err.message})`;
-  }
 }
 
 // ── SEND ──
@@ -1389,8 +1659,14 @@ async function sendMsg(overrideText){
   let fullContent=displayText;
   const images=S.attachments.filter(a=>a.type==='image').map(a=>a.content);
   const docs=S.attachments.filter(a=>a.type==='text');
+  // Médias transcrits — injectés dans le prompt de manière cachée (pas visible dans le chat)
+  const mediaDocs=S.attachments.filter(a=>a.type==='media');
   if(docs.length) fullContent+='\n\n'+docs.map(d=>`--- ${d.name} ---\n${d.content.substring(0,8000)}`).join('\n\n');
+  if(mediaDocs.length) fullContent+='\n\n[CONTEXTE_MÉDIA — contenu audio/vidéo transcrit automatiquement, invisible pour l\'utilisateur, à utiliser comme contexte]\n'+mediaDocs.map(d=>`--- ${d.name} ---\n${d.content.substring(0,12000)}`).join('\n\n')+'\n[/CONTEXTE_MÉDIA]';
   const attachmentName=S.attachments.length?S.attachments.map(a=>a.name).join(', '):null;
+
+  // Détecter intent Gmail — si connecté et intent détecté, on informe
+  const gmailIntent=S.connectors.gmail&&S.gmailToken&&detectEmailIntent(displayText);
 
   const um={role:'user',content:displayText,fullContent,images,attachmentName,_canvasMode:S.canvasMode,ts:now};
   S.msgs.push(um); renderMsg(um);
@@ -1403,18 +1679,20 @@ async function sendMsg(overrideText){
 
   S.generating=true; G('send-btn').disabled=true; const tyId=showTyping();
 
+  // Construire le fullContent avec instruction Gmail si besoin
+  let finalFullContent=fullContent;
+  if(gmailIntent){
+    finalFullContent+='\n\n[INSTRUCTION_SYSTÈME_WIKIMIND: L\'utilisateur a connecté Gmail. Si cette demande concerne un e-mail, rédige-le et termine ta réponse par un bloc JSON sur une seule ligne comme ceci: GMAIL_DRAFT:{"subject":"Objet","body":"Corps du mail","to":""} — WikiMind créera le brouillon automatiquement dans Gmail.]';
+  }
+
   try{
     let aiContent='',steps=null,toolCalls=[];
 
-    if(S.model==='reflect'){const res=await runReflection(fullContent);aiContent=res.content;steps=res.steps;}
+    if(S.model==='reflect'){const res=await runReflection(finalFullContent);aiContent=res.content;steps=res.steps;}
     else if(S.canvasMode){
-      // SMART CANVAS MODE — ask AI to separate canvas content from chat reply
-      const result=await runSmartCanvas(fullContent,displayText);
+      const result=await runSmartCanvas(finalFullContent,displayText);
       aiContent=result.chatReply; steps=null; toolCalls=result.toolCalls||[];
-      if(result.canvasContent){
-        sendToCanvas(result.canvasContent);
-      }
-      // AI-initiated Office creation
+      if(result.canvasContent) sendToCanvas(result.canvasContent);
       if(result.createOffice&&S.connectors.office&&!S.user?.isGuest){
         const oc=result.createOffice;
         toast(`Création d'un fichier ${oc.appType}…`);
@@ -1422,16 +1700,34 @@ async function sendMsg(overrideText){
         if(created){toolCalls.push(`Fichier "${oc.title}" créé dans Wikimind Office (${oc.appType})`);toast(`✓ "${oc.title}" créé dans Office`);}
       }
     }else{
-      // Normal mode — but still detect if AI should create an Office file
-      const raw=await callMistral(buildHistory(fullContent),MISTRAL_MODELS[S.model]?.id||MISTRAL_MODELS.flash.id);
+      const raw=await callMistral(buildHistory(finalFullContent),MISTRAL_MODELS[S.model]?.id||MISTRAL_MODELS.flash.id);
+
+      // Détecter et traiter un brouillon Gmail dans la réponse
+      let cleanedRaw=raw;
+      if(gmailIntent){
+        const gmailMatch=raw.match(/GMAIL_DRAFT:(\{.*?\})/s);
+        if(gmailMatch){
+          try{
+            const draftData=JSON.parse(gmailMatch[1]);
+            cleanedRaw=raw.replace(/GMAIL_DRAFT:(\{.*?\})/s,'').trim();
+            const draftId=await createGmailDraft(draftData.subject||'',draftData.body||cleanedRaw,draftData.to||'');
+            if(draftId){
+              toolCalls.push(`📧 Brouillon Gmail créé : "${draftData.subject||'Sans objet'}"`);
+              toast('✉️ Brouillon Gmail créé !');
+            }
+          }catch(gmailErr){console.warn('Gmail draft parse error:',gmailErr);}
+        }
+      }
+
+      // Détecter intent Office (création)
       const officeIntent=detectOfficeIntent(displayText);
       if(officeIntent&&S.plan>=3&&S.connectors.office&&!S.user?.isGuest){
         toolCalls.push(`Création ${officeIntent.appType} en cours…`);
-        const created=await createOfficeDocByAI(officeIntent.appType,officeIntent.title,raw);
+        const created=await createOfficeDocByAI(officeIntent.appType,officeIntent.title,cleanedRaw);
         if(created) toolCalls=[`Fichier "${officeIntent.title}" créé dans Wikimind Office (${officeIntent.appType})`];
-        if(!S.canvasOpen) sendToCanvas(raw);
+        if(!S.canvasOpen) sendToCanvas(cleanedRaw);
       }
-      aiContent=raw;
+      aiContent=cleanedRaw;
     }
 
     rmTyping(tyId);
@@ -1446,7 +1742,6 @@ async function sendMsg(overrideText){
   S.generating=false; G('send-btn').disabled=false;
 }
 
-// Detect if user wants to create an Office document
 function detectOfficeIntent(text){
   const t=text.toLowerCase();
   const appMap=[
@@ -1459,15 +1754,14 @@ function detectOfficeIntent(text){
   return null;
 }
 
-// Smart Canvas: AI returns JSON with canvasContent + chatReply + optional createOffice
 async function runSmartCanvas(fullContent, displayText){
   const sys=buildSystemPrompt()+`
 
 TU ES EN MODE CANVAS ACTIF. Règles STRICTES :
 - Si la demande contient du contenu long (texte créatif, code, document, rapport, chapitre, liste, etc.), mets CE CONTENU dans "canvasContent".
-- Mets UNIQUEMENT ton commentaire/réponse courte dans "chatReply" (ex: "Voici le chapitre 1 ! Veux-tu que je continue ?" — PAS le contenu).
+- Mets UNIQUEMENT ton commentaire/réponse courte dans "chatReply".
 - Si la demande ne nécessite pas de canvas (question simple, info rapide), mets "" dans canvasContent.
-- Si l'utilisateur demande à CRÉER un fichier Office (document, classeur, présentation), remplis "createOffice" avec {appType, title, content}.
+- Si l'utilisateur demande à CRÉER un fichier Office, remplis "createOffice" avec {appType, title, content}.
 - Réponds UNIQUEMENT en JSON valide, sans backticks, sans texte autour.
 Format : {"chatReply":"...","canvasContent":"...","createOffice":null}`;
 
@@ -1479,9 +1773,8 @@ Format : {"chatReply":"...","canvasContent":"...","createOffice":null}`;
     ],MISTRAL_MODELS[S.model]?.id||MISTRAL_MODELS.flash.id,4096);
     const clean=raw.replace(/```json|```/g,'').trim();
     const parsed=JSON.parse(clean);
-    return{chatReply:parsed.chatReply||parsed.chat_reply||'',canvasContent:parsed.canvasContent||parsed.canvas_content||'',createOffice:parsed.createOffice||parsed.create_office||null,toolCalls:[]};
+    return{chatReply:parsed.chatReply||parsed.chat_reply||'',canvasContent:parsed.canvasContent||parsed.canvas_content||'',createOffice:parsed.createOffice||null,toolCalls:[]};
   }catch(e){
-    // Fallback: put everything in canvas, empty chat reply
     const fallback=await callMistral(buildHistory(fullContent),MISTRAL_MODELS[S.model]?.id||MISTRAL_MODELS.flash.id);
     return{chatReply:'Voici le contenu dans le canvas 👈',canvasContent:fallback,createOffice:null,toolCalls:[]};
   }
@@ -1539,7 +1832,6 @@ function toggleCanvas(){
   S.canvasOpen=!S.canvasOpen;
   G('canvas-panel').classList.toggle('open',S.canvasOpen);
 }
-
 function toggleCanvasMode(){
   if(S.plan<2){toast('Canvas — plan AI Plus requis');openPlansOverlay();return;}
   S.canvasMode=!S.canvasMode;
@@ -1548,9 +1840,8 @@ function toggleCanvasMode(){
   G('canvas-mode-bar').style.display='none';
   G('btn-canvas-toggle').classList.toggle('active-btn',S.canvasMode);
   if(S.canvasMode&&!S.canvasOpen) toggleCanvas();
-  toast(S.canvasMode?'🎨 Mode Canvas activé — le contenu ira dans le canvas':'Mode Canvas désactivé');
+  toast(S.canvasMode?'🎨 Mode Canvas activé':'Mode Canvas désactivé');
 }
-
 function switchCvsTab(tab){
   document.querySelectorAll('.cvstab').forEach((t,i)=>t.classList.toggle('active',(i===0&&tab==='edit')||(i===1&&tab==='preview')));
   const ed=G('canvas-editor'),pv=G('canvas-preview');
@@ -1631,10 +1922,6 @@ function toggleWritingAnim(){S.writingAnim=!S.writingAnim;localStorage.setItem('
 function syncWritingAnimToggle(){const el=G('writing-anim-toggle');if(!el)return;if(S.writingAnim){el.style.background='#22c55e';el.querySelector('.toggle-dot').style.left='22px';}else{el.style.background='#ddd';el.querySelector('.toggle-dot').style.left='2px';}}
 function updateHlTheme(){const isDark=document.body.classList.contains('dark-mode');G('hljs-theme').disabled=isDark;G('hljs-dark').disabled=!isDark;}
 
-// ── MODALS ──
-function closeModal(id){const m=G(id);if(m)m.classList.remove('show');}
-document.addEventListener('click',e=>{document.querySelectorAll('.modal.show').forEach(m=>{if(e.target===m)m.classList.remove('show');});});
-
 // ── UTILS ──
 function copyText(text){navigator.clipboard.writeText(text).then(()=>toast('Copié !')).catch(()=>{const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();toast('Copié !');});}
 function toast(msg){const t=G('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
@@ -1645,7 +1932,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));
     closePlansOverlay();
-    closeImportMenu();
+    closeImportInline();
   }
   if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();openModal('search-modal');setTimeout(()=>G('search-inp')?.focus(),80);}
   if((e.ctrlKey||e.metaKey)&&e.key==='n'){e.preventDefault();newChat();}
