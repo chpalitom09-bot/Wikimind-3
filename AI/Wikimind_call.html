@@ -250,7 +250,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 
     <!-- TRANSCRIPT -->
     <div class="transcript-box" id="transcript-box">
-      <div style="text-align:center;color:rgba(255,255,255,.2);font-size:12px;padding:8px 0">La conversation apparaîtra ici</div>
+      <div data-placeholder style="text-align:center;color:rgba(255,255,255,.2);font-size:12px;padding:8px 0">La conversation apparaîtra ici</div>
     </div>
   </div>
 
@@ -275,30 +275,32 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 
 <script>
 // ──────────────────────────────────────────────
-// INIT
+// CONFIG
 // ──────────────────────────────────────────────
-const MISTRAL_KEY = 'SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9';
-const MISTRAL_MODEL = 'mistral-small-latest'; // Flash = mistral-small
+const MISTRAL_KEY  = 'SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9';
+const MISTRAL_MODEL = 'mistral-small-latest';
 
-// Parse URL params
-const params = new URLSearchParams(location.search);
+const params   = new URLSearchParams(location.search);
 const userName = decodeURIComponent(params.get('name') || 'Utilisateur');
 const userPlan = parseInt(params.get('plan') || '1');
 
 const G = id => document.getElementById(id);
 
-// State
-let isMuted = false;
-let isSpeakerOn = true;
-let callStartTime = null;
-let timerInterval = null;
-let recognition = null;
-let isListening = false;
-let isProcessing = false;
-let currentUtterance = null;
+// ── STATE (toutes les variables à portée MODULE pour éviter les closures stales) ──
+let isMuted        = false;
+let isSpeakerOn    = true;
+let callStartTime  = null;
+let timerInterval  = null;
+let isListening    = false;
+let isProcessing   = false;
+let isSpeaking     = false;
+let callEnded      = false;
+let micStream      = null;
+let recognition    = null;
 let conversationHistory = [];
-let micStream = null;
-let callEnded = false;
+
+// Buffer de transcript stable — PAS de let local dans startListening
+let _pendingFinal  = '';
 
 // ──────────────────────────────────────────────
 // AURORA BG
@@ -317,7 +319,8 @@ function animAurora(){
   ctx.fillStyle='#050505'; ctx.fillRect(0,0,W,H);
   orbs.forEach(o=>{
     o.x+=o.vx; o.y+=o.vy;
-    if(o.x<-.2||o.x>1.2)o.vx*=-1; if(o.y<-.2||o.y>1.2)o.vy*=-1;
+    if(o.x<-.2||o.x>1.2)o.vx*=-1;
+    if(o.y<-.2||o.y>1.2)o.vy*=-1;
     const g=ctx.createRadialGradient(o.x*W,o.y*H,0,o.x*W,o.y*H,o.r*Math.max(W,H));
     g.addColorStop(0,o.col); g.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
@@ -327,54 +330,56 @@ function animAurora(){
 window.addEventListener('resize',resizeAurora); resizeAurora(); animAurora();
 
 // ──────────────────────────────────────────────
-// PLAN GUARD
+// BOOT
 // ──────────────────────────────────────────────
 window.addEventListener('load', () => {
   G('loading').classList.add('out');
 
-  // Check plan — allow Pro(3) and Premium(4)
   if (userPlan < 3) {
     G('plan-guard').classList.remove('hidden');
     return;
   }
 
-  // Check Speech Recognition support
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
     G('perm-overlay').classList.remove('hidden');
     G('perm-overlay').querySelector('.perm-title').textContent = 'Navigateur non supporté';
-    G('perm-overlay').querySelector('.perm-sub').textContent = 'La reconnaissance vocale nécessite Chrome ou Edge. Essayez avec Google Chrome.';
+    G('perm-overlay').querySelector('.perm-sub').textContent = 'Wikimind Appel nécessite Google Chrome ou Microsoft Edge avec le moteur Chromium.';
     G('perm-overlay').querySelector('.perm-btn').style.display = 'none';
     return;
   }
 
-  // Request mic
   G('perm-overlay').classList.remove('hidden');
 });
 
 async function requestMic() {
   try {
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     G('perm-overlay').classList.add('hidden');
     initCall();
   } catch(e) {
-    G('perm-overlay').querySelector('.perm-sub').textContent = 'Accès au microphone refusé. Autorisez l\'accès dans les paramètres de votre navigateur et rechargez la page.';
+    G('perm-overlay').querySelector('.perm-sub').textContent =
+      'Accès refusé. Autorisez le micro dans les paramètres du navigateur puis rechargez la page.';
   }
 }
 
 // ──────────────────────────────────────────────
-// CALL INIT
+// INIT CALL
 // ──────────────────────────────────────────────
 function initCall() {
   G('call-status-label').textContent = 'En ligne';
   callStartTime = Date.now();
   startTimer();
   setOrbState('idle');
-  setStatus('WikiMind vous écoute…');
 
-  // Greeting
-  const greeting = `Bonjour ${userName} ! Je suis WikiMind AI. Comment puis-je vous aider ?`;
+  // Warm up voices list
+  if (speechSynthesis.getVoices().length === 0) {
+    speechSynthesis.addEventListener('voiceschanged', () => {}, { once: true });
+  }
+
+  const greeting = `Bonjour ${userName} ! Je suis WikiMind AI. Comment puis-je vous aider ?`;
   addTranscript('ai', greeting);
-  speakText(greeting);
+  // Small delay to let voices load
+  setTimeout(() => speakText(greeting), 400);
 }
 
 // ──────────────────────────────────────────────
@@ -382,10 +387,9 @@ function initCall() {
 // ──────────────────────────────────────────────
 function startTimer() {
   timerInterval = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
-    const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
-    const s = String(elapsed % 60).padStart(2, '0');
-    G('call-timer').textContent = `${m}:${s}`;
+    const el = G('call-timer'); if (!el) return;
+    const s = Math.floor((Date.now() - callStartTime) / 1000);
+    el.textContent = String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
   }, 1000);
 }
 
@@ -393,18 +397,15 @@ function startTimer() {
 // ORB STATE
 // ──────────────────────────────────────────────
 function setOrbState(state) {
-  const orb = G('orb-core');
+  const orb  = G('orb-core');
   const bars = G('wave-bars');
-  orb.className = 'orb-core';
+  orb.className  = 'orb-core';
   bars.className = 'wave-bars';
-
   if (state === 'speaking') {
     orb.classList.add('speaking');
     bars.classList.add('active');
-    // randomize bar heights for visual interest
-    bars.querySelectorAll('.wave-bar').forEach(b => {
-      b.style.setProperty('--h', (8 + Math.random() * 28) + 'px');
-    });
+    bars.querySelectorAll('.wave-bar').forEach(b =>
+      b.style.setProperty('--h', (8 + Math.random()*28)+'px'));
   } else if (state === 'listening') {
     orb.classList.add('user-speaking');
     bars.classList.add('active');
@@ -416,9 +417,9 @@ function setOrbState(state) {
   }
 }
 
-function setStatus(text, type = '') {
+function setStatus(text, type='') {
   const el = G('status-text');
-  el.className = 'status-text' + (type ? ' ' + type : '');
+  el.className = 'status-text' + (type ? ' '+type : '');
   el.textContent = text;
 }
 
@@ -427,176 +428,211 @@ function setStatus(text, type = '') {
 // ──────────────────────────────────────────────
 function addTranscript(role, text) {
   const box = G('transcript-box');
-  // Clear placeholder
-  const placeholder = box.querySelector('div');
-  if (placeholder && placeholder.textContent.includes('apparaîtra')) placeholder.remove();
+  const ph  = box.querySelector('[data-placeholder]');
+  if (ph) ph.remove();
 
-  const msg = document.createElement('div');
-  msg.className = `transcript-msg ${role}`;
-  msg.innerHTML = `<div class="speaker">${role === 'user' ? userName : 'WikiMind'}</div>${escHtml(text)}`;
+  const msg  = document.createElement('div');
+  msg.className = 'transcript-msg '+role;
+  msg.innerHTML = '<div class="speaker">'+(role==='user'?userName:'WikiMind')+'</div>'+escHtml(text);
   box.appendChild(msg);
   box.scrollTop = box.scrollHeight;
 }
-
-function escHtml(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 // ──────────────────────────────────────────────
-// TTS — Google Speech Synthesis (voix Google)
+// TTS — SpeechSynthesis avec watchdog Chrome
 // ──────────────────────────────────────────────
+let _ttsWatchdog = null;
+
 function speakText(text) {
-  if (!isSpeakerOn) { afterSpeak(); return; }
-  if (currentUtterance) { speechSynthesis.cancel(); }
+  // Cancel any ongoing speech
+  speechSynthesis.cancel();
+  clearTimeout(_ttsWatchdog);
+  isSpeaking = true;
 
-  // Stop listening while AI speaks
-  stopListening();
+  stopListening(); // ne pas écouter pendant que l'IA parle
+
+  if (!isSpeakerOn) {
+    isSpeaking = false;
+    afterSpeak();
+    return;
+  }
 
   setOrbState('speaking');
   setStatus('WikiMind parle…', 'ai-speaking');
 
-  const utt = new SpeechSynthesisUtterance(text);
-  utt.lang = 'fr-FR';
-  utt.rate = 1.05;
-  utt.pitch = 1.0;
+  const utt   = new SpeechSynthesisUtterance(text);
+  utt.lang    = 'fr-FR';
+  utt.rate    = 1.05;
+  utt.pitch   = 1.0;
+  utt.volume  = 1.0;
 
-  // Try to use Google FR voice
-  const voices = speechSynthesis.getVoices();
-  const googleFR = voices.find(v => v.name.toLowerCase().includes('google') && v.lang.startsWith('fr'))
-    || voices.find(v => v.lang.startsWith('fr'));
+  // Choisir la voix Google FR si dispo
+  const voices    = speechSynthesis.getVoices();
+  const googleFR  = voices.find(v => /google/i.test(v.name) && v.lang.startsWith('fr'))
+                 || voices.find(v => v.lang.startsWith('fr-'));
   if (googleFR) utt.voice = googleFR;
 
-  utt.onend = () => {
-    currentUtterance = null;
-    afterSpeak();
+  const onDone = () => {
+    clearTimeout(_ttsWatchdog);
+    if (!callEnded) { isSpeaking = false; afterSpeak(); }
   };
-  utt.onerror = () => {
-    currentUtterance = null;
-    afterSpeak();
-  };
+  utt.onend   = onDone;
+  utt.onerror = onDone;
 
-  currentUtterance = utt;
   speechSynthesis.speak(utt);
-}
 
-// Ensure voices are loaded
-speechSynthesis.onvoiceschanged = () => {};
+  // --- WATCHDOG Chrome ---
+  // Chrome suspend speechSynthesis si la page est inactive ou après ~15s.
+  // On le réveille toutes les 10s avec un resume() et on vérifie si c'est fini.
+  const expectedMs = Math.max(4000, text.length * 65); // ~65ms par caractère
+  let elapsed = 0;
+  _ttsWatchdog = setInterval(() => {
+    elapsed += 10000;
+    if (speechSynthesis.paused) speechSynthesis.resume();
+    if (!speechSynthesis.speaking || elapsed >= expectedMs + 3000) {
+      clearInterval(_ttsWatchdog);
+      if (!callEnded && isSpeaking) { isSpeaking = false; afterSpeak(); }
+    }
+  }, 10000);
+}
 
 function afterSpeak() {
   if (callEnded) return;
   setOrbState('idle');
   setStatus('WikiMind vous écoute…');
-  startListening();
+  // Petit délai avant de ré-écouter pour éviter de capter la fin de la voix
+  setTimeout(() => {
+    if (!callEnded && !isProcessing && !isMuted) startListening();
+  }, 350);
 }
 
 // ──────────────────────────────────────────────
-// STT — Web Speech Recognition (continuous)
+// STT — SpeechRecognition robuste
 // ──────────────────────────────────────────────
+function killRecognition() {
+  isListening = false;
+  if (recognition) {
+    try { recognition.onend = null; recognition.onerror = null; recognition.onresult = null; recognition.onstart = null; recognition.abort(); } catch(e) {}
+    recognition = null;
+  }
+}
+
 function startListening() {
-  if (isMuted || isListening || isProcessing || callEnded) return;
+  // Guards
+  if (callEnded || isMuted || isSpeaking || isProcessing) return;
+  if (isListening) return;
+
+  killRecognition(); // nettoie proprement toute instance précédente
 
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+
   recognition = new SR();
-  recognition.lang = 'fr-FR';
-  recognition.continuous = false;
-  recognition.interimResults = true;
+  recognition.lang            = 'fr-FR';
+  recognition.continuous      = false; // "false" = plus stable sur mobile/Chrome
+  recognition.interimResults  = true;
   recognition.maxAlternatives = 1;
 
-  let finalTranscript = '';
-  let interimTranscript = '';
-  let silenceTimer = null;
+  _pendingFinal = ''; // reset du buffer GLOBAL (pas de closure)
 
   recognition.onstart = () => {
     isListening = true;
+    _pendingFinal = '';
     setOrbState('listening');
     setStatus('Vous parlez…', 'user-speaking');
   };
 
   recognition.onresult = (e) => {
-    finalTranscript = '';
-    interimTranscript = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript;
-      else interimTranscript += e.results[i][0].transcript;
+    let interim = '';
+    _pendingFinal = '';
+    for (let i = 0; i < e.results.length; i++) {
+      if (e.results[i].isFinal) _pendingFinal += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
     }
-    // Update status with interim
-    if (interimTranscript) setStatus(interimTranscript, 'user-speaking');
-
-    // Reset silence timer
-    clearTimeout(silenceTimer);
-    if (finalTranscript) {
-      silenceTimer = setTimeout(() => {
-        recognition.stop();
-      }, 800);
-    }
-  };
-
-  recognition.onend = () => {
-    isListening = false;
-    clearTimeout(silenceTimer);
-    if (finalTranscript.trim() && !callEnded && !isMuted) {
-      processUserSpeech(finalTranscript.trim());
-    } else if (!callEnded && !isProcessing && !isMuted) {
-      // Restart listening after brief pause
-      setTimeout(startListening, 500);
-    }
+    // Affiche le texte intermédiaire en temps réel
+    const display = _pendingFinal || interim;
+    if (display) setStatus(display, 'user-speaking');
   };
 
   recognition.onerror = (e) => {
     isListening = false;
-    if (e.error === 'no-speech' || e.error === 'aborted') {
-      if (!callEnded && !isProcessing && !isMuted) setTimeout(startListening, 600);
-    } else if (e.error !== 'not-allowed') {
-      setTimeout(startListening, 1000);
+    if (e.error === 'no-speech') {
+      // Pas de parole détectée — relancer silencieusement
+      setTimeout(() => { if (!callEnded && !isSpeaking && !isProcessing && !isMuted) startListening(); }, 300);
+    } else if (e.error === 'aborted') {
+      // Abort volontaire — ne pas relancer ici
+    } else {
+      // Erreur réseau ou autre — relancer après délai
+      setTimeout(() => { if (!callEnded && !isSpeaking && !isProcessing && !isMuted) startListening(); }, 800);
     }
   };
 
-  try { recognition.start(); } catch(e) {}
+  recognition.onend = () => {
+    const wasListening = isListening;
+    isListening = false;
+
+    const captured = _pendingFinal.trim();
+    _pendingFinal = '';
+
+    if (captured && !callEnded && !isMuted) {
+      // On a quelque chose — on traite
+      processUserSpeech(captured);
+    } else if (!callEnded && !isSpeaking && !isProcessing && !isMuted) {
+      // Rien capturé — relancer l'écoute
+      setTimeout(startListening, 300);
+    }
+  };
+
+  try {
+    recognition.start();
+  } catch(startErr) {
+    isListening = false;
+    recognition = null;
+    // Réessayer si l'instance était déjà démarrée
+    setTimeout(() => { if (!callEnded && !isSpeaking && !isProcessing && !isMuted) startListening(); }, 500);
+  }
 }
 
 function stopListening() {
   isListening = false;
-  try { if (recognition) recognition.abort(); } catch(e) {}
+  if (recognition) {
+    try { recognition.onend = null; recognition.onerror = null; recognition.abort(); } catch(e) {}
+    recognition = null;
+  }
 }
 
 // ──────────────────────────────────────────────
-// PROCESS USER SPEECH → MISTRAL → TTS
+// PROCESS SPEECH → MISTRAL → TTS
 // ──────────────────────────────────────────────
 async function processUserSpeech(text) {
   if (!text || callEnded) return;
+
+  stopListening(); // s'assurer qu'on n'écoute pas en même temps
   isProcessing = true;
   setOrbState('thinking');
   setStatus('WikiMind réfléchit…', 'thinking');
   addTranscript('user', text);
 
-  // Build conversation history
   conversationHistory.push({ role: 'user', content: text });
 
   try {
     const messages = [
       {
         role: 'system',
-        content: `Tu es WikiMind AI, un assistant vocal intelligent. Tu réponds en FRANÇAIS, de manière concise et naturelle comme dans une vraie conversation orale. Tes réponses doivent être COURTES (2-4 phrases maximum) car elles seront lues à voix haute. Pas de markdown, pas de listes, juste du texte naturel. L'utilisateur s'appelle ${userName}.`
+        content: `Tu es WikiMind AI, un assistant vocal intelligent et bienveillant. Tu réponds TOUJOURS en FRANÇAIS, de manière concise et naturelle comme dans une vraie conversation orale. Tes réponses doivent être COURTES (2-3 phrases maximum) car elles seront lues à voix haute. Pas de markdown, pas de liste, juste du texte naturel et fluide. L'utilisateur s'appelle ${userName}.`
       },
-      ...conversationHistory.slice(-10) // Keep last 10 messages for context
+      ...conversationHistory.slice(-12)
     ];
 
     const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + MISTRAL_KEY
-      },
-      body: JSON.stringify({
-        model: MISTRAL_MODEL,
-        messages,
-        max_tokens: 200,
-        temperature: 0.8
-      })
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer '+MISTRAL_KEY },
+      body:    JSON.stringify({ model: MISTRAL_MODEL, messages, max_tokens: 200, temperature: 0.75 })
     });
 
-    if (!res.ok) throw new Error('API error ' + res.status);
-    const data = await res.json();
+    if (!res.ok) throw new Error('HTTP '+res.status);
+    const data  = await res.json();
     const reply = data.choices[0].message.content.trim();
 
     conversationHistory.push({ role: 'assistant', content: reply });
@@ -605,11 +641,11 @@ async function processUserSpeech(text) {
     isProcessing = false;
     speakText(reply);
 
-  } catch(e) {
+  } catch(err) {
     isProcessing = false;
-    const errMsg = 'Désolé, une erreur s\'est produite. Pouvez-vous répéter ?';
-    addTranscript('ai', errMsg);
-    speakText(errMsg);
+    const fallback = 'Désolé, une erreur est survenue. Pouvez-vous répéter ?';
+    addTranscript('ai', fallback);
+    speakText(fallback);
   }
 }
 
@@ -618,66 +654,56 @@ async function processUserSpeech(text) {
 // ──────────────────────────────────────────────
 function toggleMute() {
   isMuted = !isMuted;
-  const btn = G('btn-mute');
-  const icon = G('mute-icon');
-  btn.classList.toggle('muted', isMuted);
+  G('btn-mute').classList.toggle('muted', isMuted);
 
   if (isMuted) {
     stopListening();
     setOrbState('idle');
     setStatus('Micro coupé');
-    icon.innerHTML = '<line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6"/><path d="M17 16.95A7 7 0 015 12v-2m14 0v2a7 7 0 01-.11 1.23M12 19v4m-4 0h8"/>';
+    G('mute-icon').innerHTML = '<line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6"/><path d="M17 16.95A7 7 0 015 12v-2m14 0v2a7 7 0 01-.11 1.23M12 19v4m-4 0h8"/>';
   } else {
-    icon.innerHTML = '<path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/>';
-    setStatus('WikiMind vous écoute…');
-    if (!isProcessing && !currentUtterance) startListening();
+    G('mute-icon').innerHTML = '<path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/>';
+    if (!isProcessing && !isSpeaking) {
+      setStatus('WikiMind vous écoute…');
+      startListening();
+    }
   }
 }
 
 function toggleSpeaker() {
   isSpeakerOn = !isSpeakerOn;
-  const btn = G('btn-speaker');
-  btn.classList.toggle('off', !isSpeakerOn);
-
-  if (!isSpeakerOn && currentUtterance) {
+  G('btn-speaker').classList.toggle('off', !isSpeakerOn);
+  if (!isSpeakerOn) {
     speechSynthesis.cancel();
-    currentUtterance = null;
-    afterSpeak();
+    clearTimeout(_ttsWatchdog);
+    if (isSpeaking) { isSpeaking = false; afterSpeak(); }
   }
 }
 
 function hangUp() {
   callEnded = true;
+  clearInterval(timerInterval);
+  clearTimeout(_ttsWatchdog);
   stopListening();
   speechSynthesis.cancel();
-  clearInterval(timerInterval);
-
   if (micStream) micStream.getTracks().forEach(t => t.stop());
 
   G('call-status-label').textContent = 'Appel terminé';
   setOrbState('idle');
-  setStatus('À bientôt !');
+  setStatus('À bientôt !');
 
-  // Fade out and redirect
   setTimeout(() => {
     document.body.style.transition = 'opacity .6s';
-    document.body.style.opacity = '0';
+    document.body.style.opacity    = '0';
     setTimeout(() => { window.location.href = '../Wikimind_AI.html'; }, 700);
-  }, 1200);
+  }, 1400);
 }
 
-// ESC key to hang up
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') hangUp();
+document.addEventListener('keydown', e => { if (e.key === 'Escape') hangUp(); });
+window.addEventListener('beforeunload', e => {
+  if (!callEnded && callStartTime) { e.preventDefault(); return e.returnValue=''; }
 });
 
-// Prevent accidental page close during call
-window.addEventListener('beforeunload', e => {
-  if (!callEnded && callStartTime) {
-    e.preventDefault();
-    return e.returnValue = 'Êtes-vous sûr de vouloir quitter l\'appel ?';
-  }
-});
 </script>
 </body>
 </html>
