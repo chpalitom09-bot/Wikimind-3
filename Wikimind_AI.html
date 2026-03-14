@@ -119,7 +119,8 @@
   .dark-mode .plan-premium { background: #44330f; color: #fbbf24; }
 
   /* ─── MAIN AREA ─── */
-  #main-area { flex: 1; position: relative; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+  #main-area { flex: 1; display: flex; flex-direction: row; overflow: hidden; background: var(--bg); }
+  #chat-area  { flex: 1; position: relative; display: flex; flex-direction: column; overflow: hidden; min-width: 0; background: var(--bg); }
 
   /* Float buttons top-left */
   .float-btns { position: absolute; top: 24px; left: 24px; z-index: 50; display: flex; gap: 8px; }
@@ -133,23 +134,23 @@
   .float-btn:hover { background: var(--select-bg); transform: scale(1.05); }
   .float-btn svg { width: 16px; height: 16px; }
 
-  /* Model selector top-center */
-  #model-chip {
-    position: absolute; top: 24px; left: 50%; transform: translateX(-50%);
-    z-index: 50;
+  /* Model selector in input footer */
+  #model-select-wrap {
+    display: flex; align-items: center;
   }
   #model-select {
-    background: var(--select-bg);
-    border: 1px solid var(--border2);
-    border-radius: 999px; padding: 7px 18px;
-    font-size: 11px; font-weight: 700; color: #6b7280;
+    background: none;
+    border: none;
+    padding: 4px 6px;
+    font-size: 11px; font-weight: 700; color: #888;
     outline: none; cursor: pointer;
     font-family: 'Inter', sans-serif;
     text-transform: uppercase; letter-spacing: .06em;
-    transition: .2s;
+    transition: .2s; max-width: 170px;
   }
-  #model-select:hover { border-color: #888; }
+  #model-select:hover { color: var(--text); }
   .dark-mode #model-select { color: #a1a1aa; }
+  #model-select option { background: var(--bg); color: var(--text); }
 
   /* Plan badge top-right */
   #plan-chip {
@@ -223,6 +224,17 @@
   .msg-actions { display: flex; gap: 16px; padding-top: 8px; margin-bottom: 24px; align-items: center; }
   .action-btn { cursor: pointer; color: #ccc; transition: .2s; display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; background: none; border: none; }
   .action-btn:hover { color: var(--text); }
+
+  /* User message edit */
+  .user-msg-wrap { display: flex; flex-direction: column; align-items: flex-end; margin-bottom: 4px; }
+  .user-msg-actions { display: flex; gap: 10px; margin-top: 4px; opacity: 0; transition: .2s; }
+  .user-msg-wrap:hover .user-msg-actions { opacity: 1; }
+  .user-edit-area { display: none; width: 100%; max-width: 88%; margin-top: 8px; }
+  .user-edit-area textarea { width: 100%; padding: 10px 14px; border-radius: 14px; border: 1px solid var(--border2); background: var(--input-bg); color: var(--text); font-size: .95rem; font-family: 'Inter',sans-serif; outline: none; resize: none; }
+  .user-edit-area .edit-btns { display: flex; gap: 8px; margin-top: 6px; justify-content: flex-end; }
+
+  /* Model divider in input */
+  .inp-divider { width: 1px; height: 20px; background: var(--border2); flex-shrink: 0; }
 
   /* Reflection box */
   .reflect-box {
@@ -309,12 +321,12 @@
 
   /* ─── CANVAS PANEL ─── */
   #canvas-panel {
-    position: absolute; right: 0; top: 0; bottom: 0;
     width: 0; overflow: hidden;
     background: var(--sidebar);
     border-left: 1px solid var(--border);
     display: flex; flex-direction: column;
-    z-index: 30; transition: width .3s cubic-bezier(.4,0,.2,1);
+    flex-shrink: 0;
+    transition: width .3s cubic-bezier(.4,0,.2,1);
   }
   #canvas-panel.open { width: 440px; }
   .canvas-hdr { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
@@ -389,7 +401,6 @@
   @media (max-width: 640px) {
     #canvas-panel.open { width: 100%; }
     .plans-grid { grid-template-columns: 1fr; }
-    #model-chip { top: auto; bottom: 88px; }
   }
 </style>
 </head>
@@ -475,6 +486,7 @@ onAuthStateChanged(auth, async user => {
 
 <!-- ════════════════ MAIN AREA ════════════════ -->
 <div id="main-area">
+<div id="chat-area">
 
   <!-- Float buttons -->
   <div class="float-btns">
@@ -486,20 +498,12 @@ onAuthStateChanged(auth, async user => {
     </div>
   </div>
 
-  <!-- Model selector -->
-  <div id="model-chip">
-    <select id="model-select" onchange="onModelChange()">
-      <option value="flash">⚡ WIKIMIND FLASH</option>
-      <option value="medium">🧠 WIKIMIND MEDIUM</option>
-      <option value="work">💼 WIKIMIND WORK</option>
-      <option value="reflect">🔮 WIKIMIND RÉFLEXION</option>
-    </select>
-  </div>
+  <!-- Model selector REMOVED from here - now in input footer -->
 
   <!-- Plan chip top right -->
   <div id="plan-chip">
     <span class="plan-badge plan-free" id="tb-badge">Free</span>
-    <span class="upgrade-link" onclick="openModal('plan-modal')">↑ Mettre à niveau</span>
+    <span class="upgrade-link" onclick="openModal('plan-modal')">&#x2191; Mettre à niveau</span>
   </div>
 
   <!-- Welcome -->
@@ -512,7 +516,7 @@ onAuthStateChanged(auth, async user => {
   <div id="chat-container"></div>
 
   <!-- Rate warning -->
-  <div id="rate-warn" class="rate-warn">⏳ <span id="rate-txt">Attendez 1 minute entre chaque message.</span></div>
+  <div id="rate-warn" class="rate-warn">&#x23F3; <span id="rate-txt">Attendez entre chaque message.</span></div>
 
   <!-- Input -->
   <div id="input-wrapper" class="centered">
@@ -526,6 +530,15 @@ onAuthStateChanged(auth, async user => {
           <button class="inp-icon-btn" onclick="toggleCanvas()" title="Canvas">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h6"/></svg>
           </button>
+          <div class="inp-divider"></div>
+          <div id="model-select-wrap">
+            <select id="model-select" onchange="onModelChange()">
+              <option value="flash">WIKIMIND FLASH</option>
+              <option value="medium">WIKIMIND MEDIUM</option>
+              <option value="work">WIKIMIND WORK</option>
+              <option value="reflect">WIKIMIND REFLEXION</option>
+            </select>
+          </div>
         </div>
         <button id="send-btn" onclick="sendMsg()">
           <svg fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
@@ -564,6 +577,8 @@ onAuthStateChanged(auth, async user => {
     <button class="cvs-tool" onclick="cvsClear()">Effacer</button>
   </div>
 </div>
+
+</div><!-- end #main-area -->
 
 <!-- ════════════════ MODALS ════════════════ -->
 
@@ -626,9 +641,13 @@ onAuthStateChanged(auth, async user => {
   <div class="modal-content" onclick="event.stopPropagation()">
     <h3>Personnaliser</h3>
 
+    <div id="shop-btn-wrap" style="display:none;margin-bottom:16px">
+      <a href="Wikimind_pluggings.html" target="_blank" class="modal-btn primary" style="display:block;text-align:center;padding:12px;text-decoration:none">Boutique Wikimind Plugins</a>
+    </div>
+
     <p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:10px">Importer des modèles / paramètres JSON</p>
     <div class="drop-zone" id="drop-zone" onclick="document.getElementById('json-file').click()" ondragover="ondrov(event)" ondragleave="document.getElementById('drop-zone').classList.remove('drag')" ondrop="ondrop(event)">
-      ↓ Glissez ou cliquez pour importer un fichier .json<br>
+      &#x2193; Glissez ou cliquez pour importer un fichier .json<br>
       <small style="color:#bbb">{"models":[...],"systemPrompt":"..."}</small>
       <input type="file" id="json-file" accept=".json" style="display:none" onchange="onJson(event)">
     </div>
@@ -638,10 +657,16 @@ onAuthStateChanged(auth, async user => {
       <div id="cust-model-list" style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:#888">Aucun modèle importé.</div>
     </div>
 
-    <div style="margin-top:16px">
-      <p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:8px">Instruction système</p>
-      <textarea id="sys-prompt" class="modal-input" rows="4" placeholder="Ex : Tu es un expert en physique quantique…" style="min-height:90px;resize:vertical"></textarea>
-      <button class="modal-btn primary" onclick="saveSys()" style="margin-top:10px">Sauvegarder</button>
+    <div id="advanced-params-wrap">
+      <div style="margin-top:16px">
+        <p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:8px">Instruction système</p>
+        <textarea id="sys-prompt" class="modal-input" rows="4" placeholder="Ex : Tu es un expert en physique quantique…" style="min-height:90px;resize:vertical"></textarea>
+        <button class="modal-btn primary" onclick="saveSys()" style="margin-top:10px">Sauvegarder</button>
+      </div>
+    </div>
+    <div id="advanced-locked" style="display:none;margin-top:16px;padding:14px;background:var(--select-bg);border-radius:10px;text-align:center;font-size:12px;color:#888">
+      Paramètres avancés disponibles à partir du plan <strong>AI Plus</strong>.<br>
+      <span style="cursor:pointer;text-decoration:underline;margin-top:6px;display:inline-block" onclick="closeModal('cust-modal');openModal('plan-modal')">Voir les plans</span>
     </div>
   </div>
 </div>
@@ -691,6 +716,7 @@ const S = {
   canvasMode:  false,
   generating:  false,
   lastMsgTs:   0,
+  lastWorkMsgTs: 0,
   customModels:[],
   sysPrompt:   '',
 };
@@ -755,7 +781,7 @@ async function doRegister() {
     const cred = await fb.createUserWithEmailAndPassword(fb.auth, e, p);
     // AI Plus offert à la création de compte
     await fb.set(fb.ref(fb.db, `users/${cred.user.uid}`), {
-      name: n, plan: 2, createdAt: Date.now()
+      name: n, FORFAIT: 2, plan: 2, createdAt: Date.now()
     });
   } catch(ex) { showAuthErr(fbErr(ex.code)); }
 }
@@ -781,6 +807,7 @@ function fbErr(code) {
 
 function skipAuth() {
   closeModal('auth-modal');
+  S.plan = 1; // Guests = Free plan
   bootUser({ uid: 'guest_' + Date.now(), displayName: 'Invité', isGuest: true });
 }
 
@@ -814,20 +841,27 @@ async function loadProfile(uid) {
     const snap = await fb.get(fb.ref(fb.db, `users/${uid}`));
     if (snap.exists()) {
       const d = snap.val();
-      S.plan = d.plan || 1;
+      // Read FORFAIT field (1=Free, 2=Plus, 3=Pro, 4=Premium)
+      // Support both 'FORFAIT' and legacy 'plan' keys
+      S.plan = d.FORFAIT || d.plan || 2; // connected users default to Plus
       if (d.name) S.user.displayName = d.name;
     } else {
-      // New user — give AI Plus
+      // New user — give AI Plus, set FORFAIT=2
       await fb.set(fb.ref(fb.db, `users/${uid}`), {
         name: S.user.displayName || 'Utilisateur',
-        plan: 2, createdAt: Date.now()
+        FORFAIT: 2, plan: 2, createdAt: Date.now()
       });
       S.plan = 2;
     }
-  } catch(e) { console.warn('loadProfile:', e); }
+  } catch(e) { console.warn('loadProfile:', e); S.plan = 2; }
 }
 
 async function loadChats(uid) {
+  // Free plan: local storage only
+  if (S.plan < 2) {
+    try { const raw = localStorage.getItem('wm_local_chats'); if (raw) S.chats = JSON.parse(raw); } catch(e) {}
+    return;
+  }
   const fb = window._fb; if (!fb?.db) return;
   try {
     const snap = await fb.get(fb.ref(fb.db, `users/${uid}/conversations`));
@@ -848,8 +882,49 @@ function updateUserUI() {
     el.textContent = pn; el.className = 'plan-badge ' + pc;
   });
 
+  // Update model selector options based on plan
+  updateModelOptions();
+
+  // Update customize modal
+  const shopBtn = G('shop-btn-wrap');
+  const advParams = G('advanced-params-wrap');
+  const advLocked = G('advanced-locked');
+  if (shopBtn) shopBtn.style.display = S.plan >= 2 ? 'block' : 'none';
+  if (advParams) advParams.style.display = S.plan >= 2 ? 'block' : 'none';
+  if (advLocked) advLocked.style.display = S.plan < 2 ? 'block' : 'none';
+
   // Refresh plan cards highlights
   renderPlansGrid();
+}
+
+function updateModelOptions() {
+  const sel = G('model-select'); if (!sel) return;
+  const models = [
+    { value:'flash',   label:'WIKIMIND FLASH',    minPlan:1 },
+    { value:'medium',  label:'WIKIMIND MEDIUM',   minPlan:2 },
+    { value:'work',    label:'WIKIMIND WORK',     minPlan:2 },
+    { value:'reflect', label:'WIKIMIND REFLEXION',minPlan:3 },
+  ];
+  sel.innerHTML = '';
+  models.forEach(m => {
+    if (S.plan >= m.minPlan) {
+      const opt = document.createElement('option');
+      opt.value = m.value; opt.textContent = m.label;
+      sel.appendChild(opt);
+    }
+  });
+  // Also add any custom models
+  S.customModels.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.id; opt.textContent = m.name.toUpperCase();
+    sel.appendChild(opt);
+  });
+  // Reset to flash if current model no longer available
+  if (!sel.querySelector(`option[value="${S.model}"]`)) {
+    S.model = 'flash'; sel.value = 'flash';
+  } else {
+    sel.value = S.model;
+  }
 }
 
 // ──────────────────────────────────────────────
@@ -903,7 +978,12 @@ async function delChat(e, id) {
 }
 
 async function persistChat() {
-  if (!S.chatId || S.user?.isGuest) return;
+  // Free plan: local storage only
+  if (S.plan < 2 || S.user?.isGuest) {
+    try { localStorage.setItem('wm_local_chats', JSON.stringify(S.chats)); } catch(e) {}
+    return;
+  }
+  if (!S.chatId) return;
   const fb = window._fb; if (!fb?.db) return;
   try {
     await fb.set(
@@ -930,10 +1010,39 @@ function renderMsg(msg, doScroll = true) {
   showWelcome();
 
   if (msg.role === 'user') {
+    const msgIdx = S.msgs.indexOf(msg);
+    const wrap = document.createElement('div');
+    wrap.className = 'user-msg-wrap';
+    wrap.dataset.msgIdx = msgIdx;
+
     const div = document.createElement('div');
     div.className = 'chat-bubble user';
     div.textContent = msg.content;
-    cc.appendChild(div);
+    wrap.appendChild(div);
+
+    // User message actions
+    const ua = document.createElement('div');
+    ua.className = 'user-msg-actions';
+    ua.innerHTML = `
+      <button class="action-btn" onclick="editUserMsg(${msgIdx})" title="Modifier">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Modifier
+      </button>`;
+    wrap.appendChild(ua);
+
+    // Edit area (hidden by default)
+    const ea = document.createElement('div');
+    ea.className = 'user-edit-area';
+    ea.id = 'edit-area-' + msgIdx;
+    ea.innerHTML = `
+      <textarea id="edit-ta-${msgIdx}" rows="2">${esc(msg.content)}</textarea>
+      <div class="edit-btns">
+        <button class="action-btn" onclick="cancelEdit(${msgIdx})" style="color:#aaa">Annuler</button>
+        <button class="modal-btn primary" style="width:auto;padding:6px 16px;font-size:11px" onclick="submitEdit(${msgIdx})">Envoyer</button>
+      </div>`;
+    wrap.appendChild(ea);
+    cc.appendChild(wrap);
+
   } else {
     // Steps
     if (msg.steps?.length) {
@@ -941,7 +1050,7 @@ function renderMsg(msg, doScroll = true) {
       det.className = 'reflect-box';
       const sum = document.createElement('summary');
       sum.className = 'reflect-summary';
-      sum.innerHTML = `🔮 Réflexion — ${msg.steps.length} étape${msg.steps.length>1?'s':''}`;
+      sum.innerHTML = `Reflexion — ${msg.steps.length} etape${msg.steps.length>1?'s':''}`;
       det.appendChild(sum);
       const body = document.createElement('div');
       body.className = 'reflect-content';
@@ -963,7 +1072,8 @@ function renderMsg(msg, doScroll = true) {
     applyMath(div);
     applyHljs(div);
 
-    // Action row
+    // Action row — with regen button
+    const msgIdx = S.msgs.indexOf(msg);
     const acts = document.createElement('div');
     acts.className = 'msg-actions';
     acts.innerHTML = `
@@ -974,6 +1084,10 @@ function renderMsg(msg, doScroll = true) {
       <button class="action-btn" onclick="sendToCanvas(${JSON.stringify(msg.content)})">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
         Canvas
+      </button>
+      <button class="action-btn" onclick="regenMsg(${msgIdx})" title="Régénérer">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+        Régénérer
       </button>`;
     cc.appendChild(acts);
   }
@@ -981,6 +1095,62 @@ function renderMsg(msg, doScroll = true) {
   if (doScroll) cc.scrollTop = cc.scrollHeight;
 }
 
+// ──────────────────────────────────────────────
+// EDIT USER MESSAGE & REGEN
+// ──────────────────────────────────────────────
+function editUserMsg(msgIdx) {
+  const ea = G('edit-area-' + msgIdx);
+  if (!ea) return;
+  ea.style.display = 'block';
+  const ta = G('edit-ta-' + msgIdx);
+  if (ta) { ta.focus(); autoResize(ta); }
+}
+
+function cancelEdit(msgIdx) {
+  const ea = G('edit-area-' + msgIdx);
+  if (ea) ea.style.display = 'none';
+}
+
+async function submitEdit(msgIdx) {
+  const ta = G('edit-ta-' + msgIdx);
+  if (!ta) return;
+  const newText = ta.value.trim();
+  if (!newText) return;
+
+  // Truncate messages history to this user msg (inclusive) and remove what follows
+  S.msgs = S.msgs.slice(0, msgIdx);
+  // Clear chat UI and re-render up to but not including the edited message
+  G('chat-container').innerHTML = '';
+  S.msgs.forEach(m => renderMsg(m, false));
+  showWelcome();
+
+  // Send as new message
+  G('user-input').value = newText;
+  await sendMsg(newText);
+}
+
+async function regenMsg(aiMsgIdx) {
+  if (S.generating) return;
+  // Find the last user message before this AI message
+  const userMsg = S.msgs.slice(0, aiMsgIdx).filter(m => m.role === 'user').pop();
+  if (!userMsg) return;
+
+  // Truncate to just before the AI message
+  S.msgs = S.msgs.slice(0, aiMsgIdx);
+
+  // Re-render
+  G('chat-container').innerHTML = '';
+  S.msgs.forEach(m => renderMsg(m, false));
+  showWelcome();
+
+  // Re-send last user message
+  await sendMsg(userMsg.content);
+}
+
+
+// ──────────────────────────────────────────────
+// MARKDOWN / MATH / HIGHLIGHT
+// ──────────────────────────────────────────────
 function formatMarkdown(text) {
   if (!text) return '';
   // pre-process math so marked doesn't destroy it
@@ -1048,27 +1218,46 @@ function rmTyping(id) { const el = G(id); if (el) el.remove(); }
 // ──────────────────────────────────────────────
 // SEND
 // ──────────────────────────────────────────────
-async function sendMsg() {
+async function sendMsg(overrideText) {
   if (S.generating) return;
   const input = G('user-input');
-  const text = input.value.trim();
+  const text = overrideText !== undefined ? overrideText : input.value.trim();
   if (!text) return;
 
-  // Rate limit
+  // Rate limit per plan
+  // 1=Free: 4 msg/min, 2=Plus: 10 msg/min, 3=Pro: 15 msg/min, 4=Premium: unlimited
+  const rateLimits = { 1: 60000/4, 2: 60000/10, 3: 60000/15, 4: 0 };
+  const rateMs = rateLimits[S.plan] || rateLimits[1];
   const now = Date.now();
-  if (now - S.lastMsgTs < 60000 && S.lastMsgTs > 0) {
-    const sec = Math.ceil((60000 - (now - S.lastMsgTs)) / 1000);
+  if (rateMs > 0 && (now - S.lastMsgTs) < rateMs && S.lastMsgTs > 0) {
+    const sec = Math.ceil((rateMs - (now - S.lastMsgTs)) / 1000);
     G('rate-warn').style.display = 'block';
-    G('rate-txt').textContent = `⏳ Patientez encore ${sec}s.`;
+    G('rate-txt').textContent = `Patientez encore ${sec}s (limite forfait ${['','Free','Plus','Pro','Premium'][S.plan]}).`;
     setTimeout(() => G('rate-warn').style.display = 'none', 4000);
     return;
   }
 
+  // Work model: Plus plan, max 1 msg/hour
+  if (S.model === 'work' && S.plan >= 2) {
+    const workGap = 3600000;
+    if (S.lastWorkMsgTs && (now - S.lastWorkMsgTs) < workGap) {
+      const min = Math.ceil((workGap - (now - S.lastWorkMsgTs)) / 60000);
+      toast(`Wikimind Work : 1 message par heure (${min}min restantes)`);
+      return;
+    }
+  }
+
   // Plan checks
-  if (S.model === 'reflect' && S.plan < 4) { toast('⭐ Réflexion → plan Premium requis'); openModal('plan-modal'); return; }
+  if (S.model === 'reflect' && S.plan < 3) { toast('Mode Reflexion — plan Pro requis'); openModal('plan-modal'); return; }
+  if (S.model === 'work'    && S.plan < 2) { toast('Wikimind Work — plan AI Plus requis'); openModal('plan-modal'); return; }
+  if (S.model === 'medium'  && S.plan < 2) { toast('Wikimind Medium — plan AI Plus requis'); openModal('plan-modal'); return; }
+
+  // Canvas: Pro+ only
+  if (S.canvasMode && S.plan < 3) { toast('Canvas — plan Pro requis'); S.canvasMode = false; G('canvas-mode-bar').style.display = 'none'; }
 
   S.lastMsgTs = now;
-  input.value = ''; autoResize(input);
+  if (S.model === 'work') S.lastWorkMsgTs = now;
+  if (overrideText === undefined) { input.value = ''; autoResize(input); }
 
   // User msg
   const um = { role: 'user', content: text, ts: now };
@@ -1217,8 +1406,14 @@ Règle: flash=simple/rapide, medium=équilibré, work=complexe/code.` }
 // ──────────────────────────────────────────────
 function onModelChange() {
   const key = G('model-select').value;
-  if (key === 'reflect' && S.plan < 4) {
-    toast('⭐ Réflexion → plan Premium');
+  if (key === 'reflect' && S.plan < 3) {
+    toast('Mode Reflexion — plan Pro requis');
+    G('model-select').value = S.model;
+    openModal('plan-modal');
+    return;
+  }
+  if ((key === 'medium' || key === 'work') && S.plan < 2) {
+    toast('Modele — plan AI Plus requis');
     G('model-select').value = S.model;
     openModal('plan-modal');
     return;
@@ -1230,6 +1425,11 @@ function onModelChange() {
 // CANVAS
 // ──────────────────────────────────────────────
 function toggleCanvas() {
+  if (!S.canvasOpen && S.plan < 3) {
+    toast('Canvas — plan AI Pro requis');
+    openModal('plan-modal');
+    return;
+  }
   S.canvasOpen = !S.canvasOpen;
   G('canvas-panel').classList.toggle('open', S.canvasOpen);
 }
@@ -1306,14 +1506,11 @@ function parseJson(file) {
           if (m.id && m.name) {
             S.customModels.push(m);
             MISTRAL_MODELS[m.id] = { id: m.apiId || m.id, label: m.name };
-            // Add to select
-            const opt = document.createElement('option');
-            opt.value = m.id; opt.textContent = m.name.toUpperCase();
-            G('model-select').appendChild(opt);
             n++;
           }
         });
         renderCustModels();
+        updateModelOptions();
       }
       if (d.systemPrompt) { S.sysPrompt = d.systemPrompt; G('sys-prompt').value = d.systemPrompt; }
       if (d.instructions)  { S.sysPrompt = d.instructions;  G('sys-prompt').value = d.instructions; }
@@ -1330,7 +1527,7 @@ function renderCustModels() {
     <div style="display:flex;align-items:center;gap:10px;background:var(--select-bg);padding:8px 12px;border-radius:8px">
       <span style="font-weight:700;font-size:13px">${esc(m.name)}</span>
       <span style="color:#aaa">${esc(m.id)}</span>
-      <button onclick="rmCustModel(${i})" style="margin-left:auto;background:none;border:none;color:#aaa;cursor:pointer;font-size:13px" title="Supprimer">✕</button>
+      <button onclick="rmCustModel(${i})" style="margin-left:auto;background:none;border:none;color:#aaa;cursor:pointer;font-size:13px" title="Supprimer">&#x2715;</button>
     </div>`).join('');
 }
 
@@ -1339,9 +1536,7 @@ function rmCustModel(i) {
   delete MISTRAL_MODELS[m.id];
   S.customModels.splice(i, 1);
   renderCustModels();
-  // Remove from select
-  const opt = G('model-select').querySelector(`option[value="${m.id}"]`);
-  if (opt) opt.remove();
+  updateModelOptions();
 }
 
 function saveSys() {
@@ -1355,10 +1550,14 @@ function saveSys() {
 // ──────────────────────────────────────────────
 function renderPlansGrid() {
   const plans = [
-    { key:'free', label:'Free', price:'0€', cls:'plan-free', feats:['Flash uniquement','1 message / minute','Historique local'] },
-    { key:'plus', label:'AI Plus', extra:'(Offert)', price:'9€/mois', cls:'plan-plus', feats:['Flash + Medium + Work','Historique Firebase','Recherche dans les chats','Génération d\'images (bientôt)'] },
-    { key:'pro',  label:'AI Pro',  price:'19€/mois', cls:'plan-pro',  feats:['Priorité serveur','Code avancé & debug','Canvas IA complet','Export Markdown'] },
-    { key:'premium', label:'AI Premium', extra:'⭐', price:'39€/mois', cls:'plan-premium', feats:['Wikimind Réflexion','Multi-étapes IA','Plugins personnalisés','Export PDF & Code','Analyse de données'] },
+    { key:'free', label:'Free', price:'0€', cls:'plan-free',
+      feats:['Flash uniquement','4 messages / minute','Historique local','Pas de paramètres avancés'] },
+    { key:'plus', label:'AI Plus', extra:'(Offert)', price:'9€/mois', cls:'plan-plus',
+      feats:['Flash + Medium + Work (1/h)','10 messages / minute','Historique Firebase','Plugins simples Wikimind','Accès boutique plugins'] },
+    { key:'pro',  label:'AI Pro', price:'19€/mois', cls:'plan-pro',
+      feats:['Tous les modèles','15 messages / minute','Mode Réflexion (3/h)','Canvas IA','Plugins avancés','Mode Appel Wikimind'] },
+    { key:'premium', label:'AI Premium', extra:'★', price:'39€/mois', cls:'plan-premium',
+      feats:['Illimité','Réflexion illimitée','Canvas avancé','Plugins premium','Éditeur de code','Wikimind Appel','Analyse audio/vidéo'] },
   ];
   const pg = G('plans-grid'); if (!pg) return;
   pg.innerHTML = plans.map((p, i) => `
