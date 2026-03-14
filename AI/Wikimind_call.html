@@ -353,7 +353,20 @@ window.addEventListener('load', () => {
 
 async function requestMic() {
   try {
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    // CORRECTIF : On force l'anti-écho (utile pour les micros intégrés) 
+    micStream = await navigator.mediaDevices.getUserMedia({ 
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, 
+      video: false 
+    });
+    
+    // CORRECTIF : On libère immédiatement le flux de "getUserMedia".
+    // Sans cela, l'accès au micro reste verrouillé et empêche "SpeechRecognition" 
+    // de démarrer sur les téléphones ou les PC portables utilisant le micro intégré.
+    if (micStream) {
+      micStream.getTracks().forEach(t => t.stop());
+      micStream = null;
+    }
+
     G('perm-overlay').classList.add('hidden');
     initCall();
   } catch(e) {
