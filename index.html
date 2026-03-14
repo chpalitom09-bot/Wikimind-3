@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>WikiMind 3.0</title>
+
+    <!-- ✅ PWA: Manifest -->
+    <link rel="manifest" href="App/manifest.json">
+    <meta name="theme-color" content="#050505">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="WikiMind">
+    <link rel="apple-touch-icon" href="App/icon-192.png">
+
     <!-- Google tag (gtag.js) conservé -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-29XYBNJ2CB"></script>
     <script>
@@ -29,12 +38,14 @@
                     animation: { 
                         'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
                         'toast-enter': 'toastEnter 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
-                        'toast-leave': 'toastLeave 0.3s ease-in forwards'
+                        'toast-leave': 'toastLeave 0.3s ease-in forwards',
+                        'greeting-in': 'greetingIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'
                     },
                     keyframes: { 
                         fadeInUp: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
                         toastEnter: { '0%': { opacity: 0, transform: 'translateY(100%) scale(0.9)' }, '100%': { opacity: 1, transform: 'translateY(0) scale(1)' } },
-                        toastLeave: { '0%': { opacity: 1, transform: 'scale(1)' }, '100%': { opacity: 0, transform: 'scale(0.9)' } }
+                        toastLeave: { '0%': { opacity: 1, transform: 'scale(1)' }, '100%': { opacity: 0, transform: 'scale(0.9)' } },
+                        greetingIn: { '0%': { opacity: 0, transform: 'translateY(8px) scale(0.97)' }, '100%': { opacity: 1, transform: 'translateY(0) scale(1)' } }
                     }
                 }
             }
@@ -73,6 +84,86 @@
         
         /* Custom UI */
         #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+
+        /* ✅ FEATURE 2 — Module Cards Premium */
+        .module-card {
+            contain: layout style paint;
+            will-change: transform;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        border-color 0.3s ease,
+                        box-shadow 0.3s ease;
+        }
+        .module-card:hover {
+            transform: translateY(-4px) translateZ(0) scale(1.012);
+        }
+        .module-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            opacity: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.12) 0%, transparent 70%);
+            transition: opacity 0.35s ease;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .module-card:hover::before { opacity: 1; }
+
+        /* Glow accent ring on hover */
+        .module-card-glow::after {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: inherit;
+            background: linear-gradient(135deg, rgba(99,102,241,0.4) 0%, transparent 50%, rgba(168,85,247,0.2) 100%);
+            opacity: 0;
+            transition: opacity 0.35s ease;
+            pointer-events: none;
+            z-index: -1;
+        }
+        .module-card:hover .module-card-glow::after { opacity: 1; }
+
+        /* Icon pulse on hover */
+        .module-card:hover .card-icon {
+            animation: iconPulse 0.4s ease-out forwards;
+        }
+        @keyframes iconPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.18) rotate(-3deg); }
+            100% { transform: scale(1.1) rotate(0deg); }
+        }
+
+        /* ✅ FEATURE 4 — Mentions @pseudo */
+        .mention-tag {
+            color: #818cf8;
+            font-weight: 700;
+            background: rgba(99, 102, 241, 0.15);
+            border-radius: 4px;
+            padding: 0 4px;
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            cursor: default;
+            transition: background 0.2s;
+        }
+        .mention-tag:hover {
+            background: rgba(99, 102, 241, 0.28);
+        }
+
+        /* ✅ Sort buttons active state */
+        .sort-btn.active {
+            background: rgba(99,102,241,0.2);
+            border-color: rgba(99,102,241,0.5);
+            color: #818cf8;
+        }
+
+        /* Greeting animation */
+        #hero-greeting { animation: greetingIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        /* Random quote ticker */
+        #hero-quote { animation: fadeInUp 0.8s ease-out 0.4s forwards; opacity: 0; }
     </style>
 </head>
 <body class="selection:bg-brand-500 selection:text-white">
@@ -168,17 +259,21 @@
         <section class="max-w-7xl mx-auto text-center min-h-[50vh] flex flex-col justify-center items-center">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-brand-500/30 bg-brand-500/10 text-brand-glow text-[10px] uppercase font-bold tracking-[0.2em] mb-8 animate-fade-in-up">
                 <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                 Outils Innovants
+                Outils Innovants
             </div>
 
-            <h1 class="text-5xl md:text-8xl font-display font-bold leading-tight mb-8 tracking-tighter animate-fade-in-up" style="animation-delay: 0.1s;">
-               Boostez votre<br>
-                <span class="text-gradient">potentiel.</span>
+            <!-- ✅ FEATURE BONUS — Greeting dynamique -->
+            <h1 class="text-5xl md:text-8xl font-display font-bold leading-tight mb-8 tracking-tighter animate-fade-in-up" style="animation-delay: 0.1s;" id="hero-greeting">
+                <!-- Injecté par JS -->
+                <span class="text-gradient" id="greeting-line">Bonjour !</span>
             </h1>
+
+            <!-- Quote aléatoire pour les non-connectés -->
+            <p id="hero-quote" class="text-sm md:text-base text-white/40 max-w-lg mx-auto mb-4 font-light italic"></p>
 
             <p class="text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-12 font-light leading-relaxed animate-fade-in-up" style="animation-delay: 0.2s;">
                 WikiMind 3.0 est une suite d'outils interconnectés pour apprendre, créer et s'organiser. 
-                <br><span class="text-xs text-white/40 mt-2 block">🔒 Architecture Hybride & Sécurisée.</span>
+                <br><span class="text-xs text-white/40 mt-2 block">🔒 Architecture Hybride &amp; Sécurisée.</span>
             </p>
 
             <div class="flex flex-col items-center justify-center gap-4 animate-fade-in-up" style="animation-delay: 0.3s;">
@@ -207,7 +302,7 @@
                 </div>
                 <div id="minichat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 text-sm flex flex-col">
                     <div class="bg-white/5 border border-white/10 rounded-xl rounded-tl-none p-3 max-w-[80%] self-start text-white/80">
-                        Bonjour ! Je suis l'IA WikiMind . Posez-moi une question !
+                        Bonjour ! Je suis l'IA WikiMind. Posez-moi une question !
                     </div>
                 </div>
                 <div class="p-3 border-t border-white/10 bg-black/40 flex gap-2 items-center">
@@ -226,15 +321,18 @@
                 <span class="text-white/40 text-xs uppercase tracking-widest">v3.0.4 stable</span>
             </div>
             
+            <!-- ✅ FEATURE 2 — Cards Premium Grid -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-fr" id="modules-container">
                 
-                <!-- Modules améliorés -->
-                <a href="Wikimind_AI.html" class="module-card md:col-span-2 glass-panel rounded-3xl p-8 relative overflow-hidden group cursor-pointer hover:border-brand-500/50 hover:shadow-[0_0_30px_rgba(99,102,241,0.15)] transition-all duration-300" data-name="wikimind core chat ai gpt llama">
-                    <div class="absolute -top-20 -right-20 p-40 bg-brand-500/20 blur-[100px] rounded-full group-hover:bg-brand-500/30 transition-all duration-500"></div>
+                <!-- WikiMind Core — Grande carte hero -->
+                <a href="Wikimind_AI.html" class="module-card md:col-span-2 glass-panel rounded-3xl p-8 relative overflow-hidden group cursor-pointer border border-white/8 hover:border-brand-500/60 hover:shadow-[0_0_50px_rgba(99,102,241,0.2),0_0_100px_rgba(99,102,241,0.08)]" data-name="wikimind core chat ai gpt llama">
+                    <div class="module-card-glow absolute inset-0 rounded-3xl pointer-events-none"></div>
+                    <div class="absolute -top-20 -right-20 w-80 h-80 bg-brand-500/20 blur-[120px] rounded-full group-hover:bg-brand-500/35 transition-all duration-700"></div>
+                    <div class="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/10 blur-[80px] rounded-full group-hover:bg-purple-500/20 transition-all duration-700"></div>
                     <div class="relative z-10 h-full flex flex-col justify-between min-h-[200px]">
                         <div>
-                            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500/30 to-brand-600/10 border border-brand-500/30 flex items-center justify-center text-3xl mb-6 shadow-lg shadow-brand-500/20 group-hover:scale-110 transition-transform duration-300">🧠</div>
-                            <h3 class="text-3xl font-display font-bold mb-3 text-white group-hover:text-brand-glow transition-colors">WikiMind AI <i class="fa-solid fa-arrow-up-right-from-square text-sm ml-2 opacity-50"></i></h3>
+                            <div class="card-icon w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500/30 to-brand-600/10 border border-brand-500/40 flex items-center justify-center text-3xl mb-6 shadow-lg shadow-brand-500/30">🧠</div>
+                            <h3 class="text-3xl font-display font-bold mb-3 text-white group-hover:text-brand-glow transition-colors duration-300">WikiMind AI <i class="fa-solid fa-arrow-up-right-from-square text-sm ml-2 opacity-50"></i></h3>
                             <p class="text-white/70 max-w-md text-sm leading-relaxed">L'Intelligence Artificielle Wikimind simple, efficace, puissante.</p>
                         </div>
                         <div class="mt-6 flex gap-2">
@@ -244,94 +342,100 @@
                     </div>
                 </a>
                 
-                <a href="Wikimind_office.html" class="module-card glass-panel rounded-3xl p-6 relative overflow-hidden group cursor-pointer hover:border-blue-500/50 hover:shadow-[0_0_20px_rgba(59,130,246,0.1)] transition-all duration-300" data-name="cours notes ecole">
-                    <div class="absolute top-0 right-0 p-24 bg-blue-500/5 blur-[60px] rounded-full group-hover:bg-blue-500/10 transition-all duration-500"></div>
+                <a href="Wikimind_office.html" class="module-card glass-panel rounded-3xl p-6 relative overflow-hidden group cursor-pointer border border-white/8 hover:border-blue-500/60 hover:shadow-[0_0_40px_rgba(59,130,246,0.15)]" data-name="cours notes ecole">
+                    <div class="module-card-glow absolute inset-0 rounded-3xl pointer-events-none"></div>
+                    <div class="absolute -top-8 -right-8 w-40 h-40 bg-blue-500/10 blur-[80px] rounded-full group-hover:bg-blue-500/20 transition-all duration-700"></div>
                     <div class="relative z-10 flex flex-col h-full">
-                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 border border-blue-500/20 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-blue-500/10">📝</div>
-                        <h3 class="text-xl font-display font-bold mb-2 group-hover:text-blue-300 transition-colors">Wikimind Office</h3>
+                        <div class="card-icon w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/25 to-blue-500/5 border border-blue-500/30 flex items-center justify-center text-2xl mb-4 shadow-lg shadow-blue-500/15">📝</div>
+                        <h3 class="text-xl font-display font-bold mb-2 group-hover:text-blue-300 transition-colors duration-300">Wikimind Office</h3>
                         <p class="text-white/60 text-xs leading-relaxed mb-4 flex-grow">Outil de création de documents accompagné d'une IA.</p>
-                        <div class="flex items-center text-[10px] text-blue-400 font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">Ouvrir <i class="fa-solid fa-arrow-right ml-1"></i></div>
+                        <div class="flex items-center text-[10px] text-blue-400 font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">Ouvrir <i class="fa-solid fa-arrow-right ml-1"></i></div>
                     </div>
                 </a>
                 
-                <a href="Wikimind_extension.html" class="module-card glass-panel rounded-3xl p-6 relative overflow-hidden group cursor-pointer hover:border-purple-500/50 hover:shadow-[0_0_20px_rgba(168,85,247,0.1)] transition-all duration-300" data-name="games jeux echecs arcade">
-                    <div class="absolute top-0 right-0 p-24 bg-purple-500/5 blur-[60px] rounded-full group-hover:bg-purple-500/10 transition-all duration-500"></div>
+                <a href="Wikimind_extension.html" class="module-card glass-panel rounded-3xl p-6 relative overflow-hidden group cursor-pointer border border-white/8 hover:border-purple-500/60 hover:shadow-[0_0_40px_rgba(168,85,247,0.15)]" data-name="games jeux echecs arcade">
+                    <div class="module-card-glow absolute inset-0 rounded-3xl pointer-events-none"></div>
+                    <div class="absolute -top-8 -right-8 w-40 h-40 bg-purple-500/10 blur-[80px] rounded-full group-hover:bg-purple-500/20 transition-all duration-700"></div>
                     <div class="relative z-10 flex flex-col h-full">
-                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 border border-purple-500/20 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-purple-500/10">📱</div>
-                        <h3 class="text-xl font-display font-bold mb-2 group-hover:text-purple-300 transition-colors">Wikimind Ext.</h3>
+                        <div class="card-icon w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/25 to-purple-500/5 border border-purple-500/30 flex items-center justify-center text-2xl mb-4 shadow-lg shadow-purple-500/15">📱</div>
+                        <h3 class="text-xl font-display font-bold mb-2 group-hover:text-purple-300 transition-colors duration-300">Wikimind Ext.</h3>
                         <p class="text-white/60 text-xs leading-relaxed mb-4 flex-grow">Découvrez l'extension Google Chrome Wikimind.</p>
-                        <div class="flex items-center text-[10px] text-purple-400 font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">Découvrir <i class="fa-solid fa-arrow-right ml-1"></i></div>
+                        <div class="flex items-center text-[10px] text-purple-400 font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">Découvrir <i class="fa-solid fa-arrow-right ml-1"></i></div>
                     </div>
                 </a>
                 
-                <a href="Wikimind_AI_tool.html" class="module-card glass-panel rounded-3xl p-6 relative overflow-hidden group cursor-pointer hover:border-teal-500/50 hover:shadow-[0_0_20px_rgba(20,184,166,0.1)] transition-all duration-300" data-name="bac ecole simulateur notes">
-                    <div class="absolute top-0 right-0 p-24 bg-teal-500/5 blur-[60px] rounded-full group-hover:bg-teal-500/10 transition-all duration-500"></div>
+                <a href="Wikimind_AI_tool.html" class="module-card glass-panel rounded-3xl p-6 relative overflow-hidden group cursor-pointer border border-white/8 hover:border-teal-500/60 hover:shadow-[0_0_40px_rgba(20,184,166,0.15)]" data-name="bac ecole simulateur notes">
+                    <div class="module-card-glow absolute inset-0 rounded-3xl pointer-events-none"></div>
+                    <div class="absolute -top-8 -right-8 w-40 h-40 bg-teal-500/10 blur-[80px] rounded-full group-hover:bg-teal-500/20 transition-all duration-700"></div>
                     <div class="relative z-10 flex flex-col h-full">
-                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500/20 to-teal-500/5 border border-teal-500/20 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-teal-500/10">🎓</div>
-                        <h3 class="text-xl font-display font-bold mb-2 group-hover:text-teal-300 transition-colors">AI Tools</h3>
+                        <div class="card-icon w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500/25 to-teal-500/5 border border-teal-500/30 flex items-center justify-center text-2xl mb-4 shadow-lg shadow-teal-500/15">🎓</div>
+                        <h3 class="text-xl font-display font-bold mb-2 group-hover:text-teal-300 transition-colors duration-300">AI Tools</h3>
                         <p class="text-white/60 text-xs leading-relaxed mb-4 flex-grow">Détecteur d'IA Wikimind accompagné d'un humaniseur.</p>
-                        <div class="flex items-center text-[10px] text-teal-400 font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">Lancer <i class="fa-solid fa-arrow-right ml-1"></i></div>
+                        <div class="flex items-center text-[10px] text-teal-400 font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">Lancer <i class="fa-solid fa-arrow-right ml-1"></i></div>
                     </div>
                 </a>
                 
-                <a href="Wikimind_info.html" class="module-card glass-panel rounded-3xl p-6 relative overflow-hidden group cursor-pointer hover:border-yellow-500/50 hover:shadow-[0_0_20px_rgba(234,179,8,0.1)] transition-all duration-300" data-name="studio creative image video create">
-                    <div class="absolute top-0 right-0 p-24 bg-yellow-500/5 blur-[60px] rounded-full group-hover:bg-yellow-500/10 transition-all duration-500"></div>
+                <a href="Wikimind_info.html" class="module-card glass-panel rounded-3xl p-6 relative overflow-hidden group cursor-pointer border border-white/8 hover:border-yellow-500/60 hover:shadow-[0_0_40px_rgba(234,179,8,0.15)]" data-name="studio creative image video create">
+                    <div class="module-card-glow absolute inset-0 rounded-3xl pointer-events-none"></div>
+                    <div class="absolute -top-8 -right-8 w-40 h-40 bg-yellow-500/10 blur-[80px] rounded-full group-hover:bg-yellow-500/20 transition-all duration-700"></div>
                     <div class="relative z-10 flex flex-col h-full">
-                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-500/20 to-yellow-500/5 border border-yellow-500/20 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-yellow-500/10">ℹ️</div>
-                        <h3 class="text-xl font-display font-bold mb-2 group-hover:text-yellow-300 transition-colors">Wikimind Info</h3>
+                        <div class="card-icon w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-500/25 to-yellow-500/5 border border-yellow-500/30 flex items-center justify-center text-2xl mb-4 shadow-lg shadow-yellow-500/15">ℹ️</div>
+                        <h3 class="text-xl font-display font-bold mb-2 group-hover:text-yellow-300 transition-colors duration-300">Wikimind Info</h3>
                         <p class="text-white/60 text-xs leading-relaxed mb-4 flex-grow">Apprenez avec Wikimind info, chaque jour l'IA vous envoie une nouvelle information.</p>
-                        <div class="flex items-center text-[10px] text-yellow-400 font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">S'informer <i class="fa-solid fa-arrow-right ml-1"></i></div>
+                        <div class="flex items-center text-[10px] text-yellow-400 font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">S'informer <i class="fa-solid fa-arrow-right ml-1"></i></div>
                     </div>
                 </a>
                 
-                <a href="Wikimind_flash.html" class="module-card glass-panel rounded-3xl p-6 relative overflow-hidden group cursor-pointer hover:border-rose-500/50 hover:shadow-[0_0_20px_rgba(244,63,94,0.1)] transition-all duration-300" data-name="academy education math calcul">
-                    <div class="absolute top-0 right-0 p-24 bg-rose-500/5 blur-[60px] rounded-full group-hover:bg-rose-500/10 transition-all duration-500"></div>
+                <a href="Wikimind_flash.html" class="module-card glass-panel rounded-3xl p-6 relative overflow-hidden group cursor-pointer border border-white/8 hover:border-rose-500/60 hover:shadow-[0_0_40px_rgba(244,63,94,0.15)]" data-name="academy education math calcul">
+                    <div class="module-card-glow absolute inset-0 rounded-3xl pointer-events-none"></div>
+                    <div class="absolute -top-8 -right-8 w-40 h-40 bg-rose-500/10 blur-[80px] rounded-full group-hover:bg-rose-500/20 transition-all duration-700"></div>
                     <div class="relative z-10 flex flex-col h-full">
-                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500/20 to-rose-500/5 border border-rose-500/20 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-rose-500/10">📚</div>
-                        <h3 class="text-xl font-display font-bold mb-2 group-hover:text-rose-300 transition-colors">Wikimind Flash</h3>
+                        <div class="card-icon w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500/25 to-rose-500/5 border border-rose-500/30 flex items-center justify-center text-2xl mb-4 shadow-lg shadow-rose-500/15">📚</div>
+                        <h3 class="text-xl font-display font-bold mb-2 group-hover:text-rose-300 transition-colors duration-300">Wikimind Flash</h3>
                         <p class="text-white/60 text-xs leading-relaxed mb-4 flex-grow">Générez des quiz et des cartes pour réviser et apprendre rapidement.</p>
-                        <div class="flex items-center text-[10px] text-rose-400 font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">Réviser <i class="fa-solid fa-arrow-right ml-1"></i></div>
+                        <div class="flex items-center text-[10px] text-rose-400 font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">Réviser <i class="fa-solid fa-arrow-right ml-1"></i></div>
                     </div>
                 </a>
 
                 <!-- Autres Modules -->
-                <a href="WikiMind_calories.html" class="module-card md:col-span-2 glass-panel rounded-3xl p-6 flex items-center justify-between group cursor-pointer hover:border-brand-500/50 transition-all" data-name="focus flow productivity study pomodoro">
+                <a href="WikiMind_study.html" class="module-card md:col-span-2 glass-panel rounded-3xl p-6 flex items-center justify-between group cursor-pointer border border-white/8 hover:border-brand-500/50 hover:shadow-[0_0_30px_rgba(99,102,241,0.12)] transition-all" data-name="focus flow productivity study pomodoro">
                     <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-2xl">⚡</div>
+                        <div class="card-icon w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-2xl">⚡</div>
                         <div>
-                            <h3 class="text-2xl font-display font-bold">Wikimind Calories</h3>
-                            <p class="text-white/60 text-sm">Compteur de calories par jour propulsé par la base de données Open Food Calories.</p>
+                            <h3 class="text-2xl font-display font-bold">Study Flow</h3>
+                            <p class="text-white/60 text-sm">Productivité neuronale. Pomodoro &amp; Gestionnaire de tâches IA.</p>
                         </div>
                     </div>
                     <div class="hidden md:block text-2xl opacity-20 group-hover:opacity-100 transition-opacity">→</div>
                 </a>
-                 <a href="Wikimind_cloud.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer hover:border-brand-500/50 transition-all" data-name="cloud stockage drive">
-                    <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">☁️</div>
+
+                <a href="Wikimind_cloud.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer border border-white/8 hover:border-brand-500/50 hover:shadow-[0_0_25px_rgba(99,102,241,0.1)] transition-all" data-name="cloud stockage drive">
+                    <div class="card-icon w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">☁️</div>
                     <h3 class="text-xl font-display font-bold mb-1">Cloud</h3>
                     <p class="text-white/60 text-xs">Stockage sécurisé base64.</p>
                 </a>
-                <a href="Wikimind_finance.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer hover:border-brand-500/50 transition-all" data-name="finance argent budget">
-                    <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">💸</div>
+                <a href="Wikimind_finance.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer border border-white/8 hover:border-brand-500/50 hover:shadow-[0_0_25px_rgba(99,102,241,0.1)] transition-all" data-name="finance argent budget">
+                    <div class="card-icon w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">💸</div>
                     <h3 class="text-xl font-display font-bold mb-1">Finance</h3>
                     <p class="text-white/60 text-xs">Gestion intelligente de budget.</p>
                 </a>
-                <a href="Wikimind_diaporama.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer hover:border-brand-500/50 transition-all" data-name="diaporama slide powerpoint">
-                    <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">🎞️</div>
+                <a href="Wikimind_diaporama.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer border border-white/8 hover:border-brand-500/50 hover:shadow-[0_0_25px_rgba(99,102,241,0.1)] transition-all" data-name="diaporama slide powerpoint">
+                    <div class="card-icon w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">🎞️</div>
                     <h3 class="text-xl font-display font-bold mb-1">Diaporama</h3>
                     <p class="text-white/60 text-xs">Générateur de slides via IA Mistral.</p>
                 </a>
-                <a href="https://chpalitom09-bot.github.io/Wikimind_All/Wikimind_detect.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer hover:border-brand-500/50 transition-all" data-name="detector detecteur ia chatgpt">
-                    <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">🛡️</div>
+                <a href="https://chpalitom09-bot.github.io/Wikimind_All/Wikimind_detect.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer border border-white/8 hover:border-brand-500/50 hover:shadow-[0_0_25px_rgba(99,102,241,0.1)] transition-all" data-name="detector detecteur ia chatgpt">
+                    <div class="card-icon w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">🛡️</div>
                     <h3 class="text-xl font-display font-bold mb-1">Detector</h3>
                     <p class="text-white/60 text-xs">Analyse et détecte les textes générés par IA.</p>
                 </a>
-                <a href="Wikimind_humanise.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer hover:border-brand-500/50 transition-all" data-name="humanizer reformuler ecriture">
-                    <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">🧬</div>
+                <a href="Wikimind_humanise.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer border border-white/8 hover:border-brand-500/50 hover:shadow-[0_0_25px_rgba(99,102,241,0.1)] transition-all" data-name="humanizer reformuler ecriture">
+                    <div class="card-icon w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">🧬</div>
                     <h3 class="text-xl font-display font-bold mb-1">Humanizer</h3>
                     <p class="text-white/60 text-xs">Rend vos textes IA indétectables et naturels.</p>
                 </a>
-                <a href="Wikimind_3D.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer hover:border-brand-500/50 transition-all" data-name="3d cad modelisation">
-                    <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">🧊</div>
+                <a href="Wikimind_3D.html" class="module-card glass-panel rounded-3xl p-6 group cursor-pointer border border-white/8 hover:border-brand-500/50 hover:shadow-[0_0_25px_rgba(99,102,241,0.1)] transition-all" data-name="3d cad modelisation">
+                    <div class="card-icon w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">🧊</div>
                     <h3 class="text-xl font-display font-bold mb-1">3D Pro</h3>
                     <p class="text-white/60 text-xs">CAO Hybride et modélisation assistée.</p>
                 </a>
@@ -350,7 +454,7 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div class="p-4 rounded-xl bg-white/5 border border-white/10">
                             <div class="font-bold mb-1 text-brand-glow">🔒 Sécurisé</div>
-                            <div class="text-xs text-white/50">Données cryptées & privées.</div>
+                            <div class="text-xs text-white/50">Données cryptées &amp; privées.</div>
                         </div>
                         <div class="p-4 rounded-xl bg-white/5 border border-white/10">
                             <div class="font-bold mb-1 text-brand-glow">🚀 Multi-Modèles</div>
@@ -368,7 +472,7 @@
                             <span class="text-white font-bold">Wikipedia</span>.
                         </p>
                         <p>
-                            C'est de cet héritage que vient le préfixe <strong>"Wiki"</strong>. Le suffixe <strong>"Mind"</strong> (l'esprit) incarne la capacité de réfléchir, d'analyser et de synthétiser grâce au modèles d'Intelligence Artificielle.
+                            C'est de cet héritage que vient le préfixe <strong>"Wiki"</strong>. Le suffixe <strong>"Mind"</strong> (l'esprit) incarne la capacité de réfléchir, d'analyser et de synthétiser grâce aux modèles d'Intelligence Artificielle.
                         </p>
                     </div>
                 </div>
@@ -397,12 +501,23 @@
                     </div>
                 </div>
 
+                <!-- ✅ FEATURE 3 — Tri des commentaires -->
+                <div class="px-6 pt-4 pb-2 relative z-10 flex items-center gap-2">
+                    <span class="text-[10px] text-white/30 uppercase tracking-widest mr-1">Trier :</span>
+                    <button id="sort-recent" class="sort-btn active text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/60 hover:text-white transition-all" onclick="window.setSortMode('recent')">
+                        <i class="fa-solid fa-clock mr-1"></i> Récents
+                    </button>
+                    <button id="sort-top" class="sort-btn text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/60 hover:text-white transition-all" onclick="window.setSortMode('top')">
+                        <i class="fa-solid fa-fire mr-1"></i> Top
+                    </button>
+                </div>
+
                 <!-- Zone de saisie -->
                 <div id="main-comment-form-container" class="p-6 relative z-10">
                     <div class="flex gap-4">
                         <img id="current-user-avatar" src="https://ui-avatars.com/api/?name=Anonyme&background=333&color=fff" class="w-10 h-10 rounded-full border border-white/20 object-cover bg-gray-800">
                         <div class="flex-1">
-                            <textarea id="main-comment-input" rows="2" placeholder="Partagez votre pensée..." 
+                            <textarea id="main-comment-input" rows="2" placeholder="Partagez votre pensée... (utilisez @pseudo pour mentionner)" 
                                 class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand-500 focus:bg-white/10 transition-all resize-none"></textarea>
                             <div class="flex justify-end mt-2 items-center gap-3">
                                 <span id="posting-as" class="text-[10px] text-white/30 uppercase tracking-widest">Mode Anonyme</span>
@@ -467,7 +582,7 @@
             <h3 class="text-xl font-bold uppercase mb-4">Mentions Légales</h3>
             <div class="text-sm text-white/60 space-y-4">
                 <p><strong>Éditeur :</strong> Projet Open Source WikiMind, développé par Tom Duval.</p>
-                <p><strong>Hébergement :</strong> GitHub Pages & Firebase Hosting.</p>
+                <p><strong>Hébergement :</strong> GitHub Pages &amp; Firebase Hosting.</p>
             </div>
             <button onclick="document.getElementById('legal-modal').style.display='none'" class="mt-6 w-full bg-white/10 hover:bg-white/20 py-2 rounded-lg text-xs font-bold uppercase">Fermer</button>
         </div>
@@ -489,6 +604,77 @@
         import { getDatabase, ref, push, onChildAdded, onChildRemoved, onChildChanged, set, remove, runTransaction, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         // ==========================================
+        // ✅ FEATURE BONUS — GREETING DYNAMIQUE
+        // ==========================================
+        const QUOTES_ANONYME = [
+            "✨ L'apprentissage est le seul trésor que l'on emporte partout.",
+            "🚀 Chaque grand expert a d'abord été un débutant.",
+            "🧠 La curiosité est le moteur de l'intelligence.",
+            "💡 Une idée peut changer une journée. WikiMind peut changer ton avenir.",
+            "📚 Lire, créer, comprendre — c'est ça WikiMind.",
+            "⚡ Commence maintenant, perfectionne ensuite.",
+            "🌍 La connaissance est la seule richesse qui grandit quand on la partage.",
+            "🎯 Focus. Create. Achieve.",
+        ];
+
+        function getGreeting(firstName = null) {
+            const now = new Date();
+            const hour = now.getHours();
+            const day = now.getDay(); // 0=dim, 1=lun...6=sam
+
+            const dayNames = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+            const dayName = dayNames[day];
+
+            // Messages spéciaux par jour
+            const specialDayMessages = {
+                0: ["Bon Dimanche", "Profite bien de ton dimanche", "Recharge les batteries ce dimanche"],
+                1: ["Bon Lundi", "Belle semaine en vue", "Nouvelle semaine, nouvelles ambitions"],
+                5: ["Bon Vendredi", "Le week-end arrive", "Plus que quelques heures"],
+                6: ["Bon Samedi", "Profite de ton samedi", "Belle journée de liberté"]
+            };
+
+            let base;
+            if (specialDayMessages[day] && Math.random() > 0.5) {
+                const arr = specialDayMessages[day];
+                base = arr[Math.floor(Math.random() * arr.length)];
+            } else if (hour >= 5 && hour < 12) {
+                const options = ["Bonne matinée", "Bonjour", "Belle matinée", "Bonne journée qui commence"];
+                base = options[Math.floor(Math.random() * options.length)];
+            } else if (hour >= 12 && hour < 18) {
+                const options = ["Bon après-midi", "Bonne après-midi", "Belle journée", "Bonne continuation"];
+                base = options[Math.floor(Math.random() * options.length)];
+            } else if (hour >= 18 && hour < 22) {
+                const options = ["Bonne soirée", "Belle soirée", "Profite bien de ta soirée"];
+                base = options[Math.floor(Math.random() * options.length)];
+            } else {
+                const options = ["Bonne nuit", "Courage nocturne", "Pas encore au lit ?"];
+                base = options[Math.floor(Math.random() * options.length)];
+            }
+
+            if (firstName) {
+                return `${base},<br><span class="text-gradient">${firstName} !</span>`;
+            }
+            return `${base},<br><span class="text-gradient">WikiMind.</span>`;
+        }
+
+        function renderGreeting(firstName = null) {
+            const el = document.getElementById('greeting-line');
+            if (el) el.innerHTML = getGreeting(firstName);
+
+            // Quote pour anonymes
+            const quoteEl = document.getElementById('hero-quote');
+            if (quoteEl && !firstName) {
+                quoteEl.textContent = QUOTES_ANONYME[Math.floor(Math.random() * QUOTES_ANONYME.length)];
+                quoteEl.classList.remove('hidden');
+            } else if (quoteEl) {
+                quoteEl.classList.add('hidden');
+            }
+        }
+
+        // Afficher salutation anonyme immédiatement
+        renderGreeting();
+
+        // ==========================================
         // UI CUSTOM: TOASTS ET MODALS
         // ==========================================
         window.showToast = (message, type = 'info') => {
@@ -505,7 +691,6 @@
                          '<i class="fa-solid fa-info-circle"></i>';
             toast.innerHTML = `${icon} <span>${message}</span>`;
             container.appendChild(toast);
-
             setTimeout(() => {
                 toast.style.animation = 'toastLeave 0.3s ease-in forwards';
                 setTimeout(() => toast.remove(), 300);
@@ -522,10 +707,8 @@
             document.getElementById('confirm-message').innerText = message;
             document.getElementById('confirm-icon').className = iconClass;
             const btn = document.getElementById('confirm-btn-action');
-            
             const newBtn = btn.cloneNode(true);
             btn.parentNode.replaceChild(newBtn, btn);
-            
             newBtn.addEventListener('click', () => {
                 window.closeConfirm();
                 actionCallback();
@@ -543,26 +726,19 @@
 
         window.reportComment = (pathId) => {
             currentReportPathId = pathId;
-            document.getElementById('report-reason').value = ''; // Reset champ
+            document.getElementById('report-reason').value = '';
             document.getElementById('report-modal').style.display = 'flex';
         };
 
-        // Traitement du bouton "Analyser" dans le modal de signalement
         document.getElementById('confirm-report-btn').addEventListener('click', async () => {
             if(!currentReportPathId) return;
-            
             const pathId = currentReportPathId;
             const userReason = document.getElementById('report-reason').value.trim();
             const textToAnalyze = window.commentTexts[pathId];
-            
             window.closeReportModal();
-
             if(!textToAnalyze) return;
-
             window.showToast("L'IA examine le commentaire signalé...", "info");
-            
             const isBad = await window.moderateText(textToAnalyze, userReason);
-            
             if(isBad) {
                 try {
                     await remove(ref(db, `comments/${pathId}`));
@@ -591,19 +767,11 @@
                         'Authorization': `Bearer ${MISTRAL_API_KEY}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ model: model, messages: messages, temperature: temp, max_tokens: maxTokens })
+                    body: JSON.stringify({ model, messages, temperature: temp, max_tokens: maxTokens })
                 });
-                
-                if (!response.ok) {
-                    console.error("Mistral HTTP Error:", response.status, response.statusText);
-                    return null;
-                }
-
+                if (!response.ok) return null;
                 const data = await response.json();
-                
-                if(data && data.choices && data.choices.length > 0 && data.choices[0].message) {
-                    return data.choices[0].message.content;
-                }
+                if(data?.choices?.length > 0 && data.choices[0].message) return data.choices[0].message.content;
                 return null;
             } catch (error) {
                 console.error("Erreur réseau IA Mistral:", error);
@@ -611,9 +779,7 @@
             }
         };
 
-        // Fonction de modération IA robuste (Smart prompt avec raison utilisateur)
         window.moderateText = async (text, userReason = "") => {
-            
             let prompt = `Agis comme un modérateur strict d'une plateforme communautaire publique. 
 Ta mission est d'identifier et de filtrer absolument :
 1. Le spam, la publicité non sollicitée, les arnaques.
@@ -622,18 +788,11 @@ Ta mission est d'identifier et de filtrer absolument :
 4. Les liens malveillants ou le phishing.
 
 Voici le commentaire à analyser : "${text}"`;
-
-            if (userReason) {
-                prompt += `\n\nAttention, un utilisateur a signalé ce commentaire en donnant cette raison : "${userReason}". Prends en compte cette remarque dans ton évaluation.`;
-            }
-
+            if (userReason) prompt += `\n\nAttention, un utilisateur a signalé ce commentaire en donnant cette raison : "${userReason}". Prends en compte cette remarque dans ton évaluation.`;
             prompt += `\n\nEst-ce que ce commentaire enfreint les règles (spam, bot, haine, etc.) et doit être supprimé ?
 Réponds EXACTEMENT ET UNIQUEMENT par le mot OUI (s'il doit être supprimé et bloqué) ou par le mot NON (s'il est totalement inoffensif et naturel). Ne fais aucune phrase, aucune justification.`;
-            
             const response = await window.callMistralAI([{ role: "user", content: prompt }], "mistral-small-latest", 0.1, 5);
-            
             if (!response) return false;
-            
             const cleanResponse = response.trim().toUpperCase().replace(/[^A-Z]/g, '');
             return cleanResponse === 'OUI';
         };
@@ -663,9 +822,9 @@ Réponds EXACTEMENT ET UNIQUEMENT par le mot OUI (s'il doit être supprimé et b
         const db = getDatabase(communityApp);
 
         let currentUser = null;
-        window.commentTexts = {}; 
+        window.commentTexts = {};
 
-        // Gestion de l'état
+        // Gestion de l'état auth
         onAuthStateChanged(auth, (user) => {
             const loginBtn = document.getElementById('login-btn');
             const userLogged = document.getElementById('user-logged');
@@ -673,13 +832,15 @@ Réponds EXACTEMENT ET UNIQUEMENT par le mot OUI (s'il doit être supprimé et b
                 currentUser = user;
                 if(loginBtn) loginBtn.classList.add('hidden');
                 if(userLogged) { userLogged.classList.remove('hidden'); userLogged.classList.add('flex'); }
-                
                 const photoUrl = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff&bold=true`;
                 document.getElementById('nav-avatar').src = photoUrl;
-                document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
+                const displayName = user.displayName || user.email.split('@')[0];
+                document.getElementById('user-name-display').innerText = displayName;
                 document.getElementById('current-user-avatar').src = photoUrl;
-                document.getElementById('posting-as').innerText = "Connecté : " + (user.displayName || "Utilisateur");
+                document.getElementById('posting-as').innerText = "Connecté : " + displayName;
                 document.getElementById('posting-as').classList.replace('text-white/30', 'text-brand-glow');
+                // ✅ Mise à jour du greeting avec le prénom
+                renderGreeting(displayName);
             } else {
                 currentUser = null;
                 if(loginBtn) loginBtn.classList.remove('hidden');
@@ -687,6 +848,7 @@ Réponds EXACTEMENT ET UNIQUEMENT par le mot OUI (s'il doit être supprimé et b
                 document.getElementById('current-user-avatar').src = "https://ui-avatars.com/api/?name=Anonyme&background=333&color=fff";
                 document.getElementById('posting-as').innerText = "Mode Anonyme";
                 document.getElementById('posting-as').classList.replace('text-brand-glow', 'text-white/30');
+                renderGreeting();
             }
         });
 
@@ -705,7 +867,21 @@ Réponds EXACTEMENT ET UNIQUEMENT par le mot OUI (s'il doit être supprimé et b
             return "à l'instant";
         }
 
+        // ==========================================
+        // ✅ FEATURE 4 — MENTIONS @pseudo
+        // ==========================================
+        function parseMentions(text) {
+            // Escape HTML d'abord pour la sécurité
+            const escaped = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+            // Détecter @mentions (lettres, chiffres, tirets, underscores)
+            return escaped.replace(/@([\w\u00C0-\u017F]+)/g, (match, pseudo) => {
+                return `<span class="mention-tag">@${pseudo}</span>`;
+            });
+        }
+
+        // ==========================================
         // CREATE
+        // ==========================================
         const submitBtn = document.getElementById('submit-main-comment');
         if(submitBtn) {
             submitBtn.addEventListener('click', async () => {
@@ -717,7 +893,6 @@ Réponds EXACTEMENT ET UNIQUEMENT par le mot OUI (s'il doit être supprimé et b
                 submitBtn.innerHTML = '<i class="fa-solid fa-shield-halved fa-beat-fade"></i> Scan IA...';
                 submitBtn.disabled = true;
 
-                // Modération avant publication (sans raison utilisateur)
                 const isBad = await window.moderateText(text);
                 
                 if (isBad) {
@@ -733,7 +908,7 @@ Réponds EXACTEMENT ET UNIQUEMENT par le mot OUI (s'il doit être supprimé et b
 
                 const newPostRef = push(ref(db, 'comments'));
                 set(newPostRef, {
-                    uid: uid, author: authorName, avatar: avatarUrl, text: text, timestamp: Date.now(), likes: 0, replies: {}
+                    uid, author: authorName, avatar: avatarUrl, text, timestamp: Date.now(), likes: 0, replies: {}
                 }).then(() => {
                     input.value = '';
                     window.showToast("Message publié avec succès.", "success");
@@ -743,6 +918,46 @@ Réponds EXACTEMENT ET UNIQUEMENT par le mot OUI (s'il doit être supprimé et b
                     submitBtn.innerHTML = originalHtml;
                     submitBtn.disabled = false;
                 });
+            });
+        }
+
+        // ==========================================
+        // ✅ FEATURE 3 — TRI DES COMMENTAIRES
+        // ==========================================
+        let allCommentsData = {}; // stocke tous les commentaires {key: data}
+        let currentSortMode = 'recent';
+
+        window.setSortMode = (mode) => {
+            currentSortMode = mode;
+            document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+            const target = document.getElementById(`sort-${mode}`);
+            if (target) target.classList.add('active');
+            rerenderComments();
+        };
+
+        function rerenderComments() {
+            const commentsList = document.getElementById('comments-list');
+            commentsList.innerHTML = '';
+            
+            const entries = Object.entries(allCommentsData);
+            
+            if (currentSortMode === 'top') {
+                entries.sort((a, b) => (b[1].likes || 0) - (a[1].likes || 0));
+            } else {
+                // récents: timestamp décroissant
+                entries.sort((a, b) => (b[1].timestamp || 0) - (a[1].timestamp || 0));
+            }
+
+            if (entries.length === 0) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'text-center text-white/30 py-4 text-sm';
+                emptyDiv.innerText = 'Soyez le premier à publier.';
+                commentsList.appendChild(emptyDiv);
+                return;
+            }
+
+            entries.forEach(([key, data]) => {
+                renderCommentElement(key, data, false, null, commentsList);
             });
         }
 
@@ -772,61 +987,67 @@ Réponds EXACTEMENT ET UNIQUEMENT par le mot OUI (s'il doit être supprimé et b
 
         onChildAdded(commentsRef, (snapshot) => {
             removeEmptyOrLoaderState();
-            renderComment(snapshot.key, snapshot.val());
+            allCommentsData[snapshot.key] = snapshot.val();
+            rerenderComments();
         });
 
         onChildRemoved(commentsRef, (snapshot) => {
+            delete allCommentsData[snapshot.key];
+            // Supprimer l'élément du DOM directement
             const el = document.getElementById(`comment-${snapshot.key}`);
             if (el) el.remove();
         });
 
         onChildChanged(commentsRef, (snapshot) => {
+            allCommentsData[snapshot.key] = snapshot.val();
             const data = snapshot.val();
-            const parentId = snapshot.key;
-            
-            const parentEl = document.getElementById(`comment-${parentId}`);
+            const parentEl = document.getElementById(`comment-${snapshot.key}`);
             if(!parentEl) return;
 
             const likeCountEl = parentEl.querySelector('.like-count');
             if (likeCountEl) likeCountEl.innerText = data.likes || 0;
 
-            const repliesContainer = document.getElementById(`replies-${parentId}`);
+            const repliesContainer = document.getElementById(`replies-${snapshot.key}`);
             if (repliesContainer) {
                 const currentReplies = data.replies || {};
-                
                 Array.from(repliesContainer.children).forEach(child => {
                     const replyId = child.id.replace('comment-', '');
-                    if (!currentReplies[replyId]) {
-                        child.remove(); 
-                    }
+                    if (!currentReplies[replyId]) child.remove();
                 });
-
                 Object.keys(currentReplies).forEach(replyId => {
                     if (!document.getElementById(`comment-${replyId}`)) {
-                        renderComment(replyId, currentReplies[replyId], true, parentId);
+                        renderCommentElement(replyId, currentReplies[replyId], true, snapshot.key, null);
                     }
                 });
             }
         });
 
-        function renderComment(id, data, isReply = false, parentId = null) {
+        // ==========================================
+        // ✅ FEATURE 4 — renderCommentElement avec @mentions
+        // ==========================================
+        function renderCommentElement(id, data, isReply = false, parentId = null, container = null) {
             if(document.getElementById(`comment-${id}`)) return;
             const pathId = parentId ? `${parentId}/replies/${id}` : id;
-            window.commentTexts[pathId] = data.text; 
+            window.commentTexts[pathId] = data.text;
 
             const div = document.createElement('div');
             div.id = `comment-${id}`;
-            div.className = isReply ? "comment-thread mt-3 pt-2 animate-fade-in-up" : "border-b border-white/5 py-6 animate-fade-in-up group";
+            div.className = isReply
+                ? "comment-thread mt-3 pt-2 animate-fade-in-up"
+                : "border-b border-white/5 py-6 animate-fade-in-up group";
+
+            // ✅ Parse les mentions dans le texte
+            const parsedText = parseMentions(data.text || '');
 
             div.innerHTML = `
                 <div class="flex gap-3">
-                    <img src="${data.avatar || `https://ui-avatars.com/api/?name=${data.author}&background=random`}" class="w-8 h-8 rounded-full border border-white/10 mt-1 object-cover bg-gray-800">
+                    <img src="${data.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.author)}&background=random`}" class="w-8 h-8 rounded-full border border-white/10 mt-1 object-cover bg-gray-800">
                     <div class="flex-1 w-full overflow-hidden">
                         <div class="flex items-center gap-2 mb-1">
                             <span class="font-bold text-sm text-white">${data.author}</span>
                             <span class="text-[10px] text-white/40">${timeAgo(data.timestamp)}</span>
                         </div>
-                        <p class="text-white/80 text-sm leading-relaxed whitespace-pre-wrap break-words">${data.text}</p>
+                        <p class="text-white/80 text-sm leading-relaxed whitespace-pre-wrap break-words">${parsedText}</p>
                         
                         <div class="flex flex-wrap items-center gap-4 mt-3">
                             <button onclick="window.handleLike('${pathId}', event)" class="flex items-center gap-1.5 text-xs text-white/40 hover:text-pink-400 transition-colors group/like">
@@ -852,12 +1073,20 @@ Réponds EXACTEMENT ET UNIQUEMENT par le mot OUI (s'il doit être supprimé et b
                 const parentContainer = document.getElementById(`replies-${parentId}`);
                 if(parentContainer) parentContainer.appendChild(div);
             } else {
-                if (commentsList.firstChild) commentsList.insertBefore(div, commentsList.firstChild);
-                else commentsList.appendChild(div);
-                if(data.replies) Object.keys(data.replies).forEach(replyId => renderComment(replyId, data.replies[replyId], true, id));
+                const targetContainer = container || commentsList;
+                targetContainer.appendChild(div);
+                if(data.replies) Object.keys(data.replies).forEach(replyId => renderCommentElement(replyId, data.replies[replyId], true, id, null));
             }
 
-            if (currentUser && data.uid === currentUser.uid) div.querySelector(`#btn-delete-${id}`).classList.remove('hidden');
+            if (currentUser && data.uid === currentUser.uid) {
+                const delBtn = div.querySelector(`#btn-delete-${id}`);
+                if (delBtn) delBtn.classList.remove('hidden');
+            }
+        }
+
+        // Alias pour compatibilité (onChildChanged/reply utilise renderComment)
+        function renderComment(id, data, isReply = false, parentId = null) {
+            renderCommentElement(id, data, isReply, parentId, null);
         }
 
         window.toggleReplyForm = (id) => {
@@ -896,7 +1125,8 @@ Réponds EXACTEMENT ET UNIQUEMENT par le mot OUI (s'il doit être supprimé et b
                 renderComment(replyRef.key, replyData, true, parentId);
                 input.value = '';
                 document.getElementById(`reply-form-${parentId}`).classList.add('hidden');
-            }).finally(() => {
+            }).catch(err => window.showToast("Erreur: " + err.message, "error"))
+            .finally(() => {
                 btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i>';
                 btn.disabled = false;
             });
@@ -1035,6 +1265,17 @@ Réponds EXACTEMENT ET UNIQUEMENT par le mot OUI (s'il doit être supprimé et b
             window.addEventListener('resize', resize); resize(); animate();
         }
 
+    </script>
+
+    <!-- ✅ PWA: Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('App/sw.js')
+                    .then(reg => console.log('[WikiMind PWA] Service Worker enregistré :', reg.scope))
+                    .catch(err => console.warn('[WikiMind PWA] Échec enregistrement SW :', err));
+            });
+        }
     </script>
 </body>
 </html>
