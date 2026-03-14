@@ -86,12 +86,8 @@ a{text-decoration:none;color:inherit;}
 .float-btn:hover{background:var(--select-bg);transform:scale(1.05);}
 .float-btn svg{width:16px;height:16px;}
 
-/* Model selector */
-#model-select-wrap{display:flex;align-items:center;}
-#model-select{background:none;border:none;padding:4px 6px;font-size:11px;font-weight:700;color:#888;outline:none;cursor:pointer;font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:.06em;transition:.2s;max-width:170px;}
-#model-select:hover{color:var(--text);}
-.dark-mode #model-select{color:#a1a1aa;}
-#model-select option{background:var(--bg);color:var(--text);}
+/* Model selector — clean up old duplicate */
+#model-select-wrap{display:flex;align-items:center;position:relative;}
 
 /* Plan chip / avatar top-right */
 #plan-chip{position:absolute;top:24px;right:24px;z-index:50;display:flex;align-items:center;gap:8px;cursor:pointer;}
@@ -208,6 +204,47 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 .canvas-active-dot{position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:#22c55e;display:none;}
 .canvas-active-dot.show{display:block;}
 
+/* Import + button & flyout menu */
+.import-btn-wrap{position:relative;}
+.import-plus-btn{font-size:20px;font-weight:300;}
+.import-menu{
+  position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%) scaleY(0);transform-origin:bottom center;
+  background:var(--bg);border:1px solid var(--border2);border-radius:14px;
+  padding:6px;display:flex;flex-direction:column;gap:2px;
+  box-shadow:0 8px 30px rgba(0,0,0,.12);min-width:170px;
+  opacity:0;pointer-events:none;transition:transform .22s cubic-bezier(.4,0,.2,1),opacity .18s;
+  z-index:200;
+}
+.import-menu.open{transform:translateX(-50%) scaleY(1);opacity:1;pointer-events:all;}
+.import-menu-item{
+  display:flex;align-items:center;gap:10px;padding:9px 13px;border-radius:9px;
+  border:none;background:none;cursor:pointer;color:var(--text);font-size:12px;font-weight:600;
+  font-family:'Inter',sans-serif;text-align:left;transition:.15s;width:100%;
+}
+.import-menu-item:hover{background:var(--select-bg);}
+.import-menu-item svg{flex-shrink:0;color:#888;}
+@keyframes plusRotate{from{transform:rotate(0deg);}to{transform:rotate(135deg);}}
+@keyframes plusRotateBack{from{transform:rotate(135deg);}to{transform:rotate(0deg);}}
+.import-plus-btn.open #import-plus-icon{transform:rotate(135deg);}
+
+/* Model select — custom dropdown */
+#model-select-wrap{display:flex;align-items:center;position:relative;}
+#model-select{
+  appearance:none;-webkit-appearance:none;
+  background:var(--select-bg);border:1px solid var(--border2);
+  padding:5px 28px 5px 10px;font-size:11px;font-weight:700;color:var(--text);
+  outline:none;cursor:pointer;font-family:'Inter',sans-serif;
+  text-transform:uppercase;letter-spacing:.06em;transition:.2s;
+  border-radius:10px;max-width:180px;
+}
+#model-select:hover{border-color:#888;}
+#model-select option{background:var(--bg);color:var(--text);}
+#model-select-wrap::after{
+  content:'';position:absolute;right:9px;top:50%;transform:translateY(-50%);
+  width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;
+  border-top:5px solid #888;pointer-events:none;
+}
+
 /* CANVAS PANEL */
 #canvas-panel{width:0;overflow:hidden;background:var(--sidebar);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:width .3s cubic-bezier(.4,0,.2,1);}
 #canvas-panel.open{width:460px;}
@@ -243,7 +280,7 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 .modal-btn.secondary{background:var(--select-bg);color:var(--text);border:1px solid var(--border2);}
 .modal-btn.secondary:hover{background:var(--border2);}
 
-/* Plans grid */
+/* Plans grid — OLD kept for fallback, new page overlay below */
 .plans-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .plan-card{border:1px solid var(--border2);border-radius:14px;padding:16px;transition:.2s;cursor:pointer;}
 .plan-card:hover{border-color:var(--text);}
@@ -256,6 +293,51 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 .plan-subscribe-btn{width:100%;margin-top:10px;padding:8px;border-radius:8px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;border:none;transition:.2s;background:var(--accent);color:var(--accent-inv);}
 .plan-subscribe-btn:hover{opacity:.8;}
 .plan-subscribe-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+/* Plans page overlay */
+#plans-overlay{
+  position:fixed;inset:0;z-index:200;background:var(--bg);
+  display:none;flex-direction:column;overflow-y:auto;
+  animation:overlayIn .3s cubic-bezier(.4,0,.2,1);
+}
+#plans-overlay.show{display:flex;}
+@keyframes overlayIn{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+.plans-overlay-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:24px 32px;border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:var(--bg);z-index:10;flex-shrink:0;
+}
+.plans-overlay-header h2{font-size:26px;font-weight:900;text-transform:uppercase;letter-spacing:-.04em;}
+.plans-overlay-close{
+  width:38px;height:38px;border-radius:50%;background:var(--select-bg);border:none;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text);transition:.2s;
+}
+.plans-overlay-close:hover{background:var(--border2);}
+.plans-overlay-body{flex:1;padding:32px;max-width:1000px;width:100%;margin:0 auto;}
+.plans-token-bal{font-size:13px;color:#888;margin-bottom:24px;padding:12px 16px;background:var(--select-bg);border-radius:12px;display:none;}
+
+/* Comparison table */
+.plan-compare-wrap{overflow-x:auto;}
+.plan-compare{width:100%;border-collapse:separate;border-spacing:0;}
+.plan-compare th,.plan-compare td{padding:14px 16px;text-align:center;font-size:13px;border-bottom:1px solid var(--border);}
+.plan-compare th:first-child,.plan-compare td:first-child{text-align:left;font-weight:600;color:#888;font-size:12px;width:220px;}
+.plan-compare thead th{font-weight:900;font-size:14px;text-transform:uppercase;letter-spacing:-.02em;padding-bottom:6px;border-bottom:none;}
+.plan-compare thead .plan-col-price{font-size:22px;font-weight:900;padding-top:4px;padding-bottom:2px;border-bottom:none;}
+.plan-compare thead .plan-col-sub{font-size:11px;color:#888;font-weight:600;padding-top:2px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.plan-compare thead .plan-col-badge{padding-top:16px;border-bottom:none;}
+.plan-compare .plan-col-current{background:var(--select-bg);}
+.plan-compare tbody tr:last-child td{border-bottom:none;}
+.plan-compare tfoot td{border-top:1px solid var(--border);border-bottom:none;padding-top:20px;}
+.check-yes{color:#22c55e;font-size:16px;}
+.check-no{color:#d1d5db;font-size:16px;}
+.dark-mode .check-no{color:#374151;}
+.plan-compare-subscribe{
+  width:100%;padding:10px;border-radius:10px;font-size:11px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.08em;cursor:pointer;border:none;
+  transition:.2s;background:var(--accent);color:var(--accent-inv);
+}
+.plan-compare-subscribe:hover{opacity:.8;}
+.plan-compare-subscribe:disabled{background:var(--select-bg);color:#888;cursor:not-allowed;}
 
 /* Search results */
 .search-result{padding:8px 10px;border-radius:8px;cursor:pointer;transition:.2s;}
@@ -334,21 +416,6 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
   .plans-grid{grid-template-columns:1fr;}
   .office-app-grid{grid-template-columns:1fr;}
 }
-
-/* ── STT MIC BUTTON ── */
-#btn-mic{position:relative;overflow:visible;}
-#btn-mic.listening{color:#ef4444 !important;}
-#btn-mic.listening svg{animation:micPulse .7s ease-in-out infinite;}
-@keyframes micPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.25);}}
-.mic-ripple{position:absolute;inset:-6px;border-radius:50%;border:2px solid #ef4444;opacity:0;animation:rippleOut 1s ease-out infinite;pointer-events:none;display:none;}
-.mic-ripple:nth-child(2){animation-delay:.4s;}
-#btn-mic.listening .mic-ripple{display:block;}
-@keyframes rippleOut{0%{opacity:.6;transform:scale(1);}100%{opacity:0;transform:scale(2.2);}}
-
-/* ── CALL BUTTON ── */
-#btn-call{display:none;}
-#btn-call.show{display:flex !important;}
-#btn-call:hover{color:#7c3aed !important;background:rgba(124,58,237,.08) !important;}
 </style>
 </head>
 <body>
@@ -399,7 +466,7 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
   <div class="sb-section">Récents</div>
   <div id="history-list"></div>
   <div class="sb-bottom">
-    <div class="user-row" onclick="openModal('plan-modal')">
+    <div class="user-row" onclick="openPlansOverlay()">
       <div class="user-avatar" id="u-av">?</div>
       <div class="user-info">
         <div class="user-name" id="u-name">Invité</div>
@@ -422,7 +489,7 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
     </div>
   </div>
 
-  <div id="plan-chip" onclick="openModal('plan-modal')">
+  <div id="plan-chip" onclick="openPlansOverlay()">
     <div class="plan-chip-avatar ring-free" id="tb-avatar"><span id="tb-avatar-initials">?</span></div>
     <span class="plan-badge plan-free" id="tb-badge">Free</span>
     <span class="upgrade-link">&#x2191; Forfaits</span>
@@ -447,28 +514,30 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
             <span class="canvas-active-dot" id="canvas-active-dot"></span>
           </button>
-          <!-- Office import -->
-          <button class="inp-icon-btn" id="btn-office-import" onclick="openOfficeImport()" title="Importer depuis Office" style="display:none">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          </button>
-          <!-- File import (Pro+) -->
-          <button class="inp-icon-btn" id="btn-file-import" onclick="triggerFileImport()" title="Importer un fichier" style="display:none">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          </button>
-          <!-- Image import (Premium) -->
-          <button class="inp-icon-btn" id="btn-img-import" onclick="triggerImageImport()" title="Importer une image" style="display:none">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          </button>
-          <!-- STT Microphone - all plans -->
-          <button class="inp-icon-btn" id="btn-mic" onclick="toggleSTT()" title="Parler (Speech to Text)">
-            <span class="mic-ripple"></span>
-            <span class="mic-ripple"></span>
-            <svg id="mic-icon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
-          </button>
-          <!-- Wikimind Call - Pro/Premium only -->
-          <button class="inp-icon-btn" id="btn-call" onclick="goToCall()" title="Wikimind Appel vocal (Pro+)">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.22 2 2 0 012.22 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.06 6.06l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
-          </button>
+          <!-- Import + button -->
+          <div class="import-btn-wrap" id="import-btn-wrap" style="display:none;position:relative;">
+            <button class="inp-icon-btn import-plus-btn" id="btn-import-plus" onclick="toggleImportMenu(event)" title="Importer">
+              <svg id="import-plus-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="transition:transform .3s ease"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <div class="import-menu" id="import-menu">
+              <button class="import-menu-item" id="imenu-office" onclick="openOfficeImport();closeImportMenu()" style="display:none">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span>Wikimind Office</span>
+              </button>
+              <button class="import-menu-item" id="imenu-file" onclick="triggerFileImport();closeImportMenu()" style="display:none">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span>Fichiers</span>
+              </button>
+              <button class="import-menu-item" id="imenu-img" onclick="triggerImageImport();closeImportMenu()" style="display:none">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span>Image</span>
+              </button>
+              <button class="import-menu-item" id="imenu-media" onclick="triggerMediaImport();closeImportMenu()" style="display:none">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                <span>Vidéo / Audio</span>
+              </button>
+            </div>
+          </div>
           <div class="inp-divider"></div>
           <div id="model-select-wrap">
             <select id="model-select" onchange="onModelChange()">
@@ -481,13 +550,12 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
         </button>
       </div>
     </div>
-    <div id="canvas-mode-bar" style="display:none;text-align:center;font-size:11px;color:#22c55e;margin-top:6px;font-weight:700;letter-spacing:.04em;">
-      ● CANVAS ACTIF — Le contenu principal ira dans le Canvas
-    </div>
+    <div id="canvas-mode-bar" style="display:none"></div>
   </div>
 
   <input type="file" id="file-input-docs" accept=".pdf,.odt,.ods,.odp,.txt,.md,.csv,.docx,.xlsx,.pptx" style="display:none" multiple onchange="onFileImport(event)">
   <input type="file" id="file-input-images" accept="image/*" style="display:none" multiple onchange="onImageImport(event)">
+  <input type="file" id="file-input-media" accept="video/*,audio/*" style="display:none" multiple onchange="onMediaImport(event)">
 </div>
 
 <!-- CANVAS PANEL -->
@@ -568,15 +636,22 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
   </div>
 </div>
 
-<!-- PLANS -->
-<div class="modal" id="plan-modal" onclick="closeModal('plan-modal')">
-  <div class="modal-content" style="max-width:600px" onclick="event.stopPropagation()">
-    <h3>Forfaits</h3>
-    <div id="plan-token-balance" style="font-size:12px;color:#888;margin-bottom:14px;padding:10px 12px;background:var(--select-bg);border-radius:10px;display:none">
-      💰 Solde : <strong id="plan-token-display">0 MT</strong> — 1 MT ≈ 1.16€ · <a href="../AI/Wikimind_forfaits.html" style="color:var(--text);text-decoration:underline;font-weight:700">Gérer mes tokens →</a>
+<!-- PLANS OVERLAY (full page) -->
+<div id="plans-overlay">
+  <div class="plans-overlay-header">
+    <h2>Forfaits WikiMind</h2>
+    <button class="plans-overlay-close" onclick="closePlansOverlay()">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="plans-overlay-body">
+    <div id="plans-token-bal-ov" class="plans-token-bal">
+      💰 Solde : <strong id="plan-token-display-ov">0 MT</strong> — 1 MT ≈ 1.16€ · <a href="../AI/Wikimind_forfaits.html" style="color:var(--text);text-decoration:underline;font-weight:700">Gérer mes tokens →</a>
     </div>
-    <div class="plans-grid" id="plans-grid"></div>
-    <p style="font-size:11px;color:#aaa;text-align:center;margin-top:16px">Paiement via Wikimind Tokens · 1 MT ≈ 1.16€ · Pro & Premium aussi attribuables par l'équipe (FORFAIT: 3 ou 4 dans Firebase)</p>
+    <div class="plan-compare-wrap">
+      <table class="plan-compare" id="plan-compare-table"></table>
+    </div>
+    <p style="font-size:11px;color:#aaa;text-align:center;margin-top:24px">Paiement via Wikimind Tokens · 1 MT ≈ 1.16€ · Pro & Premium aussi attribuables par l'équipe (FORFAIT: 3 ou 4 dans Firebase)</p>
   </div>
 </div>
 
@@ -607,7 +682,7 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
     </div>
     <div id="advanced-locked" style="display:none;margin-top:16px;padding:14px;background:var(--select-bg);border-radius:10px;text-align:center;font-size:12px;color:#888">
       Paramètres avancés disponibles à partir du plan <strong>AI Plus</strong>.<br>
-      <span style="cursor:pointer;text-decoration:underline;margin-top:6px;display:inline-block" onclick="closeModal('cust-modal');openModal('plan-modal')">Voir les plans</span>
+      <span style="cursor:pointer;text-decoration:underline;margin-top:6px;display:inline-block" onclick="closeModal('cust-modal');openPlansOverlay()">Voir les plans</span>
     </div>
   </div>
 </div>
@@ -826,8 +901,10 @@ function loadTokenBalance(uid){
   }).catch(()=>{});
 }
 function updateTokenDisplay(){
-  const el=G('plan-token-display'); if(el) el.textContent=`${S.tokens} MT`;
-  const bal=G('plan-token-balance'); if(bal) bal.style.display=S.user&&!S.user.isGuest?'block':'none';
+  const el=G('plan-token-display-ov'); if(el) el.textContent=`${S.tokens} MT`;
+  const el2=G('plan-token-display'); if(el2) el2.textContent=`${S.tokens} MT`;
+  const bal=G('plans-token-bal-ov'); if(bal) bal.style.display=S.user&&!S.user.isGuest?'block':'none';
+  const bal2=G('plan-token-balance'); if(bal2) bal2.style.display=S.user&&!S.user.isGuest?'block':'none';
 }
 
 async function loadChats(uid){
@@ -857,12 +934,14 @@ function updateUserUI(){
   if(shopBtn) shopBtn.style.display=S.plan>=2?'block':'none';
   if(advParams) advParams.style.display=S.plan>=2?'block':'none';
   if(advLocked) advLocked.style.display=S.plan<2?'block':'none';
-  G('btn-office-import').style.display=S.plan>=2?'flex':'none';
-  G('btn-file-import').style.display=S.plan>=3?'flex':'none';
-  G('btn-img-import').style.display=S.plan>=4?'flex':'none';
-  // Call button — Pro/Premium
-  const callBtn=G('btn-call');
-  if(callBtn) callBtn.className=S.plan>=3?'inp-icon-btn show':'inp-icon-btn';
+  // Import menu items visibility
+  const im_office=G('imenu-office'),im_file=G('imenu-file'),im_img=G('imenu-img'),im_media=G('imenu-media');
+  if(im_office) im_office.style.display=S.plan>=2?'flex':'none';
+  if(im_file) im_file.style.display=S.plan>=3?'flex':'none';
+  if(im_img) im_img.style.display=S.plan>=4?'flex':'none';
+  if(im_media) im_media.style.display=S.plan>=4?'flex':'none';
+  // Show + button if any import available
+  const importWrap=G('import-btn-wrap'); if(importWrap) importWrap.style.display=S.plan>=2?'flex':'none';
   // Show Office create chips in canvas if connected
   G('cvs-create-btns').style.display=S.plan>=2&&S.connectors.office?'flex':'none';
   renderPlansGrid(); renderInstructions(); updateTokenDisplay();
@@ -882,38 +961,74 @@ function updateModelOptions(){
   if(!sel.querySelector(`option[value="${S.model}"]`)){S.model='flash';sel.value='flash';}else{sel.value=S.model;}
 }
 
+// ── PLAN OVERLAY ──
+function openModal(id){
+  if(id==='plan-modal'){openPlansOverlay();return;}
+  const m=G(id);if(m)m.classList.add('show');
+}
+function openPlansOverlay(){renderPlansGrid();G('plans-overlay').classList.add('show');}
+function closePlansOverlay(){G('plans-overlay').classList.remove('show');}
+
 // ── PLAN SUBSCRIPTION ──
 function renderPlansGrid(){
   const now=new Date();
   const promoActive=now<PROMO_END;
   const plans=[
-    {key:'free',id:1,label:'Free',price:'0€',mt:0,cls:'plan-free',promo:null,
-      feats:['Flash uniquement','4 msg / minute','Historique local']},
-    {key:'plus',id:2,label:'AI Plus',price:'12€/mois',mt:11,cls:'plan-plus',promo:'1 mois offert dès le 1er paiement',
-      feats:['Flash + Medium + Work (1/h)','Réflexion (1/h)','Canvas IA','10 msg / min','Historique Firebase','Import Office & fichiers','Connecteur Wikimind Office']},
-    {key:'pro',id:3,label:'AI Pro',price:'25€/mois',mt:22,cls:'plan-pro',promo:'1 mois offert dès le 1er paiement',
-      feats:['Tous les modèles','Réflexion (3/h)','Canvas avancé','15 msg / min','Import PDF/ODT','Création Office par l\'IA','Mode Appel Wikimind']},
-    {key:'premium',id:4,label:'AI Premium',price:promoActive?'<s style="opacity:.5">52€</s> 45€/mois (promo)':'52€/mois',mt:39,cls:'plan-premium',promo:'★ 1 mois offert · Promo -7€ jusqu\'au 14 avril',
-      feats:['Illimité','Réflexion illimitée','Import images & photos','Canvas premium','Plugins premium','Analyse audio/vidéo']},
+    {key:'free',id:1,label:'Free',price:'0€',mt:0,cls:'plan-free',promo:null},
+    {key:'plus',id:2,label:'AI Plus',price:'12€/mois',mt:11,cls:'plan-plus',promo:'1 mois offert dès le 1er paiement'},
+    {key:'pro',id:3,label:'AI Pro',price:'25€/mois',mt:22,cls:'plan-pro',promo:'1 mois offert dès le 1er paiement'},
+    {key:'premium',id:4,label:'AI Premium',price:promoActive?'45€/mois':'52€/mois',mt:39,cls:'plan-premium',promo:promoActive?'★ Promo -7€ jusqu\'au 14 avril':''},
   ];
-  const pg=G('plans-grid'); if(!pg) return;
-  pg.innerHTML=plans.map(p=>{
-    const isCurrent=S.plan===p.id;
-    const canBuy=!S.user?.isGuest&&p.id>1&&!isCurrent;
-    const mtCost=p.mt;
-    const canAfford=S.tokens>=mtCost;
-    return`<div class="plan-card ${isCurrent?'current':''}">
-      <div class="plan-card-name">${p.label}</div>
-      <div class="plan-card-price">${p.price}</div>
-      ${p.promo?`<div style="font-size:10px;color:#888;margin-bottom:8px;font-weight:600">🎁 ${p.promo}</div>`:''}
-      <ul class="plan-card-feats">${p.feats.map(f=>`<li>${f}</li>`).join('')}</ul>
-      ${p.mt>0?`<div style="font-size:10px;color:#aaa;margin-top:8px">= ${p.mt} MT/mois</div>`:''}
-      ${isCurrent?`<button class="plan-subscribe-btn" disabled style="background:var(--select-bg);color:#888">Forfait actuel</button>`:
-        canBuy?`<button class="plan-subscribe-btn ${!canAfford?'':'primary'}" onclick="subscribePlan(${p.id},${p.mt})" ${!canAfford?'title="Tokens insuffisants — rechargez votre compte"':''} style="${!canAfford?'background:var(--select-bg);color:#888':''}">
-          ${canAfford?`S'abonner (${p.mt} MT)`:`Tokens insuffisants (${p.mt} MT requis)`}</button>`:
-        `<button class="plan-subscribe-btn" disabled style="background:var(--select-bg);color:#888">Connectez-vous</button>`
-      }</div>`;
-  }).join('');
+  // Feature rows: [label, free, plus, pro, premium]
+  const rows=[
+    ['Modèle Flash','✓','✓','✓','✓'],
+    ['Modèle Medium','✗','✓','✓','✓'],
+    ['Modèle Work','✗','1/h','✓','✓'],
+    ['Mode Réflexion','✗','1/h','3/h','Illimité'],
+    ['Canvas IA','✗','✓','Avancé','Premium'],
+    ['Historique des conversations','Local','Firebase','Firebase','Firebase'],
+    ['Messages / minute','4','10','15','Illimité'],
+    ['Import Wikimind Office','✗','✓','✓','✓'],
+    ['Import fichiers (PDF, ODT…)','✗','✗','✓','✓'],
+    ['Import images','✗','✗','✗','✓'],
+    ['Analyse vidéo / audio','✗','✗','✗','✓'],
+    ['Création Office par l\'IA','✗','✗','✓','✓'],
+    ['Mode Appel Wikimind','✗','✗','✓','✓'],
+    ['Plugins premium','✗','✗','✗','✓'],
+    ['Connecteur Wikimind Office','✗','✓','✓','✓'],
+  ];
+  const table=G('plan-compare-table'); if(!table) return;
+  const yes='<span class="check-yes">✓</span>';
+  const no='<span class="check-no">✗</span>';
+  function cell(v){return v==='✓'?yes:v==='✗'?no:`<span style="font-size:12px;font-weight:700">${v}</span>`;}
+  // Token balance row
+  const balEl=G('plans-token-bal-ov'); if(balEl) balEl.style.display=S.user&&!S.user.isGuest?'block':'none';
+  const dispEl=G('plan-token-display-ov'); if(dispEl) dispEl.textContent=`${S.tokens} MT`;
+  table.innerHTML=`
+    <thead>
+      <tr>
+        <th></th>
+        ${plans.map(p=>`<th class="${S.plan===p.id?'plan-col-current':''}">${p.label}${p.promo?`<div style="font-size:9px;font-weight:700;color:#888;margin-top:3px">🎁 ${p.promo}</div>`:''}</th>`).join('')}
+      </tr>
+      <tr>
+        <td></td>
+        ${plans.map(p=>`<td class="plan-col-price ${S.plan===p.id?'plan-col-current':''}" style="font-size:20px;font-weight:900">${p.price}</td>`).join('')}
+      </tr>
+      <tr>
+        <td style="border-bottom:1px solid var(--border)"></td>
+        ${plans.map(p=>`<td class="${S.plan===p.id?'plan-col-current':''}" style="padding-bottom:16px;border-bottom:1px solid var(--border)">
+          ${S.plan===p.id?`<span style="font-size:10px;font-weight:800;text-transform:uppercase;background:var(--select-bg);padding:3px 10px;border-radius:20px">Actuel</span>`:p.id>1&&!S.user?.isGuest?`<button class="plan-compare-subscribe" onclick="subscribePlan(${p.id},${p.mt})" ${S.tokens<p.mt?'title="Tokens insuffisants"':''} style="${S.tokens<p.mt?'background:var(--select-bg);color:#888':''}">
+            ${S.tokens>=p.mt?`S'abonner (${p.mt} MT)`:`Tokens insuff. (${p.mt} requis)`}</button>`:`<button class="plan-compare-subscribe" disabled>Connectez-vous</button>`}
+        </td>`).join('')}
+      </tr>
+    </thead>
+    <tbody>
+      ${rows.map(r=>`<tr>
+        <td>${r[0]}</td>
+        ${plans.map((p,i)=>`<td class="${S.plan===p.id?'plan-col-current':''}">${cell(r[i+1])}</td>`).join('')}
+      </tr>`).join('')}
+    </tbody>
+  `;
 }
 
 async function subscribePlan(planId, mtCost){
@@ -936,7 +1051,7 @@ async function subscribePlan(planId, mtCost){
     toast(`🎉 Forfait ${planNames[planId]} activé !`);
     // First month bonus — add mtCost as gift
     await fb.runTransaction(fb.ref(fb.db,`users/${S.user.uid}/tokens`),(bal)=>(bal||0)+mtCost);
-    S.tokens+=mtCost; updateTokenDisplay();
+    S.tokens+=mtCost; updateTokenDisplay(); renderPlansGrid();
     toast('🎁 1 mois offert crédité en bonus !');
   }catch(e){ toast('Erreur lors de l\'abonnement'); console.error(e); }
 }
@@ -1101,7 +1216,7 @@ function removeAttachment(i){S.attachments.splice(i,1);updateAttachmentPreview()
 
 window._officeFilesCache={};
 function openOfficeImport(){
-  if(S.plan<2){toast('Wikimind Office — plan AI Plus requis');openModal('plan-modal');return;}
+  if(S.plan<2){toast('Wikimind Office — plan AI Plus requis');openPlansOverlay();return;}
   if(!S.user||S.user.isGuest){toast('Connectez-vous pour accéder à Wikimind Office');return;}
   G('office-app-selector').style.display='block'; G('office-file-browser').style.display='none';
   openModal('office-modal');
@@ -1133,7 +1248,7 @@ function importOfficeFile(id){
   S.attachments.push({type:'text',name,content:String(content).substring(0,40000),source:'office'});
   updateAttachmentPreview(); closeModal('office-modal'); toast(`"${name}" ajouté`); G('user-input').focus();
 }
-function triggerFileImport(){if(S.plan<3){toast('Import fichiers — plan AI Pro requis');openModal('plan-modal');return;}G('file-input-docs').click();}
+function triggerFileImport(){if(S.plan<3){toast('Import fichiers — plan AI Pro requis');openPlansOverlay();return;}G('file-input-docs').click();}
 async function onFileImport(e){
   for(const file of Array.from(e.target.files)){
     try{const content=await readFileContent(file);S.attachments.push({type:'text',name:file.name,content});}catch(err){toast(`Erreur lecture ${file.name}`);}
@@ -1151,7 +1266,7 @@ async function readFileContent(file){
   }
   return new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>res(`[Fichier: ${file.name}]\n${ev.target.result}`);r.onerror=()=>rej(new Error('Lecture impossible'));r.readAsText(file,'UTF-8');});
 }
-function triggerImageImport(){if(S.plan<4){toast('Import images — plan AI Premium requis');openModal('plan-modal');return;}G('file-input-images').click();}
+function triggerImageImport(){if(S.plan<4){toast('Import images — plan AI Premium requis');openPlansOverlay();return;}G('file-input-images').click();}
 async function onImageImport(e){
   for(const file of Array.from(e.target.files)){
     const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>res(ev.target.result);r.onerror=()=>rej();r.readAsDataURL(file);});
@@ -1185,6 +1300,63 @@ async function createOfficeDocFromCanvas(appType){
   else{ toast('Erreur création (connectez-vous et vérifiez les tokens)'); }
 }
 
+// ── IMPORT MENU ──
+function toggleImportMenu(e){
+  e.stopPropagation();
+  const menu=G('import-menu');
+  const btn=G('btn-import-plus');
+  const icon=G('import-plus-icon');
+  const isOpen=menu.classList.contains('open');
+  if(isOpen){closeImportMenu();}
+  else{
+    menu.classList.add('open');
+    btn.classList.add('open');
+    icon.style.transform='rotate(135deg)';
+  }
+}
+function closeImportMenu(){
+  const menu=G('import-menu'); if(!menu)return;
+  const btn=G('btn-import-plus'); const icon=G('import-plus-icon');
+  menu.classList.remove('open');
+  if(btn) btn.classList.remove('open');
+  if(icon) icon.style.transform='rotate(0deg)';
+}
+document.addEventListener('click',()=>closeImportMenu());
+
+function triggerMediaImport(){
+  if(S.plan<4){toast('Analyse vidéo/audio — plan AI Premium requis');openPlansOverlay();return;}
+  G('file-input-media').click();
+}
+async function onMediaImport(e){
+  for(const file of Array.from(e.target.files)){
+    const sizeMB=file.size/1024/1024;
+    if(sizeMB>50){toast(`${file.name} trop volumineux (max 50 Mo)`);continue;}
+    toast(`⏳ Analyse de ${file.name}…`);
+    try{
+      const transcript=await analyzeMediaWithTransformers(file);
+      S.attachments.push({type:'text',name:file.name,content:transcript});
+      toast(`✓ ${file.name} analysé`);
+    }catch(err){toast(`Erreur analyse : ${err.message}`);}
+  }
+  updateAttachmentPreview(); e.target.value='';
+}
+async function analyzeMediaWithTransformers(file){
+  // Transcription via Transformers.js (Whisper)
+  try{
+    if(!window._transformersPipeline){
+      toast('Chargement du modèle Whisper…');
+      const {pipeline}=await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js');
+      window._transformersPipeline=await pipeline('automatic-speech-recognition','Xenova/whisper-small',{quantized:true});
+    }
+    const url=URL.createObjectURL(file);
+    const result=await window._transformersPipeline(url,{language:'fr',task:'transcribe'});
+    URL.revokeObjectURL(url);
+    return`[Transcription: ${file.name}]\n${result.text}`;
+  }catch(err){
+    return`[Média: ${file.name}]\n(Transcription Whisper indisponible dans cet environnement — ${err.message})`;
+  }
+}
+
 // ── SEND ──
 async function sendMsg(overrideText){
   if(S.generating) return;
@@ -1194,7 +1366,7 @@ async function sendMsg(overrideText){
   const displayText=text||'(Fichier joint)';
 
   const rateLimits={1:60000/4,2:60000/10,3:60000/15,4:0};
-  const rateMs=rateLimits[S.plan]||rateLimits[1]; const now=Date.now();
+  const rateMs=rateLimits[S.plan]??rateLimits[1]; const now=Date.now();
   if(rateMs>0&&(now-S.lastMsgTs)<rateMs&&S.lastMsgTs>0){
     const sec=Math.ceil((rateMs-(now-S.lastMsgTs))/1000);
     G('rate-warn').style.display='block'; G('rate-txt').textContent=`Patientez encore ${sec}s.`;
@@ -1202,12 +1374,12 @@ async function sendMsg(overrideText){
   }
   if(S.model==='work'&&S.plan>=2){const wg=3600000;if(S.lastWorkMsgTs&&(now-S.lastWorkMsgTs)<wg){const min=Math.ceil((wg-(now-S.lastWorkMsgTs))/60000);toast(`Wikimind Work : 1 message/heure (${min}min)`);return;}}
   if(S.model==='reflect'){
-    if(S.plan<2){toast('Mode Réflexion — plan AI Plus requis');openModal('plan-modal');return;}
+    if(S.plan<2){toast('Mode Réflexion — plan AI Plus requis');openPlansOverlay();return;}
     if(S.plan===2){const rg=3600000;if(S.lastReflectTs&&(now-S.lastReflectTs)<rg){const min=Math.ceil((rg-(now-S.lastReflectTs))/60000);toast(`Réflexion — 1/heure sur AI Plus (${min}min)`);return;}}
     else if(S.plan===3){S._reflectHistory=S._reflectHistory.filter(t=>now-t<3600000);if(S._reflectHistory.length>=3){const oldest=S._reflectHistory[0];const min=Math.ceil((3600000-(now-oldest))/60000);toast(`Réflexion — 3/heure sur AI Pro (${min}min)`);return;}}
   }
-  if(S.model==='work'&&S.plan<2){toast('Wikimind Work — plan AI Plus requis');openModal('plan-modal');return;}
-  if(S.model==='medium'&&S.plan<2){toast('Wikimind Medium — plan AI Plus requis');openModal('plan-modal');return;}
+  if(S.model==='work'&&S.plan<2){toast('Wikimind Work — plan AI Plus requis');openPlansOverlay();return;}
+  if(S.model==='medium'&&S.plan<2){toast('Wikimind Medium — plan AI Plus requis');openPlansOverlay();return;}
 
   S.lastMsgTs=now;
   if(S.model==='work') S.lastWorkMsgTs=now;
@@ -1356,24 +1528,24 @@ async function runReflection(question){
 // ── MODEL CHANGE ──
 function onModelChange(){
   const key=G('model-select').value;
-  if(key==='reflect'&&S.plan<2){toast('Mode Réflexion — plan AI Plus requis');G('model-select').value=S.model;openModal('plan-modal');return;}
-  if((key==='medium'||key==='work')&&S.plan<2){toast('Modèle — plan AI Plus requis');G('model-select').value=S.model;openModal('plan-modal');return;}
+  if(key==='reflect'&&S.plan<2){toast('Mode Réflexion — plan AI Plus requis');G('model-select').value=S.model;openPlansOverlay();return;}
+  if((key==='medium'||key==='work')&&S.plan<2){toast('Modèle — plan AI Plus requis');G('model-select').value=S.model;openPlansOverlay();return;}
   S.model=key;
 }
 
 // ── CANVAS ──
 function toggleCanvas(){
-  if(!S.canvasOpen&&S.plan<2){toast('Canvas — plan AI Plus requis');openModal('plan-modal');return;}
+  if(!S.canvasOpen&&S.plan<2){toast('Canvas — plan AI Plus requis');openPlansOverlay();return;}
   S.canvasOpen=!S.canvasOpen;
   G('canvas-panel').classList.toggle('open',S.canvasOpen);
 }
 
 function toggleCanvasMode(){
-  if(S.plan<2){toast('Canvas — plan AI Plus requis');openModal('plan-modal');return;}
+  if(S.plan<2){toast('Canvas — plan AI Plus requis');openPlansOverlay();return;}
   S.canvasMode=!S.canvasMode;
   const dot=G('canvas-active-dot'); if(dot)dot.classList.toggle('show',S.canvasMode);
   const ind=G('canvas-mode-indicator'); if(ind)ind.classList.toggle('show',S.canvasMode);
-  G('canvas-mode-bar').style.display=S.canvasMode?'block':'none';
+  G('canvas-mode-bar').style.display='none';
   G('btn-canvas-toggle').classList.toggle('active-btn',S.canvasMode);
   if(S.canvasMode&&!S.canvasOpen) toggleCanvas();
   toast(S.canvasMode?'🎨 Mode Canvas activé — le contenu ira dans le canvas':'Mode Canvas désactivé');
@@ -1460,7 +1632,6 @@ function syncWritingAnimToggle(){const el=G('writing-anim-toggle');if(!el)return
 function updateHlTheme(){const isDark=document.body.classList.contains('dark-mode');G('hljs-theme').disabled=isDark;G('hljs-dark').disabled=!isDark;}
 
 // ── MODALS ──
-function openModal(id){const m=G(id);if(m)m.classList.add('show');}
 function closeModal(id){const m=G(id);if(m)m.classList.remove('show');}
 document.addEventListener('click',e=>{document.querySelectorAll('.modal.show').forEach(m=>{if(e.target===m)m.classList.remove('show');});});
 
@@ -1471,94 +1642,14 @@ function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrol
 function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
 
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape') document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));
+  if(e.key==='Escape'){
+    document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));
+    closePlansOverlay();
+    closeImportMenu();
+  }
   if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();openModal('search-modal');setTimeout(()=>G('search-inp')?.focus(),80);}
   if((e.ctrlKey||e.metaKey)&&e.key==='n'){e.preventDefault();newChat();}
 });
-
-
-// ──────────────────────────────────────────────
-// SPEECH TO TEXT (STT) — tous les forfaits
-// ──────────────────────────────────────────────
-let _sttRecognition = null;
-let _sttActive = false;
-
-function toggleSTT() {
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    toast('Reconnaissance vocale non supportée sur ce navigateur');
-    return;
-  }
-  if (_sttActive) {
-    stopSTT();
-  } else {
-    startSTT();
-  }
-}
-
-function startSTT() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  _sttRecognition = new SpeechRecognition();
-  _sttRecognition.lang = 'fr-FR';
-  _sttRecognition.continuous = false;
-  _sttRecognition.interimResults = true;
-
-  const btn = G('btn-mic');
-  const input = G('user-input');
-  const originalVal = input.value;
-
-  _sttRecognition.onstart = () => {
-    _sttActive = true;
-    btn.classList.add('listening');
-    toast('🎙️ Écoute…');
-  };
-
-  _sttRecognition.onresult = (e) => {
-    let interim = '', final = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) final += e.results[i][0].transcript;
-      else interim += e.results[i][0].transcript;
-    }
-    input.value = originalVal + (final || interim);
-    autoResize(input);
-  };
-
-  _sttRecognition.onend = () => {
-    _sttActive = false;
-    btn.classList.remove('listening');
-    if (input.value.trim()) toast('✓ Texte capturé');
-  };
-
-  _sttRecognition.onerror = (e) => {
-    _sttActive = false;
-    btn.classList.remove('listening');
-    if (e.error !== 'aborted') toast('Erreur micro : ' + e.error);
-  };
-
-  _sttRecognition.start();
-}
-
-function stopSTT() {
-  if (_sttRecognition) {
-    _sttRecognition.stop();
-    _sttRecognition = null;
-  }
-  _sttActive = false;
-  G('btn-mic').classList.remove('listening');
-}
-
-// ──────────────────────────────────────────────
-// WIKIMIND CALL — Pro / Premium uniquement
-// ──────────────────────────────────────────────
-function goToCall() {
-  if (S.plan < 3) {
-    toast('Wikimind Appel — plan AI Pro requis');
-    openModal('plan-modal');
-    return;
-  }
-  // Pass user name to call page via query param
-  const name = encodeURIComponent(S.user?.displayName || 'Utilisateur');
-  window.location.href = `AI/Wikimind_call.html?name=${name}&plan=${S.plan}`;
-}
 
 window.bootUser=bootUser;
 console.log('%cWikiMind AI','color:#111;font-family:Inter,sans-serif;font-size:20px;font-weight:900;font-style:italic');
