@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WikiMind Cloud — Hub</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <!-- Google Identity Services (pour OAuth Google Drive) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Google API Client (pour l'API Drive) -->
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+
+    <!-- Config Tailwind — identique au design WikiMind -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif']
+                    },
+                    colors: {
+                        glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
+                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' },
+                        office: {
+                            writer: '#3b82f6',
+                            calc: '#22c55e',
+                            impress: '#f97316',
+                            draw: '#a855f7'
+                        }
+                    },
+                    animation: {
+                        'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+                        'toast-enter': 'toastEnter 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        fadeInUp: { '0%': { opacity: 0, transform: 'translateY(14px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+                        toastEnter: { '0%': { opacity: 0, transform: 'translateY(100%) scale(0.9)' }, '100%': { opacity: 1, transform: 'translateY(0) scale(1)' } },
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* ===== BASE ===== */
+        body { background-color: #050505; color: #ffffff; overflow-x: hidden; }
+        ::selection { background: rgba(99,102,241,0.4); color: #fff; }
+
+        /* ===== GLASS PANEL — identique WikiMind ===== */
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        /* ===== GRADIENT TEXTE ===== */
+        .text-gradient {
+            background: linear-gradient(135deg, #ffffff 0%, #a5a6f6 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        /* ===== TOAST NOTIFICATIONS ===== */
+        #toast-container {
+            position: fixed; bottom: 20px; right: 20px;
+            z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+        }
+        .toast-msg { pointer-events: auto; }
+
+        /* ===== ONGLETS ===== */
+        .tab-btn { transition: all 0.25s ease; }
+        .tab-btn.active {
+            background: rgba(99,102,241,0.15);
+            border-color: rgba(99,102,241,0.5) !important;
+            color: #818cf8;
+        }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* ===== CARTES FICHIERS ===== */
+        .file-card {
+            background: rgba(255,255,255,0.025);
+            border: 1px solid rgba(255,255,255,0.06);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform;
+        }
+        .file-card:hover {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(255,255,255,0.14);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px -8px rgba(0,0,0,0.5);
+        }
+
+        /* ===== DRIVE CARD ===== */
+        .drive-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.25s ease;
+        }
+        .drive-card:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.12);
+        }
+
+        /* ===== DROPZONE ===== */
+        #dropzone {
+            border: 2px dashed rgba(99,102,241,0.25);
+            transition: all 0.3s ease;
+        }
+        #dropzone.drag-over {
+            border-color: rgba(99,102,241,0.7);
+            background: rgba(99,102,241,0.07);
+            transform: scale(1.01);
+        }
+
+        /* ===== BARRE PROGRESSION ===== */
+        .progress-bar { transition: width 0.4s ease; }
+
+        /* ===== MODAL ===== */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px); z-index: 100; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+
+        /* ===== SCROLLBAR DISCRÈTE ===== */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+
+        /* ===== BADGE STATUT DRIVE ===== */
+        .drive-connected { color: #34d399; }
+        .drive-disconnected { color: #f59e0b; }
+
+        /* ===== BOUTON UPLOAD DRIVE — PULSE GLOW ===== */
+        .btn-drive-connect {
+            background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+            box-shadow: 0 0 30px rgba(66,133,244,0.3);
+            transition: all 0.3s ease;
+        }
+        .btn-drive-connect:hover {
+            box-shadow: 0 0 50px rgba(66,133,244,0.5);
+            transform: translateY(-2px) scale(1.02);
+        }
+    </style>
+</head>
+
+<body class="font-sans">
+
+    <!-- ===== FOND AURORA (CANVAS) ===== -->
+    <canvas id="aurora-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
+
+    <!-- ===== CONTENEUR TOASTS ===== -->
+    <div id="toast-container"></div>
+
+    <!-- ===== NAVBAR ===== -->
+    <nav class="fixed top-0 w-full z-50 px-4 md:px-6 py-5 transition-all duration-300">
+        <div class="max-w-7xl mx-auto flex justify-between items-center glass-panel rounded-full px-5 py-3">
+
+            <!-- Logo WikiMind -->
+            <a href="index.html" class="flex items-center gap-3 group">
+                <div class="w-8 h-8 bg-gradient-to-tr from-white to-gray-400 rounded-lg flex items-center justify-center">
+                    <span class="font-bold text-black text-xs">W</span>
+                </div>
+                <span class="font-display font-bold text-lg tracking-tight">
+                    WikiMind <span class="text-white/40 font-normal">Cloud</span>
+                </span>
+            </a>
+
+            <!-- Indicateurs centraux (visible desktop) -->
+            <div class="hidden md:flex items-center gap-3">
+                <!-- Status Drive -->
+                <div id="drive-status-badge" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] uppercase tracking-wider font-bold">
+                    <span class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" id="drive-dot"></span>
+                    <span id="drive-status-text" class="drive-disconnected">Drive non connecté</span>
+                </div>
+                <!-- Lien retour Office -->
+                <a href="Wikimind_office.html" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] uppercase tracking-wider hover:bg-white/10 transition-colors text-white/60">
+                    <i class="fa-solid fa-briefcase"></i> Office
+                </a>
+            </div>
+
+            <!-- Auth Firebase (avatar) -->
+            <div id="auth-container" class="flex items-center gap-3">
+                <a href="Wikimind_user.html" id="login-btn"
+                   class="px-5 py-2 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-gray-200 transition-colors">
+                    Connexion
+                </a>
+                <div id="user-logged" class="hidden items-center gap-3">
+                    <a href="Wikimind_user.html" class="relative group">
+                        <img id="nav-avatar" src="" alt="Avatar"
+                             class="w-9 h-9 rounded-full border border-white/20 object-cover bg-gray-800">
+                        <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-black"></span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== CONTENU PRINCIPAL ===== -->
+    <main class="relative pt-32 pb-24 px-4 md:px-6 max-w-7xl mx-auto">
+
+        <!-- En-tête de la page -->
+        <div class="mb-10 animate-fade-in-up">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-600 to-indigo-500 flex items-center justify-center">
+                    <i class="fa-solid fa-cloud text-white text-lg"></i>
+                </div>
+                <span class="text-xs uppercase tracking-[0.2em] font-bold text-white/40">Hub Cloud</span>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-display font-bold mb-3 text-gradient">Mon Espace Cloud</h1>
+            <p class="text-white/50 text-base max-w-2xl">
+                Pont entre vos fichiers WikiMind Office et Google Drive. Sauvegardez, organisez et accédez à tout depuis un seul endroit.
+            </p>
+            <!-- Alerte si non connecté à Firebase -->
+            <div id="firebase-warning" class="hidden mt-4 flex items-center gap-3 px-4 py-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-sm">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>Connectez-vous à WikiMind pour accéder à vos fichiers sauvegardés sur Firebase.</span>
+            </div>
+        </div>
+
+        <!-- ===== ONGLETS DE NAVIGATION ===== -->
+        <div class="flex gap-2 mb-8 animate-fade-in-up" style="animation-delay:0.1s">
+            <button id="tab-office-btn" onclick="switchTab('office')"
+                    class="tab-btn active flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 text-sm font-bold">
+                <i class="fa-solid fa-briefcase text-brand-500"></i>
+                Fichiers WikiMind Office
+            </button>
+            <button id="tab-drive-btn" onclick="switchTab('drive')"
+                    class="tab-btn flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 text-sm font-bold text-white/60">
+                <i class="fa-brands fa-google-drive text-blue-400"></i>
+                Mon Drive
+            </button>
+        </div>
+
+        <!-- ===================================================== -->
+        <!-- SECTION A — FICHIERS WIKIMIND OFFICE                  -->
+        <!-- ===================================================== -->
+        <div id="tab-office" class="tab-panel active animate-fade-in-up" style="animation-delay:0.15s">
+
+            <!-- Barre d'infos + recherche -->
+            <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-xl font-display font-bold">Espace de travail Firebase</h2>
+                    <p class="text-white/40 text-sm mt-0.5">Vos documents créés dans WikiMind Office, stockés sur Firebase.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-white/30 text-xs"></i>
+                        <input id="office-search" type="text" placeholder="Rechercher..." 
+                               class="bg-white/5 border border-white/10 rounded-lg pl-8 pr-4 py-2 text-sm text-white focus:outline-none focus:border-brand-500 transition-all w-44">
+                    </div>
+                    <a href="Wikimind_office.html"
+                       class="flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs transition-all shadow-lg shadow-brand-500/20">
+                        <i class="fa-solid fa-plus"></i> Nouveau
+                    </a>
+                </div>
+            </div>
+
+            <!-- Conteneur des fichiers Office -->
+            <div id="office-files-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <!-- Chargement initial -->
+                <div id="office-loading" class="col-span-full flex flex-col items-center justify-center py-20 text-white/20">
+                    <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-3"></i>
+                    <p class="text-sm">Chargement de vos documents...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================================================== -->
+        <!-- SECTION B — MON DRIVE SÉCURISÉ                        -->
+        <!-- ===================================================== -->
+        <div id="tab-drive" class="tab-panel animate-fade-in-up">
+
+            <!-- ---- ÉTAT : DRIVE NON CONNECTÉ ---- -->
+            <div id="drive-connect-prompt" class="flex flex-col items-center justify-center py-12 text-center">
+                <div class="glass-panel rounded-3xl p-12 max-w-lg w-full mx-auto">
+                    <!-- Icône Drive avec glow -->
+                    <div class="relative w-24 h-24 mx-auto mb-8">
+                        <div class="absolute inset-0 bg-blue-500/20 rounded-full blur-2xl"></div>
+                        <div class="relative w-24 h-24 rounded-full bg-gradient-to-br from-blue-600/30 to-indigo-500/30 border border-blue-500/20 flex items-center justify-center">
+                            <i class="fa-brands fa-google-drive text-4xl text-blue-400"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-2xl font-display font-bold mb-2">Connecter Google Drive</h3>
+                    <p class="text-white/50 text-sm mb-2">
+                        Liez votre compte Google pour sauvegarder vos fichiers WikiMind directement dans votre Drive personnel.
+                    </p>
+                    <p class="text-white/25 text-xs mb-8 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-green-400/60"></i>
+                        Connexion sécurisée OAuth 2.0 — 15 Go gratuits inclus
+                    </p>
+                    <!-- Bouton principal de connexion Drive -->
+                    <button id="btn-connect-drive" onclick="connectGoogleDrive()"
+                            class="btn-drive-connect w-full py-4 rounded-2xl text-white font-display font-bold text-lg flex items-center justify-center gap-3">
+                        <i class="fa-brands fa-google text-xl"></i>
+                        Connecter mon Google Drive
+                    </button>
+                    <!-- Info scopes -->
+                    <p class="text-white/20 text-[10px] mt-4 uppercase tracking-wider">
+                        Permissions demandées : drive.file (fichiers créés par WikiMind uniquement)
+                    </p>
+                </div>
+            </div>
+
+            <!-- ---- ÉTAT : DRIVE CONNECTÉ ---- -->
+            <div id="drive-connected-view" class="hidden">
+
+                <!-- En-tête Drive connecté -->
+                <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-6">
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-3 px-4 py-2 rounded-xl bg-green-500/10 border border-green-500/20">
+                            <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                            <span class="text-green-400 text-xs font-bold uppercase tracking-wider">Drive connecté</span>
+                            <span id="drive-user-email" class="text-white/40 text-xs"></span>
+                        </div>
+                        <button onclick="disconnectDrive()" class="text-white/30 hover:text-red-400 text-xs transition-colors">
+                            <i class="fa-solid fa-link-slash mr-1"></i>Déconnecter
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="refreshDriveFiles()"
+                                class="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-bold transition-all">
+                            <i class="fa-solid fa-rotate-right" id="refresh-icon"></i> Actualiser
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DROPZONE — Upload depuis le PC vers Drive -->
+                <div id="dropzone" class="rounded-2xl p-8 text-center mb-8 cursor-pointer" onclick="document.getElementById('drive-file-input').click()">
+                    <input type="file" id="drive-file-input" class="hidden" multiple onchange="handleFileInputChange(this.files)">
+                    <div class="flex flex-col items-center gap-3">
+                        <div class="w-14 h-14 rounded-2xl bg-brand-600/20 border border-brand-500/20 flex items-center justify-center">
+                            <i class="fa-solid fa-cloud-arrow-up text-2xl text-brand-400"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-sm text-white/80">Glissez vos fichiers ici ou cliquez pour importer</p>
+                            <p class="text-xs text-white/30 mt-1">Tous types de fichiers — upload direct vers votre Google Drive</p>
+                        </div>
+                    </div>
+                    <!-- Barre de progression (cachée par défaut) -->
+                    <div id="upload-progress-container" class="hidden mt-5">
+                        <div class="flex justify-between items-center mb-2">
+                            <span id="upload-progress-label" class="text-xs text-white/50"></span>
+                            <span id="upload-progress-pct" class="text-xs font-bold text-brand-400"></span>
+                        </div>
+                        <div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div id="upload-progress-bar" class="progress-bar h-full bg-brand-500 rounded-full w-0"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Liste des fichiers Drive -->
+                <h3 class="text-lg font-display font-bold mb-4 flex items-center gap-2">
+                    <i class="fa-brands fa-google-drive text-blue-400"></i> Mes fichiers Drive
+                </h3>
+                <div id="drive-files-container" class="space-y-2">
+                    <div id="drive-loading" class="text-center py-12 text-white/20">
+                        <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-3"></i>
+                        <p class="text-sm">Chargement du Drive...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ===== MODAL — CONFIRMATION SUPPRESSION ===== -->
+    <div id="confirm-modal" class="modal">
+        <div class="glass-panel p-8 rounded-2xl w-full max-w-sm relative border border-white/10 shadow-2xl animate-fade-in-up text-center">
+            <div id="confirm-icon-container" class="text-3xl mb-4"><i class="fa-solid fa-triangle-exclamation text-red-400"></i></div>
+            <h3 id="confirm-title" class="text-lg font-display font-bold mb-2">Confirmation</h3>
+            <p id="confirm-body" class="text-sm text-white/50 mb-8">Êtes-vous sûr ?</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeConfirmModal()" class="px-5 py-2 rounded-lg text-white/50 hover:bg-white/5 text-sm transition-colors">Annuler</button>
+                <button id="confirm-ok-btn" class="px-6 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-sm transition-all">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- FIREBASE — Script Module                              -->
+    <!-- ===================================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, onValue, remove, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // -------------------------------------------------------
+        // CONFIG FIREBASE (identique à WikiMind Office)
+        // -------------------------------------------------------
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+            authDomain: "wikimind-3-comments.firebaseapp.com",
+            databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "wikimind-3-comments",
+            storageBucket: "wikimind-3-comments.firebasestorage.app",
+            messagingSenderId: "137479541640",
+            appId: "1:137479541640:web:4ed2510a9908055052e03d"
+        };
+
+        const firebaseApp = initializeApp(firebaseConfig);
+        const auth = getAuth(firebaseApp);
+        const db = getDatabase(firebaseApp);
+
+        // -------------------------------------------------------
+        // ÉTAT GLOBAL — Partagé avec le script standard via window
+        // -------------------------------------------------------
+        window._firebaseDb = db;
+        window._firebaseAuth = auth;
+        window._currentUser = null;
+        window._firebaseReady = false;
+
+        // -------------------------------------------------------
+        // TOASTS — Système de notifications UI
+        // -------------------------------------------------------
+        window.showToast = (msg, type = 'info') => {
+            const t = document.createElement('div');
+            const colors = {
+                error:   'bg-red-500/20 border-red-500/60 text-red-200',
+                success: 'bg-green-500/20 border-green-500/60 text-green-200',
+                info:    'bg-white/10 border-white/20 text-white',
+                warning: 'bg-yellow-500/20 border-yellow-500/50 text-yellow-200'
+            };
+            const icons = {
+                error:   '<i class="fa-solid fa-triangle-exclamation"></i>',
+                success: '<i class="fa-solid fa-check-circle"></i>',
+                info:    '<i class="fa-solid fa-circle-info"></i>',
+                warning: '<i class="fa-solid fa-triangle-exclamation"></i>'
+            };
+            t.className = `toast-msg px-4 py-3 rounded-xl text-sm font-bold shadow-xl border backdrop-blur-md flex items-center gap-2 ${colors[type] || colors.info}`;
+            t.style.animation = 'toastEnter 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
+            t.innerHTML = (icons[type] || '') + ' ' + msg;
+            document.getElementById('toast-container').appendChild(t);
+            setTimeout(() => {
+                t.style.opacity = '0';
+                t.style.transform = 'scale(0.9)';
+                t.style.transition = 'all 0.3s ease';
+                setTimeout(() => t.remove(), 300);
+            }, 4000);
+        };
+
+        // -------------------------------------------------------
+        // MODAL CONFIRM
+        // -------------------------------------------------------
+        window.showConfirm = (title, body, iconHtml, onOk) => {
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-body').textContent = body;
+            document.getElementById('confirm-icon-container').innerHTML = iconHtml;
+            document.getElementById('confirm-ok-btn').onclick = () => { closeConfirmModal(); onOk(); };
+            document.getElementById('confirm-modal').classList.add('active');
+        };
+        window.closeConfirmModal = () => {
+            document.getElementById('confirm-modal').classList.remove('active');
+        };
+
+        // -------------------------------------------------------
+        // HELPERS VISUELS — icônes et couleurs par type
+        // -------------------------------------------------------
+        window.getAppIcon = (type) => {
+            const icons = { writer: 'fa-solid fa-file-word', calc: 'fa-solid fa-table', impress: 'fa-solid fa-presentation-screen', draw: 'fa-solid fa-pen-ruler' };
+            return icons[type] || 'fa-solid fa-file';
+        };
+        window.getAppColor = (type) => {
+            const colors = { writer: '#3b82f6', calc: '#22c55e', impress: '#f97316', draw: '#a855f7' };
+            return colors[type] || '#ffffff';
+        };
+        window.getAppPage = (type) => {
+            const pages = { writer: 'Wikimind_writter.html', calc: 'Wikimind_calc.html', impress: 'Wikimind_impress.html', draw: 'Wikimind_draw.html' };
+            return pages[type] || 'Wikimind_writter.html';
+        };
+
+        // -------------------------------------------------------
+        // FORMATAGE DATE
+        // -------------------------------------------------------
+        function formatDate(ts) {
+            if (!ts) return '—';
+            return new Date(ts).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        }
+
+        // -------------------------------------------------------
+        // RENDU D'UN FICHIER OFFICE — Carte avec bouton Drive
+        // -------------------------------------------------------
+        function renderOfficeFile(file) {
+            const icon    = window.getAppIcon(file.type);
+            const color   = window.getAppColor(file.type);
+            const page    = window.getAppPage(file.type);
+            const dateStr = formatDate(file.updatedAt);
+
+            // Taille fictive de l'aperçu du contenu
+            const preview = file.content ? file.content.replace(/<[^>]*>/g, '').substring(0, 60) + '...' : 'Document vide';
+
+            const div = document.createElement('div');
+            div.className = 'file-card rounded-2xl p-5 relative';
+            div.setAttribute('data-name', (file.name || '').toLowerCase());
+            div.setAttribute('data-type', file.type || '');
+
+            div.innerHTML = `
+                <!-- Indicateur de type (trait coloré en haut) -->
+                <div class="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl" style="background: ${color}; opacity: 0.6;"></div>
+
+                <!-- En-tête de la carte -->
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style="background: ${color}18; border: 1px solid ${color}30;">
+                            <i class="${icon}" style="color:${color}"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-display font-bold text-sm text-white leading-tight">${file.name || 'Sans titre'}</h4>
+                            <p class="text-[10px] text-white/30 uppercase tracking-wide mt-0.5">${file.type} • ${dateStr}</p>
+                        </div>
+                    </div>
+                    <!-- Badge Firebase -->
+                    <span class="flex items-center gap-1 px-2 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[9px] uppercase tracking-wider font-bold">
+                        <i class="fa-solid fa-fire-flame-curved text-[8px]"></i> Firebase
+                    </span>
+                </div>
+
+                <!-- Aperçu du contenu -->
+                <p class="text-xs text-white/30 mb-5 line-clamp-2 min-h-[2.5rem]">${preview}</p>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-2">
+                    <!-- Ouvrir dans l'éditeur -->
+                    <a href="${page}?id=${file.id}&source=firebase"
+                       class="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold transition-all">
+                        <i class="fa-solid fa-pen-to-square text-white/60"></i>
+                        <span class="text-white/70">Ouvrir</span>
+                    </a>
+                    <!-- Sauvegarder dans Drive -->
+                    <button onclick="window.saveToDrive('${file.id}', '${file.name}', '${file.type}', this)"
+                            class="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/35 border border-blue-500/30 text-xs font-bold text-blue-300 transition-all" title="Exporter vers Google Drive">
+                        <i class="fa-brands fa-google-drive text-blue-400"></i>
+                        <span>Envoyer sur Drive</span>
+                    </button>
+                    <!-- Supprimer (Firebase) -->
+                    <button onclick="window.deleteOfficeFile('${file.id}')"
+                            class="w-9 h-9 flex items-center justify-center rounded-lg bg-white/5 hover:bg-red-500/15 border border-white/10 hover:border-red-500/30 text-white/30 hover:text-red-400 transition-all" title="Supprimer">
+                        <i class="fa-solid fa-trash text-xs"></i>
+                    </button>
+                </div>
+            `;
+            return div;
+        }
+
+        // -------------------------------------------------------
+        // CHARGEMENT DES FICHIERS DEPUIS FIREBASE
+        // -------------------------------------------------------
+        function loadOfficeFiles(uid) {
+            const container = document.getElementById('office-files-container');
+            const userFilesRef = ref(db, `users/${uid}/files`);
+
+            onValue(userFilesRef, (snapshot) => {
+                container.innerHTML = '';
+                const data = snapshot.val();
+
+                if (data) {
+                    const entries = Object.entries(data)
+                        .map(([key, val]) => ({ id: key, ...val }))
+                        .sort((a, b) => b.updatedAt - a.updatedAt);
+
+                    if (entries.length === 0) {
+                        renderOfficeEmpty(container);
+                        return;
+                    }
+
+                    entries.forEach(file => {
+                        container.appendChild(renderOfficeFile(file));
+                    });
+
+                    // Synchroniser la recherche après le rendu
+                    applyOfficeSearch();
+
+                } else {
+                    renderOfficeEmpty(container);
+                }
+            }, (error) => {
+                console.error('[WikiMind Cloud] Erreur Firebase:', error);
+                container.innerHTML = `<div class="col-span-full text-center py-10 text-red-400 text-sm"><i class="fa-solid fa-circle-exclamation mr-2"></i>Erreur de chargement : ${error.message}</div>`;
+            });
+        }
+
+        // Etat vide de la section Office
+        function renderOfficeEmpty(container) {
+            container.innerHTML = `
+                <div class="col-span-full flex flex-col items-center justify-center py-20 border border-dashed border-white/5 rounded-2xl">
+                    <div class="text-5xl mb-4 opacity-20">📂</div>
+                    <p class="text-white/30 text-sm">Aucun document dans WikiMind Office.</p>
+                    <a href="Wikimind_office.html" class="mt-4 px-5 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition-all">
+                        <i class="fa-solid fa-plus mr-2"></i>Créer un document
+                    </a>
+                </div>
+            `;
+        }
+
+        // -------------------------------------------------------
+        // SUPPRESSION D'UN FICHIER FIREBASE
+        // -------------------------------------------------------
+        window.deleteOfficeFile = (fileId) => {
+            if (!window._currentUser) { window.showToast("Vous devez être connecté.", "error"); return; }
+            window.showConfirm(
+                "Supprimer le fichier ?",
+                "Ce document sera supprimé définitivement de Firebase. Cette action est irréversible.",
+                '<i class="fa-solid fa-trash text-3xl text-red-400"></i>',
+                () => {
+                    remove(ref(db, `users/${window._currentUser.uid}/files/${fileId}`))
+                        .then(() => window.showToast("Fichier supprimé.", "success"))
+                        .catch(err => window.showToast("Erreur : " + err.message, "error"));
+                }
+            );
+        };
+
+        // -------------------------------------------------------
+        // RÉCUPÉRATION DU CONTENU D'UN FICHIER FIREBASE (pour upload Drive)
+        // -------------------------------------------------------
+        window.getOfficeFileContent = async (fileId) => {
+            if (!window._currentUser) return null;
+            const snap = await get(ref(db, `users/${window._currentUser.uid}/files/${fileId}`));
+            return snap.exists() ? snap.val() : null;
+        };
+
+        // -------------------------------------------------------
+        // DÉTECTION ÉTAT AUTH FIREBASE — Couche 1
+        // -------------------------------------------------------
+        onAuthStateChanged(auth, (user) => {
+            const loginBtn    = document.getElementById('login-btn');
+            const userLogged  = document.getElementById('user-logged');
+            const navAvatar   = document.getElementById('nav-avatar');
+            const fbWarning   = document.getElementById('firebase-warning');
+
+            if (user) {
+                // Utilisateur connecté à WikiMind
+                window._currentUser = user;
+                window._firebaseReady = true;
+
+                loginBtn.classList.add('hidden');
+                userLogged.classList.remove('hidden');
+                userLogged.classList.add('flex');
+                navAvatar.src = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email)}&background=6366f1&color=fff`;
+                fbWarning.classList.add('hidden');
+
+                // Charger les fichiers Office
+                loadOfficeFiles(user.uid);
+
+            } else {
+                // Mode invité
+                window._currentUser = null;
+                window._firebaseReady = false;
+
+                loginBtn.classList.remove('hidden');
+                userLogged.classList.add('hidden');
+                userLogged.classList.remove('flex');
+                fbWarning.classList.remove('hidden');
+
+                // Afficher état vide
+                const container = document.getElementById('office-files-container');
+                container.innerHTML = `
+                    <div class="col-span-full flex flex-col items-center justify-center py-20 border border-dashed border-yellow-500/15 rounded-2xl">
+                        <i class="fa-solid fa-lock text-3xl text-yellow-400/30 mb-4"></i>
+                        <p class="text-white/30 text-sm">Connectez-vous pour voir vos fichiers.</p>
+                        <a href="Wikimind_user.html" class="mt-4 px-5 py-2 rounded-lg bg-white text-black text-xs font-bold hover:bg-gray-200 transition-all">
+                            Se connecter
+                        </a>
+                    </div>
+                `;
+            }
+        });
+
+        // -------------------------------------------------------
+        // RECHERCHE DANS LES FICHIERS OFFICE
+        // -------------------------------------------------------
+        function applyOfficeSearch() {
+            const query = document.getElementById('office-search').value.toLowerCase();
+            document.querySelectorAll('[data-name]').forEach(card => {
+                const name = card.getAttribute('data-name') || '';
+                const type = card.getAttribute('data-type') || '';
+                const match = name.includes(query) || type.includes(query);
+                card.style.display = match ? '' : 'none';
+            });
+        }
+
+        document.getElementById('office-search').addEventListener('input', applyOfficeSearch);
+
+    </script>
+
+    <!-- ===================================================== -->
+    <!-- GOOGLE DRIVE — Script Standard (non-module)           -->
+    <!-- ===================================================== -->
+    <script>
+        // -------------------------------------------------------
+        // CONFIG GOOGLE OAUTH
+        // -------------------------------------------------------
+        const GOOGLE_CLIENT_ID = '137479541640-0poomk21skq92sh04leb4b997qdqpg2s.apps.googleusercontent.com';
+        const DRIVE_SCOPE       = 'https://www.googleapis.com/auth/drive.file';
+        const DRIVE_API_BASE    = 'https://www.googleapis.com/drive/v3';
+        const DRIVE_UPLOAD_BASE = 'https://www.googleapis.com/upload/drive/v3';
+
+        // -------------------------------------------------------
+        // ÉTAT GLOBAL GOOGLE DRIVE
+        // -------------------------------------------------------
+        let driveAccessToken  = null;  // Token OAuth Drive
+        let driveTokenClient  = null;  // Client GIS (Google Identity Services)
+        let driveUserEmail    = null;  // Email du compte Google lié
+
+        // -------------------------------------------------------
+        // INITIALISATION DE GOOGLE IDENTITY SERVICES
+        // Appelé une fois que la lib GIS est prête
+        // -------------------------------------------------------
+        function initGoogleDrive() {
+            // Vérifier si un token est déjà en session
+            const savedToken = sessionStorage.getItem('wikimind_drive_token');
+            const savedEmail = sessionStorage.getItem('wikimind_drive_email');
+
+            if (savedToken) {
+                driveAccessToken = savedToken;
+                driveUserEmail   = savedEmail;
+                showDriveConnectedState(savedEmail);
+                loadDriveFiles();
+            }
+
+            // Créer le client GIS pour les tokens
+            if (window.google && window.google.accounts) {
+                driveTokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: GOOGLE_CLIENT_ID,
+                    scope: DRIVE_SCOPE,
+                    callback: handleDriveTokenResponse,
+                });
+            }
+        }
+
+        // -------------------------------------------------------
+        // CONNEXION DRIVE — Déclenche le popup OAuth
+        // -------------------------------------------------------
+        window.connectGoogleDrive = () => {
+            if (!driveTokenClient) {
+                // Réessayer si GIS pas encore chargé
+                if (window.google && window.google.accounts) {
+                    initGoogleDrive();
+                } else {
+                    window.showToast("L'API Google n'est pas encore chargée. Veuillez patienter.", "warning");
+                    return;
+                }
+            }
+            driveTokenClient.requestAccessToken({ prompt: 'select_account' });
+        };
+
+        // -------------------------------------------------------
+        // CALLBACK APRÈS OBTENTION DU TOKEN OAUTH
+        // -------------------------------------------------------
+        function handleDriveTokenResponse(response) {
+            if (response.error) {
+                console.error('[WikiMind Drive] Erreur OAuth:', response.error);
+                window.showToast("Connexion Drive annulée ou refusée.", "error");
+                return;
+            }
+
+            driveAccessToken = response.access_token;
+
+            // Récupérer les infos du profil Google pour afficher l'email
+            fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${driveAccessToken}` }
+            })
+            .then(r => r.json())
+            .then(profile => {
+                driveUserEmail = profile.email || 'Compte Google';
+                // Persister en session
+                sessionStorage.setItem('wikimind_drive_token', driveAccessToken);
+                sessionStorage.setItem('wikimind_drive_email', driveUserEmail);
+
+                showDriveConnectedState(driveUserEmail);
+                loadDriveFiles();
+                window.showToast(`Drive connecté : ${driveUserEmail}`, "success");
+            })
+            .catch(err => {
+                console.error('[WikiMind Drive] Erreur profil:', err);
+                showDriveConnectedState('Compte Google');
+                loadDriveFiles();
+            });
+        }
+
+        // -------------------------------------------------------
+        // AFFICHER L'ÉTAT "DRIVE CONNECTÉ"
+        // -------------------------------------------------------
+        function showDriveConnectedState(email) {
+            document.getElementById('drive-connect-prompt').classList.add('hidden');
+            document.getElementById('drive-connected-view').classList.remove('hidden');
+            document.getElementById('drive-user-email').textContent = email || '';
+
+            // Mettre à jour le badge dans la navbar
+            const dot  = document.getElementById('drive-dot');
+            const text = document.getElementById('drive-status-text');
+            dot.classList.replace('bg-yellow-400', 'bg-green-400');
+            dot.classList.remove('animate-pulse');
+            text.textContent = 'Drive connecté';
+            text.className   = 'drive-connected';
+        }
+
+        // -------------------------------------------------------
+        // DÉCONNEXION DU DRIVE
+        // -------------------------------------------------------
+        window.disconnectDrive = () => {
+            window.showConfirm(
+                "Déconnecter Google Drive ?",
+                "Vous pourrez vous reconnecter à tout moment. Vos fichiers Drive ne seront pas supprimés.",
+                '<i class="fa-brands fa-google-drive text-3xl text-blue-400"></i>',
+                () => {
+                    driveAccessToken = null;
+                    driveUserEmail   = null;
+                    sessionStorage.removeItem('wikimind_drive_token');
+                    sessionStorage.removeItem('wikimind_drive_email');
+
+                    document.getElementById('drive-connect-prompt').classList.remove('hidden');
+                    document.getElementById('drive-connected-view').classList.add('hidden');
+
+                    // Réinitialiser le badge navbar
+                    const dot  = document.getElementById('drive-dot');
+                    const text = document.getElementById('drive-status-text');
+                    dot.classList.replace('bg-green-400', 'bg-yellow-400');
+                    dot.classList.add('animate-pulse');
+                    text.textContent = 'Drive non connecté';
+                    text.className   = 'drive-disconnected';
+
+                    window.showToast("Drive déconnecté.", "info");
+                }
+            );
+        };
+
+        // -------------------------------------------------------
+        // CHARGEMENT DE LA LISTE DES FICHIERS DRIVE
+        // -------------------------------------------------------
+        window.loadDriveFiles = async () => {
+            if (!driveAccessToken) return;
+
+            const container = document.getElementById('drive-files-container');
+            container.innerHTML = `
+                <div id="drive-loading" class="text-center py-12 text-white/20">
+                    <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-3 block"></i>
+                    <p class="text-sm">Chargement du Drive...</p>
+                </div>
+            `;
+
+            try {
+                // Récupère les 50 derniers fichiers créés par WikiMind
+                const resp = await fetch(
+                    `${DRIVE_API_BASE}/files?pageSize=50&fields=files(id,name,mimeType,size,modifiedTime,iconLink,webViewLink)&orderBy=modifiedTime desc`,
+                    { headers: { Authorization: `Bearer ${driveAccessToken}` } }
+                );
+
+                if (resp.status === 401) {
+                    // Token expiré — redemander
+                    sessionStorage.removeItem('wikimind_drive_token');
+                    driveAccessToken = null;
+                    window.showToast("Session Drive expirée. Veuillez vous reconnecter.", "warning");
+                    disconnectDrive();
+                    return;
+                }
+
+                const data = await resp.json();
+                const files = data.files || [];
+
+                container.innerHTML = '';
+
+                if (files.length === 0) {
+                    container.innerHTML = `
+                        <div class="flex flex-col items-center justify-center py-16 border border-dashed border-white/5 rounded-2xl">
+                            <div class="text-4xl mb-4 opacity-20">☁️</div>
+                            <p class="text-white/30 text-sm">Aucun fichier dans votre Drive pour l'instant.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                files.forEach(file => {
+                    container.appendChild(renderDriveFile(file));
+                });
+
+            } catch (err) {
+                console.error('[WikiMind Drive] Erreur chargement fichiers:', err);
+                container.innerHTML = `<div class="text-center py-8 text-red-400 text-sm"><i class="fa-solid fa-circle-exclamation mr-2"></i>Impossible de charger les fichiers Drive.</div>`;
+            }
+        };
+
+        // -------------------------------------------------------
+        // ACTUALISER LA LISTE DRIVE
+        // -------------------------------------------------------
+        window.refreshDriveFiles = () => {
+            const icon = document.getElementById('refresh-icon');
+            icon.classList.add('fa-spin');
+            setTimeout(() => icon.classList.remove('fa-spin'), 1000);
+            window.loadDriveFiles();
+        };
+
+        // -------------------------------------------------------
+        // RENDU D'UN FICHIER DRIVE — Carte avec actions
+        // -------------------------------------------------------
+        function renderDriveFile(file) {
+            const modDate = file.modifiedTime
+                ? new Date(file.modifiedTime).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+                : '—';
+
+            // Formater la taille
+            const size = file.size
+                ? (file.size > 1024 * 1024 ? (file.size / (1024 * 1024)).toFixed(1) + ' Mo' : (file.size / 1024).toFixed(0) + ' Ko')
+                : '—';
+
+            // Déterminer si c'est un type WikiMind connu
+            const wikiType = detectWikiMindType(file.name, file.mimeType);
+
+            const div = document.createElement('div');
+            div.className = 'drive-card rounded-xl px-5 py-4 flex items-center gap-4 group';
+
+            // Icône du type de fichier
+            const iconHtml = file.iconLink
+                ? `<img src="${file.iconLink}" class="w-8 h-8 object-contain" alt="">`
+                : `<div class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-white/40"><i class="fa-solid fa-file text-sm"></i></div>`;
+
+            div.innerHTML = `
+                ${iconHtml}
+                <div class="flex-1 min-w-0">
+                    <h4 class="font-bold text-sm text-white/90 truncate">${file.name}</h4>
+                    <p class="text-[10px] text-white/30 mt-0.5">${modDate} • ${size}</p>
+                </div>
+                <!-- Actions -->
+                <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                    ${wikiType ? `
+                    <button onclick="openInWikiMind('${wikiType.page}', '${file.id}')"
+                            class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-600/20 hover:bg-brand-600/40 border border-brand-500/30 text-brand-300 text-xs font-bold transition-all"
+                            title="Ouvrir dans WikiMind">
+                        <i class="fa-solid fa-pen-to-square text-xs"></i> Ouvrir WikiMind
+                    </button>
+                    ` : ''}
+                    ${file.webViewLink ? `
+                    <a href="${file.webViewLink}" target="_blank" rel="noopener"
+                       class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-white/60 transition-all"
+                       title="Ouvrir dans Google Drive">
+                        <i class="fa-brands fa-google-drive text-blue-400 text-xs"></i> Drive
+                    </a>
+                    ` : ''}
+                </div>
+            `;
+            return div;
+        }
+
+        // -------------------------------------------------------
+        // DÉTECTION DU TYPE WIKIMIND À PARTIR DU NOM/MIME
+        // -------------------------------------------------------
+        function detectWikiMindType(name, mimeType) {
+            const n = (name || '').toLowerCase();
+            if (n.endsWith('.wkwriter') || n.includes('[writer]')) return { type: 'writer', page: 'Wikimind_writter.html' };
+            if (n.endsWith('.wkcalc')   || n.includes('[calc]'))   return { type: 'calc',   page: 'Wikimind_calc.html' };
+            if (n.endsWith('.wkimpress')|| n.includes('[impress]'))return { type: 'impress',page: 'Wikimind_impress.html' };
+            if (n.endsWith('.wkdraw')   || n.includes('[draw]'))   return { type: 'draw',   page: 'Wikimind_draw.html' };
+            if (mimeType === 'text/html') return { type: 'writer', page: 'Wikimind_writter.html' };
+            return null;
+        }
+
+        // -------------------------------------------------------
+        // OUVRIR UN FICHIER DRIVE DANS L'APP WIKIMIND CORRESPONDANTE
+        // -------------------------------------------------------
+        window.openInWikiMind = (page, driveFileId) => {
+            window.location.href = `${page}?id=${driveFileId}&source=gdrive`;
+        };
+
+        // -------------------------------------------------------
+        // SAUVEGARDE D'UN FICHIER FIREBASE → GOOGLE DRIVE
+        // -------------------------------------------------------
+        window.saveToDrive = async (fileId, fileName, fileType, btnEl) => {
+            // Vérifications préalables
+            if (!driveAccessToken) {
+                window.showToast("Connectez d'abord votre Google Drive (onglet 'Mon Drive').", "warning");
+                switchTab('drive');
+                return;
+            }
+            if (!window._currentUser) {
+                window.showToast("Vous devez être connecté à WikiMind.", "error");
+                return;
+            }
+
+            // Feedback visuel sur le bouton
+            const originalHTML = btnEl.innerHTML;
+            btnEl.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Envoi...';
+            btnEl.disabled = true;
+
+            try {
+                // 1. Récupérer le contenu du fichier depuis Firebase
+                const fileData = await window.getOfficeFileContent(fileId);
+                if (!fileData) {
+                    window.showToast("Impossible de lire le fichier Firebase.", "error");
+                    return;
+                }
+
+                // 2. Construire le nom du fichier Drive avec extension WikiMind
+                const extMap = { writer: '.wkwriter', calc: '.wkcalc', impress: '.wkimpress', draw: '.wkdraw' };
+                const driveFileName = `${fileName || 'WikiMind_export'}${extMap[fileType] || '.html'}`;
+
+                // 3. Créer un Blob JSON avec le contenu complet + métadonnées
+                const exportPayload = JSON.stringify({
+                    wikimind_version: '3.0',
+                    type: fileType,
+                    name: fileName,
+                    exportedAt: new Date().toISOString(),
+                    content: fileData.content || '',
+                    meta: { createdAt: fileData.createdAt, updatedAt: fileData.updatedAt }
+                }, null, 2);
+
+                const blob = new Blob([exportPayload], { type: 'application/json' });
+
+                // 4. Upload multipart vers l'API Drive
+                const metadata = {
+                    name: driveFileName,
+                    description: `Exporté depuis WikiMind ${fileType} — ${new Date().toLocaleDateString('fr-FR')}`,
+                    mimeType: 'application/json'
+                };
+
+                const form = new FormData();
+                form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                form.append('file', blob);
+
+                const uploadResp = await fetch(`${DRIVE_UPLOAD_BASE}/files?uploadType=multipart`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${driveAccessToken}` },
+                    body: form
+                });
+
+                if (!uploadResp.ok) {
+                    const err = await uploadResp.json();
+                    throw new Error(err.error?.message || `HTTP ${uploadResp.status}`);
+                }
+
+                const uploadedFile = await uploadResp.json();
+                console.log('[WikiMind Cloud] Fichier uploadé sur Drive :', uploadedFile.id);
+
+                window.showToast(`"${driveFileName}" sauvegardé sur Drive ! ✓`, "success");
+
+                // Rafraîchir la liste Drive si l'onglet est actif
+                if (document.getElementById('tab-drive').classList.contains('active')) {
+                    window.loadDriveFiles();
+                }
+
+            } catch (err) {
+                console.error('[WikiMind Cloud] Erreur upload Drive:', err);
+                window.showToast(`Erreur upload : ${err.message}`, "error");
+            } finally {
+                // Restaurer le bouton
+                btnEl.innerHTML = originalHTML;
+                btnEl.disabled = false;
+            }
+        };
+
+        // -------------------------------------------------------
+        // UPLOAD D'UN FICHIER PC → GOOGLE DRIVE (Dropzone)
+        // -------------------------------------------------------
+        window.uploadFileToDrive = async (file) => {
+            if (!driveAccessToken) {
+                window.showToast("Drive non connecté.", "error");
+                return;
+            }
+            if (!file) return;
+
+            const progressContainer = document.getElementById('upload-progress-container');
+            const progressBar       = document.getElementById('upload-progress-bar');
+            const progressLabel     = document.getElementById('upload-progress-label');
+            const progressPct       = document.getElementById('upload-progress-pct');
+
+            // Afficher la barre de progression
+            progressContainer.classList.remove('hidden');
+            progressLabel.textContent = `Envoi de "${file.name}"...`;
+            progressBar.style.width = '10%';
+            progressPct.textContent = '10%';
+
+            try {
+                const metadata = {
+                    name: file.name,
+                    description: `Importé via WikiMind Cloud — ${new Date().toLocaleDateString('fr-FR')}`
+                };
+
+                const form = new FormData();
+                form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                form.append('file', file);
+
+                // Simulation d'avancement (l'API REST ne supporte pas les événements de progression avec fetch simple)
+                const interval = setInterval(() => {
+                    const current = parseInt(progressBar.style.width) || 10;
+                    if (current < 80) {
+                        const next = Math.min(current + Math.random() * 15, 80);
+                        progressBar.style.width = next + '%';
+                        progressPct.textContent = Math.round(next) + '%';
+                    }
+                }, 300);
+
+                const resp = await fetch(`${DRIVE_UPLOAD_BASE}/files?uploadType=multipart`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${driveAccessToken}` },
+                    body: form
+                });
+
+                clearInterval(interval);
+
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.error?.message || `HTTP ${resp.status}`);
+                }
+
+                // Compléter la barre
+                progressBar.style.width = '100%';
+                progressPct.textContent = '100%';
+
+                window.showToast(`"${file.name}" importé sur Drive !`, "success");
+                window.loadDriveFiles();
+
+            } catch (err) {
+                console.error('[WikiMind Cloud] Erreur import Drive:', err);
+                window.showToast(`Erreur import : ${err.message}`, "error");
+            } finally {
+                setTimeout(() => { progressContainer.classList.add('hidden'); }, 2000);
+            }
+        };
+
+        // -------------------------------------------------------
+        // GESTION DE LA DROPZONE
+        // -------------------------------------------------------
+        const dropzone = document.getElementById('dropzone');
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('drag-over');
+        });
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('drag-over');
+        });
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) handleFileInputChange(files);
+        });
+
+        // Gestion du clic sur l'input file
+        window.handleFileInputChange = (files) => {
+            if (!files || files.length === 0) return;
+            // Uploader tous les fichiers sélectionnés en séquence
+            Array.from(files).forEach(file => window.uploadFileToDrive(file));
+        };
+
+        // -------------------------------------------------------
+        // NAVIGATION PAR ONGLETS
+        // -------------------------------------------------------
+        window.switchTab = (tab) => {
+            // Mettre à jour les boutons
+            document.getElementById('tab-office-btn').classList.toggle('active', tab === 'office');
+            document.getElementById('tab-drive-btn').classList.toggle('active', tab === 'drive');
+
+            // Couleur du texte pour l'onglet inactif
+            document.getElementById('tab-office-btn').classList.toggle('text-white/60', tab !== 'office');
+            document.getElementById('tab-drive-btn').classList.toggle('text-white/60', tab !== 'drive');
+
+            // Afficher le bon panneau
+            document.getElementById('tab-office').classList.toggle('active', tab === 'office');
+            document.getElementById('tab-drive').classList.toggle('active', tab === 'drive');
+
+            // Si on va sur Drive et qu'il est connecté, rafraîchir
+            if (tab === 'drive' && driveAccessToken) {
+                window.loadDriveFiles();
+            }
+        };
+
+        // -------------------------------------------------------
+        // INITIALISATION AU CHARGEMENT DE LA PAGE
+        // -------------------------------------------------------
+        document.addEventListener('DOMContentLoaded', () => {
+            // Lancer Aurora
+            initAurora();
+        });
+
+        // Attendre que GIS soit prêt (il charge en async)
+        window.addEventListener('load', () => {
+            setTimeout(initGoogleDrive, 500);
+        });
+
+        // -------------------------------------------------------
+        // ANIMATION AURORA — Fond animé avec orbes (identique WikiMind)
+        // -------------------------------------------------------
+        function initAurora() {
+            const canvas = document.getElementById('aurora-bg');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let width, height;
+
+            // Orbes de couleur — thème "Cloud" avec une touche bleue en plus
+            const orbs = [
+                { x: 0.15, y: 0.25, r: 0.45, color: 'rgba(79, 70, 229, 0.12)',   vx: 0.0004,  vy: 0.0003 },
+                { x: 0.80, y: 0.35, r: 0.50, color: 'rgba(66, 133, 244, 0.10)',  vx: -0.0005, vy: 0.0004 },
+                { x: 0.50, y: 0.80, r: 0.35, color: 'rgba(168, 85, 247, 0.08)',  vx: 0.0003,  vy: -0.0003 }
+            ];
+
+            function resize() {
+                width  = canvas.width  = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                ctx.fillStyle = '#050505';
+                ctx.fillRect(0, 0, width, height);
+
+                orbs.forEach(orb => {
+                    orb.x += orb.vx;
+                    orb.y += orb.vy;
+                    if (orb.x < -0.2 || orb.x > 1.2) orb.vx *= -1;
+                    if (orb.y < -0.2 || orb.y > 1.2) orb.vy *= -1;
+
+                    const g = ctx.createRadialGradient(
+                        orb.x * width, orb.y * height, 0,
+                        orb.x * width, orb.y * height, orb.r * width
+                    );
+                    g.addColorStop(0, orb.color);
+                    g.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = g;
+                    ctx.fillRect(0, 0, width, height);
+                });
+
+                requestAnimationFrame(animate);
+            }
+
+            window.addEventListener('resize', resize);
+            resize();
+            animate();
+        }
+
+        // Lancer Aurora immédiatement (pas besoin d'attendre DOM pour le canvas)
+        initAurora();
+
+    </script>
+</body>
+</html>
