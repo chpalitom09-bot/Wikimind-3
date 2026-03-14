@@ -334,6 +334,21 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
   .plans-grid{grid-template-columns:1fr;}
   .office-app-grid{grid-template-columns:1fr;}
 }
+
+/* ── STT MIC BUTTON ── */
+#btn-mic{position:relative;overflow:visible;}
+#btn-mic.listening{color:#ef4444 !important;}
+#btn-mic.listening svg{animation:micPulse .7s ease-in-out infinite;}
+@keyframes micPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.25);}}
+.mic-ripple{position:absolute;inset:-6px;border-radius:50%;border:2px solid #ef4444;opacity:0;animation:rippleOut 1s ease-out infinite;pointer-events:none;display:none;}
+.mic-ripple:nth-child(2){animation-delay:.4s;}
+#btn-mic.listening .mic-ripple{display:block;}
+@keyframes rippleOut{0%{opacity:.6;transform:scale(1);}100%{opacity:0;transform:scale(2.2);}}
+
+/* ── CALL BUTTON ── */
+#btn-call{display:none;}
+#btn-call.show{display:flex !important;}
+#btn-call:hover{color:#7c3aed !important;background:rgba(124,58,237,.08) !important;}
 </style>
 </head>
 <body>
@@ -443,6 +458,16 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
           <!-- Image import (Premium) -->
           <button class="inp-icon-btn" id="btn-img-import" onclick="triggerImageImport()" title="Importer une image" style="display:none">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </button>
+          <!-- STT Microphone - all plans -->
+          <button class="inp-icon-btn" id="btn-mic" onclick="toggleSTT()" title="Parler (Speech to Text)">
+            <span class="mic-ripple"></span>
+            <span class="mic-ripple"></span>
+            <svg id="mic-icon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+          </button>
+          <!-- Wikimind Call - Pro/Premium only -->
+          <button class="inp-icon-btn" id="btn-call" onclick="goToCall()" title="Wikimind Appel vocal (Pro+)">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.22 2 2 0 012.22 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.06 6.06l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
           </button>
           <div class="inp-divider"></div>
           <div id="model-select-wrap">
@@ -835,6 +860,9 @@ function updateUserUI(){
   G('btn-office-import').style.display=S.plan>=2?'flex':'none';
   G('btn-file-import').style.display=S.plan>=3?'flex':'none';
   G('btn-img-import').style.display=S.plan>=4?'flex':'none';
+  // Call button — Pro/Premium
+  const callBtn=G('btn-call');
+  if(callBtn) callBtn.className=S.plan>=3?'inp-icon-btn show':'inp-icon-btn';
   // Show Office create chips in canvas if connected
   G('cvs-create-btns').style.display=S.plan>=2&&S.connectors.office?'flex':'none';
   renderPlansGrid(); renderInstructions(); updateTokenDisplay();
@@ -1447,6 +1475,90 @@ document.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();openModal('search-modal');setTimeout(()=>G('search-inp')?.focus(),80);}
   if((e.ctrlKey||e.metaKey)&&e.key==='n'){e.preventDefault();newChat();}
 });
+
+
+// ──────────────────────────────────────────────
+// SPEECH TO TEXT (STT) — tous les forfaits
+// ──────────────────────────────────────────────
+let _sttRecognition = null;
+let _sttActive = false;
+
+function toggleSTT() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    toast('Reconnaissance vocale non supportée sur ce navigateur');
+    return;
+  }
+  if (_sttActive) {
+    stopSTT();
+  } else {
+    startSTT();
+  }
+}
+
+function startSTT() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  _sttRecognition = new SpeechRecognition();
+  _sttRecognition.lang = 'fr-FR';
+  _sttRecognition.continuous = false;
+  _sttRecognition.interimResults = true;
+
+  const btn = G('btn-mic');
+  const input = G('user-input');
+  const originalVal = input.value;
+
+  _sttRecognition.onstart = () => {
+    _sttActive = true;
+    btn.classList.add('listening');
+    toast('🎙️ Écoute…');
+  };
+
+  _sttRecognition.onresult = (e) => {
+    let interim = '', final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    input.value = originalVal + (final || interim);
+    autoResize(input);
+  };
+
+  _sttRecognition.onend = () => {
+    _sttActive = false;
+    btn.classList.remove('listening');
+    if (input.value.trim()) toast('✓ Texte capturé');
+  };
+
+  _sttRecognition.onerror = (e) => {
+    _sttActive = false;
+    btn.classList.remove('listening');
+    if (e.error !== 'aborted') toast('Erreur micro : ' + e.error);
+  };
+
+  _sttRecognition.start();
+}
+
+function stopSTT() {
+  if (_sttRecognition) {
+    _sttRecognition.stop();
+    _sttRecognition = null;
+  }
+  _sttActive = false;
+  G('btn-mic').classList.remove('listening');
+}
+
+// ──────────────────────────────────────────────
+// WIKIMIND CALL — Pro / Premium uniquement
+// ──────────────────────────────────────────────
+function goToCall() {
+  if (S.plan < 3) {
+    toast('Wikimind Appel — plan AI Pro requis');
+    openModal('plan-modal');
+    return;
+  }
+  // Pass user name to call page via query param
+  const name = encodeURIComponent(S.user?.displayName || 'Utilisateur');
+  window.location.href = `AI/Wikimind_call.html?name=${name}&plan=${S.plan}`;
+}
 
 window.bootUser=bootUser;
 console.log('%cWikiMind AI','color:#111;font-family:Inter,sans-serif;font-size:20px;font-weight:900;font-style:italic');
