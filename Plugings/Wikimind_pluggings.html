@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WikiMind — Plugin Store</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0a;
+  --surface: #111111;
+  --surface2: #181818;
+  --border: #222222;
+  --border2: #2a2a2a;
+  --text: #f0f0f0;
+  --text2: #888;
+  --text3: #555;
+  --accent: #f0f0f0;
+  --green: #22c55e;
+  --gold: #f59e0b;
+  --purple: #a855f7;
+  --blue: #3b82f6;
+  --free-color: #888;
+  --plus-color: #f0f0f0;
+  --pro-color: #a855f7;
+  --premium-color: #f59e0b;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* NOISE overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: .5;
+}
+
+/* NAV */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: rgba(10,10,10,.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  height: 64px;
+}
+.nav-logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: -.04em;
+  text-transform: uppercase;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.nav-logo span { color: var(--text2); font-weight: 400; font-style: normal; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+.nav-right { display: flex; align-items: center; gap: 16px; }
+.nav-plan-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text2);
+}
+.nav-plan-selector select {
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  appearance: none;
+}
+.nav-plan-selector select option { background: #1a1a1a; }
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text2);
+  text-decoration: none;
+  padding: 7px 14px;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  transition: .2s;
+  cursor: pointer;
+  background: none;
+}
+.back-btn:hover { color: var(--text); border-color: var(--text3); }
+
+/* HERO */
+.hero {
+  padding: 140px 40px 60px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 100px;
+  padding: 5px 14px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--text2);
+  margin-bottom: 24px;
+}
+.hero-badge::before { content: ''; width: 6px; height: 6px; background: var(--green); border-radius: 50%; box-shadow: 0 0 8px var(--green); }
+.hero h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(42px, 7vw, 80px);
+  font-weight: 900;
+  letter-spacing: -.05em;
+  text-transform: uppercase;
+  line-height: .95;
+  margin-bottom: 20px;
+}
+.hero h1 em { font-style: italic; color: var(--text2); }
+.hero p {
+  font-size: 15px;
+  color: var(--text2);
+  max-width: 480px;
+  margin: 0 auto 36px;
+  line-height: 1.7;
+}
+
+/* FILTER BAR */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 auto 48px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+.filter-btn {
+  padding: 7px 18px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  cursor: pointer;
+  border: 1px solid var(--border2);
+  background: none;
+  color: var(--text2);
+  transition: .2s;
+}
+.filter-btn:hover { color: var(--text); border-color: #444; }
+.filter-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+/* GRID */
+.plugins-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 40px 80px;
+  position: relative;
+  z-index: 1;
+}
+
+/* PLUGIN CARD */
+.plugin-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 28px;
+  position: relative;
+  overflow: hidden;
+  transition: transform .25s cubic-bezier(.4,0,.2,1), border-color .25s, box-shadow .25s;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.plugin-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 80% -20%, rgba(255,255,255,.04) 0%, transparent 60%);
+  pointer-events: none;
+}
+.plugin-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border2);
+  box-shadow: 0 20px 40px rgba(0,0,0,.4);
+}
+.plugin-card.locked { opacity: .55; }
+.plugin-card.locked:hover { transform: none; }
+
+.card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.card-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.card-badges { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.plan-badge {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  padding: 3px 10px;
+  border-radius: 100px;
+  border: 1px solid currentColor;
+}
+.plan-free  { color: var(--free-color); }
+.plan-plus  { color: var(--plus-color); }
+.plan-pro   { color: var(--pro-color); }
+.plan-premium { color: var(--premium-color); }
+.pid-label { font-size: 9px; font-weight: 800; color: var(--text3); letter-spacing: .12em; text-transform: uppercase; }
+
+.card-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  line-height: 1.1;
+}
+.card-desc {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.65;
+}
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.tag {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text3);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+
+.card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; }
+.download-btn {
+  flex: 1;
+  padding: 11px 16px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  cursor: pointer;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: .2s;
+  text-decoration: none;
+}
+.download-btn.available {
+  background: var(--text);
+  color: var(--bg);
+}
+.download-btn.available:hover { opacity: .85; }
+.download-btn.locked-btn {
+  background: var(--surface2);
+  color: var(--text3);
+  cursor: not-allowed;
+  border: 1px solid var(--border);
+}
+.upgrade-inline {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text3);
+  text-align: center;
+  padding: 6px 12px;
+  background: var(--surface2);
+  border-radius: 8px;
+  border: 1px dashed var(--border2);
+  cursor: pointer;
+  transition: .2s;
+  white-space: nowrap;
+}
+.upgrade-inline:hover { color: var(--gold); border-color: var(--gold); }
+
+/* Lock overlay on cards */
+.lock-overlay {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  background: rgba(0,0,0,.6);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+/* TOAST */
+#toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--text);
+  color: var(--bg);
+  padding: 11px 22px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 800;
+  z-index: 9999;
+  opacity: 0;
+  transition: .3s cubic-bezier(.4,0,.2,1);
+  pointer-events: none;
+  white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* PLAN INFO BANNER */
+.plan-banner {
+  max-width: 1160px;
+  margin: 0 auto 32px;
+  padding: 0 40px;
+  position: relative;
+  z-index: 1;
+}
+.plan-banner-inner {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text2);
+}
+.plan-banner-inner strong { color: var(--text); }
+.plan-dots { display: flex; gap: 5px; margin-left: auto; }
+.plan-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border2);
+}
+.plan-dot.unlocked { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+/* HOW TO */
+.howto {
+  max-width: 1160px;
+  margin: 0 auto 80px;
+  padding: 0 40px;
+  position: relative;
+  z-index: 1;
+}
+.howto h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--text3);
+  margin-bottom: 20px;
+}
+.howto-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.howto-step {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.step-num-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text2);
+  flex-shrink: 0;
+  font-family: 'Syne', sans-serif;
+}
+.step-text strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+.step-text span { font-size: 12px; color: var(--text2); line-height: 1.5; }
+
+/* FOOTER */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 24px 40px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text3);
+  position: relative;
+  z-index: 1;
+}
+footer strong { color: var(--text2); }
+
+@media (max-width: 768px) {
+  nav { padding: 0 20px; }
+  .hero { padding: 120px 20px 40px; }
+  .plugins-grid { padding: 0 20px 60px; grid-template-columns: 1fr; }
+  .plan-banner, .howto { padding: 0 20px; }
+  .howto-steps { grid-template-columns: 1fr; }
+  .filter-bar { padding: 0 20px; }
+}
+
+/* animations */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.plugin-card { animation: fadeUp .45s cubic-bezier(.4,0,.2,1) both; }
+.plugin-card:nth-child(1) { animation-delay: .05s; }
+.plugin-card:nth-child(2) { animation-delay: .10s; }
+.plugin-card:nth-child(3) { animation-delay: .15s; }
+.plugin-card:nth-child(4) { animation-delay: .20s; }
+.plugin-card:nth-child(5) { animation-delay: .25s; }
+.plugin-card:nth-child(6) { animation-delay: .30s; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    WIKIMIND <span>Plugin Store</span>
+  </div>
+  <div class="nav-right">
+    <div class="nav-plan-selector">
+      <span>Forfait :</span>
+      <select id="plan-select" onchange="updatePlan(this.value)">
+        <option value="0">Free</option>
+        <option value="1">Plus</option>
+        <option value="2">Pro</option>
+        <option value="3">Premium</option>
+      </select>
+    </div>
+    <button class="back-btn" onclick="goToApp()">
+      ← WikiMind AI
+    </button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">Personnalisation IA — 6 plugins disponibles</div>
+  <h1>Étends<br><em>WikiMind</em></h1>
+  <p>Télécharge un plugin JSON et importe-le directement dans WikiMind AI pour transformer le comportement de ton assistant.</p>
+</section>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <button class="filter-btn active" onclick="filterCards('all', this)">Tous</button>
+  <button class="filter-btn" onclick="filterCards('free', this)">🆓 Gratuit</button>
+  <button class="filter-btn" onclick="filterCards('plus', this)">⚡ Plus</button>
+  <button class="filter-btn" onclick="filterCards('pro', this)">🔮 Pro</button>
+</div>
+
+<!-- PLAN BANNER -->
+<div class="plan-banner">
+  <div class="plan-banner-inner" id="plan-info-bar">
+    <span>📦 Ton forfait <strong id="plan-name-display">Free</strong> — <span id="plan-unlock-text">2 plugins disponibles</span></span>
+    <div class="plan-dots" id="plan-dots"></div>
+  </div>
+</div>
+
+<!-- GRID -->
+<div class="plugins-grid" id="plugins-grid"></div>
+
+<!-- HOW TO -->
+<div class="howto">
+  <h2>Comment utiliser un plugin</h2>
+  <div class="howto-steps">
+    <div class="howto-step">
+      <div class="step-num-circle">1</div>
+      <div class="step-text">
+        <strong>Télécharger le plugin</strong>
+        <span>Clique sur "Télécharger .json" pour sauvegarder le fichier sur ton appareil.</span>
+      </div>
+    </div>
+    <div class="howto-step">
+      <div class="step-num-circle">2</div>
+      <div class="step-text">
+        <strong>Ouvrir WikiMind AI</strong>
+        <span>Va dans WikiMind AI → Personnalisation → Zone d'import (ou glisse-dépose).</span>
+      </div>
+    </div>
+    <div class="howto-step">
+      <div class="step-num-circle">3</div>
+      <div class="step-text">
+        <strong>Importer & activer</strong>
+        <span>Importe le fichier .json. Le plugin apparaît dans ta liste, active-le d'un clic.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- FOOTER -->
+<footer>
+  <strong>WikiMind Plugin Store</strong> — Les plugins sont des fichiers JSON importables dans <strong>WikiMind AI</strong>.<br>
+  Tous les plugins sont hébergés dans le dépôt GitHub à <code>Plugins/P1.json</code> … <code>P6.json</code>
+</footer>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────
+const PLUGINS = [
+  {
+    id: "P1",
+    name: "Persona Expert Universel",
+    icon: "🧠",
+    plan: "free",
+    planLabel: "Gratuit",
+    desc: "Transforme WikiMind en expert automatique selon le domaine de ta question : médecine, droit, finance, ingénierie… L'IA adopte le ton et le vocabulaire d'un vrai spécialiste.",
+    tags: ["persona", "expert", "automatique", "domaine"],
+    file: "Plugins/P1.json"
+  },
+  {
+    id: "P2",
+    name: "Mentor Socratique",
+    icon: "🏛️",
+    plan: "free",
+    planLabel: "Gratuit",
+    desc: "WikiMind ne donne plus les réponses : il te guide par des questions pour que tu les trouves toi-même. La méthode Socrate appliquée à l'IA.",
+    tags: ["socrate", "pédagogie", "questions", "apprentissage"],
+    file: "Plugins/P2.json"
+  },
+  {
+    id: "P3",
+    name: "Coach Productivité & Focus",
+    icon: "⚡",
+    plan: "plus",
+    planLabel: "Plus",
+    desc: "Chaque réponse inclut des actions concrètes et des priorités claires. L'IA intègre GTD, Pomodoro et la matrice Eisenhower dans ses conseils naturellement.",
+    tags: ["productivité", "coach", "GTD", "focus", "action"],
+    file: "Plugins/P3.json"
+  },
+  {
+    id: "P4",
+    name: "Simplificateur Universel",
+    icon: "🔭",
+    plan: "plus",
+    planLabel: "Plus",
+    desc: "Technique Feynman appliquée à chaque réponse. Tout concept complexe est reformulé avec des analogies du quotidien qu'un enfant de 10 ans comprendrait.",
+    tags: ["feynman", "vulgarisation", "analogie", "clarté"],
+    file: "Plugins/P4.json"
+  },
+  {
+    id: "P5",
+    name: "Avocat du Diable",
+    icon: "⚖️",
+    plan: "pro",
+    planLabel: "Pro",
+    desc: "WikiMind challenge systématiquement tes idées pour les renforcer. Identifie les failles, les hypothèses non vérifiées et les angles morts de tes projets.",
+    tags: ["critique", "red team", "débat", "décision"],
+    file: "Plugins/P5.json"
+  },
+  {
+    id: "P6",
+    name: "Créatif Sans Limites",
+    icon: "🎨",
+    plan: "pro",
+    planLabel: "Pro",
+    desc: "WikiMind entre en mode créativité maximale : pensée latérale, associations inattendues, 3 directions par réponse (sage / audacieuse / folle). Le co-créateur idéal.",
+    tags: ["créativité", "brainstorming", "innovation", "originalité"],
+    file: "Plugins/P6.json"
+  }
+];
+
+const PLAN_LEVELS = { free: 0, plus: 1, pro: 2, premium: 3 };
+const PLAN_NAMES  = ['Free', 'Plus', 'Pro', 'Premium'];
+const PLAN_COUNTS = [2, 4, 6, 6]; // how many plugins unlocked per plan
+
+// Current simulated plan (0=free,1=plus,2=pro,3=premium)
+let currentPlan = 0;
+
+// ─── RENDER ─────────────────────────────────────────────────────────
+function renderGrid(filter = 'all') {
+  const grid = document.getElementById('plugins-grid');
+  const filtered = filter === 'all' ? PLUGINS : PLUGINS.filter(p => p.plan === filter);
+
+  grid.innerHTML = filtered.map(p => {
+    const reqLevel = PLAN_LEVELS[p.plan];
+    const unlocked = currentPlan >= reqLevel;
+    const isLocked = !unlocked;
+
+    const githubBase = 'https://raw.githubusercontent.com/chpalitom09-bot/Wikimind-3/main/';
+    const fileUrl = githubBase + p.file;
+
+    return `
+    <div class="plugin-card ${isLocked ? 'locked' : ''}" data-plan="${p.plan}">
+      ${isLocked ? '<div class="lock-overlay">🔒</div>' : ''}
+      <div class="card-top">
+        <div class="card-icon">${p.icon}</div>
+        <div class="card-badges">
+          <span class="plan-badge plan-${p.plan}">${p.planLabel}</span>
+          <span class="pid-label">${p.id}</span>
+        </div>
+      </div>
+      <div class="card-title">${p.name}</div>
+      <div class="card-desc">${p.desc}</div>
+      <div class="card-tags">${p.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+      <div class="card-footer">
+        ${unlocked
+          ? `<a class="download-btn available" href="${fileUrl}" download="${p.id}.json" onclick="toast('${p.name} téléchargé !')">
+               ↓ Télécharger .json
+             </a>`
+          : `<button class="download-btn locked-btn" disabled>🔒 ${p.planLabel} requis</button>
+             <span class="upgrade-inline" onclick="toast('Upgrade disponible bientôt !')">Passer au ${p.planLabel} →</span>`
+        }
+      </div>
+    </div>
+    `;
+  }).join('');
+}
+
+// ─── FILTER ─────────────────────────────────────────────────────────
+function filterCards(plan, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGrid(plan);
+}
+
+// ─── PLAN UPDATE ────────────────────────────────────────────────────
+function updatePlan(val) {
+  currentPlan = parseInt(val);
+  const name = PLAN_NAMES[currentPlan];
+  const count = PLAN_COUNTS[currentPlan];
+
+  document.getElementById('plan-name-display').textContent = name;
+  document.getElementById('plan-unlock-text').textContent = `${count} plugin${count > 1 ? 's' : ''} débloqué${count > 1 ? 's' : ''}`;
+
+  // dots
+  const dots = document.getElementById('plan-dots');
+  dots.innerHTML = PLUGINS.map((p, i) => {
+    const unlocked = currentPlan >= PLAN_LEVELS[p.plan];
+    return `<div class="plan-dot ${unlocked ? 'unlocked' : ''}" title="${p.id}"></div>`;
+  }).join('');
+
+  renderGrid('all');
+  // reset filter btn
+  document.querySelectorAll('.filter-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
+
+  toast(`Forfait ${name} simulé — ${count} plugin${count>1?'s':''} disponible${count>1?'s':''}`);
+}
+
+// ─── UTILS ──────────────────────────────────────────────────────────
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function goToApp() {
+  // Retourne à WikiMind_AI.html (même dossier ou main)
+  window.location.href = '../Wikimind_AI.html';
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────
+updatePlan(0);
+</script>
+</body>
+</html>
