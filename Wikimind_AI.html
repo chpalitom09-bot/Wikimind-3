@@ -83,6 +83,8 @@ a{text-decoration:none;color:inherit;}
 .dark-mode .plan-plus{background:#1e3a5f;color:#60a5fa;}
 .dark-mode .plan-pro{background:#3b1f5e;color:#c084fc;}
 .dark-mode .plan-premium{background:#44330f;color:#fbbf24;}
+.plan-premium-plus{background:linear-gradient(135deg,#fee2e2,#fef3c7);color:#c2410c;}
+.dark-mode .plan-premium-plus{background:linear-gradient(135deg,#44110f,#44330f);color:#fb923c;}
 
 /* MAIN */
 #main-area{flex:1;display:flex;flex-direction:row;overflow:hidden;background:var(--bg);}
@@ -117,13 +119,7 @@ a{text-decoration:none;color:inherit;}
 #plan-chip{position:absolute;top:24px;right:24px;z-index:50;display:flex;align-items:center;gap:8px;cursor:pointer;}
 .upgrade-link{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.08em;transition:.2s;}
 .upgrade-link:hover{color:var(--text);}
-.plan-chip-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;background:var(--select-bg);color:var(--text);overflow:hidden;flex-shrink:0;box-shadow:0 0 0 3px #d1d5db;transition:box-shadow .3s;cursor:pointer;}
-.plan-chip-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
-.plan-chip-avatar.ring-free{box-shadow:0 0 0 3px #9ca3af;}
-.plan-chip-avatar.ring-plus{box-shadow:0 0 0 3px #111111;}
-.dark-mode .plan-chip-avatar.ring-plus{box-shadow:0 0 0 3px #ffffff;}
-.plan-chip-avatar.ring-pro{box-shadow:0 0 0 3px #22c55e;}
-.plan-chip-avatar.ring-premium{box-shadow:0 0 0 3px #f59e0b;}
+
 
 /* WELCOME */
 #welcome-text{position:absolute;top:34%;left:50%;transform:translate(-50%,-50%);text-align:center;width:100%;transition:opacity .45s cubic-bezier(.4,0,.2,1),transform .45s cubic-bezier(.4,0,.2,1);pointer-events:none;}
@@ -365,8 +361,49 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 .instruction-item-del:hover{color:#ef4444;}
 
 /* Plan ring avatar */
-.plan-chip-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;background:var(--select-bg);color:var(--text);overflow:hidden;flex-shrink:0;transition:box-shadow .3s;cursor:pointer;}
-.plan-chip-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+/* Animated gradient avatar rings */
+.plan-chip-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--text);overflow:visible;flex-shrink:0;cursor:pointer;position:relative;}
+.plan-chip-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;position:relative;z-index:1;}
+.plan-chip-avatar>span{position:relative;z-index:1;}
+.plan-chip-avatar::before{content:'';position:absolute;inset:-3px;border-radius:50%;z-index:0;background:var(--select-bg);}
+.plan-chip-avatar::after{content:'';position:absolute;inset:-3px;border-radius:50%;z-index:-1;}
+
+/* Free: grey static */
+.ring-free::after{background:conic-gradient(#9ca3af,#d1d5db,#9ca3af);}
+/* Plus: black/white pulsing */
+.ring-plus::after{background:conic-gradient(#111,#555,#111,#555,#111);animation:ringRotate 4s linear infinite;}
+.dark-mode .ring-plus::after{background:conic-gradient(#fff,#aaa,#fff,#aaa,#fff);animation:ringRotate 4s linear infinite;}
+/* Pro: green gradient */
+.ring-pro::after{background:conic-gradient(#22c55e,#4ade80,#16a34a,#86efac,#22c55e);animation:ringRotate 3s linear infinite;}
+/* Premium: amber/gold gradient */
+.ring-premium::after{background:conic-gradient(#f59e0b,#fcd34d,#d97706,#fef08a,#f59e0b);animation:ringRotate 2.5s linear infinite;}
+/* Premium+: fire gradient red-orange-yellow */
+.ring-premium-plus::after{background:conic-gradient(#ef4444,#f97316,#eab308,#f97316,#ef4444);animation:ringRotateFire 1.8s linear infinite;}
+
+@keyframes ringRotate{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+@keyframes ringRotateFire{
+  0%{transform:rotate(0deg);filter:brightness(1);}
+  25%{filter:brightness(1.15);}
+  50%{transform:rotate(180deg);filter:brightness(1.3);}
+  75%{filter:brightness(1.15);}
+  100%{transform:rotate(360deg);filter:brightness(1);}
+}
+
+/* Premium+ ring chooser */
+.ring-chooser{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.ring-opt{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:.2s;position:relative;}
+.ring-opt.active{border-color:var(--text);transform:scale(1.15);}
+.ring-opt[data-ring="fire"]{background:conic-gradient(#ef4444,#f97316,#eab308,#f97316,#ef4444);}
+.ring-opt[data-ring="plasma"]{background:conic-gradient(#8b5cf6,#ec4899,#f97316,#ec4899,#8b5cf6);}
+.ring-opt[data-ring="ocean"]{background:conic-gradient(#06b6d4,#3b82f6,#0ea5e9,#67e8f9,#06b6d4);}
+.ring-opt[data-ring="aurora"]{background:conic-gradient(#10b981,#06b6d4,#8b5cf6,#06b6d4,#10b981);}
+.ring-opt[data-ring="gold"]{background:conic-gradient(#f59e0b,#fcd34d,#d97706,#fef08a,#f59e0b);}
+
+/* ring-plasma for premium+ alternate */
+.ring-plasma::after{background:conic-gradient(#8b5cf6,#ec4899,#f97316,#ec4899,#8b5cf6);animation:ringRotate 2s linear infinite;}
+.ring-ocean::after{background:conic-gradient(#06b6d4,#3b82f6,#0ea5e9,#67e8f9,#06b6d4);animation:ringRotate 2.5s linear infinite;}
+.ring-aurora::after{background:conic-gradient(#10b981,#06b6d4,#8b5cf6,#06b6d4,#10b981);animation:ringRotate 3s linear infinite;}
+.ring-gold::after{background:conic-gradient(#f59e0b,#fcd34d,#d97706,#fef08a,#f59e0b);animation:ringRotate 2.5s linear infinite;}
 
 /* Connectors modal */
 .connector-grid{display:flex;flex-direction:column;gap:8px;}
@@ -742,8 +779,23 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
       </div>
       <div class="toggle-bg" id="writing-anim-toggle" onclick="toggleWritingAnim()"><div class="toggle-dot"></div></div>
     </div>
+    <!-- Premium+ ring chooser (visible seulement plan 5) -->
+    <div id="ring-chooser-wrap" style="display:none;margin-top:12px;padding:14px;background:var(--select-bg);border-radius:12px;border:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#f97316;margin-bottom:10px">✨ Anneau Avatar — Premium+</div>
+      <div style="font-size:12px;color:#888;margin-bottom:10px">Choisissez votre style d'anneau animé :</div>
+      <div class="ring-chooser">
+        <div class="ring-opt active" data-ring="fire" onclick="setPremiumPlusRing('ring-premium-plus')" title="Feu 🔥"></div>
+        <div class="ring-opt" data-ring="plasma" onclick="setPremiumPlusRing('ring-plasma')" title="Plasma 💜"></div>
+        <div class="ring-opt" data-ring="ocean" onclick="setPremiumPlusRing('ring-ocean')" title="Océan 🌊"></div>
+        <div class="ring-opt" data-ring="aurora" onclick="setPremiumPlusRing('ring-aurora')" title="Aurora 🌌"></div>
+        <div class="ring-opt" data-ring="gold" onclick="setPremiumPlusRing('ring-gold')" title="Gold ⭐"></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;font-size:10px;color:#aaa">
+        <span>🔥 Feu</span><span>💜 Plasma</span><span>🌊 Océan</span><span>🌌 Aurora</span><span>⭐ Gold</span>
+      </div>
+    </div>
     <div style="margin-top:16px;display:flex;gap:8px;flex-direction:column">
-      <a href="../AI/Wikimind_forfaits.html" class="modal-btn secondary" style="text-align:center;display:block;text-decoration:none">Gérer mes tokens & forfaits</a>
+      <a href="../AI/Wikimind_forfaits.html" class="modal-btn secondary" style="text-align:center;display:block;text-decoration:none">Gérer mes tokens &amp; forfaits</a>
       <button class="modal-btn secondary" onclick="doSignOut()">Se déconnecter</button>
     </div>
   </div>
@@ -898,7 +950,7 @@ const S = {
   connectors:{ office:true, gmail:false, gdrive:false, notion:false },
   gmailToken:null, gdriveToken:null,
   gdriveFiles:[],
-  importInlineOpen:false,
+  importInlineOpen:false, premiumPlusRing:'ring-premium-plus',
 };
 
 const G  = id => document.getElementById(id);
@@ -911,6 +963,7 @@ window.addEventListener('load', () => {
   S.writingAnim = localStorage.getItem('wm_writing_anim')==='1';
   syncWritingAnimToggle();
   try { const c=localStorage.getItem('wm_connectors'); if(c) S.connectors=JSON.parse(c); } catch(e){}
+  try { const r=localStorage.getItem('wm_pp_ring'); if(r) S.premiumPlusRing=r; } catch(e){}
   // Restore google tokens from session
   try { S.gmailToken=sessionStorage.getItem('wm_gmail_token')||null; S.gdriveToken=sessionStorage.getItem('wm_gdrive_token')||null; } catch(e){}
   if(S.gmailToken) S.connectors.gmail=true;
@@ -1011,14 +1064,14 @@ function updateUserUI(){
   const u=S.user; if(!u) return;
   const nm=u.displayName||u.email||'Invité';
   G('u-av').textContent=nm.charAt(0).toUpperCase(); G('u-name').textContent=nm;
-  const PM={1:['Free','plan-free'],2:['AI Plus','plan-plus'],3:['AI Pro','plan-pro'],4:['AI Premium','plan-premium']};
+  const PM={1:['Free','plan-free'],2:['AI Plus','plan-plus'],3:['AI Pro','plan-pro'],4:['AI Premium','plan-premium'],5:['AI Premium+','plan-premium-plus']};
   const[pn,pc]=PM[S.plan]||PM[1];
   ['u-badge','tb-badge'].forEach(id=>{const el=G(id);if(!el)return;el.textContent=pn;el.className='plan-badge '+pc;});
-  const ringClass={1:'ring-free',2:'ring-plus',3:'ring-pro',4:'ring-premium'}[S.plan]||'ring-free';
+  const ringClass={1:'ring-free',2:'ring-plus',3:'ring-pro',4:'ring-premium',5:S.premiumPlusRing||'ring-premium-plus'}[S.plan]||'ring-free';
   const avatarEl=G('tb-avatar');
   if(avatarEl){
     avatarEl.className=`plan-chip-avatar ${ringClass}`;
-    avatarEl.style.boxShadow={1:'0 0 0 3px #9ca3af',2:'0 0 0 3px #111111',3:'0 0 0 3px #22c55e',4:'0 0 0 3px #f59e0b'}[S.plan]||'0 0 0 3px #9ca3af';
+    avatarEl.style.boxShadow='';
     const photoURL=u.photoURL||null;
     if(photoURL){avatarEl.innerHTML=`<img src="${photoURL}" alt="${esc(nm)}" onerror="this.parentElement.innerHTML='<span>${nm.charAt(0).toUpperCase()}</span>'">`;}
     else{avatarEl.innerHTML=`<span>${nm.charAt(0).toUpperCase()}</span>`;}
@@ -1038,6 +1091,12 @@ function updateUserUI(){
   if(wrap('imp-wrap-file'))   wrap('imp-wrap-file').style.display=S.plan>=3?'flex':'none';
   if(wrap('imp-wrap-img'))    wrap('imp-wrap-img').style.display=S.plan>=4?'flex':'none';
   if(wrap('imp-wrap-media'))  wrap('imp-wrap-media').style.display=S.plan>=4?'flex':'none';
+  // Plan 5 ring chooser visibility
+  const ringChoose=G('ring-chooser-wrap'); if(ringChoose) ringChoose.style.display=S.plan>=5?'block':'none';
+  if(S.plan>=5){
+    const curRingKey=(S.premiumPlusRing||'ring-premium-plus').replace('ring-','');
+    document.querySelectorAll('.ring-opt').forEach(o=>o.classList.toggle('active',o.dataset.ring===curRingKey));
+  }
   // Canvas create btns
   G('cvs-create-btns').style.display=S.plan>=2&&S.connectors.office?'flex':'none';
   // Connector UI sync
@@ -1052,6 +1111,7 @@ function updateModelOptions(){
     {value:'medium',label:'WIKIMIND MEDIUM',minPlan:2},
     {value:'work',label:'WIKIMIND WORK',minPlan:2},
     {value:'reflect',label:'WIKIMIND RÉFLEXION',minPlan:2},
+    {value:'imagegen',label:'✨ GÉNÉRATION D\'IMAGE',minPlan:5},
   ];
   sel.innerHTML='';
   models.forEach(m=>{ if(S.plan>=m.minPlan){const opt=document.createElement('option');opt.value=m.value;opt.textContent=m.label;sel.appendChild(opt);} });
@@ -1077,25 +1137,28 @@ function renderPlansGrid(){
     {key:'plus',id:2,label:'Wikimind AI Plus',price:'12€/mois',mt:11,promo:'1 mois offert dès le 1er paiement'},
     {key:'pro',id:3,label:'Wikimind AI Pro',price:'25€/mois',mt:22,promo:'1 mois offert dès le 1er paiement'},
     {key:'premium',id:4,label:'Wikimind AI Premium',price:promoActive?'45€/mois':'52€/mois',mt:39,promo:promoActive?'★ Promo -7€ jusqu\'au 14 avril':''},
+    {key:'premium-plus',id:5,label:'Wikimind AI Premium+',price:'67€/mois',mt:58,promo:'🔥 Génération d\'images IA incluse'},
   ];
   const rows=[
-    ['Modèle Flash','✓','✓','✓','✓'],
-    ['Modèle Medium','✗','✓','✓','✓'],
-    ['Modèle Work','✗','1/h','✓','✓'],
-    ['Mode Réflexion','✗','1/h','3/h','Illimité'],
-    ['Canvas IA','✗','✓','Avancé','Premium'],
-    ['Historique','Local','Firebase','Firebase','Firebase'],
-    ['Messages / minute','4','10','15','Illimité'],
-    ['Import Wikimind Office','✗','✓','✓','✓'],
-    ['Import Google Drive','✗','✓','✓','✓'],
-    ['Import fichiers (PDF…)','✗','✗','✓','✓'],
-    ['Import images','✗','✗','✗','✓'],
-    ['Analyse vidéo / audio','✗','✗','✗','✓'],
-    ['Intégration Gmail','✗','✓','✓','✓'],
-    ['Création Office par l\'IA','✗','✗','✓','✓'],
-    ['Mode Appel Wikimind','✗','✗','✓','✓'],
-    ['Plugins premium','✗','✗','✗','✓'],
-    ['Connecteur Wikimind Office','✗','✓','✓','✓'],
+    ['Modèle Flash','✓','✓','✓','✓','✓'],
+    ['Modèle Medium','✗','✓','✓','✓','✓'],
+    ['Modèle Work','✗','1/h','✓','✓','✓'],
+    ['Mode Réflexion','✗','1/h','3/h','Illimité','Illimité'],
+    ['Canvas IA','✗','✓','Avancé','Premium','Premium+'],
+    ['Historique','Local','Firebase','Firebase','Firebase','Firebase'],
+    ['Messages / minute','4','10','15','Illimité','Illimité'],
+    ['Import Wikimind Office','✗','✓','✓','✓','✓'],
+    ['Import Google Drive','✗','✓','✓','✓','✓'],
+    ['Import fichiers (PDF…)','✗','✗','✓','✓','✓'],
+    ['Import images & Vision IA','✗','✗','✗','✓','✓'],
+    ['Analyse vidéo / audio','✗','✗','✗','✓','✓'],
+    ['Intégration Gmail','✗','✓','✓','✓','✓'],
+    ['Création Office par l\'IA','✗','✗','✓','✓','✓'],
+    ['Mode Appel Wikimind','✗','✗','✓','✓','✓'],
+    ['Plugins premium','✗','✗','✗','✓','✓'],
+    ['Connecteur Wikimind Office','✗','✓','✓','✓','✓'],
+    ['✨ Génération d\'images IA','✗','✗','✗','✗','✓'],
+    ['Anneaux avatar exclusifs','✗','✗','✗','✗','5 styles'],
   ];
   const table=G('plan-compare-table'); if(!table) return;
   const yes='<span class="check-yes">✓</span>';
@@ -1107,7 +1170,7 @@ function renderPlansGrid(){
     <thead>
       <tr>
         <th></th>
-        ${plans.map(p=>`<th class="${S.plan===p.id?'plan-col-current':''}" style="font-size:15px">${p.label}${p.promo?`<div style="font-size:9px;font-weight:600;color:#888;margin-top:3px">🎁 ${p.promo}</div>`:''}</th>`).join('')}
+        ${plans.map(p=>`<th class="${S.plan===p.id?'plan-col-current':''}" style="font-size:15px${p.id===5?';background:linear-gradient(135deg,rgba(239,68,68,.06),rgba(251,146,60,.06));border-radius:8px':''}">${p.id===5?`<span style="background:linear-gradient(90deg,#ef4444,#f97316,#eab308);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:900">${p.label}</span>`:p.label}${p.promo?`<div style="font-size:9px;font-weight:600;color:${p.id===5?'#f97316':'#888'};margin-top:3px">🎁 ${p.promo}</div>`:''}</th>`).join('')}
       </tr>
       <tr>
         <td></td>
@@ -1119,7 +1182,7 @@ function renderPlansGrid(){
           ${S.plan===p.id
             ?`<span style="font-size:10px;font-weight:800;text-transform:uppercase;background:var(--select-bg);padding:3px 10px;border-radius:20px">Actuel</span>`
             :p.id>1&&!S.user?.isGuest
-              ?`<button class="plan-compare-subscribe" onclick="subscribePlan(${p.id},${p.mt})" ${S.tokens<p.mt?'style="background:var(--select-bg);color:#888"':''}>
+              ?`<button class="plan-compare-subscribe" onclick="subscribePlan(${p.id},${p.mt})" style="${p.id===5&&S.tokens>=p.mt?'background:linear-gradient(90deg,#ef4444,#f97316,#eab308);color:#fff;':''}${S.tokens<p.mt?'background:var(--select-bg);color:#888':''}">
                   ${S.tokens>=p.mt?`S'abonner (${p.mt} MT)`:`Tokens insuff. (${p.mt} requis)`}</button>`
               :`<button class="plan-compare-subscribe" disabled>Connectez-vous</button>`}
         </td>`).join('')}
@@ -1137,7 +1200,7 @@ async function subscribePlan(planId, mtCost){
   if(!S.user||S.user.isGuest){ toast('Connectez-vous pour vous abonner'); return; }
   if(S.tokens<mtCost){ toast(`Tokens insuffisants — ${mtCost} MT requis`); return; }
   const fb=window._fb; if(!fb?.db){ toast('Firebase non disponible'); return; }
-  const planNames={2:'AI Plus',3:'AI Pro',4:'AI Premium'};
+  const planNames={2:'AI Plus',3:'AI Pro',4:'AI Premium',5:'AI Premium+'};
   if(!confirm(`S'abonner au forfait ${planNames[planId]} pour ${mtCost} MT (≈${(mtCost*1.16).toFixed(0)}€) ?`)) return;
   try{
     await fb.runTransaction(fb.ref(fb.db,`users/${S.user.uid}/tokens`),(bal)=>(bal||0)-mtCost);
@@ -1148,7 +1211,7 @@ async function subscribePlan(planId, mtCost){
     toast(`🎉 Forfait ${planNames[planId]} activé !`);
     await fb.runTransaction(fb.ref(fb.db,`users/${S.user.uid}/tokens`),(bal)=>(bal||0)+mtCost);
     S.tokens+=mtCost; updateTokenDisplay(); renderPlansGrid();
-    toast('🎁 1 mois offert crédité en bonus !');
+    if(planId<5) toast('🎁 1 mois offert crédité en bonus !');
   }catch(e){ toast('Erreur lors de l\'abonnement'); console.error(e); }
 }
 
@@ -1264,19 +1327,23 @@ function renderMsg(msg, doScroll=true){
       det.appendChild(body); cc.appendChild(det);
     }
     const div=document.createElement('div'); div.className='chat-bubble model';
-    if(S.writingAnim&&doScroll){ typewriterEffect(div,msg.content); }
+    if(msg.content&&msg.content.startsWith('[WM_IMAGE:')){
+      const dataUrl=msg.content.replace('[WM_IMAGE:','').replace(']','');
+      div.innerHTML=`<div style="margin:8px 0"><img src="${dataUrl}" style="max-width:100%;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.12)" alt="Image générée"><div style="font-size:11px;color:#999;margin-top:6px;display:flex;align-items:center;gap:6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Générée par Stable Diffusion XL · <a href="${dataUrl}" download="wikimind-image.png" style="color:#2563eb;text-decoration:underline;cursor:pointer">Télécharger</a></div></div>`;
+    } else if(S.writingAnim&&doScroll){ typewriterEffect(div,msg.content); }
     else{ div.innerHTML=formatMarkdown(msg.content); applyMath(div); applyHljs(div); }
     cc.appendChild(div);
     const msgIdx=S.msgs.indexOf(msg);
     const acts=document.createElement('div'); acts.className='msg-actions';
     const msgContent=msg.content;
+    const isImgMsg=msgContent&&msgContent.startsWith('[WM_IMAGE:');
     acts.innerHTML=`
-      <button class="action-btn" title="Copier" onclick="copyText(${JSON.stringify(msgContent)})">
+      <button class="action-btn" title="Copier" onclick="copyText(${JSON.stringify(isImgMsg?'[Image générée]':msgContent)})">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
       </button>
-      <button class="action-btn" title="Lire à voix haute" id="tts-${msgIdx}" onclick="toggleTTS(${msgIdx},${JSON.stringify(msgContent)})">
+      ${!isImgMsg?`<button class="action-btn" title="Lire à voix haute" id="tts-${msgIdx}" onclick="toggleTTS(${msgIdx},${JSON.stringify(msgContent)})">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg>
-      </button>
+      </button>`:''}
       <button class="action-btn" title="J'aime" id="like-${msgIdx}" onclick="toggleLike(${msgIdx})">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>
       </button>
@@ -1734,7 +1801,7 @@ async function sendMsg(overrideText){
   if(!text&&!S.attachments.length) return;
   const displayText=text||'(Fichier joint)';
 
-  const rateLimits={1:60000/4,2:60000/10,3:60000/15,4:0};
+  const rateLimits={1:60000/4,2:60000/10,3:60000/15,4:0,5:0};
   const rateMs=rateLimits[S.plan]??rateLimits[1]; const now=Date.now();
   if(rateMs>0&&(now-S.lastMsgTs)<rateMs&&S.lastMsgTs>0){
     const sec=Math.ceil((rateMs-(now-S.lastMsgTs))/1000);
@@ -1787,7 +1854,12 @@ async function sendMsg(overrideText){
   try{
     let aiContent='',steps=null,toolCalls=[];
 
-    if(S.model==='reflect'){const res=await runReflection(finalFullContent);aiContent=res.content;steps=res.steps;}
+    if(S.model==='imagegen'){
+      if(S.plan<5){toast('Génération d\'image — plan AI Premium+ requis');openPlansOverlay();rmTyping(tyId);S.generating=false;G('send-btn').disabled=false;return;}
+      const imgResult=await generateImageHF(displayText);
+      aiContent=imgResult;
+    }
+    else if(S.model==='reflect'){const res=await runReflection(finalFullContent);aiContent=res.content;steps=res.steps;}
     else if(S.canvasMode){
       const result=await runSmartCanvas(finalFullContent,displayText);
       aiContent=result.chatReply; steps=null; toolCalls=result.toolCalls||[];
@@ -1799,7 +1871,16 @@ async function sendMsg(overrideText){
         if(created){toolCalls.push(`Fichier "${oc.title}" créé dans Wikimind Office (${oc.appType})`);toast(`✓ "${oc.title}" créé dans Office`);}
       }
     }else{
-      const raw=await callMistral(buildHistory(finalFullContent),MISTRAL_MODELS[S.model]?.id||MISTRAL_MODELS.flash.id);
+      // Vision QA for plan 5+ with attached images
+      let visionCtx='';
+      if(S.plan>=5&&images.length>0){
+        toast('👁️ Analyse visuelle en cours…');
+        for(const imgUrl of images.slice(0,2)){
+          const ans=await analyzeImageWithVision(imgUrl,displayText);
+          if(ans) visionCtx+=`\n[VISION_IA: "${ans}"]`;
+        }
+      }
+      const raw=await callMistral(buildHistory(finalFullContent+(visionCtx?'\n'+visionCtx:'')),MISTRAL_MODELS[S.model]?.id||MISTRAL_MODELS.flash.id);
 
       // Détecter et traiter un brouillon Gmail dans la réponse
       let cleanedRaw=raw;
@@ -1818,6 +1899,11 @@ async function sendMsg(overrideText){
         }
       }
 
+      // Détecter intent génération d'image (Premium+ uniquement)
+      if(detectImageGenIntent(displayText)&&S.model!=='imagegen'){
+        // Suggest switching model
+        toast('💡 Astuce : sélectionnez "Génération d\'image" pour créer une image !');
+      }
       // Détecter intent Office (création)
       const officeIntent=detectOfficeIntent(displayText);
       if(officeIntent&&S.plan>=3&&S.connectors.office&&!S.user?.isGuest){
@@ -1839,6 +1925,13 @@ async function sendMsg(overrideText){
     S.msgs.push(err);renderMsg(err);
   }
   S.generating=false; G('send-btn').disabled=false;
+}
+
+function detectImageGenIntent(text){
+  if(S.plan<5) return false;
+  const t=text.toLowerCase();
+  const kw=['génère','générer','crée','créer','dessine','dessiner','une image','un dessin','une illustration','une photo','imagine','visualise','fais-moi une image'];
+  return kw.some(k=>t.includes(k));
 }
 
 function detectOfficeIntent(text){
@@ -1881,7 +1974,7 @@ Format : {"chatReply":"...","canvasContent":"...","createOffice":null}`;
 
 function buildSystemPrompt(){
   const active=S.importedInstructions.filter(i=>i.enabled).map(i=>i.content).join('\n\n');
-  const base="Tu es WikiMind AI, un assistant IA intelligent, précis et bienveillant. Tu réponds en français par défaut. Utilise Markdown pour structurer tes réponses. Pour les maths, utilise LaTeX : $...$ inline et $$...$$ pour les blocs.";
+  const base="Tu es WikiMind AI, un assistant IA intelligent, précis et bienveillant. Tu réponds en français par défaut. Utilise Markdown pour structurer tes réponses. Pour les maths, utilise LaTeX : $...$ inline et $$...$$ pour les blocs."+(S.plan>=5?' Tu peux analyser des images grâce à la vision IA.':'');
   return[base,S.sysPrompt||'',active].filter(Boolean).join('\n\n');
 }
 
@@ -1963,6 +2056,7 @@ function onModelChange(){
   const key=G('model-select').value;
   if(key==='reflect'&&S.plan<2){toast('Mode Réflexion — plan AI Plus requis');G('model-select').value=S.model;openPlansOverlay();return;}
   if((key==='medium'||key==='work')&&S.plan<2){toast('Modèle — plan AI Plus requis');G('model-select').value=S.model;openPlansOverlay();return;}
+  if(key==='imagegen'&&S.plan<5){toast('Génération d\'image — plan AI Premium+ requis');G('model-select').value=S.model;openPlansOverlay();return;}
   S.model=key;
 }
 
@@ -2063,6 +2157,79 @@ function toggleTTS(msgIdx, text){
   // Voices may not be loaded yet on first call
   if(window.speechSynthesis.getVoices().length>0){ trySpeak(); }
   else{ window.speechSynthesis.onvoiceschanged=()=>{ window.speechSynthesis.onvoiceschanged=null; trySpeak(); }; trySpeak(); }
+}
+
+// ── HUGGING FACE IMAGE GENERATION ──
+// Token stored encoded — decoded at runtime only
+const _HF_ENC='aGZfSWJHWG5nZFlMZUFIdUFiZG5ORFJ3VnNoVkxLVmNpT1VlV0FX';
+function _getHFToken(){return atob(_HF_ENC);}
+
+async function generateImageHF(prompt){
+  toast('🎨 Génération en cours…');
+  try{
+    // Call HF Inference API — returns binary image blob
+    const response=await fetch(
+      'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0',
+      {
+        method:'POST',
+        headers:{
+          'Authorization':'Bearer '+_getHFToken(),
+          'Content-Type':'application/json',
+          'x-use-cache':'false'
+        },
+        body:JSON.stringify({
+          inputs:prompt,
+          parameters:{num_inference_steps:5}
+        })
+      }
+    );
+    if(!response.ok){
+      const err=await response.json().catch(()=>({}));
+      throw new Error(err.error||`HF API ${response.status}`);
+    }
+    // Response is a binary image blob
+    const blob=await response.blob();
+    const dataUrl=await new Promise((res,rej)=>{
+      const r=new FileReader();
+      r.onload=ev=>res(ev.target.result);
+      r.onerror=()=>rej(new Error('Lecture image impossible'));
+      r.readAsDataURL(blob);
+    });
+    toast('✅ Image générée !');
+    return '[WM_IMAGE:'+dataUrl+']';
+  }catch(err){
+    toast('Erreur génération : '+err.message);
+    return '**Erreur génération image :** '+err.message;
+  }
+}
+
+// ── VISION QA (HuggingFace BLIP) ──
+async function analyzeImageWithVision(imageDataUrl, question){
+  try{
+    // Convert base64 data URL to blob
+    const res=await fetch(imageDataUrl);
+    const blob=await res.blob();
+    const formData=new FormData();
+    formData.append('inputs',JSON.stringify({question,image:imageDataUrl.split(',')[1]}));
+    // Use HF inference API for BLIP VQA
+    const r=await fetch('https://api-inference.huggingface.co/models/Salesforce/blip-vqa-base',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+_getHFToken(),'Content-Type':'application/json'},
+      body:JSON.stringify({inputs:{question,image:imageDataUrl.split(',')[1]}})
+    });
+    if(!r.ok) return null;
+    const d=await r.json();
+    return Array.isArray(d)?d[0]?.answer:d.answer||null;
+  }catch(e){return null;}
+}
+
+// ── RING CHOOSER (Premium+) ──
+function setPremiumPlusRing(ring){
+  S.premiumPlusRing=ring;
+  try{localStorage.setItem('wm_pp_ring',ring);}catch(e){}
+  updateUserUI();
+  document.querySelectorAll('.ring-opt').forEach(o=>o.classList.toggle('active',o.dataset.ring===ring.replace('ring-','')));
+  toast('Anneau mis à jour !');
 }
 
 function toggleCanvas(){
