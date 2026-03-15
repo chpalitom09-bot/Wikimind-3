@@ -363,10 +363,11 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 /* Plan ring avatar */
 /* Animated gradient avatar rings */
 .plan-chip-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--text);overflow:visible;flex-shrink:0;cursor:pointer;position:relative;}
-.plan-chip-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;position:relative;z-index:1;}
-.plan-chip-avatar>span{position:relative;z-index:1;}
-.plan-chip-avatar::before{content:'';position:absolute;inset:-3px;border-radius:50%;z-index:0;background:var(--select-bg);}
-.plan-chip-avatar::after{content:'';position:absolute;inset:-3px;border-radius:50%;z-index:-1;}
+.plan-chip-avatar img{width:32px;height:32px;object-fit:cover;border-radius:50%;position:relative;z-index:2;}
+.plan-chip-avatar>span{position:relative;z-index:2;}
+/* ::after = gradient ring (outermost), ::before = gap between ring and content */
+.plan-chip-avatar::after{content:'';position:absolute;inset:-3px;border-radius:50%;z-index:0;}
+.plan-chip-avatar::before{content:'';position:absolute;inset:2px;border-radius:50%;z-index:1;background:var(--bg);}
 
 /* Free: grey static */
 .ring-free::after{background:conic-gradient(#9ca3af,#d1d5db,#9ca3af);}
@@ -1111,7 +1112,7 @@ function updateModelOptions(){
     {value:'medium',label:'WIKIMIND MEDIUM',minPlan:2},
     {value:'work',label:'WIKIMIND WORK',minPlan:2},
     {value:'reflect',label:'WIKIMIND RÉFLEXION',minPlan:2},
-    {value:'imagegen',label:'✨ GÉNÉRATION D\'IMAGE',minPlan:5},
+    {value:'imagegen',label:'WIKIMIND IMAGES',minPlan:5},
   ];
   sel.innerHTML='';
   models.forEach(m=>{ if(S.plan>=m.minPlan){const opt=document.createElement('option');opt.value=m.value;opt.textContent=m.label;sel.appendChild(opt);} });
@@ -1157,7 +1158,7 @@ function renderPlansGrid(){
     ['Mode Appel Wikimind','✗','✗','✓','✓','✓'],
     ['Plugins premium','✗','✗','✗','✓','✓'],
     ['Connecteur Wikimind Office','✗','✓','✓','✓','✓'],
-    ['✨ Génération d\'images IA','✗','✗','✗','✗','✓'],
+    ['Génération d\'images IA','✗','✗','✗','✗','✓'],
     ['Anneaux avatar exclusifs','✗','✗','✗','✗','5 styles'],
   ];
   const table=G('plan-compare-table'); if(!table) return;
@@ -1337,11 +1338,14 @@ function renderMsg(msg, doScroll=true){
     const acts=document.createElement('div'); acts.className='msg-actions';
     const msgContent=msg.content;
     const isImgMsg=msgContent&&msgContent.startsWith('[WM_IMAGE:');
+    if(!window._wmCopyStore) window._wmCopyStore={};
+    const _msgCopyKey='msgcopy_'+msgIdx;
+    window._wmCopyStore[_msgCopyKey]=isImgMsg?'[Image générée]':msgContent;
     acts.innerHTML=`
-      <button class="action-btn" title="Copier" onclick="copyText(${JSON.stringify(isImgMsg?'[Image générée]':msgContent)})">
+      <button class="action-btn" title="Copier" onclick="copyStoredText('${_msgCopyKey}')">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
       </button>
-      ${!isImgMsg?`<button class="action-btn" title="Lire à voix haute" id="tts-${msgIdx}" onclick="toggleTTS(${msgIdx},${JSON.stringify(msgContent)})">
+      ${!isImgMsg?`<button class="action-btn" title="Lire à voix haute" id="tts-${msgIdx}" onclick="toggleTTSStored(${msgIdx},'${_msgCopyKey}')">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg>
       </button>`:''}
       <button class="action-btn" title="J'aime" id="like-${msgIdx}" onclick="toggleLike(${msgIdx})">
@@ -1406,7 +1410,14 @@ function formatMarkdown(text){
   let html=marked.parse(text);
   html=html.replace(/WMATHBLOCK(\d+)END/g,(_,idx)=>{const m=ph[+idx];if(!m)return'';const s=m[1].replace(/</g,'&lt;').replace(/>/g,'&gt;');return`<span class="wm-math-block">\\[${s}\\]</span>`;});
   html=html.replace(/WMATHINLINE(\d+)END/g,(_,idx)=>{const m=ph[+idx];if(!m)return'';const s=m[1].replace(/</g,'&lt;').replace(/>/g,'&gt;');return`\\(${s}\\)`;});
-  html=html.replace(/<pre><code( class="language-([^"]*)")?>([\s\S]*?)<\/code><\/pre>/g,(_,cls,lang,code)=>`<div class="code-wrapper"><span class="code-lang">${lang||'code'}</span><button class="copy-code-btn" onclick="copyText(${JSON.stringify(code.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&'))})">Copier</button><pre><code class="${lang?'language-'+lang:''}">${code}</code></pre></div>`);
+  if(!window._wmCopyStore) window._wmCopyStore={};
+  let _wci=(window._wciCounter=(window._wciCounter||0)+1);
+  html=html.replace(/<pre><code( class="language-([^"]*)")?>([\s\S]*?)<\/code><\/pre>/g,(_,cls,lang,code)=>{
+    const raw=code.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
+    const cid='wmc'+(++window._wciCounter);
+    window._wmCopyStore[cid]=raw;
+    return `<div class="code-wrapper"><span class="code-lang">${lang||'code'}</span><button class="copy-code-btn" onclick="copyStoredText('${cid}')">Copier</button><pre><code class="${lang?'language-'+lang:''}">${code}</code></pre></div>`;
+  });
   return html;
 }
 function applyMath(el){
@@ -2161,66 +2172,100 @@ function toggleTTS(msgIdx, text){
 
 // ── HUGGING FACE IMAGE GENERATION ──
 // Token stored encoded — decoded at runtime only
-const _HF_ENC='aGZfSWJHWG5nZFlMZUFIdUFiZG5ORFJ3VnNoVkxLVmNpT1VlV0FX';
+const _HF_ENC='aGZfSWJHWG5nZFllYUh1QWJkbk5EUndzVmhMS1ZjaU9VZVdBVw==';
 function _getHFToken(){return atob(_HF_ENC);}
 
 async function generateImageHF(prompt){
-  toast('🎨 Génération en cours…');
-  try{
-    // Call HF Inference API — returns binary image blob
-    const response=await fetch(
-      'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0',
-      {
-        method:'POST',
-        headers:{
-          'Authorization':'Bearer '+_getHFToken(),
-          'Content-Type':'application/json',
-          'x-use-cache':'false'
-        },
-        body:JSON.stringify({
-          inputs:prompt,
-          parameters:{num_inference_steps:5}
-        })
+  toast('🎨 Génération en cours… (peut prendre 20-30s)');
+  // Models to try in order
+  const models=[
+    'stabilityai/stable-diffusion-2-1',
+    'runwayml/stable-diffusion-v1-5',
+    'stabilityai/stable-diffusion-xl-base-1.0'
+  ];
+  let lastErr=null;
+  for(const model of models){
+    try{
+      toast('🎨 Connexion au modèle…');
+      const controller=new AbortController();
+      const tid=setTimeout(()=>controller.abort(),90000);
+      const response=await fetch(
+        'https://api-inference.huggingface.co/models/'+model,
+        {
+          method:'POST',
+          headers:{
+            'Authorization':'Bearer '+_getHFToken(),
+            'Content-Type':'application/json'
+          },
+          body:JSON.stringify({inputs:prompt,parameters:{num_inference_steps:20,guidance_scale:7.5}}),
+          signal:controller.signal
+        }
+      );
+      clearTimeout(tid);
+      if(response.status===503){
+        // Model loading - wait and retry
+        const errJson=await response.json().catch(()=>({}));
+        const wait=Math.min(errJson.estimated_time||20,30)*1000;
+        toast('⏳ Modèle en démarrage, patientez…');
+        await new Promise(r=>setTimeout(r,wait));
+        // Retry same model once
+        const r2=await fetch('https://api-inference.huggingface.co/models/'+model,{
+          method:'POST',
+          headers:{'Authorization':'Bearer '+_getHFToken(),'Content-Type':'application/json'},
+          body:JSON.stringify({inputs:prompt,parameters:{num_inference_steps:20,guidance_scale:7.5}})
+        });
+        if(!r2.ok){const e2=await r2.json().catch(()=>({}));throw new Error(e2.error||'HF '+r2.status);}
+        const blob2=await r2.blob();
+        if(!blob2.type.startsWith('image/')){const t2=await blob2.text();throw new Error(t2.substring(0,120));}
+        const dataUrl2=await new Promise((res,rej)=>{const rd=new FileReader();rd.onload=ev=>res(ev.target.result);rd.onerror=()=>rej(new Error('Lecture impossible'));rd.readAsDataURL(blob2);});
+        toast('✅ Image générée !');
+        return '[WM_IMAGE:'+dataUrl2+']';
       }
-    );
-    if(!response.ok){
-      const err=await response.json().catch(()=>({}));
-      throw new Error(err.error||`HF API ${response.status}`);
+      if(!response.ok){const e=await response.json().catch(()=>({}));throw new Error(e.error||'HF '+response.status);}
+      const blob=await response.blob();
+      if(!blob.type.startsWith('image/')){const txt=await blob.text();throw new Error(txt.substring(0,120));}
+      const dataUrl=await new Promise((res,rej)=>{const rd=new FileReader();rd.onload=ev=>res(ev.target.result);rd.onerror=()=>rej(new Error('Lecture image impossible'));rd.readAsDataURL(blob);});
+      toast('✅ Image générée !');
+      return '[WM_IMAGE:'+dataUrl+']';
+    }catch(err){
+      lastErr=err;
+      if(err.name==='AbortError'){lastErr=new Error('Délai dépassé (90s) — le modèle est trop occupé');}
+      console.warn('Image gen failed for',model,':',err.message);
+      // Continue to next model
     }
-    // Response is a binary image blob
-    const blob=await response.blob();
-    const dataUrl=await new Promise((res,rej)=>{
-      const r=new FileReader();
-      r.onload=ev=>res(ev.target.result);
-      r.onerror=()=>rej(new Error('Lecture image impossible'));
-      r.readAsDataURL(blob);
-    });
-    toast('✅ Image générée !');
-    return '[WM_IMAGE:'+dataUrl+']';
-  }catch(err){
-    toast('Erreur génération : '+err.message);
-    return '**Erreur génération image :** '+err.message;
   }
+  toast('Erreur génération : '+(lastErr?.message||'Inconnue'));
+  return '**Erreur génération image :** '+(lastErr?.message||'Tous les modèles ont échoué. Réessayez dans quelques instants.');
 }
 
-// ── VISION QA (HuggingFace BLIP) ──
+// ── VISION QA (Mistral Pixtral) ──
 async function analyzeImageWithVision(imageDataUrl, question){
   try{
-    // Convert base64 data URL to blob
-    const res=await fetch(imageDataUrl);
-    const blob=await res.blob();
-    const formData=new FormData();
-    formData.append('inputs',JSON.stringify({question,image:imageDataUrl.split(',')[1]}));
-    // Use HF inference API for BLIP VQA
-    const r=await fetch('https://api-inference.huggingface.co/models/Salesforce/blip-vqa-base',{
+    // Extract base64 data and mime type
+    const match=imageDataUrl.match(/^data:([^;]+);base64,(.+)$/);
+    if(!match) return null;
+    const mimeType=match[1];
+    const base64Data=match[2];
+    // Use Mistral Pixtral for vision
+    const res=await fetch('https://api.mistral.ai/v1/chat/completions',{
       method:'POST',
-      headers:{'Authorization':'Bearer '+_getHFToken(),'Content-Type':'application/json'},
-      body:JSON.stringify({inputs:{question,image:imageDataUrl.split(',')[1]}})
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+MISTRAL_KEY},
+      body:JSON.stringify({
+        model:'pixtral-12b-2409',
+        max_tokens:512,
+        messages:[{
+          role:'user',
+          content:[
+            {type:'image_url',image_url:{url:'data:'+mimeType+';base64,'+base64Data}},
+            {type:'text',text:question||'Décris cette image en détail.'}
+          ]
+        }]
+      })
     });
-    if(!r.ok) return null;
-    const d=await r.json();
-    return Array.isArray(d)?d[0]?.answer:d.answer||null;
-  }catch(e){return null;}
+    if(!res.ok) return null;
+    const d=await res.json();
+    return d.choices?.[0]?.message?.content||null;
+  }catch(e){console.warn('Vision error:',e);return null;}
 }
 
 // ── RING CHOOSER (Premium+) ──
@@ -2335,6 +2380,8 @@ function updateHlTheme(){const isDark=document.body.classList.contains('dark-mod
 
 // ── UTILS ──
 function copyText(text){navigator.clipboard.writeText(text).then(()=>toast('Copié !')).catch(()=>{const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();toast('Copié !');});}
+function copyStoredText(key){const text=(window._wmCopyStore&&window._wmCopyStore[key])||'';copyText(text);}
+function toggleTTSStored(msgIdx,key){const text=(window._wmCopyStore&&window._wmCopyStore[key])||'';toggleTTS(msgIdx,text);}
 function toast(msg){const t=G('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
 function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,180)+'px';}
 function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
