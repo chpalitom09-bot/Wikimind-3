@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WikiMind AI — Invitation</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:#0f0f0f;color:#eeeeee;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+.card{background:#161616;border:1px solid #252525;border-radius:28px;padding:48px 40px;max-width:460px;width:100%;text-align:center;box-shadow:0 40px 100px rgba(0,0,0,.5);}
+.logo{font-size:28px;font-weight:900;letter-spacing:-.05em;text-transform:uppercase;font-style:italic;margin-bottom:6px;}
+.logo span{opacity:.4;font-style:normal;font-size:18px;font-weight:600;}
+.gift-icon{font-size:56px;margin:24px 0 16px;}
+.title{font-size:26px;font-weight:900;letter-spacing:-.04em;margin-bottom:10px;line-height:1.2;}
+.subtitle{font-size:14px;color:#888;line-height:1.6;margin-bottom:28px;}
+.promo-badge{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#14532d,#166534);border:1px solid #22c55e;color:#86efac;border-radius:20px;padding:8px 18px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:28px;}
+.promo-badge svg{width:14px;height:14px;flex-shrink:0;}
+.cta-btn{display:block;width:100%;padding:16px;background:#ffffff;color:#111111;border:none;border-radius:14px;font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;transition:.2s;font-family:'Inter',sans-serif;text-decoration:none;margin-bottom:12px;}
+.cta-btn:hover{opacity:.88;transform:translateY(-1px);}
+.cta-btn.secondary{background:#1f1f1f;color:#aaa;border:1px solid #2d2d2d;}
+.cta-btn.secondary:hover{background:#2a2a2a;color:#eee;transform:none;}
+.features{display:flex;flex-direction:column;gap:10px;margin:24px 0;text-align:left;}
+.feature{display:flex;align-items:center;gap:12px;font-size:13px;color:#ccc;}
+.feature-icon{width:32px;height:32px;border-radius:8px;background:#1f1f1f;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.feature strong{color:#eee;}
+.divider{height:1px;background:#252525;margin:20px 0;}
+.note{font-size:11px;color:#555;line-height:1.5;}
+.spinner{width:20px;height:20px;border:2px solid #333;border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.state-loading{display:none;}
+.state-error{display:none;background:#1f1212;border:1px solid #7f1d1d;border-radius:12px;padding:14px;color:#fca5a5;font-size:13px;margin-top:16px;}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">WikiMind <span>AI</span></div>
+
+  <div id="state-valid">
+    <div class="gift-icon">🎁</div>
+    <div class="title">Vous êtes invité par un ami !</div>
+    <div class="subtitle">Un utilisateur WikiMind AI partage son invitation avec vous. Créez un compte et profitez immédiatement de&nbsp;:</div>
+
+    <div class="promo-badge">
+      <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      AI Pro — 3 jours offerts
+    </div>
+
+    <div class="features">
+      <div class="feature"><div class="feature-icon">⚡</div><div>Modèle <strong>Wikimind Work</strong> & <strong>Medium</strong> débloqués</div></div>
+      <div class="feature"><div class="feature-icon">🧠</div><div>Mode <strong>Réflexion</strong> — raisonnement multi-étapes</div></div>
+      <div class="feature"><div class="feature-icon">🎨</div><div>Mode <strong>Canvas</strong> pour créer des documents</div></div>
+      <div class="feature"><div class="feature-icon">📁</div><div>Import <strong>Wikimind Office</strong> & <strong>Google Drive</strong></div></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <button class="cta-btn" id="btn-register" onclick="goToRegister()">Créer mon compte gratuitement →</button>
+    <button class="cta-btn secondary" id="btn-login" onclick="goToLogin()">J'ai déjà un compte</button>
+
+    <div class="divider"></div>
+    <div class="note">⚠️ L'offre AI Pro 3 jours s'applique uniquement lors de la <strong>création d'un nouveau compte</strong>. La connexion à un compte existant ne déclenche pas la récompense.<br><br>Votre ami recevra également AI Pro 3 jours lorsque vous créez votre compte.</div>
+  </div>
+
+  <div id="state-invalid" style="display:none">
+    <div class="gift-icon">😕</div>
+    <div class="title">Lien invalide</div>
+    <div class="subtitle">Ce lien de parrainage ne semble pas valide ou a expiré.</div>
+    <button class="cta-btn" onclick="goToHome()" style="margin-top:8px">Aller sur WikiMind AI →</button>
+  </div>
+
+  <div id="state-error" class="state-error"></div>
+</div>
+
+<script>
+// Firebase (même config que Wikimind_AI.html)
+const FB_CONFIG = {
+  apiKey:"AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+  authDomain:"wikimind-3-comments.firebaseapp.com",
+  databaseURL:"https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"wikimind-3-comments"
+};
+
+// Récupérer le ?ref= dans l'URL
+const urlParams = new URLSearchParams(window.location.search);
+const refCode = urlParams.get('ref');
+
+// Cible : Wikimind_AI.html (même dossier AI/)
+const AI_URL = window.location.pathname.replace('Wikimind_share.html','Wikimind_AI.html');
+
+function getReferralCode(uid){ return btoa(uid).replace(/=/g,'').substring(0,16); }
+
+function goToRegister(){
+  if(refCode){
+    try{ sessionStorage.setItem('wm_pending_ref', refCode); }catch(e){}
+  }
+  // Aller vers Wikimind_AI.html avec le ?ref= pour qu'il soit aussi lu là-bas
+  window.location.href = AI_URL + (refCode ? '?ref='+encodeURIComponent(refCode) : '');
+}
+
+function goToLogin(){
+  // Connexion existante = pas de récompense, on va sans ref
+  window.location.href = AI_URL;
+}
+
+function goToHome(){
+  window.location.href = AI_URL;
+}
+
+// Valider le code ref (optionnel — vérifier qu'il correspond à un vrai user)
+async function validateRef(){
+  if(!refCode){
+    document.getElementById('state-valid').style.display='none';
+    document.getElementById('state-invalid').style.display='block';
+    return;
+  }
+  // Le code est valide structurellement si c'est une string non vide de 16 chars
+  // (on ne charge pas Firebase ici pour rester léger — la vraie validation est dans Wikimind_AI.html)
+  if(refCode.length < 8){
+    document.getElementById('state-valid').style.display='none';
+    document.getElementById('state-invalid').style.display='block';
+    return;
+  }
+  // Tout semble OK — afficher la page d'invitation
+  document.getElementById('state-valid').style.display='block';
+}
+
+validateRef();
+</script>
+</body>
+</html>
