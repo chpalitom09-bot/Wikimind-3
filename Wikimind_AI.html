@@ -455,6 +455,10 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
       Connecteurs &amp; Apps
     </button>
+    <button class="sb-btn" onclick="openModal('settings-modal');setTimeout(()=>showReferralInSettings(),200)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      Parrainage
+    </button>
     <button class="sb-btn" onclick="openModal('settings-modal')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
       Paramètres
@@ -628,6 +632,12 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
       <h2 style="font-size:32px;font-weight:900;letter-spacing:-.05em;text-transform:uppercase">WikiMind</h2>
       <p style="font-size:13px;color:#888;margin-top:4px">Votre assistant IA personnel</p>
     </div>
+    <!-- Bandeau parrainage (visible si ?ref= présent) -->
+    <div id="referral-banner" style="display:none;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #bbf7d0;border-radius:12px;padding:12px 14px;margin-bottom:16px;text-align:center;">
+      <div style="font-size:18px;margin-bottom:4px">🎁</div>
+      <div style="font-size:13px;font-weight:800;color:#15803d;margin-bottom:2px">Vous êtes invité !</div>
+      <div style="font-size:12px;color:#166534">Créez un compte et obtenez <strong>AI Pro 3 jours</strong> gratuitement.</div>
+    </div>
     <div style="display:flex;gap:4px;background:var(--select-bg);border-radius:12px;padding:4px;margin-bottom:18px">
       <button id="tab-login" onclick="authTab('login')" style="flex:1;padding:8px;border-radius:9px;border:none;background:var(--bg);cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-family:'Inter',sans-serif;color:var(--text)">Connexion</button>
       <button id="tab-reg" onclick="authTab('register')" style="flex:1;padding:8px;border-radius:9px;border:none;background:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-family:'Inter',sans-serif;color:#888">Inscription</button>
@@ -726,6 +736,18 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
         <div style="font-size:11px;color:#999;margin-top:2px">Effet machine à écrire sur les réponses IA</div>
       </div>
       <div class="toggle-bg" id="writing-anim-toggle" onclick="toggleWritingAnim()"><div class="toggle-dot"></div></div>
+    </div>
+    <!-- PARRAINAGE -->
+    <div id="referral-section" style="display:none;margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
+      <p style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:10px">🎁 Parrainage</p>
+      <div style="background:var(--select-bg);border-radius:12px;padding:12px 14px;font-size:12px;color:#888;margin-bottom:10px;line-height:1.6">
+        Partagez votre lien — vous et votre filleul obtenez <strong style="color:var(--text)">AI Pro 3 jours</strong> gratuitement à chaque nouvelle inscription.
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="referral-link-input" class="modal-input" readonly style="font-size:11px;color:#888;cursor:pointer;flex:1" onclick="this.select()" placeholder="Chargement…">
+        <button onclick="copyReferralLink()" style="flex-shrink:0;padding:10px 14px;background:var(--accent);color:var(--accent-inv);border:none;border-radius:10px;font-size:11px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:.06em;transition:.2s;font-family:Inter,sans-serif">Copier</button>
+      </div>
+      <div id="referral-stats" style="font-size:11px;color:#aaa;margin-top:8px;text-align:center"></div>
     </div>
     <div style="margin-top:16px;display:flex;gap:8px;flex-direction:column">
       <a href="../AI/Wikimind_forfaits.html" class="modal-btn secondary" style="text-align:center;display:block;text-decoration:none">Gérer mes tokens & forfaits</a>
@@ -900,7 +922,23 @@ window.addEventListener('load', () => {
   try { S.gmailToken=sessionStorage.getItem('wm_gmail_token')||null; S.gdriveToken=sessionStorage.getItem('wm_gdrive_token')||null; } catch(e){}
   if(S.gmailToken) S.connectors.gmail=true;
   if(S.gdriveToken) S.connectors.gdrive=true;
-  setTimeout(()=>{ if(!S.user) openModal('auth-modal'); }, 600);
+  // Lire code de parrainage dans l'URL (?ref=XXXX)
+  try{
+    const urlRef=new URLSearchParams(window.location.search).get('ref');
+    if(urlRef){
+      sessionStorage.setItem('wm_pending_ref',urlRef);
+    }
+    // Afficher le bandeau si code en attente
+    const pending=sessionStorage.getItem('wm_pending_ref');
+    if(pending){const b=G('referral-banner');if(b)b.style.display='block';}
+  }catch(e){}
+  setTimeout(()=>{
+    if(!S.user){
+      openModal('auth-modal');
+      // Si un code de parrainage est en attente, basculer sur l'onglet Inscription
+      if(sessionStorage.getItem('wm_pending_ref')) authTab('register');
+    }
+  }, 600);
   renderPlansGrid();
   G('user-input').addEventListener('input',()=>autoResize(G('user-input')));
 });
@@ -928,6 +966,8 @@ async function doRegister(){
   try{
     const cred=await fb.createUserWithEmailAndPassword(fb.auth,e,p);
     await fb.set(fb.ref(fb.db,`users/${cred.user.uid}`),{name:n,photoURL:cred.user.photoURL||'',FORFAIT:2,tokens:100,createdAt:Date.now()});
+    // Appliquer le parrainage si un code est en attente (compte NOUVEAU uniquement)
+    await applyReferralIfPending(cred.user.uid);
   }catch(ex){ showAuthErr(fbErr(ex.code)); }
 }
 async function doGoogle(){
@@ -953,8 +993,12 @@ async function bootUser(user){
     if(user.photoURL&&window._fb?.db) try{await window._fb.set(window._fb.ref(window._fb.db,`users/${user.uid}/photoURL`),user.photoURL);}catch(e){}
     await loadChats(user.uid);
     loadTokenBalance(user.uid);
+    // Vérifier expiration promo parrainage
+    await checkPromoExpiry(user.uid);
   }
   updateUserUI(); renderHistory(); showWelcome(); G('user-input').focus();
+  // Montrer section parrainage dans settings si connecté
+  if(!user.isGuest) showReferralInSettings();
 }
 
 async function loadProfile(uid){
@@ -1058,10 +1102,10 @@ document.addEventListener('click',e=>{document.querySelectorAll('.modal.show').f
 function renderPlansGrid(){
   const now=new Date(); const promoActive=now<PROMO_END;
   const plans=[
-    {key:'free',id:1,label:'Free',price:'0€',mt:0,promo:null},
-    {key:'plus',id:2,label:'AI Plus',price:'12€/mois',mt:11,promo:'1 mois offert dès le 1er paiement'},
-    {key:'pro',id:3,label:'AI Pro',price:'25€/mois',mt:22,promo:'1 mois offert dès le 1er paiement'},
-    {key:'premium',id:4,label:'AI Premium',price:promoActive?'45€/mois':'52€/mois',mt:39,promo:promoActive?'★ Promo -7€ jusqu\'au 14 avril':''},
+    {key:'free',id:1,label:'Wikimind Free',price:'0€',mt:0,promo:null},
+    {key:'plus',id:2,label:'Wikimind AI Plus',price:'12€/mois',mt:11,promo:'1 mois offert dès le 1er paiement'},
+    {key:'pro',id:3,label:'Wikimind AI Pro',price:'25€/mois',mt:22,promo:'1 mois offert dès le 1er paiement'},
+    {key:'premium',id:4,label:'Wikimind AI Premium',price:promoActive?'45€/mois':'52€/mois',mt:39,promo:promoActive?'★ Promo -7€ jusqu\'au 14 avril':''},
   ];
   const rows=[
     ['Modèle Flash','✓','✓','✓','✓'],
@@ -1989,6 +2033,97 @@ function toggleConnector(name){
     toast(`${name} déconnecté`);
   }
   G('cvs-create-btns').style.display=S.plan>=2&&S.connectors.office?'flex':'none';
+}
+
+// ── REFERRAL SYSTEM ──
+const REFERRAL_BASE_URL = window.location.origin + window.location.pathname.replace('Wikimind_AI.html','') + 'Wikimind_share.html';
+const REFERRAL_PRO_DAYS = 3; // jours AI Pro offerts
+
+function getReferralCode(uid){ return btoa(uid).replace(/=/g,'').substring(0,16); }
+
+function showReferralInSettings(){
+  const sec=G('referral-section'); if(!sec) return;
+  if(!S.user||S.user.isGuest){ sec.style.display='none'; return; }
+  sec.style.display='block';
+  const code=getReferralCode(S.user.uid);
+  const link=`${REFERRAL_BASE_URL}?ref=${code}`;
+  const inp=G('referral-link-input'); if(inp) inp.value=link;
+  // Charger les stats
+  loadReferralStats(S.user.uid);
+}
+
+function copyReferralLink(){
+  const inp=G('referral-link-input'); if(!inp||!inp.value) return;
+  copyText(inp.value);
+}
+
+async function loadReferralStats(uid){
+  const statsEl=G('referral-stats'); if(!statsEl) return;
+  const fb=window._fb; if(!fb?.db) return;
+  try{
+    const snap=await fb.get(fb.ref(fb.db,`users/${uid}/referrals`));
+    const count=snap.exists()?Object.keys(snap.val()).length:0;
+    statsEl.textContent=count>0?`🎉 ${count} filleul${count>1?'s':''} parrainé${count>1?'s':''} — merci !`:'Aucun parrainage pour l\'instant.';
+  }catch(e){ statsEl.textContent=''; }
+}
+
+// Appelé au register si un code ref est en sessionStorage
+async function applyReferralIfPending(newUid){
+  const fb=window._fb; if(!fb?.db) return;
+  const refCode=sessionStorage.getItem('wm_pending_ref'); if(!refCode) return;
+  sessionStorage.removeItem('wm_pending_ref');
+
+  // Retrouver le parrain via le code
+  try{
+    const allSnap=await fb.get(fb.ref(fb.db,'users'));
+    if(!allSnap.exists()) return;
+    const allUsers=allSnap.val();
+    let sponsorUid=null;
+    for(const [uid,data] of Object.entries(allUsers)){
+      if(getReferralCode(uid)===refCode){ sponsorUid=uid; break; }
+    }
+    if(!sponsorUid||sponsorUid===newUid) return;
+
+    const now=Date.now();
+    const proExpiry=now+(REFERRAL_PRO_DAYS*24*3600*1000);
+
+    // Vérifier que le parrain n'a pas déjà parrainé ce compte
+    const alreadySnap=await fb.get(fb.ref(fb.db,`users/${sponsorUid}/referrals/${newUid}`));
+    if(alreadySnap.exists()) return;
+
+    // Offrir AI Pro 3 jours au FILLEUL (nouveau compte)
+    await fb.set(fb.ref(fb.db,`users/${newUid}/referral_promo`),{by:sponsorUid,grantedAt:now,expiresAt:proExpiry,plan:3});
+    await fb.set(fb.ref(fb.db,`users/${newUid}/FORFAIT`),3);
+    await fb.set(fb.ref(fb.db,`users/${newUid}/promo_expires`),proExpiry);
+
+    // Offrir AI Pro 3 jours au PARRAIN aussi
+    await fb.set(fb.ref(fb.db,`users/${sponsorUid}/referrals/${newUid}`),{at:now});
+    const sponsorSnap=await fb.get(fb.ref(fb.db,`users/${sponsorUid}/promo_expires`));
+    // Si le parrain a déjà une promo active, on prolonge ; sinon on part de maintenant
+    const sponsorBase=sponsorSnap.exists()&&Number(sponsorSnap.val())>now?Number(sponsorSnap.val()):now;
+    const sponsorExpiry=sponsorBase+(REFERRAL_PRO_DAYS*24*3600*1000);
+    await fb.set(fb.ref(fb.db,`users/${sponsorUid}/promo_expires`),sponsorExpiry);
+    await fb.set(fb.ref(fb.db,`users/${sponsorUid}/FORFAIT`),3);
+
+    toast('🎁 AI Pro 3 jours activé grâce au parrainage !');
+  }catch(err){ console.warn('applyReferralIfPending error:',err); }
+}
+
+// Vérifier et rétrograder le plan si la promo a expiré
+async function checkPromoExpiry(uid){
+  const fb=window._fb; if(!fb?.db) return;
+  try{
+    const snap=await fb.get(fb.ref(fb.db,`users/${uid}/promo_expires`));
+    if(!snap.exists()) return;
+    const exp=Number(snap.val());
+    if(Date.now()>exp){
+      // Promo expirée — remettre au plan de base (AI Plus = 2)
+      await fb.set(fb.ref(fb.db,`users/${uid}/FORFAIT`),2);
+      await fb.set(fb.ref(fb.db,`users/${uid}/promo_expires`),null);
+      S.plan=2; updateUserUI();
+      toast('Votre offre AI Pro 3 jours est expirée. Forfait AI Plus rétabli.');
+    }
+  }catch(e){}
 }
 
 // ── WIKIMIND CALL ──
