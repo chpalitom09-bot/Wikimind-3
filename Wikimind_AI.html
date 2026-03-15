@@ -457,6 +457,155 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
   .plans-grid{grid-template-columns:1fr;}
   .office-app-grid{grid-template-columns:1fr;}
 }
+
+/* ── OCR PANEL ── */
+#ocr-panel{
+  position:fixed;top:0;right:-500px;width:480px;height:100vh;
+  background:var(--sidebar);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;z-index:150;
+  transition:right .35s cubic-bezier(.4,0,.2,1);
+  box-shadow:-8px 0 40px rgba(0,0,0,.08);
+}
+#ocr-panel.open{right:0;}
+@media(max-width:520px){#ocr-panel{width:100%;}}
+.ocr-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 18px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.ocr-hdr-left{display:flex;align-items:center;gap:10px;}
+.ocr-hdr h3{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;}
+.ocr-plan-badge{
+  font-size:9px;font-weight:800;text-transform:uppercase;padding:2px 7px;
+  border-radius:20px;background:rgba(217,119,6,.12);color:#d97706;letter-spacing:.04em;
+}
+.ocr-body{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.ocr-panes{flex:1;display:flex;overflow:hidden;}
+/* Import zone (left pane) */
+.ocr-import-pane{
+  width:50%;border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.ocr-import-pane-header{
+  padding:10px 12px;font-size:10px;font-weight:800;text-transform:uppercase;
+  letter-spacing:.1em;color:#999;border-bottom:1px solid var(--border);flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+}
+.ocr-img-list{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px;}
+.ocr-img-list::-webkit-scrollbar{width:3px;}
+.ocr-img-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+.ocr-img-thumb{
+  position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--border2);
+  background:var(--select-bg);cursor:pointer;transition:.2s;aspect-ratio:16/9;
+}
+.ocr-img-thumb:hover{border-color:var(--text);}
+.ocr-img-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.ocr-img-thumb-overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,.4);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:.2s;
+}
+.ocr-img-thumb:hover .ocr-img-thumb-overlay{opacity:1;}
+.ocr-img-thumb-name{
+  position:absolute;bottom:0;left:0;right:0;
+  padding:3px 6px;background:rgba(0,0,0,.55);
+  font-size:9px;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.ocr-img-del{
+  position:absolute;top:4px;right:4px;
+  width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.6);
+  color:#fff;border:none;cursor:pointer;font-size:11px;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:.2s;
+}
+.ocr-img-thumb:hover .ocr-img-del{opacity:1;}
+.ocr-processing-badge{
+  position:absolute;top:4px;left:4px;
+  background:rgba(251,146,60,.9);color:#fff;
+  font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;
+}
+.ocr-done-badge{
+  position:absolute;top:4px;left:4px;
+  background:rgba(34,197,94,.9);color:#fff;
+  font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;
+}
+.ocr-drop-zone{
+  margin:8px;border:2px dashed var(--border2);border-radius:12px;
+  padding:20px 12px;text-align:center;cursor:pointer;transition:.2s;
+  font-size:11px;color:#aaa;flex-shrink:0;
+}
+.ocr-drop-zone:hover,.ocr-drop-zone.drag{border-color:var(--text);color:var(--text);}
+.ocr-drop-zone svg{margin:0 auto 6px;display:block;opacity:.4;}
+/* Text pane (right) */
+.ocr-text-pane{
+  flex:1;display:flex;flex-direction:column;overflow:hidden;
+}
+.ocr-text-pane-header{
+  padding:10px 12px;font-size:10px;font-weight:800;text-transform:uppercase;
+  letter-spacing:.1em;color:#999;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+#ocr-extracted-text{
+  flex:1;overflow-y:auto;padding:12px;
+  font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;
+  font-family:'Inter',sans-serif;
+}
+#ocr-extracted-text::-webkit-scrollbar{width:3px;}
+#ocr-extracted-text::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+.ocr-text-placeholder{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;gap:8px;color:#bbb;font-size:12px;text-align:center;padding:16px;
+}
+.ocr-text-placeholder svg{opacity:.25;}
+.ocr-footer{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px;border-top:1px solid var(--border);gap:8px;flex-shrink:0;flex-wrap:wrap;
+}
+.ocr-rate-info{font-size:10px;color:#aaa;font-weight:600;}
+.ocr-rate-info.warning{color:#d97706;}
+.ocr-footer-btns{display:flex;gap:6px;}
+.ocr-btn{
+  padding:7px 14px;border-radius:10px;font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.05em;cursor:pointer;transition:.2s;border:none;
+}
+.ocr-btn.primary{background:var(--accent);color:var(--accent-inv);}
+.ocr-btn.primary:hover{opacity:.85;}
+.ocr-btn.secondary{background:var(--select-bg);color:var(--text);border:1px solid var(--border2);}
+.ocr-btn.secondary:hover{background:var(--border2);}
+.ocr-btn:disabled{opacity:.35;cursor:not-allowed;}
+/* OCR count */
+.ocr-count{font-size:10px;font-weight:800;color:#888;}
+
+/* ── PROFILE PHOTO (AI Plus+) ── */
+.profile-photo-wrap{
+  display:none;margin-top:16px;padding:16px;
+  background:var(--select-bg);border-radius:12px;border:1px solid var(--border);
+}
+.profile-photo-wrap.show{display:block;}
+.profile-photo-preview{
+  width:72px;height:72px;border-radius:50%;object-fit:cover;
+  border:2px solid var(--border2);margin-bottom:10px;
+  background:var(--border2);display:block;
+}
+.profile-photo-preview-fallback{
+  width:72px;height:72px;border-radius:50%;
+  background:var(--accent);color:var(--accent-inv);
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;font-weight:800;margin-bottom:10px;
+  border:2px solid var(--border2);
+}
+#pp-upload-input{display:none;}
+.pp-upload-label{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 14px;border-radius:10px;font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;cursor:pointer;transition:.2s;
+  background:var(--select-bg);color:var(--text);border:1px solid var(--border2);
+}
+.pp-upload-label:hover{background:var(--border2);}
+.pp-remove-btn{
+  background:none;border:none;cursor:pointer;font-size:11px;font-weight:700;
+  text-transform:uppercase;color:#ef4444;letter-spacing:.06em;margin-left:8px;
+  padding:8px 10px;border-radius:10px;transition:.2s;
+}
+.pp-remove-btn:hover{background:rgba(239,68,68,.08);}
 </style>
 </head>
 <body>
@@ -494,6 +643,10 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
     <button class="sb-btn" onclick="openModal('cust-modal')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
       Personnaliser
+    </button>
+    <button class="sb-btn" onclick="openOcrPanel()" id="sb-btn-ocr" style="display:none">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h10M7 12h6M7 16h4"/><path d="M16 13l2 2 4-4" stroke-width="2.5"/></svg>
+      Extraction de texte
     </button>
     <button class="sb-btn" onclick="openModal('connectors-modal')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
@@ -672,6 +825,53 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
 
 </div><!-- end #main-area -->
 
+<!-- OCR PANEL — Extraction de texte par vision IA -->
+<div id="ocr-panel">
+  <div class="ocr-hdr">
+    <div class="ocr-hdr-left">
+      <h3>Extraction de texte</h3>
+      <span class="ocr-plan-badge" id="ocr-plan-label">Premium</span>
+    </div>
+    <button class="float-btn" onclick="closeOcrPanel()" title="Fermer" style="position:static;width:32px;height:32px;">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="ocr-body">
+    <div class="ocr-panes">
+      <!-- Import pane -->
+      <div class="ocr-import-pane">
+        <div class="ocr-import-pane-header">
+          <span>Images <span class="ocr-count" id="ocr-img-count">0/20</span></span>
+          <button class="ocr-btn secondary" style="padding:3px 9px;font-size:9px" onclick="document.getElementById('ocr-file-input').click()" title="Ajouter des images">+ Ajouter</button>
+        </div>
+        <input type="file" id="ocr-file-input" accept="image/*" multiple style="display:none" onchange="onOcrImagesSelected(event)">
+        <div class="ocr-drop-zone" id="ocr-drop-zone" onclick="document.getElementById('ocr-file-input').click()">
+          <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Glissez ou cliquez<br><span style="font-size:9px">Max 20 images</span>
+        </div>
+        <div class="ocr-img-list" id="ocr-img-list"></div>
+      </div>
+      <!-- Text pane -->
+      <div class="ocr-text-pane">
+        <div class="ocr-text-pane-header">Texte extrait</div>
+        <div id="ocr-extracted-text">
+          <div class="ocr-text-placeholder" id="ocr-placeholder">
+            <svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+            Le texte extrait<br>apparaîtra ici
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ocr-footer">
+      <span class="ocr-rate-info" id="ocr-rate-info">—</span>
+      <div class="ocr-footer-btns">
+        <button class="ocr-btn secondary" id="ocr-extract-btn" onclick="runOcrExtraction()" disabled>Extraire le texte</button>
+        <button class="ocr-btn primary" id="ocr-import-btn" onclick="importOcrToChat()" disabled title="Injecter le texte dans le chat comme pièce jointe">Importer dans le chat</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ========== MODALS ========== -->
 
 <!-- AUTH -->
@@ -794,6 +994,24 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
       <div style="display:flex;gap:6px;margin-top:8px;font-size:10px;color:#aaa">
         <span>🔥 Feu</span><span>💜 Plasma</span><span>🌊 Océan</span><span>🌌 Aurora</span><span>⭐ Gold</span>
       </div>
+    </div>
+    <!-- Profile photo (AI Plus+) -->
+    <div class="profile-photo-wrap" id="profile-photo-wrap">
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#1d4ed8;margin-bottom:12px">🖼️ Photo de profil — AI Plus</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+        <div id="pp-preview-wrap">
+          <div class="profile-photo-preview-fallback" id="pp-fallback-icon">?</div>
+        </div>
+        <div>
+          <label class="pp-upload-label" for="pp-upload-input">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Changer la photo
+          </label>
+          <input type="file" id="pp-upload-input" accept="image/*" onchange="onProfilePhotoSelected(event)">
+          <button class="pp-remove-btn" id="pp-remove-btn" onclick="removeProfilePhoto()" style="display:none">Supprimer</button>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#aaa">JPG, PNG, WebP · Max 2 Mo</div>
     </div>
     <div style="margin-top:16px;display:flex;gap:8px;flex-direction:column">
       <a href="../AI/Wikimind_forfaits.html" class="modal-btn secondary" style="text-align:center;display:block;text-decoration:none">Gérer mes tokens &amp; forfaits</a>
@@ -1098,6 +1316,13 @@ function updateUserUI(){
     const curRingKey=(S.premiumPlusRing||'ring-premium-plus').replace('ring-','');
     document.querySelectorAll('.ring-opt').forEach(o=>o.classList.toggle('active',o.dataset.ring===curRingKey));
   }
+  // Profile photo (AI Plus+)
+  const ppWrap=G('profile-photo-wrap'); if(ppWrap) ppWrap.classList.toggle('show',S.plan>=2);
+  syncProfilePhotoUI();
+  // OCR button in sidebar
+  const ocrBtn=G('sb-btn-ocr'); if(ocrBtn) ocrBtn.style.display=S.plan>=4?'flex':'none';
+  // OCR rate label
+  updateOcrRateUI();
   // Canvas create btns
   G('cvs-create-btns').style.display=S.plan>=2&&S.connectors.office?'flex':'none';
   // Connector UI sync
@@ -1112,7 +1337,6 @@ function updateModelOptions(){
     {value:'medium',label:'WIKIMIND MEDIUM',minPlan:2},
     {value:'work',label:'WIKIMIND WORK',minPlan:2},
     {value:'reflect',label:'WIKIMIND RÉFLEXION',minPlan:2},
-    {value:'imagegen',label:'WIKIMIND IMAGES',minPlan:5},
   ];
   sel.innerHTML='';
   models.forEach(m=>{ if(S.plan>=m.minPlan){const opt=document.createElement('option');opt.value=m.value;opt.textContent=m.label;sel.appendChild(opt);} });
@@ -1138,7 +1362,7 @@ function renderPlansGrid(){
     {key:'plus',id:2,label:'Wikimind AI Plus',price:'12€/mois',mt:11,promo:'1 mois offert dès le 1er paiement'},
     {key:'pro',id:3,label:'Wikimind AI Pro',price:'25€/mois',mt:22,promo:'1 mois offert dès le 1er paiement'},
     {key:'premium',id:4,label:'Wikimind AI Premium',price:promoActive?'45€/mois':'52€/mois',mt:39,promo:promoActive?'★ Promo -7€ jusqu\'au 14 avril':''},
-    {key:'premium-plus',id:5,label:'Wikimind AI Premium+',price:'67€/mois',mt:58,promo:'🔥 Génération d\'images IA incluse'},
+    {key:'premium-plus',id:5,label:'Wikimind AI Premium+',price:'67€/mois',mt:58,promo:'🔥 OCR illimité + toutes les fonctions'},
   ];
   const rows=[
     ['Modèle Flash','✓','✓','✓','✓','✓'],
@@ -1153,12 +1377,13 @@ function renderPlansGrid(){
     ['Import fichiers (PDF…)','✗','✗','✓','✓','✓'],
     ['Import images & Vision IA','✗','✗','✗','✓','✓'],
     ['Analyse vidéo / audio','✗','✗','✗','✓','✓'],
+    ['Extraction texte (OCR Vision)','✗','✗','✗','1/h','Illimité'],
+    ['Photo de profil personnalisée','✗','✓','✓','✓','✓'],
     ['Intégration Gmail','✗','✓','✓','✓','✓'],
     ['Création Office par l\'IA','✗','✗','✓','✓','✓'],
     ['Mode Appel Wikimind','✗','✗','✓','✓','✓'],
     ['Plugins premium','✗','✗','✗','✓','✓'],
     ['Connecteur Wikimind Office','✗','✓','✓','✓','✓'],
-    ['Génération d\'images IA','✗','✗','✗','✗','✓'],
     ['Anneaux avatar exclusifs','✗','✗','✗','✗','5 styles'],
   ];
   const table=G('plan-compare-table'); if(!table) return;
@@ -1865,12 +2090,7 @@ async function sendMsg(overrideText){
   try{
     let aiContent='',steps=null,toolCalls=[];
 
-    if(S.model==='imagegen'){
-      if(S.plan<5){toast('Génération d\'image — plan AI Premium+ requis');openPlansOverlay();rmTyping(tyId);S.generating=false;G('send-btn').disabled=false;return;}
-      const imgResult=await generateImageHF(displayText);
-      aiContent=imgResult;
-    }
-    else if(S.model==='reflect'){const res=await runReflection(finalFullContent);aiContent=res.content;steps=res.steps;}
+    if(S.model==='reflect'){const res=await runReflection(finalFullContent);aiContent=res.content;steps=res.steps;}
     else if(S.canvasMode){
       const result=await runSmartCanvas(finalFullContent,displayText);
       aiContent=result.chatReply; steps=null; toolCalls=result.toolCalls||[];
@@ -1910,11 +2130,6 @@ async function sendMsg(overrideText){
         }
       }
 
-      // Détecter intent génération d'image (Premium+ uniquement)
-      if(detectImageGenIntent(displayText)&&S.model!=='imagegen'){
-        // Suggest switching model
-        toast('💡 Astuce : sélectionnez "Génération d\'image" pour créer une image !');
-      }
       // Détecter intent Office (création)
       const officeIntent=detectOfficeIntent(displayText);
       if(officeIntent&&S.plan>=3&&S.connectors.office&&!S.user?.isGuest){
@@ -1938,11 +2153,269 @@ async function sendMsg(overrideText){
   S.generating=false; G('send-btn').disabled=false;
 }
 
-function detectImageGenIntent(text){
-  if(S.plan<5) return false;
-  const t=text.toLowerCase();
-  const kw=['génère','générer','crée','créer','dessine','dessiner','une image','un dessin','une illustration','une photo','imagine','visualise','fais-moi une image'];
-  return kw.some(k=>t.includes(k));
+// ── VISION QA (Mistral Pixtral) ──
+async function analyzeImageWithVision(imageDataUrl, question){
+  try{
+    const match=imageDataUrl.match(/^data:([^;]+);base64,(.+)$/);
+    if(!match) return null;
+    const mimeType=match[1];
+    const base64Data=match[2];
+    const res=await fetch('https://api.mistral.ai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+MISTRAL_KEY},
+      body:JSON.stringify({
+        model:'pixtral-12b-2409',
+        max_tokens:512,
+        messages:[{
+          role:'user',
+          content:[
+            {type:'image_url',image_url:{url:'data:'+mimeType+';base64,'+base64Data}},
+            {type:'text',text:question||'Décris cette image en détail.'}
+          ]
+        }]
+      })
+    });
+    if(!res.ok) return null;
+    const d=await res.json();
+    return d.choices?.[0]?.message?.content||null;
+  }catch(e){console.warn('Vision error:',e);return null;}
+}
+
+// ── OCR — EXTRACTION DE TEXTE (Google Cloud Vision) ──
+const GOOGLE_VISION_API_KEY = 'AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA'; // même projet Firebase
+// State OCR
+const OCR = {
+  images: [],       // [{name, dataUrl, text, status}]  status: 'pending'|'processing'|'done'|'error'
+  lastOcrTs: 0,     // timestamp dernière extraction (premium rate limit)
+  open: false,
+};
+
+function openOcrPanel(){
+  if(S.plan<4){toast('Extraction de texte — plan AI Premium requis');openPlansOverlay();return;}
+  OCR.open=true;
+  G('ocr-panel').classList.add('open');
+  updateOcrRateUI();
+}
+function closeOcrPanel(){
+  OCR.open=false;
+  G('ocr-panel').classList.remove('open');
+}
+
+function updateOcrRateUI(){
+  const info=G('ocr-rate-info'); if(!info) return;
+  const lbl=G('ocr-plan-label');
+  if(S.plan>=5){
+    info.textContent='Extractions illimitées (Premium+)';
+    info.className='ocr-rate-info';
+    if(lbl){lbl.textContent='Premium+';lbl.style.background='rgba(239,68,68,.12)';lbl.style.color='#ef4444';}
+  }else if(S.plan===4){
+    const elapsed=Date.now()-OCR.lastOcrTs;
+    const remaining=Math.max(0,3600000-elapsed);
+    if(OCR.lastOcrTs>0&&remaining>0){
+      const min=Math.ceil(remaining/60000);
+      info.textContent=`1/heure · disponible dans ${min}min`;
+      info.className='ocr-rate-info warning';
+    }else{
+      info.textContent='1 extraction / heure (Premium)';
+      info.className='ocr-rate-info';
+    }
+    if(lbl){lbl.textContent='Premium';lbl.style.background='rgba(217,119,6,.12)';lbl.style.color='#d97706';}
+  }else{
+    info.textContent='Plan AI Premium requis';
+    info.className='ocr-rate-info warning';
+  }
+}
+
+function onOcrImagesSelected(e){
+  const files=Array.from(e.target.files);
+  const remaining=20-OCR.images.length;
+  if(remaining<=0){toast('Limite de 20 images atteinte');e.target.value='';return;}
+  const toAdd=files.slice(0,remaining);
+  if(files.length>remaining) toast(`Limite 20 images — ${files.length-remaining} ignorée(s)`);
+  toAdd.forEach(f=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      OCR.images.push({name:f.name,dataUrl:ev.target.result,text:'',status:'pending'});
+      renderOcrImages();
+      G('ocr-extract-btn').disabled=false;
+    };
+    reader.readAsDataURL(f);
+  });
+  e.target.value='';
+}
+
+function renderOcrImages(){
+  const list=G('ocr-img-list'); if(!list) return;
+  const cnt=G('ocr-img-count'); if(cnt) cnt.textContent=`${OCR.images.length}/20`;
+  if(!OCR.images.length){
+    list.innerHTML='';
+    return;
+  }
+  list.innerHTML=OCR.images.map((img,i)=>`
+    <div class="ocr-img-thumb" id="ocr-thumb-${i}">
+      <img src="${img.dataUrl}" alt="${esc(img.name)}">
+      ${img.status==='processing'?'<span class="ocr-processing-badge">⏳ OCR…</span>':''}
+      ${img.status==='done'?'<span class="ocr-done-badge">✓</span>':''}
+      ${img.status==='error'?'<span class="ocr-processing-badge" style="background:rgba(239,68,68,.9)">✗</span>':''}
+      <div class="ocr-img-thumb-name">${esc(img.name)}</div>
+      <div class="ocr-img-thumb-overlay">
+        <svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h10M7 12h6M7 16h4"/></svg>
+      </div>
+      <button class="ocr-img-del" onclick="removeOcrImage(${i},event)" title="Supprimer">✕</button>
+    </div>`).join('');
+}
+
+function removeOcrImage(i, e){
+  e.stopPropagation();
+  OCR.images.splice(i,1);
+  renderOcrImages();
+  if(!OCR.images.length){
+    G('ocr-extract-btn').disabled=true;
+    G('ocr-import-btn').disabled=true;
+    renderOcrText();
+  }
+}
+
+function renderOcrText(){
+  const el=G('ocr-extracted-text'); if(!el) return;
+  const texts=OCR.images.filter(img=>img.text);
+  if(!texts.length){
+    el.innerHTML=`<div class="ocr-text-placeholder" id="ocr-placeholder">
+      <svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+      Le texte extrait<br>apparaîtra ici</div>`;
+    return;
+  }
+  el.innerHTML='';
+  el.textContent=texts.map(img=>`[Image: ${img.name}]\n${img.text}`).join('\n\n\n');
+}
+
+async function runOcrExtraction(){
+  if(S.plan<4){toast('Plan AI Premium requis');openPlansOverlay();return;}
+  // Rate limit : 1/h pour plan 4, illimité pour plan 5
+  if(S.plan===4){
+    const elapsed=Date.now()-OCR.lastOcrTs;
+    if(OCR.lastOcrTs>0&&elapsed<3600000){
+      const min=Math.ceil((3600000-elapsed)/60000);
+      toast(`Limite 1/heure (Premium) — disponible dans ${min}min`);
+      updateOcrRateUI(); return;
+    }
+  }
+  const pending=OCR.images.filter(img=>img.status!=='done');
+  if(!pending.length){toast('Toutes les images sont déjà extraites');return;}
+
+  OCR.lastOcrTs=Date.now();
+  G('ocr-extract-btn').disabled=true;
+  toast(`⏳ Extraction OCR de ${pending.length} image(s)…`);
+
+  for(let i=0;i<OCR.images.length;i++){
+    const img=OCR.images[i];
+    if(img.status==='done') continue;
+    OCR.images[i].status='processing';
+    renderOcrImages();
+    try{
+      const base64=img.dataUrl.split(',')[1];
+      const mimeType=img.dataUrl.match(/^data:([^;]+)/)?.[1]||'image/jpeg';
+      const body={
+        requests:[{
+          image:{content:base64},
+          features:[{type:'TEXT_DETECTION',maxResults:1}]
+        }]
+      };
+      const res=await fetch(
+        `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_VISION_API_KEY}`,
+        {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}
+      );
+      if(!res.ok) throw new Error('Vision API '+res.status);
+      const data=await res.json();
+      const annotation=data.responses?.[0]?.fullTextAnnotation;
+      const text=annotation?.text||data.responses?.[0]?.textAnnotations?.[0]?.description||'';
+      OCR.images[i].text=text.trim()||'(Aucun texte détecté)';
+      OCR.images[i].status='done';
+    }catch(err){
+      OCR.images[i].status='error';
+      OCR.images[i].text='(Erreur OCR : '+err.message+')';
+      console.warn('OCR error:',err);
+    }
+    renderOcrImages();
+    renderOcrText();
+  }
+
+  const doneCount=OCR.images.filter(img=>img.status==='done').length;
+  toast(`✓ OCR terminé — ${doneCount} image(s) extraite(s)`);
+  G('ocr-extract-btn').disabled=false;
+  G('ocr-import-btn').disabled=false;
+  updateOcrRateUI();
+}
+
+function importOcrToChat(){
+  const texts=OCR.images.filter(img=>img.text);
+  if(!texts.length){toast('Aucun texte extrait à importer');return;}
+  const combined=texts.map(img=>`[Image: ${img.name}]\n${img.text}`).join('\n\n\n');
+  const label=`OCR — ${texts.length} image(s)`;
+  S.attachments.push({type:'text',name:label,content:`[EXTRACTION_OCR_WIKIMIND]\n${combined}\n[/EXTRACTION_OCR_WIKIMIND]`});
+  updateAttachmentPreview();
+  closeOcrPanel();
+  G('user-input').focus();
+  toast(`📄 Texte OCR importé dans le chat`);
+}
+
+// Drag & drop dans le panel OCR
+(function(){
+  const dz=document.getElementById('ocr-drop-zone');
+  if(!dz) return;
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+  dz.addEventListener('drop',e=>{
+    e.preventDefault();dz.classList.remove('drag');
+    const files=Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/'));
+    if(!files.length){toast('Fichiers image uniquement');return;}
+    const remaining=20-OCR.images.length;
+    files.slice(0,remaining).forEach(f=>{
+      const r=new FileReader();
+      r.onload=ev=>{OCR.images.push({name:f.name,dataUrl:ev.target.result,text:'',status:'pending'});renderOcrImages();G('ocr-extract-btn').disabled=false;};
+      r.readAsDataURL(f);
+    });
+  });
+})();
+
+// ── PROFILE PHOTO (AI Plus+) ──
+async function onProfilePhotoSelected(e){
+  const file=e.target.files[0]; if(!file) return;
+  if(file.size>2*1024*1024){toast('Image trop lourde (max 2 Mo)');e.target.value='';return;}
+  const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>res(ev.target.result);r.onerror=rej;r.readAsDataURL(file);});
+  S.user.photoURL=dataUrl;
+  // Persiste dans Firebase
+  const fb=window._fb;
+  if(fb?.db&&S.user&&!S.user.isGuest){
+    try{await fb.set(fb.ref(fb.db,`users/${S.user.uid}/photoURL`),dataUrl);}catch(ex){console.warn('PP save:',ex);}
+  }
+  syncProfilePhotoUI(); updateUserUI();
+  toast('✓ Photo de profil mise à jour');
+  e.target.value='';
+}
+
+async function removeProfilePhoto(){
+  S.user.photoURL='';
+  const fb=window._fb;
+  if(fb?.db&&S.user&&!S.user.isGuest){
+    try{await fb.set(fb.ref(fb.db,`users/${S.user.uid}/photoURL`),'');}catch(ex){}
+  }
+  syncProfilePhotoUI(); updateUserUI();
+  toast('Photo de profil supprimée');
+}
+
+function syncProfilePhotoUI(){
+  const wrap=G('pp-preview-wrap'); if(!wrap) return;
+  const nm=S.user?.displayName||'?';
+  const photoURL=S.user?.photoURL||'';
+  const removeBtn=G('pp-remove-btn');
+  if(photoURL){
+    wrap.innerHTML=`<img class="profile-photo-preview" src="${photoURL}" alt="Photo" onerror="this.style.display='none'">`;
+    if(removeBtn) removeBtn.style.display='inline-flex';
+  }else{
+    wrap.innerHTML=`<div class="profile-photo-preview-fallback" id="pp-fallback-icon">${nm.charAt(0).toUpperCase()}</div>`;
+    if(removeBtn) removeBtn.style.display='none';
+  }
 }
 
 function detectOfficeIntent(text){
@@ -2067,7 +2540,6 @@ function onModelChange(){
   const key=G('model-select').value;
   if(key==='reflect'&&S.plan<2){toast('Mode Réflexion — plan AI Plus requis');G('model-select').value=S.model;openPlansOverlay();return;}
   if((key==='medium'||key==='work')&&S.plan<2){toast('Modèle — plan AI Plus requis');G('model-select').value=S.model;openPlansOverlay();return;}
-  if(key==='imagegen'&&S.plan<5){toast('Génération d\'image — plan AI Premium+ requis');G('model-select').value=S.model;openPlansOverlay();return;}
   S.model=key;
 }
 
@@ -2168,74 +2640,6 @@ function toggleTTS(msgIdx, text){
   // Voices may not be loaded yet on first call
   if(window.speechSynthesis.getVoices().length>0){ trySpeak(); }
   else{ window.speechSynthesis.onvoiceschanged=()=>{ window.speechSynthesis.onvoiceschanged=null; trySpeak(); }; trySpeak(); }
-}
-
-// ── HUGGING FACE IMAGE GENERATION ──
-// Token stored encoded — decoded at runtime only
-const _HF_ENC='aGZfSWJHWG5nZFllYUh1QWJkbk5EUndzVmhMS1ZjaU9VZVdBVw==';
-function _getHFToken(){return atob(_HF_ENC);}
-
-async function generateImageHF(prompt){
-  toast('🎨 Génération en cours… (peut prendre 20-30s)');
-  // Models to try in order
-  const models=[
-    'stabilityai/stable-diffusion-2-1',
-    'runwayml/stable-diffusion-v1-5',
-    'stabilityai/stable-diffusion-xl-base-1.0'
-  ];
-  let lastErr=null;
-  for(const model of models){
-    try{
-      toast('🎨 Connexion au modèle…');
-      const controller=new AbortController();
-      const tid=setTimeout(()=>controller.abort(),90000);
-      const response=await fetch(
-        'https://api-inference.huggingface.co/models/'+model,
-        {
-          method:'POST',
-          headers:{
-            'Authorization':'Bearer '+_getHFToken(),
-            'Content-Type':'application/json'
-          },
-          body:JSON.stringify({inputs:prompt,parameters:{num_inference_steps:20,guidance_scale:7.5}}),
-          signal:controller.signal
-        }
-      );
-      clearTimeout(tid);
-      if(response.status===503){
-        // Model loading - wait and retry
-        const errJson=await response.json().catch(()=>({}));
-        const wait=Math.min(errJson.estimated_time||20,30)*1000;
-        toast('⏳ Modèle en démarrage, patientez…');
-        await new Promise(r=>setTimeout(r,wait));
-        // Retry same model once
-        const r2=await fetch('https://api-inference.huggingface.co/models/'+model,{
-          method:'POST',
-          headers:{'Authorization':'Bearer '+_getHFToken(),'Content-Type':'application/json'},
-          body:JSON.stringify({inputs:prompt,parameters:{num_inference_steps:20,guidance_scale:7.5}})
-        });
-        if(!r2.ok){const e2=await r2.json().catch(()=>({}));throw new Error(e2.error||'HF '+r2.status);}
-        const blob2=await r2.blob();
-        if(!blob2.type.startsWith('image/')){const t2=await blob2.text();throw new Error(t2.substring(0,120));}
-        const dataUrl2=await new Promise((res,rej)=>{const rd=new FileReader();rd.onload=ev=>res(ev.target.result);rd.onerror=()=>rej(new Error('Lecture impossible'));rd.readAsDataURL(blob2);});
-        toast('✅ Image générée !');
-        return '[WM_IMAGE:'+dataUrl2+']';
-      }
-      if(!response.ok){const e=await response.json().catch(()=>({}));throw new Error(e.error||'HF '+response.status);}
-      const blob=await response.blob();
-      if(!blob.type.startsWith('image/')){const txt=await blob.text();throw new Error(txt.substring(0,120));}
-      const dataUrl=await new Promise((res,rej)=>{const rd=new FileReader();rd.onload=ev=>res(ev.target.result);rd.onerror=()=>rej(new Error('Lecture image impossible'));rd.readAsDataURL(blob);});
-      toast('✅ Image générée !');
-      return '[WM_IMAGE:'+dataUrl+']';
-    }catch(err){
-      lastErr=err;
-      if(err.name==='AbortError'){lastErr=new Error('Délai dépassé (90s) — le modèle est trop occupé');}
-      console.warn('Image gen failed for',model,':',err.message);
-      // Continue to next model
-    }
-  }
-  toast('Erreur génération : '+(lastErr?.message||'Inconnue'));
-  return '**Erreur génération image :** '+(lastErr?.message||'Tous les modèles ont échoué. Réessayez dans quelques instants.');
 }
 
 // ── VISION QA (Mistral Pixtral) ──
@@ -2391,6 +2795,7 @@ document.addEventListener('keydown',e=>{
     document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));
     closePlansOverlay();
     closeImportInline();
+    if(OCR.open) closeOcrPanel();
   }
   if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();openModal('search-modal');setTimeout(()=>G('search-inp')?.focus(),80);}
   if((e.ctrlKey||e.metaKey)&&e.key==='n'){e.preventDefault();newChat();}
