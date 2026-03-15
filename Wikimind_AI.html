@@ -10,8 +10,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="window._katexReady=true"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="window._katexReady=true;document.querySelectorAll('.chat-bubble.model,.canvas-preview-area').forEach(el=>{try{renderMathInElement(el,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],throwOnError:false});}catch(e){}});"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" id="hljs-theme">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" id="hljs-dark" disabled>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -675,8 +675,9 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 .coder-btn.secondary{background:var(--select-bg);color:var(--text);border:1px solid var(--border2);}
 .coder-btn.secondary:hover{background:var(--border2);}
 .coder-btn:disabled{opacity:.35;cursor:not-allowed;}
-.coder-rate-info{font-size:10px;color:#aaa;font-weight:600;margin-left:auto;}
-.coder-rate-info.warn{color:#d97706;}
+.coder-del-file{background:none;border:none;cursor:pointer;color:#bbb;font-size:11px;opacity:0;transition:.15s;padding:0 1px;border-radius:3px;line-height:1;}
+.coder-file-item:hover .coder-del-file{opacity:1;}
+.coder-del-file:hover{color:#ef4444 !important;}
 
 /* ── TEXT HELPER PANEL ── */
 #texthelper-panel{
@@ -917,9 +918,9 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
       Rechercher
     </button>
-    <button class="sb-btn" id="sb-btn-coder" onclick="openCoderPanel()" style="display:none">
+    <button class="sb-btn" id="sb-btn-coder" onclick="toggleCoderMode()" style="display:none">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-      Codeur
+      <span id="sb-btn-coder-label">Activer Codeur</span>
     </button>
     <button class="sb-btn" onclick="openOcrPanel()" id="sb-btn-ocr" style="display:none">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h10M7 12h6M7 16h4"/></svg>
@@ -997,8 +998,9 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
           </button>
 
           <!-- Aide au texte (Premium+) -->
-          <button class="inp-icon-btn" id="btn-texthelper" onclick="openTextHelperPanel()" title="Aide au texte — Littéraire &amp; Traducteur" style="display:none">
+          <button class="inp-icon-btn" id="btn-texthelper" onclick="toggleTextHelperMode()" title="Aide au texte — Littéraire &amp; Traducteur" style="display:none;position:relative">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h6"/><path d="M18 14l2 2 4-3" stroke-width="2.2"/></svg>
+            <span class="canvas-active-dot" id="texthelper-active-dot"></span>
           </button>
 
           <!-- Bouton + qui déploie les icônes inline -->
@@ -1156,169 +1158,197 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
   </div>
 </div>
 
-<!-- CODER PANEL -->
+<!-- CODER PANEL — redesign banger -->
 <div id="coder-panel">
-  <div class="coder-hdr">
-    <div class="coder-hdr-left">
-      <span class="coder-hdr-title">Codeur</span>
-      <span class="coder-plan-badge" id="coder-plan-badge">Pro</span>
-      <span class="coder-rate-badge" id="coder-rate-badge">1/j</span>
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg)">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.1em">Codeur</span>
+      <span id="coder-plan-badge" style="font-size:9px;font-weight:800;text-transform:uppercase;padding:2px 7px;border-radius:20px;background:rgba(124,58,237,.1);color:#7c3aed;letter-spacing:.04em">Pro</span>
+      <span id="coder-rate-badge" style="font-size:9px;font-weight:700;color:#aaa;background:var(--select-bg);padding:2px 7px;border-radius:20px">1/j</span>
     </div>
-    <div class="coder-hdr-actions">
-      <button class="cvs-action-btn" onclick="coderCopyActive()" title="Copier le fichier actif"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+    <div style="display:flex;align-items:center;gap:2px">
+      <button class="cvs-action-btn" onclick="coderCopyActive()" title="Copier"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
       <button class="cvs-action-btn" onclick="coderDownloadAll()" title="Télécharger tout"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
-      <div style="width:1px;height:18px;background:var(--border2);margin:0 2px"></div>
-      <button class="cvs-action-btn" onclick="closeCoderPanel()" title="Fermer"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      <div style="width:1px;height:16px;background:var(--border2);margin:0 3px"></div>
+      <button class="cvs-action-btn" onclick="toggleCoderMode()" title="Fermer"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
     </div>
   </div>
-  <div class="coder-tabs">
+
+  <!-- View tabs -->
+  <div style="display:flex;align-items:center;gap:1px;padding:6px 12px 0;flex-shrink:0">
     <button class="codertab active" id="codertab-edit" onclick="switchCoderTab('edit')">Éditeur</button>
-    <button class="codertab" id="codertab-graph" onclick="switchCoderTab('graph')">Arborescence</button>
+    <button class="codertab" id="codertab-graph" onclick="switchCoderTab('graph')">Graphe</button>
+    <span id="coder-rate-info" style="margin-left:auto;font-size:10px;color:#aaa;font-weight:600;padding-right:4px"></span>
   </div>
-  <div id="coder-body" style="display:flex;flex:1;overflow:hidden">
-    <!-- File tree sidebar -->
+
+  <!-- Main content area -->
+  <div id="coder-body" style="flex:1;display:flex;overflow:hidden">
+    <!-- LEFT: file tree -->
     <div id="coder-file-tree">
       <div class="coder-tree-header">
         <span>Fichiers</span>
-        <button onclick="coderAddFile()" style="background:none;border:none;cursor:pointer;color:#888;font-size:16px;line-height:1" title="Nouveau fichier">+</button>
+        <button onclick="coderAddFile()" style="background:none;border:none;cursor:pointer;color:#888;font-size:18px;line-height:1;padding:0 2px;transition:.2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='#888'" title="Nouveau fichier">+</button>
       </div>
       <div class="coder-tree-list" id="coder-tree-list"></div>
     </div>
-    <!-- Editor + graph -->
+
+    <!-- RIGHT: editor / graph -->
     <div id="coder-editor-wrap">
-      <div class="coder-editor-bar" id="coder-editor-bar">
-        <span class="coder-editor-filename" id="coder-active-filename">—</span>
-        <span class="coder-editor-lang" id="coder-active-lang"></span>
+      <!-- Filename bar -->
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid var(--border);background:var(--select-bg);flex-shrink:0;min-height:32px">
+        <div style="width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0" id="coder-file-dot-indicator"></div>
+        <span style="font-size:11px;font-weight:700;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="coder-active-filename">—</span>
+        <span style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;background:var(--bg);padding:2px 6px;border-radius:5px;border:1px solid var(--border2)" id="coder-active-lang"></span>
       </div>
-      <div class="coder-content-area" style="flex:1;overflow:hidden">
-        <textarea id="coder-editor" placeholder="Le code apparaîtra ici…&#10;Utilisez le prompt ci-dessous pour demander à l'IA de coder." oninput="coderOnEdit()"></textarea>
-        <div id="coder-graph">
-          <!-- SVG graph rendered here -->
-        </div>
+      <div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+        <textarea id="coder-editor" placeholder="Le code apparaîtra ici après génération IA…&#10;&#10;💡 Entrez votre demande ci-dessous et cliquez Générer." oninput="coderOnEdit()" style="flex:1;background:transparent;border:none;outline:none;resize:none;padding:16px 18px;font-family:'Menlo','Monaco','Courier New',monospace;font-size:13px;color:var(--text);line-height:1.65;width:100%"></textarea>
+        <div id="coder-graph" style="flex:1;overflow:auto;padding:20px;display:none"></div>
       </div>
     </div>
   </div>
-  <div class="coder-footer">
-    <input type="text" id="coder-prompt-input" class="modal-input" placeholder="Demandez à l'IA (ex : crée un serveur Express avec une route /api/users)…" style="flex:1;padding:8px 12px;font-size:12px;min-width:0" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();runCoderAI();}">
-    <button class="coder-btn primary" id="coder-run-btn" onclick="runCoderAI()">Générer</button>
-    <span class="coder-rate-info" id="coder-rate-info">—</span>
+
+  <!-- Footer prompt -->
+  <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-top:1px solid var(--border);background:var(--bg);flex-shrink:0">
+    <input type="text" id="coder-prompt-input"
+      style="flex:1;padding:9px 14px;border-radius:12px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:12.5px;outline:none;font-family:'Inter',sans-serif;transition:border .2s;min-width:0"
+      placeholder="Décris le code à créer ou modifier…"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();runCoderAI();}"
+      onfocus="this.style.borderColor='#888'" onblur="this.style.borderColor=''">
+    <button id="coder-run-btn" onclick="runCoderAI()"
+      style="padding:9px 18px;border-radius:12px;background:var(--accent);color:var(--accent-inv);border:none;cursor:pointer;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;transition:.15s;flex-shrink:0"
+      onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Générer</button>
   </div>
 </div>
 
-<!-- TEXT HELPER PANEL -->
+<!-- TEXT HELPER PANEL — redesign banger -->
 <div id="texthelper-panel">
-  <div class="th-hdr">
-    <span class="th-hdr-title">Aide au texte</span>
-    <button class="cvs-action-btn" onclick="closeTextHelperPanel()" title="Fermer"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
-  </div>
-  <div class="th-tabs">
-    <button class="thtab active" id="thtab-literary" onclick="switchThTab('literary')">Littéraire</button>
-    <button class="thtab" id="thtab-translate" onclick="switchThTab('translate')">Traducteur</button>
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg)">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.1em">Aide au texte</span>
+      <span style="font-size:9px;font-weight:800;text-transform:uppercase;padding:2px 7px;border-radius:20px;background:linear-gradient(135deg,rgba(239,68,68,.1),rgba(251,146,60,.1));color:#ef4444;letter-spacing:.04em">Premium+</span>
+    </div>
+    <button class="cvs-action-btn" onclick="toggleTextHelperMode()" title="Fermer"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
   </div>
 
-  <!-- LITERARY -->
-  <div class="th-body" id="thbody-literary">
-    <div>
-      <span class="th-label">Votre texte</span>
-      <textarea class="th-textarea" id="th-input-text" placeholder="Collez ou écrivez votre texte ici…" rows="6"></textarea>
-    </div>
-    <div>
-      <span class="th-label">Action IA</span>
-      <div class="th-action-btns">
-        <button class="th-action-btn" onclick="runTextHelper('reformuler')">Reformuler</button>
-        <button class="th-action-btn" onclick="runTextHelper('améliorer le style')">Améliorer le style</button>
-        <button class="th-action-btn" onclick="runTextHelper('corriger l\'orthographe et la grammaire')">Corriger</button>
-        <button class="th-action-btn" onclick="runTextHelper('rendre plus formel')">Plus formel</button>
-        <button class="th-action-btn" onclick="runTextHelper('rendre plus naturel et fluide')">Plus naturel</button>
-        <button class="th-action-btn" onclick="runTextHelper('résumer en 2-3 phrases')">Résumer</button>
-        <button class="th-action-btn" onclick="runTextHelper('développer et enrichir')">Développer</button>
-        <button class="th-action-btn" onclick="runTextHelper('rendre plus percutant')">Plus percutant</button>
+  <!-- Mode tabs -->
+  <div style="display:flex;gap:1px;padding:6px 12px 0;border-bottom:1px solid var(--border);flex-shrink:0">
+    <button class="thtab active" id="thtab-literary" onclick="switchThTab('literary')">✍️ Littéraire</button>
+    <button class="thtab" id="thtab-translate" onclick="switchThTab('translate')">🌐 Traducteur</button>
+  </div>
+
+  <!-- LITERARY TAB -->
+  <div id="thbody-literary" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+    <!-- Input zone with auto-detect indicator -->
+    <div style="padding:12px 16px 8px;flex-shrink:0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#999">Votre texte</span>
+        <span id="th-detect-label" style="font-size:9px;font-weight:700;color:#22c55e;display:none;background:rgba(34,197,94,.08);padding:2px 7px;border-radius:10px">✓ Texte détecté</span>
       </div>
+      <textarea id="th-input-text"
+        style="width:100%;min-height:90px;max-height:160px;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13.5px;line-height:1.65;resize:none;outline:none;font-family:'Inter',sans-serif;transition:border .2s"
+        placeholder="Collez votre texte ici, ou activez ce mode pendant une conversation — le dernier texte littéraire de l'IA sera importé automatiquement."
+        oninput="onThInputChange()" onfocus="this.style.borderColor='#888'" onblur="this.style.borderColor=''"></textarea>
     </div>
-    <div>
-      <span class="th-label">Instruction personnalisée</span>
-      <div style="display:flex;gap:6px">
-        <input type="text" class="modal-input" id="th-custom-instr" placeholder="Ex : rends ce texte plus poétique…" style="flex:1;padding:8px 12px;font-size:12px">
-        <button class="th-action-btn primary" onclick="runTextHelper(document.getElementById('th-custom-instr').value)">OK</button>
+
+    <!-- Quick actions grid -->
+    <div style="padding:10px 16px;flex-shrink:0;border-bottom:1px solid var(--border)">
+      <span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#999;display:block;margin-bottom:8px">Actions rapides</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+        <button class="th-action-btn" onclick="runTextHelper('reformuler ce texte différemment')">↺ Reformuler</button>
+        <button class="th-action-btn" onclick="runTextHelper('améliorer le style et la fluidité')">✨ Style</button>
+        <button class="th-action-btn" onclick="runTextHelper('corriger l\'orthographe, la grammaire et la ponctuation')">✓ Corriger</button>
+        <button class="th-action-btn" onclick="runTextHelper('rendre ce texte plus formel et professionnel')">👔 Formel</button>
+        <button class="th-action-btn" onclick="runTextHelper('rendre ce texte plus naturel, fluide et accessible')">🌿 Naturel</button>
+        <button class="th-action-btn" onclick="runTextHelper('résumer en 2-3 phrases percutantes')">📝 Résumer</button>
+        <button class="th-action-btn" onclick="runTextHelper('développer et enrichir avec des détails')">📖 Développer</button>
+        <button class="th-action-btn" onclick="runTextHelper('rendre ce texte plus percutant et convaincant')">⚡ Percutant</button>
       </div>
-    </div>
-    <div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <span class="th-label" style="margin-bottom:0">Résultat</span>
-        <div class="th-spinner" id="th-spinner-lit"></div>
-      </div>
-      <div class="th-result" id="th-result-literary"><span class="th-result-placeholder">Le résultat apparaîtra ici…</span></div>
+      <!-- Custom instruction -->
       <div style="display:flex;gap:6px;margin-top:8px">
+        <input type="text" id="th-custom-instr"
+          style="flex:1;padding:7px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:12px;outline:none;font-family:'Inter',sans-serif;transition:border .2s"
+          placeholder="Instruction personnalisée…"
+          onkeydown="if(event.key==='Enter'){runTextHelper(this.value)}"
+          onfocus="this.style.borderColor='#888'" onblur="this.style.borderColor=''">
+        <button class="th-action-btn" style="background:var(--accent);color:var(--accent-inv);border-color:transparent;flex-shrink:0"
+          onclick="runTextHelper(document.getElementById('th-custom-instr').value)">→</button>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding:10px 16px 12px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-shrink:0">
+        <span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#999">Résultat</span>
+        <div id="th-spinner-lit" style="display:none;width:12px;height:12px;border:2px solid var(--border2);border-top-color:var(--text);border-radius:50%;animation:spin .6s linear infinite"></div>
+      </div>
+      <div id="th-result-literary" style="flex:1;overflow-y:auto;background:var(--select-bg);border-radius:10px;padding:12px 14px;font-size:13.5px;line-height:1.75;color:var(--text);border:1px solid var(--border)">
+        <span style="color:#bbb;font-size:12px">Le résultat apparaîtra ici…</span>
+      </div>
+      <div style="display:flex;gap:5px;margin-top:8px;flex-shrink:0;flex-wrap:wrap">
         <button class="th-action-btn" onclick="copyThResult('th-result-literary')">Copier</button>
-        <button class="th-action-btn" onclick="importThResultToChat('th-result-literary')">Importer dans le chat</button>
-        <button class="th-action-btn" onclick="swapThText()">← Utiliser comme source</button>
+        <button class="th-action-btn" onclick="importThResultToChat('th-result-literary')">→ Chat</button>
+        <button class="th-action-btn" onclick="swapThText()">⇅ Source</button>
       </div>
     </div>
   </div>
 
-  <!-- TRANSLATE -->
-  <div class="th-body" id="thbody-translate" style="display:none">
-    <div>
-      <span class="th-label">Texte à traduire</span>
-      <textarea class="th-textarea" id="th-translate-input" placeholder="Entrez le texte à traduire…" rows="6"></textarea>
+  <!-- TRANSLATE TAB -->
+  <div id="thbody-translate" style="flex:1;display:flex;flex-direction:column;overflow:hidden;display:none">
+    <!-- Language picker -->
+    <div style="padding:12px 16px;flex-shrink:0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:100px">
+          <span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#999;display:block;margin-bottom:5px">De</span>
+          <select class="th-lang-select" id="th-lang-from" style="width:100%">
+            <option value="auto">Auto-détect</option>
+            <option value="fr">Français</option><option value="en">Anglais</option><option value="es">Espagnol</option>
+            <option value="de">Allemand</option><option value="it">Italien</option><option value="pt">Portugais</option>
+            <option value="ar">Arabe</option><option value="zh">Chinois</option><option value="ja">Japonais</option>
+            <option value="ru">Russe</option><option value="nl">Néerlandais</option><option value="pl">Polonais</option>
+            <option value="tr">Turc</option><option value="ko">Coréen</option>
+          </select>
+        </div>
+        <button onclick="swapTranslateLangs()" style="background:none;border:1px solid var(--border2);border-radius:8px;width:30px;height:30px;cursor:pointer;color:#888;display:flex;align-items:center;justify-content:center;margin-top:16px;transition:.15s;flex-shrink:0" title="Inverser" onmouseover="this.style.borderColor='var(--text)'" onmouseout="this.style.borderColor=''">⇄</button>
+        <div style="flex:1;min-width:100px">
+          <span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#999;display:block;margin-bottom:5px">Vers</span>
+          <select class="th-lang-select" id="th-lang-to" style="width:100%">
+            <option value="en">Anglais</option><option value="fr" selected>Français</option><option value="es">Espagnol</option>
+            <option value="de">Allemand</option><option value="it">Italien</option><option value="pt">Portugais</option>
+            <option value="ar">Arabe</option><option value="zh">Chinois</option><option value="ja">Japonais</option>
+            <option value="ru">Russe</option><option value="nl">Néerlandais</option><option value="pl">Polonais</option>
+            <option value="tr">Turc</option><option value="ko">Coréen</option>
+          </select>
+        </div>
+      </div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <div>
-        <span class="th-label">De</span>
-        <select class="th-lang-select" id="th-lang-from">
-          <option value="auto">Détection auto</option>
-          <option value="fr">Français</option>
-          <option value="en">Anglais</option>
-          <option value="es">Espagnol</option>
-          <option value="de">Allemand</option>
-          <option value="it">Italien</option>
-          <option value="pt">Portugais</option>
-          <option value="ar">Arabe</option>
-          <option value="zh">Chinois</option>
-          <option value="ja">Japonais</option>
-          <option value="ru">Russe</option>
-          <option value="nl">Néerlandais</option>
-          <option value="pl">Polonais</option>
-          <option value="tr">Turc</option>
-          <option value="ko">Coréen</option>
-        </select>
+    <!-- Input -->
+    <div style="padding:10px 16px 8px;flex-shrink:0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#999">Texte source</span>
+        <div id="th-spinner-tr" style="display:none;width:12px;height:12px;border:2px solid var(--border2);border-top-color:var(--text);border-radius:50%;animation:spin .6s linear infinite"></div>
       </div>
-      <div style="font-size:18px;color:#bbb;margin-top:14px">→</div>
-      <div>
-        <span class="th-label">Vers</span>
-        <select class="th-lang-select" id="th-lang-to">
-          <option value="en">Anglais</option>
-          <option value="fr" selected>Français</option>
-          <option value="es">Espagnol</option>
-          <option value="de">Allemand</option>
-          <option value="it">Italien</option>
-          <option value="pt">Portugais</option>
-          <option value="ar">Arabe</option>
-          <option value="zh">Chinois</option>
-          <option value="ja">Japonais</option>
-          <option value="ru">Russe</option>
-          <option value="nl">Néerlandais</option>
-          <option value="pl">Polonais</option>
-          <option value="tr">Turc</option>
-          <option value="ko">Coréen</option>
-        </select>
-      </div>
-      <button class="th-action-btn primary" style="margin-top:14px;display:flex;align-items:center;gap:4px" onclick="runTranslation()">
-        <div class="th-spinner" id="th-spinner-tr"></div>
-        Traduire
-      </button>
+      <textarea id="th-translate-input"
+        style="width:100%;min-height:100px;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13.5px;line-height:1.65;resize:none;outline:none;font-family:'Inter',sans-serif;transition:border .2s"
+        placeholder="Texte à traduire…"
+        onfocus="this.style.borderColor='#888'" onblur="this.style.borderColor=''"></textarea>
+      <button onclick="runTranslation()"
+        style="width:100%;margin-top:8px;padding:9px;border-radius:10px;background:var(--accent);color:var(--accent-inv);border:none;cursor:pointer;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;transition:.15s"
+        onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Traduire</button>
     </div>
-    <div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <span class="th-label" style="margin-bottom:0">Traduction</span>
+    <!-- Result -->
+    <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding:10px 16px 12px">
+      <span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#999;display:block;margin-bottom:6px;flex-shrink:0">Traduction</span>
+      <div id="th-result-translate" style="flex:1;overflow-y:auto;background:var(--select-bg);border-radius:10px;padding:12px 14px;font-size:13.5px;line-height:1.75;color:var(--text);border:1px solid var(--border)">
+        <span style="color:#bbb;font-size:12px">La traduction apparaîtra ici…</span>
       </div>
-      <div class="th-result" id="th-result-translate"><span class="th-result-placeholder">La traduction apparaîtra ici…</span></div>
-      <div style="display:flex;gap:6px;margin-top:8px">
+      <div style="display:flex;gap:5px;margin-top:8px;flex-shrink:0;flex-wrap:wrap;align-items:center">
         <button class="th-action-btn" onclick="copyThResult('th-result-translate')">Copier</button>
-        <button class="th-action-btn" onclick="importThResultToChat('th-result-translate')">Importer dans le chat</button>
+        <button class="th-action-btn" onclick="importThResultToChat('th-result-translate')">→ Chat</button>
+        <span style="margin-left:auto;font-size:10px;color:#ccc">MyMemory API · gratuit</span>
       </div>
     </div>
-    <div style="font-size:10px;color:#bbb;text-align:center;margin-top:4px">Propulsé par MyMemory · Gratuit · Sans clé API</div>
   </div>
 </div>
 
@@ -2055,10 +2085,17 @@ function renderMsg(msg, doScroll=true){
     const div=document.createElement('div'); div.className='chat-bubble model';
     if(msg.content&&msg.content.startsWith('[WM_IMAGE:')){
       const dataUrl=msg.content.replace('[WM_IMAGE:','').replace(']','');
-      div.innerHTML=`<div style="margin:8px 0"><img src="${dataUrl}" style="max-width:100%;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.12)" alt="Image générée"><div style="font-size:11px;color:#999;margin-top:6px;display:flex;align-items:center;gap:6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Générée par Stable Diffusion XL · <a href="${dataUrl}" download="wikimind-image.png" style="color:#2563eb;text-decoration:underline;cursor:pointer">Télécharger</a></div></div>`;
+      div.innerHTML=`<div style="margin:8px 0"><img src="${dataUrl}" style="max-width:100%;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.12)" alt="Image générée"><div style="font-size:11px;color:#999;margin-top:6px;display:flex;align-items:center;gap:6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Générée par IA · <a href="${dataUrl}" download="wikimind-image.png" style="color:#2563eb;text-decoration:underline;cursor:pointer">Télécharger</a></div></div>`;
     } else if(S.writingAnim&&doScroll){ typewriterEffect(div,msg.content); }
     else{ div.innerHTML=formatMarkdown(msg.content); applyMath(div); applyHljs(div); }
     cc.appendChild(div);
+    // Auto-import to coder / text helper if modes active
+    if(doScroll&&msg.content){
+      setTimeout(()=>{
+        maybeImportCodeToCoderPanel(msg.content);
+        maybeImportTextToHelper(msg.content);
+      },100);
+    }
     const msgIdx=S.msgs.indexOf(msg);
     const acts=document.createElement('div'); acts.className='msg-actions';
     const msgContent=msg.content;
@@ -2126,29 +2163,91 @@ async function submitEdit(i){const ta=G('edit-ta-'+i);if(!ta)return;const t=ta.v
 async function regenMsg(i){if(S.generating)return;const um=S.msgs.slice(0,i).filter(m=>m.role==='user').pop();if(!um)return;S.msgs=S.msgs.slice(0,i);G('chat-container').innerHTML='';S.msgs.forEach(m=>renderMsg(m,false));showWelcome();await sendMsg(um.content);}
 
 // ── MARKDOWN / MATH / HLJS ──
+// Pre-process LaTeX before Marked (protect from HTML escaping)
 function formatMarkdown(text){
   if(!text) return '';
-  const ph=[]; let i=0;
-  text=text.replace(/\$\$([\s\S]+?)\$\$/g,(_,m)=>{ph.push(['$$',m]);return`WMATHBLOCK${i++}END`;});
-  text=text.replace(/\$([^$\n]+?)\$/g,(_,m)=>{ph.push(['$',m]);return`WMATHINLINE${i++}END`;});
+  const mathStore=[]; let mi=0;
+
+  // 1. Protect display math $$ ... $$ and \[ ... \]
+  text=text.replace(/\$\$([\s\S]+?)\$\$/g,(_,m)=>{
+    mathStore.push({t:'block',s:m}); return`WMATHB${mi++}X`;
+  });
+  text=text.replace(/\\\[([\s\S]+?)\\\]/g,(_,m)=>{
+    mathStore.push({t:'block',s:m}); return`WMATHB${mi++}X`;
+  });
+  // 2. Protect inline math $ ... $ and \( ... \) — single-line only
+  text=text.replace(/\\\(([^)]+?)\\\)/g,(_,m)=>{
+    mathStore.push({t:'inline',s:m}); return`WMATHI${mi++}X`;
+  });
+  // Inline $ — avoid $$ (already handled), avoid lone $ in currency contexts
+  text=text.replace(/(?<!\$)\$(?!\$)([^\n$]{1,300}?)(?<!\$)\$(?!\$)/g,(_,m)=>{
+    // Skip if looks like currency (number after $)
+    if(/^\d/.test(m.trim())) return _;
+    mathStore.push({t:'inline',s:m}); return`WMATHI${mi++}X`;
+  });
+
   marked.setOptions({breaks:true,gfm:true});
   let html=marked.parse(text);
-  html=html.replace(/WMATHBLOCK(\d+)END/g,(_,idx)=>{const m=ph[+idx];if(!m)return'';const s=m[1].replace(/</g,'&lt;').replace(/>/g,'&gt;');return`<span class="wm-math-block">\\[${s}\\]</span>`;});
-  html=html.replace(/WMATHINLINE(\d+)END/g,(_,idx)=>{const m=ph[+idx];if(!m)return'';const s=m[1].replace(/</g,'&lt;').replace(/>/g,'&gt;');return`\\(${s}\\)`;});
+
+  // 3. Restore math — render immediately with KaTeX if available, else keep delimiters for auto-render
+  html=html.replace(/WMATHB(\d+)X/g,(_,idx)=>{
+    const entry=mathStore[+idx]; if(!entry) return '';
+    if(typeof katex!=='undefined'){
+      try{return`<div class="wm-math-block">${katex.renderToString(entry.s,{displayMode:true,throwOnError:false})}</div>`;}
+      catch(e){return`<div class="wm-math-block">\\[${entry.s}\\]</div>`;}
+    }
+    return`<div class="wm-math-block">\\[${entry.s}\\]</div>`;
+  });
+  html=html.replace(/WMATHI(\d+)X/g,(_,idx)=>{
+    const entry=mathStore[+idx]; if(!entry) return '';
+    if(typeof katex!=='undefined'){
+      try{return katex.renderToString(entry.s,{displayMode:false,throwOnError:false});}
+      catch(e){return`\\(${entry.s}\\)`;}
+    }
+    return`\\(${entry.s}\\)`;
+  });
+
+  // 4. Code blocks with syntax highlighting
   if(!window._wmCopyStore) window._wmCopyStore={};
-  let _wci=(window._wciCounter=(window._wciCounter||0)+1);
   html=html.replace(/<pre><code( class="language-([^"]*)")?>([\s\S]*?)<\/code><\/pre>/g,(_,cls,lang,code)=>{
     const raw=code.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
-    const cid='wmc'+(++window._wciCounter);
+    const cid='wmc'+(++( window._wciCounter=(window._wciCounter||0)+1 ));
     window._wmCopyStore[cid]=raw;
-    return `<div class="code-wrapper"><span class="code-lang">${lang||'code'}</span><button class="copy-code-btn" onclick="copyStoredText('${cid}')">Copier</button><pre><code class="${lang?'language-'+lang:''}">${code}</code></pre></div>`;
+    return`<div class="code-wrapper"><span class="code-lang">${lang||'code'}</span><button class="copy-code-btn" onclick="copyStoredText('${cid}')">Copier</button><pre><code class="${lang?'language-'+lang:''}">${code}</code></pre></div>`;
   });
   return html;
 }
+
 function applyMath(el){
-  if(!el)return;
-  const doRender=()=>{if(typeof renderMathInElement==='undefined')return;try{renderMathInElement(el,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false}],throwOnError:false});}catch(e){}};
-  if(window._katexReady)doRender();else window.addEventListener('load',doRender,{once:true});
+  if(!el) return;
+  // If KaTeX already rendered inline (data-katex attr), nothing to do
+  // Otherwise trigger auto-render for any remaining \( \) and \[ \] delimiters
+  const doRender=()=>{
+    if(typeof renderMathInElement==='undefined') return;
+    try{
+      renderMathInElement(el,{
+        delimiters:[
+          {left:'$$',right:'$$',display:true},
+          {left:'\\[',right:'\\]',display:true},
+          {left:'\\(',right:'\\)',display:false},
+          {left:'$',right:'$',display:false}
+        ],
+        throwOnError:false,
+        ignoredTags:['script','noscript','style','textarea','pre','code','option'],
+        ignoredClasses:['no-math']
+      });
+    }catch(e){}
+  };
+  if(window._katexReady) doRender();
+  else{
+    // Poll until ready (deferred load)
+    const poll=setInterval(()=>{
+      if(window._katexReady||typeof renderMathInElement!=='undefined'){
+        clearInterval(poll); doRender();
+      }
+    },100);
+    setTimeout(()=>clearInterval(poll),5000);
+  }
 }
 function applyHljs(el){if(!el)return;el.querySelectorAll('pre code').forEach(b=>{try{hljs.highlightElement(b);}catch(e){}});}
 function showTyping(){
@@ -3385,41 +3484,51 @@ async function sendHelpMsg(){
   }
 }
 
-// ── CODER PANEL ──
-function openCoderPanel(){
-  if(S.plan<3){toast('Mode Codeur — plan AI Pro requis');openPlansOverlay();return;}
-  S.coderOpen=true; G('coder-panel').classList.add('open');
-  if(!S.coderFiles.length) coderInitFiles();
-  updateCoderRateUI();
+// ── CODER PANEL — Toggle mode ──
+function toggleCoderMode(){
+  if(!S.coderOpen){
+    if(S.plan<3){toast('Mode Codeur — plan AI Pro requis');openPlansOverlay();return;}
+    S.coderOpen=true;
+    G('coder-panel').classList.add('open');
+    const lbl=G('sb-btn-coder-label'); if(lbl) lbl.textContent='Désactiver Codeur';
+    G('sb-btn-coder')?.classList.add('active-btn');
+    if(!S.coderFiles.length) coderInitFiles();
+    updateCoderRateUI();
+  }else{
+    S.coderOpen=false;
+    G('coder-panel').classList.remove('open');
+    const lbl=G('sb-btn-coder-label'); if(lbl) lbl.textContent='Activer Codeur';
+    G('sb-btn-coder')?.classList.remove('active-btn');
+  }
 }
-function closeCoderPanel(){S.coderOpen=false;G('coder-panel').classList.remove('open');}
+// Keep backward compat
+function openCoderPanel(){if(!S.coderOpen)toggleCoderMode();}
+function closeCoderPanel(){if(S.coderOpen)toggleCoderMode();}
 
 function updateCoderRateUI(){
   const badge=G('coder-plan-badge'); const rateBadge=G('coder-rate-badge'); const info=G('coder-rate-info');
   if(!badge) return;
   if(S.plan>=5){
     badge.textContent='Premium+'; badge.style.color='#ef4444'; badge.style.background='rgba(239,68,68,.1)';
-    if(rateBadge){rateBadge.textContent='Illimité';rateBadge.style.display='none';}
-    if(info) info.textContent='Illimité';
+    if(rateBadge) rateBadge.style.display='none';
+    if(info) info.textContent='';
   }else if(S.plan===4){
     badge.textContent='Premium'; badge.style.color='#d97706'; badge.style.background='rgba(217,119,6,.1)';
     if(rateBadge){rateBadge.textContent='1/h';rateBadge.style.display='inline';}
     const elapsed=Date.now()-S.lastCoderTs;
     const remaining=Math.max(0,3600000-elapsed);
-    if(info) info.textContent=S.lastCoderTs>0&&remaining>0?`Dispo dans ${Math.ceil(remaining/60000)}min`:'1 génération/heure';
-    if(info) info.className=S.lastCoderTs>0&&remaining>0?'coder-rate-info warn':'coder-rate-info';
+    if(info){info.textContent=S.lastCoderTs>0&&remaining>0?`${Math.ceil(remaining/60000)}min`:'';info.style.color=remaining>0?'#d97706':'#aaa';}
   }else if(S.plan===3){
     badge.textContent='Pro'; badge.style.color='#7c3aed'; badge.style.background='rgba(124,58,237,.1)';
     if(rateBadge){rateBadge.textContent='1/j';rateBadge.style.display='inline';}
     const elapsed=Date.now()-S.lastCoderTs;
     const remaining=Math.max(0,86400000-elapsed);
-    if(info) info.textContent=S.lastCoderTs>0&&remaining>0?`Dispo dans ${Math.ceil(remaining/3600000)}h`:'1 génération/jour';
-    if(info) info.className=S.lastCoderTs>0&&remaining>0?'coder-rate-info warn':'coder-rate-info';
+    if(info){info.textContent=S.lastCoderTs>0&&remaining>0?`${Math.ceil(remaining/3600000)}h`:'';info.style.color=remaining>0?'#d97706':'#aaa';}
   }
 }
 
 function coderInitFiles(){
-  S.coderFiles=[{name:'main.js',lang:'javascript',content:'// Votre code apparaîtra ici\n'}];
+  S.coderFiles=[{name:'main.js',lang:'javascript',content:'// Votre code apparaîtra ici après génération IA\n'}];
   S.coderActiveFile=0;
   renderCoderTree();
   renderCoderEditor();
@@ -3427,17 +3536,15 @@ function coderInitFiles(){
 
 function coderAddFile(){
   const name=prompt('Nom du fichier (ex: utils.py, style.css)');
-  if(!name||!name.trim()) return;
+  if(!name?.trim()) return;
   const ext=name.split('.').pop().toLowerCase();
   const langMap={js:'javascript',ts:'typescript',py:'python',html:'html',css:'css',json:'json',md:'markdown',cpp:'cpp',c:'c',java:'java',php:'php',rb:'ruby',rs:'rust',go:'go',sh:'bash'};
-  const lang=langMap[ext]||'text';
-  S.coderFiles.push({name:name.trim(),lang,content:''});
+  S.coderFiles.push({name:name.trim(),lang:langMap[ext]||'text',content:''});
   S.coderActiveFile=S.coderFiles.length-1;
   renderCoderTree(); renderCoderEditor();
 }
 
 function setCoderActiveFile(i){
-  // Save current editor content
   if(S.coderFiles[S.coderActiveFile]) S.coderFiles[S.coderActiveFile].content=G('coder-editor').value;
   S.coderActiveFile=i;
   renderCoderTree(); renderCoderEditor();
@@ -3447,24 +3554,20 @@ function coderOnEdit(){
   if(S.coderFiles[S.coderActiveFile]) S.coderFiles[S.coderActiveFile].content=G('coder-editor').value;
 }
 
+const CODER_COLORS=['#22c55e','#3b82f6','#f59e0b','#ec4899','#8b5cf6','#06b6d4','#ef4444','#84cc16'];
+
 function renderCoderTree(){
   const list=G('coder-tree-list'); if(!list) return;
-  const colors=['#22c55e','#3b82f6','#f59e0b','#ec4899','#8b5cf6','#06b6d4','#ef4444'];
   list.innerHTML=S.coderFiles.map((f,i)=>`
     <div class="coder-file-item ${i===S.coderActiveFile?'active':''}" onclick="setCoderActiveFile(${i})">
-      <div class="coder-file-dot" style="background:${colors[i%colors.length]}"></div>
-      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</span>
-      ${S.coderFiles.length>1?`<button onclick="event.stopPropagation();coderDeleteFile(${i})" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:12px;opacity:0;transition:.2s" class="coder-del-btn">✕</button>`:''}
+      <div class="coder-file-dot" style="background:${CODER_COLORS[i%CODER_COLORS.length]};width:7px;height:7px;border-radius:50%;flex-shrink:0"></div>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:600">${esc(f.name)}</span>
+      ${S.coderFiles.length>1?`<button onclick="event.stopPropagation();coderDeleteFile(${i})" class="coder-del-file" title="Supprimer">✕</button>`:''}
     </div>`).join('');
-  // Show del buttons on hover via JS
-  list.querySelectorAll('.coder-file-item').forEach(el=>{
-    el.addEventListener('mouseenter',()=>el.querySelector('.coder-del-btn')?.style.setProperty('opacity','1'));
-    el.addEventListener('mouseleave',()=>el.querySelector('.coder-del-btn')?.style.setProperty('opacity','0'));
-  });
 }
 
 function coderDeleteFile(i){
-  if(S.coderFiles.length<=1) return;
+  if(S.coderFiles.length<=1){toast('Impossible de supprimer le dernier fichier');return;}
   S.coderFiles.splice(i,1);
   S.coderActiveFile=Math.min(S.coderActiveFile,S.coderFiles.length-1);
   renderCoderTree(); renderCoderEditor();
@@ -3474,150 +3577,224 @@ function renderCoderEditor(){
   const f=S.coderFiles[S.coderActiveFile]; if(!f) return;
   const ed=G('coder-editor'); if(!ed) return;
   ed.value=f.content;
-  G('coder-active-filename').textContent=f.name;
-  G('coder-active-lang').textContent=f.lang.toUpperCase();
+  const fn=G('coder-active-filename'); if(fn) fn.textContent=f.name;
+  const ln=G('coder-active-lang'); if(ln) ln.textContent=f.lang.toUpperCase();
+  // Update dot color
+  const dot=G('coder-file-dot-indicator');
+  if(dot) dot.style.background=CODER_COLORS[S.coderActiveFile%CODER_COLORS.length];
 }
 
 function switchCoderTab(tab){
   G('codertab-edit')?.classList.toggle('active',tab==='edit');
   G('codertab-graph')?.classList.toggle('active',tab==='graph');
   const ed=G('coder-editor'); const gr=G('coder-graph');
-  if(tab==='edit'){ed.style.display='block';gr.style.display='none';}
-  else{ed.style.display='none';gr.style.display='block';renderCoderGraph();}
+  if(tab==='edit'){if(ed)ed.style.display='block';if(gr)gr.style.display='none';}
+  else{if(ed)ed.style.display='none';if(gr)gr.style.display='block';renderCoderGraph();}
 }
 
 function renderCoderGraph(){
   const gr=G('coder-graph'); if(!gr) return;
-  if(S.coderFiles.length===0){gr.innerHTML='<div style="color:#aaa;font-size:12px;text-align:center;margin-top:40px">Aucun fichier</div>';return;}
-  // Build SVG graph
+  if(!S.coderFiles.length){gr.innerHTML='<div style="color:#aaa;font-size:12px;text-align:center;margin-top:40px">Aucun fichier</div>';return;}
   const cols=Math.min(3,S.coderFiles.length);
-  const rows=Math.ceil(S.coderFiles.length/cols);
-  const nodeW=130,nodeH=44,gapX=60,gapY=50;
-  const totalW=cols*nodeW+(cols-1)*gapX+40;
-  const totalH=rows*nodeH+(rows-1)*gapY+40;
-  const colors=['#22c55e','#3b82f6','#f59e0b','#ec4899','#8b5cf6','#06b6d4','#ef4444'];
-  // Positions
-  const pos=S.coderFiles.map((_,i)=>{
-    const col=i%cols; const row=Math.floor(i/cols);
-    return{x:20+col*(nodeW+gapX),y:20+row*(nodeH+gapY)};
-  });
-  // Edges: connect files that reference each other by name
+  const nodeW=140,nodeH=46,gapX=64,gapY=56;
+  const totalW=cols*(nodeW+gapX)+40;
+  const totalH=Math.ceil(S.coderFiles.length/cols)*(nodeH+gapY)+40;
+  const pos=S.coderFiles.map((_,i)=>({
+    x:20+(i%cols)*(nodeW+gapX),
+    y:20+Math.floor(i/cols)*(nodeH+gapY)
+  }));
   const edges=[];
   S.coderFiles.forEach((f,i)=>{
     S.coderFiles.forEach((g2,j)=>{
       if(i===j) return;
-      const name=g2.name.replace(/\.[^.]+$/,'');
-      if(f.content.includes(name)&&!edges.find(e=>e[0]===j&&e[1]===i)) edges.push([i,j]);
+      const nameNoExt=g2.name.replace(/\.[^.]+$/,'');
+      if(f.content.includes(nameNoExt)&&!edges.find(e=>e[0]===j&&e[1]===i)) edges.push([i,j]);
     });
   });
-  const isDark=document.body.classList.contains('dark-mode');
-  gr.innerHTML=`<svg width="${totalW}" height="${totalH}" xmlns="http://www.w3.org/2000/svg" style="min-width:${totalW}px">
-    <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="${isDark?'#555':'#ccc'}"/></marker></defs>
+  const dark=document.body.classList.contains('dark-mode');
+  gr.innerHTML=`<svg width="${totalW}" height="${Math.max(totalH,200)}" xmlns="http://www.w3.org/2000/svg" style="min-width:${totalW}px">
+    <defs>
+      <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="${dark?'#444':'#ccc'}"/>
+      </marker>
+    </defs>
     ${edges.map(([a,b])=>{
       const ax=pos[a].x+nodeW/2,ay=pos[a].y+nodeH/2;
       const bx=pos[b].x+nodeW/2,by=pos[b].y+nodeH/2;
-      return`<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" stroke="${isDark?'#333':'#ddd'}" stroke-width="1.5" marker-end="url(#arrow)"/>`;
+      const dx=bx-ax,dy=by-ay,len=Math.sqrt(dx*dx+dy*dy);
+      const ux=dx/len,uy=dy/len;
+      return`<line x1="${ax+ux*6}" y1="${ay+uy*6}" x2="${bx-ux*24}" y2="${by-uy*24}" stroke="${dark?'#333':'#e0e0e0'}" stroke-width="1.5" marker-end="url(#arrowhead)" stroke-dasharray="4,2"/>`;
     }).join('')}
-    ${S.coderFiles.map((f,i)=>`
-      <g onclick="setCoderActiveFile(${i});switchCoderTab('edit')" style="cursor:pointer">
-        <rect x="${pos[i].x}" y="${pos[i].y}" width="${nodeW}" height="${nodeH}" rx="8"
-          fill="${i===S.coderActiveFile?(isDark?'#1f2937':'#eff6ff'):(isDark?'#1a1a1a':'#f9fafb')}"
-          stroke="${colors[i%colors.length]}" stroke-width="${i===S.coderActiveFile?2:1}" opacity="0.9"/>
-        <circle cx="${pos[i].x+12}" cy="${pos[i].y+nodeH/2}" r="4" fill="${colors[i%colors.length]}"/>
-        <text x="${pos[i].x+22}" y="${pos[i].y+nodeH/2+4}" font-size="11" font-weight="700" fill="${isDark?'#eee':'#111'}" font-family="Inter,sans-serif" text-anchor="start">
-          ${f.name.length>14?f.name.substring(0,13)+'…':f.name}
+    ${S.coderFiles.map((f,i)=>{
+      const clr=CODER_COLORS[i%CODER_COLORS.length];
+      const isActive=i===S.coderActiveFile;
+      const fill=isActive?(dark?'#1c2a1c':'#f0fff4'):( dark?'#1a1a1a':'#fafafa');
+      return`<g onclick="setCoderActiveFile(${i});switchCoderTab('edit')" style="cursor:pointer">
+        <rect x="${pos[i].x}" y="${pos[i].y}" width="${nodeW}" height="${nodeH}" rx="10"
+          fill="${fill}" stroke="${clr}" stroke-width="${isActive?2:1.2}" opacity="${isActive?1:.85}"/>
+        <circle cx="${pos[i].x+14}" cy="${pos[i].y+nodeH/2}" r="4" fill="${clr}"/>
+        <text x="${pos[i].x+26}" y="${pos[i].y+nodeH/2+4}" font-size="11" font-weight="700"
+          fill="${dark?'#eee':'#111'}" font-family="Inter,sans-serif">
+          ${f.name.length>15?f.name.substring(0,14)+'…':f.name}
         </text>
-      </g>`).join('')}
+      </g>`;
+    }).join('')}
   </svg>`;
 }
 
 async function runCoderAI(){
-  const prompt=G('coder-prompt-input')?.value?.trim(); if(!prompt) return;
+  const promptEl=G('coder-prompt-input');
+  const prompt=promptEl?.value?.trim(); if(!prompt) return;
   if(S.plan<3){toast('Mode Codeur — plan AI Pro requis');openPlansOverlay();return;}
-  // Rate limit
   const now=Date.now();
-  if(S.plan===3){const limit=86400000;if(S.lastCoderTs>0&&(now-S.lastCoderTs)<limit){const h=Math.ceil((limit-(now-S.lastCoderTs))/3600000);toast(`Codeur — 1/jour sur AI Pro (${h}h)`);return;}}
-  else if(S.plan===4){const limit=3600000;if(S.lastCoderTs>0&&(now-S.lastCoderTs)<limit){const min=Math.ceil((limit-(now-S.lastCoderTs))/60000);toast(`Codeur — 1/heure sur AI Premium (${min}min)`);return;}}
+  if(S.plan===3){const limit=86400000;if(S.lastCoderTs>0&&(now-S.lastCoderTs)<limit){const h=Math.ceil((limit-(now-S.lastCoderTs))/3600000);toast(`Codeur — 1/jour sur Pro (${h}h restantes)`);return;}}
+  else if(S.plan===4){const limit=3600000;if(S.lastCoderTs>0&&(now-S.lastCoderTs)<limit){const m=Math.ceil((limit-(now-S.lastCoderTs))/60000);toast(`Codeur — 1/heure sur Premium (${m}min restantes)`);return;}}
   S.lastCoderTs=now; updateCoderRateUI();
-  const runBtn=G('coder-run-btn'); if(runBtn){runBtn.disabled=true;runBtn.textContent='Génération…';}
-  G('coder-prompt-input').value='';
-  // Save current file
+  const runBtn=G('coder-run-btn');
+  if(runBtn){runBtn.disabled=true;runBtn.textContent='⏳ Génération…';}
+  if(promptEl) promptEl.value='';
   if(S.coderFiles[S.coderActiveFile]) S.coderFiles[S.coderActiveFile].content=G('coder-editor').value;
-  // Build context
-  const context=S.coderFiles.map(f=>`// FICHIER: ${f.name}\n${f.content}`).join('\n\n---\n\n');
-  const sys=`Tu es WikiMind Codeur, un expert développeur full-stack. Tu reçois une demande et les fichiers existants du projet. Tu dois répondre UNIQUEMENT avec du JSON valide (sans backticks) au format suivant :
-{"files":[{"name":"nomfichier.ext","content":"contenu complet du fichier"},...],"explanation":"explication courte"}
-Crée ou modifie les fichiers nécessaires. Inclus TOUJOURS tous les fichiers du projet dans ta réponse (même inchangés). Sois précis, propre, commenté.`;
+  const context=S.coderFiles.map(f=>`// === FICHIER: ${f.name} ===\n${f.content}`).join('\n\n');
+  const sys=`Tu es WikiMind Codeur, expert développeur. Réponds UNIQUEMENT avec du JSON valide, sans backtick, sans markdown.
+Format exact : {"files":[{"name":"fichier.ext","content":"contenu complet"}...],"explanation":"explication courte en français"}
+Règles : inclure tous les fichiers du projet (modifiés ou non), code propre et commenté, respecter le langage de chaque fichier.`;
   try{
     const raw=await callMistral([
       {role:'system',content:sys},
-      {role:'user',content:`Fichiers actuels :\n${context}\n\nDemande : ${prompt}`}
+      {role:'user',content:`Fichiers du projet :\n${context}\n\nDemande : ${prompt}`}
     ],MISTRAL_MODELS.work.id,4096);
-    const clean=raw.replace(/```json|```/g,'').trim();
+    const clean=raw.replace(/```json[\s\S]*?```/g,m=>m.slice(7,-3)).replace(/```[\s\S]*?```/g,m=>m.slice(3,-3)).trim();
     const parsed=JSON.parse(clean);
     if(parsed.files?.length){
-      // Merge with existing
       parsed.files.forEach(pf=>{
         const ext=pf.name.split('.').pop().toLowerCase();
         const langMap={js:'javascript',ts:'typescript',py:'python',html:'html',css:'css',json:'json',md:'markdown',cpp:'cpp',c:'c',java:'java',php:'php',rb:'ruby',rs:'rust',go:'go',sh:'bash'};
-        const lang=langMap[ext]||'text';
         const existing=S.coderFiles.findIndex(f=>f.name===pf.name);
-        if(existing>=0){S.coderFiles[existing].content=pf.content;}
-        else{S.coderFiles.push({name:pf.name,lang,content:pf.content});}
+        if(existing>=0) S.coderFiles[existing].content=pf.content;
+        else S.coderFiles.push({name:pf.name,lang:langMap[ext]||'text',content:pf.content});
       });
-      S.coderActiveFile=0;
       renderCoderTree(); renderCoderEditor();
       if(parsed.explanation) toast('✓ '+parsed.explanation.substring(0,80));
-    }else{ toast('Réponse inattendue du modèle'); }
-  }catch(e){
-    toast('Erreur Codeur : '+e.message.substring(0,60));
-  }
+    }else{ toast('Réponse inattendue — réessayez'); }
+  }catch(e){ toast('Erreur Codeur : '+(e.message||'?').substring(0,60)); }
   if(runBtn){runBtn.disabled=false;runBtn.textContent='Générer';}
 }
 
+// Auto-import code from AI response when coder mode is active
+function maybeImportCodeToCoderPanel(aiContent){
+  if(!S.coderOpen||!aiContent) return;
+  // Detect code blocks
+  const codeBlockRe=/```([a-zA-Z0-9_+-]*)\n([\s\S]*?)```/g;
+  let match; const newFiles=[];
+  while((match=codeBlockRe.exec(aiContent))!==null){
+    const lang=match[1].toLowerCase()||'text';
+    const code=match[2];
+    if(!code.trim()) continue;
+    const extMap={javascript:'js',typescript:'ts',python:'py',html:'html',css:'css',json:'json',bash:'sh',cpp:'cpp',java:'java',php:'php',ruby:'rb',rust:'rs',go:'go'};
+    const ext=extMap[lang]||lang||'txt';
+    newFiles.push({name:`file_${newFiles.length+1}.${ext}`,lang,content:code});
+  }
+  if(!newFiles.length) return;
+  // Merge into coder files
+  newFiles.forEach(pf=>{
+    const existing=S.coderFiles.findIndex(f=>f.name===pf.name);
+    if(existing>=0) S.coderFiles[existing].content=pf.content;
+    else S.coderFiles.push(pf);
+  });
+  if(S.coderFiles.length===1&&S.coderFiles[0].name==='main.js'&&S.coderFiles[0].content.includes('apparaîtra ici')){
+    S.coderFiles=newFiles;
+  }
+  S.coderActiveFile=0;
+  renderCoderTree(); renderCoderEditor();
+  toast(`💻 ${newFiles.length} fichier(s) importé(s) dans le Codeur`);
+}
+
 function coderCopyActive(){
-  const f=S.coderFiles[S.coderActiveFile]; if(!f) return;
-  copyText(G('coder-editor').value||f.content);
+  if(S.coderFiles[S.coderActiveFile]) S.coderFiles[S.coderActiveFile].content=G('coder-editor').value;
+  copyText(G('coder-editor')?.value||'');
   toast('Code copié !');
 }
 
 function coderDownloadAll(){
+  if(S.coderFiles[S.coderActiveFile]) S.coderFiles[S.coderActiveFile].content=G('coder-editor').value;
   S.coderFiles.forEach(f=>{
-    if(S.coderFiles[S.coderActiveFile]) S.coderFiles[S.coderActiveFile].content=G('coder-editor').value;
     const b=new Blob([f.content],{type:'text/plain'});
     const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=f.name;a.click();
   });
   toast('Fichiers téléchargés');
 }
 
-// ── TEXT HELPER PANEL ──
-function openTextHelperPanel(){
-  if(S.plan<5){toast('Aide au texte — plan AI Premium+ requis');openPlansOverlay();return;}
-  S.textHelperOpen=true; G('texthelper-panel').classList.add('open');
+// ── TEXT HELPER PANEL — Toggle mode ──
+function toggleTextHelperMode(){
+  if(!S.textHelperOpen){
+    if(S.plan<5){toast('Aide au texte — plan AI Premium+ requis');openPlansOverlay();return;}
+    S.textHelperOpen=true;
+    G('texthelper-panel').classList.add('open');
+    const dot=G('texthelper-active-dot'); if(dot) dot.classList.add('show');
+    G('btn-texthelper')?.classList.add('active-btn');
+  }else{
+    S.textHelperOpen=false;
+    G('texthelper-panel').classList.remove('open');
+    const dot=G('texthelper-active-dot'); if(dot) dot.classList.remove('show');
+    G('btn-texthelper')?.classList.remove('active-btn');
+  }
 }
-function closeTextHelperPanel(){S.textHelperOpen=false;G('texthelper-panel').classList.remove('open');}
+function openTextHelperPanel(){if(!S.textHelperOpen)toggleTextHelperMode();}
+function closeTextHelperPanel(){if(S.textHelperOpen)toggleTextHelperMode();}
+
 function switchThTab(tab){
   G('thtab-literary')?.classList.toggle('active',tab==='literary');
   G('thtab-translate')?.classList.toggle('active',tab==='translate');
-  G('thbody-literary').style.display=tab==='literary'?'flex':'none';
-  G('thbody-translate').style.display=tab==='translate'?'flex':'none';
+  const lit=G('thbody-literary');const tr=G('thbody-translate');
+  if(lit) lit.style.display=tab==='literary'?'flex':'none';
+  if(tr) tr.style.display=tab==='translate'?'flex':'none';
 }
+
+function onThInputChange(){
+  const input=G('th-input-text');
+  const lbl=G('th-detect-label');
+  if(!input||!lbl) return;
+  const hasText=input.value.trim().length>20;
+  lbl.style.display=hasText?'inline':'none';
+}
+
+// Auto-import literary text from AI response when text helper is active
+function maybeImportTextToHelper(aiContent){
+  if(!S.textHelperOpen||!aiContent) return;
+  // Detect literary content: prose with no code blocks
+  const hasCode=aiContent.includes('```')||aiContent.includes('function ')||aiContent.includes('const ')||aiContent.includes('def ');
+  if(hasCode) return;
+  const cleaned=aiContent.replace(/#{1,6}\s/g,'').replace(/\*{1,2}([^*]+)\*{1,2}/g,'$1').replace(/`[^`]+`/g,'').trim();
+  if(cleaned.length<50) return;
+  const inp=G('th-input-text'); if(!inp) return;
+  inp.value=cleaned.substring(0,3000);
+  onThInputChange();
+  toast('✍️ Texte importé dans l\'Aide au texte');
+}
+
 async function runTextHelper(action){
   if(!action?.trim()){toast('Entrez une instruction');return;}
   const input=G('th-input-text')?.value?.trim();
   if(!input){toast('Entrez un texte à traiter');return;}
   const spinner=G('th-spinner-lit'); if(spinner) spinner.style.display='inline-block';
   const result=G('th-result-literary');
-  if(result) result.innerHTML='<span class="th-result-placeholder">Traitement…</span>';
+  if(result) result.innerHTML='<span style="color:#bbb;font-size:12px">Traitement en cours…</span>';
   try{
     const out=await callMistral([
-      {role:'system',content:'Tu es un expert en rédaction française. Effectue EXACTEMENT l\'action demandée sur le texte fourni. Réponds UNIQUEMENT avec le texte résultant, sans commentaire ni introduction.'},
-      {role:'user',content:`Action : ${action}\n\nTexte :\n${input}`}
+      {role:'system',content:'Tu es un expert en rédaction et littérature française. Effectue EXACTEMENT l\'action demandée. Réponds UNIQUEMENT avec le texte résultant, sans introduction ni commentaire.'},
+      {role:'user',content:`Action : ${action}\n\nTexte original :\n${input}`}
     ],'mistral-small-latest',2000);
     if(result) result.textContent=out;
-  }catch(e){if(result) result.innerHTML='<span class="th-result-placeholder">Erreur : '+esc(e.message)+'</span>';}
+  }catch(e){if(result) result.innerHTML=`<span style="color:#ef4444;font-size:12px">Erreur : ${esc(e.message)}</span>`;}
   if(spinner) spinner.style.display='none';
 }
+
+function swapTranslateLangs(){
+  const from=G('th-lang-from');const to=G('th-lang-to');
+  if(!from||!to) return;
+  const tmp=from.value; from.value=to.value; to.value=tmp;
+}
+
 async function runTranslation(){
   const input=G('th-translate-input')?.value?.trim();
   if(!input){toast('Entrez un texte à traduire');return;}
@@ -3625,55 +3802,85 @@ async function runTranslation(){
   const toLang=G('th-lang-to')?.value||'fr';
   const spinner=G('th-spinner-tr'); if(spinner) spinner.style.display='inline-block';
   const result=G('th-result-translate');
-  if(result) result.innerHTML='<span class="th-result-placeholder">Traduction…</span>';
+  if(result) result.innerHTML='<span style="color:#bbb;font-size:12px">Traduction en cours…</span>';
   try{
-    // MyMemory API — free, no key needed, 5000 chars/day per IP
-    const langPair=`${fromLang==='auto'?'':fromLang}|${toLang}`;
-    const url=`https://api.mymemory.translated.net/get?q=${encodeURIComponent(input.substring(0,500))}&langpair=${encodeURIComponent(langPair)}`;
+    const pair=`${fromLang==='auto'?'autodetect':fromLang}|${toLang}`;
+    const url=`https://api.mymemory.translated.net/get?q=${encodeURIComponent(input.substring(0,500))}&langpair=${encodeURIComponent(pair)}`;
     const res=await fetch(url);
     if(!res.ok) throw new Error('MyMemory '+res.status);
     const data=await res.json();
-    const translated=data.responseData?.translatedText||data.matches?.[0]?.translation;
-    if(translated&&translated!==input){
+    const translated=data.responseData?.translatedText;
+    if(translated&&translated!==input&&data.responseStatus===200){
       if(result) result.textContent=translated;
-    }else{
-      throw new Error('Traduction non disponible');
-    }
+    }else{ throw new Error('no_translation'); }
   }catch(e){
-    // Fallback : Mistral translation
+    // Fallback Mistral
     try{
-      const langNames={fr:'français',en:'anglais',es:'espagnol',de:'allemand',it:'italien',pt:'portugais',ar:'arabe',zh:'chinois',ja:'japonais',ru:'russe',nl:'néerlandais',pl:'polonais',tr:'turc',ko:'coréen'};
-      const toName=langNames[toLang]||toLang;
+      const lNames={fr:'français',en:'anglais',es:'espagnol',de:'allemand',it:'italien',pt:'portugais',ar:'arabe',zh:'chinois',ja:'japonais',ru:'russe',nl:'néerlandais',pl:'polonais',tr:'turc',ko:'coréen'};
       const out=await callMistral([
-        {role:'system',content:`Traduis le texte suivant en ${toName}. Réponds UNIQUEMENT avec la traduction, sans commentaire.`},
+        {role:'system',content:`Traduis en ${lNames[toLang]||toLang}. Réponds UNIQUEMENT avec la traduction.`},
         {role:'user',content:input}
       ],'mistral-small-latest',1500);
       if(result) result.textContent=out;
-    }catch(e2){if(result) result.innerHTML='<span class="th-result-placeholder">Erreur : '+esc(e2.message)+'</span>';}
+    }catch(e2){if(result) result.innerHTML=`<span style="color:#ef4444;font-size:12px">Erreur : ${esc(e2.message)}</span>`;}
   }
   if(spinner) spinner.style.display='none';
 }
+
 function copyThResult(id){
   const el=G(id); if(!el) return;
-  copyText(el.textContent||'');
-  toast('Copié !');
+  const t=el.textContent?.trim();
+  if(!t||t.includes('apparaîtra ici')||t.includes('Traduction')){toast('Rien à copier');return;}
+  copyText(t); toast('Copié !');
 }
 function importThResultToChat(id){
   const el=G(id); if(!el) return;
-  const text=el.textContent?.trim(); if(!text||text.includes('apparaîtra ici')) return;
+  const text=el.textContent?.trim();
+  if(!text||text.includes('apparaîtra ici')){toast('Rien à importer');return;}
   S.attachments.push({type:'text',name:'Texte traité',content:text});
   updateAttachmentPreview();
-  closeTextHelperPanel();
-  G('user-input').focus();
   toast('Texte importé dans le chat');
 }
 function swapThText(){
-  const result=G('th-result-literary')?.textContent?.trim();
-  if(!result||result.includes('apparaîtra ici')) return;
-  G('th-input-text').value=result;
-  G('th-result-literary').innerHTML='<span class="th-result-placeholder">Le résultat apparaîtra ici…</span>';
-  toast('Texte source mis à jour');
+  const res=G('th-result-literary')?.textContent?.trim();
+  if(!res||res.includes('apparaîtra ici')){toast('Aucun résultat à utiliser');return;}
+  G('th-input-text').value=res;
+  G('th-result-literary').innerHTML='<span style="color:#bbb;font-size:12px">Le résultat apparaîtra ici…</span>';
+  onThInputChange();
+  toast('Texte source mis à jour ✓');
 }
+
+// ── HELP CHAT (mini bot Wikimind Flash) ──
+const HELP_HISTORY=[];
+async function sendHelpMsg(){
+  const input=G('help-chat-input'); if(!input) return;
+  const text=input.value.trim(); if(!text) return;
+  input.value='';
+  const msgs=G('help-chat-messages');
+  const addMsg=(content,role)=>{
+    const div=document.createElement('div');
+    div.className='help-msg '+role;
+    div.textContent=content;
+    msgs.appendChild(div);
+    msgs.scrollTop=msgs.scrollHeight;
+  };
+  addMsg(text,'user');
+  HELP_HISTORY.push({role:'user',content:text});
+  const typing=document.createElement('div');
+  typing.className='help-typing'; typing.textContent='WikiMind réfléchit…';
+  msgs.appendChild(typing); msgs.scrollTop=msgs.scrollHeight;
+  try{
+    const sys='Tu es l\'assistant support de WikiMind AI. Tu aides les utilisateurs avec leurs questions sur WikiMind : forfaits (Free, AI Plus, AI Pro, AI Premium, AI Premium+), fonctionnalités (Canvas, Codeur, OCR, Aide au texte, Réflexion, etc.), problèmes techniques. Réponds en français, de façon concise et bienveillante.';
+    const reply=await callMistral([{role:'system',content:sys},...HELP_HISTORY],'mistral-small-latest',400);
+    typing.remove();
+    HELP_HISTORY.push({role:'assistant',content:reply});
+    addMsg(reply,'bot');
+  }catch(e){
+    typing.remove();
+    addMsg('Désolé, je ne suis pas disponible pour le moment. Réessayez.','bot');
+  }
+}
+
 
 window.bootUser=bootUser;
 console.log('%cWikiMind AI','color:#111;font-family:Inter,sans-serif;font-size:20px;font-weight:900;font-style:italic');
