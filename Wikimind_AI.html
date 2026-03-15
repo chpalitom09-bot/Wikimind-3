@@ -39,6 +39,8 @@ a{text-decoration:none;color:inherit;}
 /* SIDEBAR */
 #sidebar{width:280px;min-width:280px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:margin .35s cubic-bezier(.4,0,.2,1);z-index:50;flex-shrink:0;margin-left:-280px;}
 #sidebar.open{margin-left:0;}
+#sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:49;transition:opacity .35s;}
+@media(max-width:768px){#sidebar-backdrop.show{display:block;}}
 .sb-header{padding:24px 20px 16px;border-bottom:1px solid var(--border);}
 .sb-logo{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;}
 .sb-logo h1{font-size:18px;font-weight:900;letter-spacing:-.04em;text-transform:uppercase;font-style:italic;}
@@ -61,6 +63,10 @@ a{text-decoration:none;color:inherit;}
 .history-item-del{opacity:0;color:#ccc;font-size:14px;transition:.2s;cursor:pointer;flex-shrink:0;}
 .history-item:hover .history-item-del{opacity:1;}
 .history-item-del:hover{color:#ef4444;}
+.history-item-edit{opacity:0;color:#ccc;font-size:13px;transition:.2s;cursor:pointer;flex-shrink:0;background:none;border:none;padding:0 2px;}
+.history-item:hover .history-item-edit{opacity:1;}
+.history-item-edit:hover{color:var(--text);}
+.history-rename-input{flex:1;background:var(--input-bg);border:1px solid var(--border2);border-radius:5px;padding:2px 6px;font-size:12px;color:var(--text);font-family:'Inter',sans-serif;outline:none;}
 .sb-bottom{padding:14px 12px;border-top:1px solid var(--border);flex-shrink:0;}
 .user-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;cursor:pointer;transition:.2s;}
 .user-row:hover{background:var(--select-bg);}
@@ -475,8 +481,17 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
 </div>
 
 <!-- MAIN AREA -->
+<div id="sidebar-backdrop" onclick="toggleSidebar()"></div>
 <div id="main-area">
 <div id="chat-area">
+  <!-- Drag & Drop overlay -->
+  <div id="dnd-overlay" style="display:none;position:absolute;inset:0;z-index:200;background:rgba(17,17,17,.55);backdrop-filter:blur(2px);border:3px dashed #fff;border-radius:16px;align-items:center;justify-content:center;pointer-events:none;">
+    <div style="text-align:center;color:#fff">
+      <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 10px;display:block"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <p style="font-size:18px;font-weight:800;letter-spacing:-.02em">Déposez votre fichier ici</p>
+      <p style="font-size:12px;opacity:.7;margin-top:4px">PDF, image, document…</p>
+    </div>
+  </div>
   <div class="float-btns">
     <div class="float-btn" onclick="toggleSidebar()" title="Sidebar">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
@@ -1152,11 +1167,35 @@ function renderHistory(){
   const sorted=Object.entries(S.chats).sort(([,a],[,b])=>(b.updatedAt||0)-(a.updatedAt||0));
   if(!sorted.length){list.innerHTML='<div style="padding:10px 10px;font-size:11px;color:#aaa">Aucune conversation</div>';return;}
   list.innerHTML=sorted.map(([id,c])=>`
-    <div class="history-item ${id===S.chatId?'active':''}" onclick="loadChat('${id}')">
+    <div class="history-item ${id===S.chatId?'active':''}" onclick="loadChat('${id}')" ondblclick="startRenameChat(event,'${id}')">
       <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-      <span class="history-item-title">${esc(c.title||'Sans titre')}</span>
+      <span class="history-item-title" id="htitle-${id}">${esc(c.title||'Sans titre')}</span>
+      <button class="history-item-edit" title="Renommer" onclick="startRenameChat(event,'${id}')">
+        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
       <span class="history-item-del" onclick="delChat(event,'${id}')">✕</span>
     </div>`).join('');
+}
+function startRenameChat(e,id){
+  e.stopPropagation();
+  const titleEl=G('htitle-'+id); if(!titleEl) return;
+  const current=S.chats[id]?.title||'';
+  const inp=document.createElement('input');
+  inp.className='history-rename-input';
+  inp.value=current;
+  inp.onclick=ev=>ev.stopPropagation();
+  inp.onkeydown=ev=>{
+    if(ev.key==='Enter'){ev.preventDefault();commitRename(id,inp.value);}
+    if(ev.key==='Escape'){renderHistory();}
+  };
+  inp.onblur=()=>commitRename(id,inp.value);
+  titleEl.replaceWith(inp);
+  inp.focus(); inp.select();
+}
+async function commitRename(id,newTitle){
+  const t=newTitle.trim(); if(!t||!S.chats[id]) return renderHistory();
+  S.chats[id].title=t; renderHistory(); persistChat();
+  toast('Conversation renommée');
 }
 function loadChat(id){
   const c=S.chats[id]; if(!c) return;
@@ -1235,6 +1274,9 @@ function renderMsg(msg, doScroll=true){
       <button class="action-btn" title="Copier" onclick="copyText(${JSON.stringify(msgContent)})">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
       </button>
+      <button class="action-btn" title="Lire à voix haute" id="tts-${msgIdx}" onclick="toggleTTS(${msgIdx},${JSON.stringify(msgContent)})">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg>
+      </button>
       <button class="action-btn" title="J'aime" id="like-${msgIdx}" onclick="toggleLike(${msgIdx})">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>
       </button>
@@ -1253,9 +1295,13 @@ function renderMsg(msg, doScroll=true){
 function typewriterEffect(el,fullText){
   el.classList.add('typing-cursor');
   let i=0; const plain=fullText; const speed=Math.max(8,Math.min(30,Math.round(12000/plain.length)));
+  const cc=G('chat-container');
+  function isUserScrolledUp(){
+    return cc.scrollHeight - cc.scrollTop - cc.clientHeight > 80;
+  }
   function tick(){
     i+=Math.ceil(plain.length/400); el.innerHTML=formatMarkdown(plain.substring(0,i));
-    G('chat-container').scrollTop=G('chat-container').scrollHeight;
+    if(!isUserScrolledUp()) cc.scrollTop=cc.scrollHeight;
     if(i<plain.length){setTimeout(tick,speed);}else{el.innerHTML=formatMarkdown(fullText);el.classList.remove('typing-cursor');applyMath(el);applyHljs(el);}
   }
   tick();
@@ -1943,7 +1989,82 @@ function toggleSpeechToText(){
   _sttRecognition.start();
 }
 
-// ── CANVAS ──
+// ── GLOBAL DRAG & DROP ──
+(function(){
+  const chatArea=()=>G('chat-area');
+  const overlay=()=>G('dnd-overlay');
+  let _dragCounter=0;
+  document.addEventListener('dragenter',e=>{
+    if(!chatArea()) return;
+    _dragCounter++;
+    if(overlay()) overlay().style.display='flex';
+  });
+  document.addEventListener('dragleave',e=>{
+    _dragCounter--;
+    if(_dragCounter<=0){_dragCounter=0;if(overlay())overlay().style.display='none';}
+  });
+  document.addEventListener('dragover',e=>e.preventDefault());
+  document.addEventListener('drop',e=>{
+    e.preventDefault(); _dragCounter=0;
+    if(overlay()) overlay().style.display='none';
+    const files=Array.from(e.dataTransfer.files);
+    if(!files.length) return;
+    files.forEach(async file=>{
+      const ext=file.name.split('.').pop().toLowerCase();
+      const isImage=['jpg','jpeg','png','gif','webp','bmp'].includes(ext);
+      const isDoc=['pdf','txt','md','csv','docx','xlsx','pptx','odt'].includes(ext);
+      if(isImage){
+        if(S.plan<4){toast('Import images — plan AI Premium requis');return;}
+        const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>res(ev.target.result);r.onerror=()=>rej();r.readAsDataURL(file);});
+        S.attachments.push({type:'image',name:file.name,content:dataUrl});
+        updateAttachmentPreview(); toast(`🖼️ ${file.name} ajouté`);
+      }else if(isDoc){
+        if(S.plan<3){toast('Import fichiers — plan AI Pro requis');openPlansOverlay();return;}
+        try{const content=await readFileContent(file);S.attachments.push({type:'text',name:file.name,content});updateAttachmentPreview();toast(`📄 ${file.name} ajouté`);}
+        catch(err){toast(`Erreur lecture ${file.name}`);}
+      }else{
+        toast(`Format non supporté : .${ext}`);
+      }
+    });
+  });
+})();
+
+// ── TEXT TO SPEECH ──
+let _ttsActive=null;
+function toggleTTS(msgIdx, text){
+  if(!('speechSynthesis' in window)){toast('Synthèse vocale non supportée');return;}
+  const btn=G('tts-'+msgIdx);
+  if(_ttsActive?.msgIdx===msgIdx){
+    window.speechSynthesis.cancel();
+    _ttsActive=null;
+    if(btn){btn.style.color='';btn.classList.remove('active-btn');}
+    return;
+  }
+  if(_ttsActive){
+    window.speechSynthesis.cancel();
+    const prevBtn=G('tts-'+_ttsActive.msgIdx);
+    if(prevBtn){prevBtn.style.color='';prevBtn.classList.remove('active-btn');}
+    _ttsActive=null;
+  }
+  const clean=text.replace(/[#*`_~>]/g,'').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/!\[[^\]]*\]\([^)]+\)/g,'').trim();
+  const utt=new SpeechSynthesisUtterance(clean);
+  utt.lang='fr-FR'; utt.rate=1; utt.pitch=1;
+  const trySpeak=()=>{
+    const voices=window.speechSynthesis.getVoices();
+    const frVoice=voices.find(v=>v.lang.startsWith('fr'));
+    if(frVoice) utt.voice=frVoice;
+    utt.onend=()=>{_ttsActive=null;if(btn){btn.style.color='';btn.classList.remove('active-btn');}};
+    utt.onerror=()=>{_ttsActive=null;if(btn){btn.style.color='';btn.classList.remove('active-btn');}toast('Erreur lecture vocale');};
+    if(btn){btn.style.color='#22c55e';btn.classList.add('active-btn');}
+    _ttsActive={msgIdx};
+    window.speechSynthesis.speak(utt);
+    toast('🔊 Lecture en cours…');
+  };
+  // Voices may not be loaded yet on first call
+  if(window.speechSynthesis.getVoices().length>0){ trySpeak(); }
+  else{ window.speechSynthesis.onvoiceschanged=()=>{ window.speechSynthesis.onvoiceschanged=null; trySpeak(); }; trySpeak(); }
+}
+
 function toggleCanvas(){
   if(!S.canvasOpen&&S.plan<2){toast('Canvas — plan AI Plus requis');openPlansOverlay();return;}
   S.canvasOpen=!S.canvasOpen;
@@ -2038,7 +2159,7 @@ function rmCustModel(i){const m=S.customModels[i];delete MISTRAL_MODELS[m.id];S.
 function saveSys(){S.sysPrompt=G('sys-prompt').value;toast('Instruction système sauvegardée');closeModal('cust-modal');}
 
 // ── DARK MODE ──
-function toggleSidebar(){S.sidebarOpen=!S.sidebarOpen;G('sidebar').classList.toggle('open',S.sidebarOpen);}
+function toggleSidebar(){S.sidebarOpen=!S.sidebarOpen;G('sidebar').classList.toggle('open',S.sidebarOpen);const bd=G('sidebar-backdrop');if(bd)bd.classList.toggle('show',S.sidebarOpen);}
 function toggleDark(){document.body.classList.toggle('dark-mode');const isDark=document.body.classList.contains('dark-mode');localStorage.setItem('wm_dark',isDark?'1':'0');updateHlTheme();syncDarkToggle();}
 function syncDarkToggle(){const isDark=document.body.classList.contains('dark-mode');const el=G('dark-toggle');if(!el)return;if(isDark){el.style.background='#22c55e';el.querySelector('.toggle-dot').style.left='22px';}else{el.style.background='#ddd';el.querySelector('.toggle-dot').style.left='2px';}}
 function toggleWritingAnim(){S.writingAnim=!S.writingAnim;localStorage.setItem('wm_writing_anim',S.writingAnim?'1':'0');syncWritingAnimToggle();toast(S.writingAnim?'Animation d\'écriture activée':'Animation d\'écriture désactivée');}
