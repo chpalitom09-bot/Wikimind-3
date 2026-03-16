@@ -1430,11 +1430,11 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
       <span class="tool-item-badge tool-badge-plus">AI Plus</span>
     </button>
 
-    <div class="tools-section-label" style="margin-top:6px">AI Premium</div>
+    <div class="tools-section-label" style="margin-top:6px">AI Pro</div>
     <button class="tool-item" onclick="openOcrPanel();closeToolsPanel()" id="tool-ocr-btn">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h10M7 12h6M7 16h4"/></svg>
-      <span class="tool-item-label">Extraction texte (OCR)</span>
-      <span class="tool-item-badge tool-badge-premium">Premium</span>
+      <span class="tool-item-label">Extraction texte (OCR + IA)</span>
+      <span class="tool-item-badge tool-badge-pro">Pro</span>
     </button>
 
     <div class="tools-section-label" style="margin-top:6px">AI Premium+</div>
@@ -1661,16 +1661,35 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
   </div>
 </div>
 
-<!-- OCR PANEL — Extraction de texte par vision IA -->
+<!-- OCR PANEL — Tesseract.js + Wikimind AI -->
 <div id="ocr-panel">
   <div class="ocr-hdr">
     <div class="ocr-hdr-left">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
       <h3>Extraction de texte</h3>
-      <span class="ocr-plan-badge" id="ocr-plan-label">Premium</span>
+      <span class="ocr-plan-badge" id="ocr-plan-label">Pro</span>
+      <!-- Badge moteur actif -->
+      <span id="ocr-engine-badge" style="font-size:9px;font-weight:800;text-transform:uppercase;padding:2px 7px;border-radius:20px;background:rgba(16,185,129,.12);color:#10b981;letter-spacing:.04em">Tesseract</span>
     </div>
-    <button class="float-btn" onclick="closeOcrPanel()" title="Fermer" style="position:static;width:32px;height:32px;">
-      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
-    </button>
+    <div style="display:flex;align-items:center;gap:6px">
+      <!-- Toggle amélioration IA -->
+      <div style="display:flex;align-items:center;gap:5px;cursor:pointer" onclick="toggleOcrAI()" title="Amélioration IA (Wikimind Flash)">
+        <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:#888;letter-spacing:.06em">IA</span>
+        <div id="ocr-ai-toggle" style="width:32px;height:18px;border-radius:20px;background:#ddd;position:relative;transition:.2s;flex-shrink:0">
+          <div style="position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)" id="ocr-ai-dot"></div>
+        </div>
+      </div>
+      <button class="float-btn" onclick="closeOcrPanel()" title="Fermer" style="position:static;width:32px;height:32px;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </div>
+  <!-- Barre de progression Tesseract -->
+  <div id="ocr-progress-bar-wrap" style="display:none;padding:0 12px 0;flex-shrink:0">
+    <div style="height:3px;background:var(--border2);border-radius:2px;overflow:hidden;margin-bottom:2px">
+      <div id="ocr-progress-fill" style="height:100%;background:linear-gradient(90deg,#10b981,#06b6d4);border-radius:2px;width:0%;transition:width .2s"></div>
+    </div>
+    <div id="ocr-progress-label" style="font-size:9px;color:#888;text-align:right;padding-bottom:4px">0%</div>
   </div>
   <div class="ocr-body">
     <div class="ocr-panes">
@@ -1685,12 +1704,36 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
         <input type="file" id="ocr-file-input" accept="image/*" multiple style="display:none" onchange="onOcrImagesSelected(event)">
         <div class="ocr-drop-zone" id="ocr-drop-zone" onclick="document.getElementById('ocr-file-input').click()">
           <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          Glissez ou cliquez<br><span style="font-size:9px">Max 20 images</span>
+          Glissez ou cliquez<br><span style="font-size:9px">Max 20 images · PNG JPG WEBP</span>
+        </div>
+        <!-- Sélecteur de langue Tesseract -->
+        <div style="padding:6px 8px;border-bottom:1px solid var(--border);flex-shrink:0">
+          <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#aaa;margin-bottom:4px">Langue principale</div>
+          <select id="ocr-lang-select" style="width:100%;padding:5px 8px;border-radius:7px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:11px;font-weight:600;outline:none;font-family:Inter,sans-serif;appearance:none">
+            <option value="fra">Français</option>
+            <option value="eng">Anglais</option>
+            <option value="fra+eng">Français + Anglais</option>
+            <option value="spa">Espagnol</option>
+            <option value="deu">Allemand</option>
+            <option value="ita">Italien</option>
+            <option value="por">Portugais</option>
+            <option value="ara">Arabe</option>
+            <option value="chi_sim">Chinois simplifié</option>
+            <option value="jpn">Japonais</option>
+            <option value="rus">Russe</option>
+            <option value="osd">Détection auto</option>
+          </select>
         </div>
         <div class="ocr-img-list" id="ocr-img-list"></div>
       </div>
       <div class="ocr-text-pane">
-        <div class="ocr-text-pane-header">Texte extrait</div>
+        <div class="ocr-text-pane-header" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Texte extrait</span>
+          <div style="display:flex;gap:4px">
+            <button class="ocr-btn secondary" style="padding:2px 8px;font-size:9px" onclick="copyOcrText()" id="ocr-copy-btn" disabled>📋</button>
+            <button class="ocr-btn secondary" style="padding:2px 8px;font-size:9px" onclick="clearOcrText()" id="ocr-clear-btn" disabled>🗑</button>
+          </div>
+        </div>
         <div id="ocr-extracted-text">
           <div class="ocr-text-placeholder" id="ocr-placeholder">
             <svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
@@ -1702,8 +1745,11 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
     <div class="ocr-footer">
       <span class="ocr-rate-info" id="ocr-rate-info">—</span>
       <div class="ocr-footer-btns">
-        <button class="ocr-btn secondary" id="ocr-extract-btn" onclick="runOcrExtraction()" disabled>Extraire le texte</button>
-        <button class="ocr-btn primary" id="ocr-import-btn" onclick="importOcrToChat()" disabled>Importer dans le chat</button>
+        <button class="ocr-btn secondary" id="ocr-extract-btn" onclick="runOcrExtraction()" disabled>
+          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="margin-right:4px;vertical-align:middle"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          Extraire
+        </button>
+        <button class="ocr-btn primary" id="ocr-import-btn" onclick="importOcrToChat()" disabled>→ Chat</button>
       </div>
     </div>
   </div>
@@ -2770,8 +2816,8 @@ function updateUserUI(){
   // Profile photo (AI Plus+)
   const ppWrap=G('profile-photo-wrap'); if(ppWrap) ppWrap.classList.toggle('show',S.plan>=2);
   syncProfilePhotoUI();
-  // OCR button in sidebar
-  const ocrBtn=G('sb-btn-ocr'); if(ocrBtn) ocrBtn.style.display=S.plan>=4?'flex':'none';
+  // OCR button in sidebar — now Plan 3 (Pro)
+  const ocrBtn=G('sb-btn-ocr'); if(ocrBtn) ocrBtn.style.display=S.plan>=3?'flex':'none';
   // Coder button in sidebar + tools panel
   const coderBtn=G('sb-btn-coder'); if(coderBtn) coderBtn.style.display=S.plan>=3?'flex':'none';
   const coderToggleBtn=G('btn-coder-toggle'); if(coderToggleBtn) coderToggleBtn.style.display=S.plan>=3?'flex':'none';
@@ -3893,211 +3939,342 @@ async function analyzeImageWithVision(imageDataUrl, question){
   }catch(e){console.warn('Vision error:',e);return null;}
 }
 
-// ── GOOGLE CLOUD VISION OCR — 100% Google, sans fallback Pixtral ──
-// Clé API du projet wikimind-3-comments (même que Firebase)
-const GOOGLE_VISION_API_KEY = 'AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA';
+// ══════════════════════════════════════════════════════
+// OCR — TESSERACT.JS + AMÉLIORATION IA (WIKIMIND FLASH)
+// Plans : Pro (3) = 1/h sans IA · Premium (4) = 1/h avec IA · Premium+ (5) = illimité avec IA
+// ══════════════════════════════════════════════════════
 
-// State OCR
+const GOOGLE_VISION_API_KEY = 'AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA'; // gardé pour compatibilité
+
 const OCR = {
-  images: [],    // [{name, dataUrl, text, status}]
-  lastOcrTs: 0,  // timestamp dernière extraction (rate limit premium)
-  open: false,
+  images:      [],   // [{name, dataUrl, text, rawText, status, confidence}]
+  lastOcrTs:   0,
+  open:        false,
+  aiEnabled:   true, // amélioration IA activée par défaut
+  _tessWorker: null,
+  _tessLang:   null,
+  _tessLoading: false,
 };
 
+// ── Ouvrir / fermer ──
 function openOcrPanel(){
-  if(S.plan<4){toast('Extraction de texte — plan AI Premium requis');openPlansOverlay();return;}
+  if(S.plan<3){toast('Extraction de texte — plan AI Pro requis');openPlansOverlay();return;}
   OCR.open=true;
   G('ocr-panel').classList.add('open');
   updateOcrRateUI();
+  syncOcrAIToggle();
 }
+
 function closeOcrPanel(){
   OCR.open=false;
   G('ocr-panel').classList.remove('open');
 }
 
-function updateOcrRateUI(){
-  const info=G('ocr-rate-info'); if(!info) return;
-  const lbl=G('ocr-plan-label');
-  if(S.plan>=5){
-    info.textContent='Extractions illimitées (Premium+)';
-    info.className='ocr-rate-info';
-    if(lbl){lbl.textContent='Premium+';lbl.style.background='rgba(239,68,68,.12)';lbl.style.color='#ef4444';}
-  }else if(S.plan===4){
-    const elapsed=Date.now()-OCR.lastOcrTs;
-    const remaining=Math.max(0,3600000-elapsed);
-    if(OCR.lastOcrTs>0&&remaining>0){
-      const min=Math.ceil(remaining/60000);
-      info.textContent=`1/heure · disponible dans ${min}min`;
-      info.className='ocr-rate-info warning';
-    }else{
-      info.textContent='1 extraction / heure (Premium)';
-      info.className='ocr-rate-info';
-    }
-    if(lbl){lbl.textContent='Premium';lbl.style.background='rgba(217,119,6,.12)';lbl.style.color='#d97706';}
-  }else{
-    info.textContent='Plan AI Premium requis';
-    info.className='ocr-rate-info warning';
+// ── Toggle amélioration IA ──
+function toggleOcrAI(){
+  // Sans IA : plan 3 (Pro) autorisé · Avec IA : plan 4+ requis
+  if(!OCR.aiEnabled && S.plan<4){
+    toast('Amélioration IA — plan AI Premium requis');
+    openPlansOverlay();
+    return;
+  }
+  OCR.aiEnabled = !OCR.aiEnabled;
+  syncOcrAIToggle();
+  toast(OCR.aiEnabled ? '✦ Amélioration IA activée' : 'Amélioration IA désactivée — Tesseract pur');
+}
+
+function syncOcrAIToggle(){
+  const tog = G('ocr-ai-toggle');
+  const dot = G('ocr-ai-dot');
+  if(!tog || !dot) return;
+  const canAI = S.plan >= 4;
+  const on = OCR.aiEnabled && canAI;
+  tog.style.background = on ? '#10b981' : '#ddd';
+  dot.style.left = on ? '16px' : '2px';
+  // Badge engine
+  const badge = G('ocr-engine-badge');
+  if(badge){
+    badge.textContent = on ? 'Tesseract + IA' : 'Tesseract';
+    badge.style.background = on ? 'rgba(16,185,129,.12)' : 'rgba(59,130,246,.1)';
+    badge.style.color = on ? '#10b981' : '#2563eb';
   }
 }
 
+// ── Charger / réutiliser le worker Tesseract ──
+async function _getTessWorker(lang){
+  // Réutiliser le worker si même langue
+  if(OCR._tessWorker && OCR._tessLang === lang){
+    return OCR._tessWorker;
+  }
+  // Terminer l'ancien worker si langue différente
+  if(OCR._tessWorker){
+    try{ await OCR._tessWorker.terminate(); }catch(e){}
+    OCR._tessWorker = null;
+  }
+  if(OCR._tessLoading) {
+    // Attendre que le chargement en cours finisse
+    await new Promise(r => { const iv = setInterval(()=>{ if(!OCR._tessLoading){clearInterval(iv);r();} },200); });
+    if(OCR._tessWorker) return OCR._tessWorker;
+  }
+  OCR._tessLoading = true;
+  toast('⏳ Chargement de Tesseract.js…');
+
+  // Tesseract.js v4 via CDN
+  if(!window.Tesseract){
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+
+  try{
+    const worker = await Tesseract.createWorker(lang, 1, {
+      workerPath:   'https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/worker.min.js',
+      langPath:     'https://tessdata.projectnaptha.com/4.0.0',
+      corePath:     'https://cdn.jsdelivr.net/npm/tesseract.js-core@4/tesseract-core.wasm.js',
+      logger:       m => {
+        if(m.status === 'recognizing text'){
+          const pct = Math.round((m.progress||0)*100);
+          const fill = G('ocr-progress-fill');
+          const lbl  = G('ocr-progress-label');
+          if(fill) fill.style.width = pct + '%';
+          if(lbl)  lbl.textContent  = pct + '%';
+        }
+      },
+      errorHandler: e => console.warn('[Tesseract]', e),
+    });
+
+    // Paramètres avancés pour meilleure précision
+    await worker.setParameters({
+      tessedit_pageseg_mode:   Tesseract.PSM.AUTO,   // détection auto de la mise en page
+      preserve_interword_spaces: '1',
+      tessedit_char_whitelist: '', // pas de whitelist = tous caractères acceptés
+    });
+
+    OCR._tessWorker = worker;
+    OCR._tessLang   = lang;
+    toast('✓ Tesseract prêt !');
+    return worker;
+  }finally{
+    OCR._tessLoading = false;
+  }
+}
+
+// ── Prétraitement image : améliore la qualité avant OCR ──
+async function _preprocessImage(dataUrl){
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      // Upscale si l'image est petite (améliore la précision Tesseract)
+      const scale  = Math.max(1, Math.min(3, 1200 / Math.max(img.width, img.height)));
+      canvas.width  = img.width  * scale;
+      canvas.height = img.height * scale;
+      const ctx = canvas.getContext('2d');
+
+      // Fond blanc
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Dessiner l'image upscalée
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // Amélioration du contraste : filtre CSS-like via ImageData
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d = imageData.data;
+      for(let i = 0; i < d.length; i += 4){
+        // Niveaux de gris
+        const gray = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+        // Augmenter le contraste (formule : newVal = clamp((val - 128) * factor + 128, 0, 255))
+        const contrast = 1.4;
+        const c = Math.min(255, Math.max(0, (gray - 128) * contrast + 128));
+        d[i] = d[i+1] = d[i+2] = c;
+      }
+      ctx.putImageData(imageData, 0, 0);
+
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => resolve(dataUrl); // fallback image originale
+    img.src = dataUrl;
+  });
+}
+
+// ── Amélioration IA du texte brut (Wikimind Flash) ──
+async function _aiImproveOcrText(rawText, lang){
+  if(!rawText || !rawText.trim()) return rawText;
+
+  const langNames = {
+    fra:'français', eng:'anglais', 'fra+eng':'français/anglais',
+    spa:'espagnol', deu:'allemand', ita:'italien', por:'portugais',
+    ara:'arabe', chi_sim:'chinois', jpn:'japonais', rus:'russe', osd:'auto'
+  };
+  const langName = langNames[lang] || lang;
+
+  const sys = `Tu es un expert en correction de texte OCR. Tu reçois un texte extrait par OCR qui peut contenir des erreurs typiques : lettres confondues (l/I/1, 0/O, rn/m, etc.), espaces mal placés, mots coupés, caractères spéciaux erronés, lignes fusionnées.
+
+Ta mission :
+1. Corriger TOUTES les erreurs OCR évidentes en gardant le sens original
+2. Reconstruire la mise en page logique (paragraphes, listes, titres)
+3. Ne JAMAIS inventer ou ajouter du contenu absent dans l'original
+4. Conserver la structure du document (numérotation, tableaux, formules)
+5. Langue du document : ${langName}
+
+Réponds UNIQUEMENT avec le texte corrigé, sans commentaire ni introduction.`;
+
+  try{
+    const corrected = await callMistral(
+      [{ role:'system', content:sys },
+       { role:'user',   content:`Texte OCR brut à corriger :\n\n${rawText}` }],
+      'mistral-small-latest',
+      Math.min(4000, rawText.length * 2 + 500)
+    );
+    return corrected || rawText;
+  }catch(e){
+    console.warn('[OCR-AI] Amélioration échouée:', e.message);
+    return rawText; // retourner le texte brut si l'IA échoue
+  }
+}
+
+// ── Mise à jour UI taux limite ──
+function updateOcrRateUI(){
+  const info = G('ocr-rate-info');
+  const lbl  = G('ocr-plan-label');
+  if(!info) return;
+
+  if(S.plan >= 5){
+    info.textContent = 'Illimité · IA incluse (Premium+)';
+    info.className   = 'ocr-rate-info';
+    if(lbl){ lbl.textContent='Premium+'; lbl.style.background='rgba(239,68,68,.12)'; lbl.style.color='#ef4444'; }
+  }else if(S.plan === 4){
+    const elapsed    = Date.now() - OCR.lastOcrTs;
+    const remaining  = Math.max(0, 3600000 - elapsed);
+    if(OCR.lastOcrTs > 0 && remaining > 0){
+      const min = Math.ceil(remaining / 60000);
+      info.textContent = `1/heure · dispo dans ${min}min · IA incluse`;
+      info.className   = 'ocr-rate-info warning';
+    }else{
+      info.textContent = '1 extraction/heure · IA incluse (Premium)';
+      info.className   = 'ocr-rate-info';
+    }
+    if(lbl){ lbl.textContent='Premium'; lbl.style.background='rgba(217,119,6,.12)'; lbl.style.color='#d97706'; }
+  }else if(S.plan === 3){
+    const elapsed   = Date.now() - OCR.lastOcrTs;
+    const remaining = Math.max(0, 3600000 - elapsed);
+    if(OCR.lastOcrTs > 0 && remaining > 0){
+      const min = Math.ceil(remaining / 60000);
+      info.textContent = `1/heure · dispo dans ${min}min · sans IA`;
+      info.className   = 'ocr-rate-info warning';
+    }else{
+      info.textContent = '1 extraction/heure · sans IA (Pro)';
+      info.className   = 'ocr-rate-info';
+    }
+    if(lbl){ lbl.textContent='Pro'; lbl.style.background='rgba(124,58,237,.12)'; lbl.style.color='#7c3aed'; }
+  }else{
+    info.textContent = 'Plan AI Pro requis';
+    info.className   = 'ocr-rate-info warning';
+    if(lbl){ lbl.textContent='Pro requis'; lbl.style.background='rgba(107,114,128,.1)'; lbl.style.color='#6b7280'; }
+  }
+}
+
+// ── Sélection d'images ──
 function onOcrImagesSelected(e){
-  const files=Array.from(e.target.files);
-  const remaining=20-OCR.images.length;
-  if(remaining<=0){toast('Limite de 20 images atteinte');e.target.value='';return;}
-  const toAdd=files.slice(0,remaining);
-  if(files.length>remaining) toast(`Limite 20 images — ${files.length-remaining} ignorée(s)`);
-  toAdd.forEach(f=>{
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      OCR.images.push({name:f.name,dataUrl:ev.target.result,text:'',status:'pending'});
+  const files     = Array.from(e.target.files);
+  const remaining = 20 - OCR.images.length;
+  if(remaining <= 0){ toast('Limite de 20 images atteinte'); e.target.value=''; return; }
+  const toAdd = files.slice(0, remaining);
+  if(files.length > remaining) toast(`Limite 20 images — ${files.length - remaining} ignorée(s)`);
+  toAdd.forEach(f => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      OCR.images.push({ name:f.name, dataUrl:ev.target.result, text:'', rawText:'', status:'pending', confidence:0 });
       renderOcrImages();
-      G('ocr-extract-btn').disabled=false;
+      G('ocr-extract-btn').disabled = false;
     };
     reader.readAsDataURL(f);
   });
-  e.target.value='';
+  e.target.value = '';
 }
 
+// ── Rendu liste d'images ──
 function renderOcrImages(){
-  const list=G('ocr-img-list'); if(!list) return;
-  const cnt=G('ocr-img-count'); if(cnt) cnt.textContent=`${OCR.images.length}/20`;
-  if(!OCR.images.length){
-    list.innerHTML='';
-    return;
-  }
-  list.innerHTML=OCR.images.map((img,i)=>`
-    <div class="ocr-img-thumb" id="ocr-thumb-${i}">
+  const list  = G('ocr-img-list');  if(!list)  return;
+  const count = G('ocr-img-count'); if(count)  count.textContent = OCR.images.length + '/20';
+  if(!OCR.images.length){ list.innerHTML = ''; return; }
+
+  list.innerHTML = OCR.images.map((img, i) => {
+    const confColor = img.confidence >= 85 ? '#22c55e' : img.confidence >= 60 ? '#f59e0b' : '#ef4444';
+    return `<div class="ocr-img-thumb" id="ocr-thumb-${i}">
       <img src="${img.dataUrl}" alt="${esc(img.name)}">
-      ${img.status==='processing'?'<span class="ocr-processing-badge">⏳ OCR…</span>':''}
-      ${img.status==='done'?'<span class="ocr-done-badge">✓</span>':''}
-      ${img.status==='error'?'<span class="ocr-processing-badge" style="background:rgba(239,68,68,.9)">✗</span>':''}
+      ${img.status==='processing' ? `<span class="ocr-processing-badge">⏳ OCR…</span>` : ''}
+      ${img.status==='done'       ? `<span class="ocr-done-badge" style="background:${img._aiImproved?'rgba(16,185,129,.9)':'rgba(34,197,94,.9)'}">${img._aiImproved?'✦ IA':'✓'} ${img.confidence?Math.round(img.confidence)+'%':''}</span>` : ''}
+      ${img.status==='error'      ? `<span class="ocr-processing-badge" style="background:rgba(239,68,68,.9)">✗ Erreur</span>` : ''}
       <div class="ocr-img-thumb-name">${esc(img.name)}</div>
       <div class="ocr-img-thumb-overlay">
         <svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h10M7 12h6M7 16h4"/></svg>
       </div>
       <button class="ocr-img-del" onclick="removeOcrImage(${i},event)" title="Supprimer">✕</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function removeOcrImage(i, e){
   e.stopPropagation();
-  OCR.images.splice(i,1);
+  OCR.images.splice(i, 1);
   renderOcrImages();
   if(!OCR.images.length){
-    G('ocr-extract-btn').disabled=true;
-    G('ocr-import-btn').disabled=true;
+    G('ocr-extract-btn').disabled = true;
+    G('ocr-import-btn').disabled  = true;
     renderOcrText();
   }
 }
 
+// ── Rendu texte extrait ──
 function renderOcrText(){
-  const el=G('ocr-extracted-text'); if(!el) return;
-  const texts=OCR.images.filter(img=>img.text);
+  const el = G('ocr-extracted-text'); if(!el) return;
+  const texts = OCR.images.filter(img => img.text || img.status === 'processing');
   if(!texts.length){
-    el.innerHTML=`<div class="ocr-text-placeholder" id="ocr-placeholder">
+    el.innerHTML = `<div class="ocr-text-placeholder" id="ocr-placeholder">
       <svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
       Le texte extrait<br>apparaîtra ici</div>`;
+    G('ocr-copy-btn').disabled  = true;
+    G('ocr-clear-btn').disabled = true;
     return;
   }
-  el.innerHTML='';
-  el.textContent=texts.map(img=>`[Image: ${img.name}]\n${img.text}`).join('\n\n\n');
+  el.innerHTML = '';
+  OCR.images.forEach(img => {
+    if(!img.text && img.status !== 'processing') return;
+    const block = document.createElement('div');
+    block.style.cssText = 'border-bottom:1px solid var(--border);padding:10px 12px;';
+    // Header avec nom + badge
+    const hdr = document.createElement('div');
+    hdr.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:6px';
+    hdr.innerHTML = `<span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#aaa;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(img.name)}</span>
+      ${img._aiImproved ? '<span style="font-size:8px;font-weight:800;background:rgba(16,185,129,.12);color:#10b981;padding:1px 5px;border-radius:10px;text-transform:uppercase">✦ IA</span>' : ''}
+      ${img.confidence  ? `<span style="font-size:8px;font-weight:800;color:${img.confidence>=85?'#22c55e':img.confidence>=60?'#f59e0b':'#ef4444'}">${Math.round(img.confidence)}%</span>` : ''}`;
+    block.appendChild(hdr);
+    // Contenu
+    const content = document.createElement('div');
+    content.style.cssText = 'font-size:12px;line-height:1.7;white-space:pre-wrap;color:var(--text)';
+    content.textContent = img.status === 'processing' ? '⏳ Extraction en cours…' : (img.text || '');
+    block.appendChild(content);
+    el.appendChild(block);
+  });
+  G('ocr-copy-btn').disabled  = false;
+  G('ocr-clear-btn').disabled = false;
 }
 
-// ── GOOGLE CLOUD VISION : DOCUMENT_TEXT_DETECTION + TEXT_DETECTION ──
-async function _callGoogleVisionOCR(base64){
-  // Corps de la requête : on utilise DOCUMENT_TEXT_DETECTION EN PREMIER
-  // (prioritaire sur TEXT_DETECTION selon la doc Google Cloud Vision v1)
-  // DOCUMENT_TEXT_DETECTION = optimal pour : texte dense, documents scannés, manuscrits
-  // TEXT_DETECTION = optimal pour : texte épars dans une image (panneaux, photos…)
-  const requestBody = {
-    requests: [{
-      image: {
-        content: base64   // base64 pur, sans le préfixe data:image/...
-      },
-      features: [
-        { type: 'DOCUMENT_TEXT_DETECTION' },  // prioritaire
-        { type: 'TEXT_DETECTION'          }   // fallback interne Google
-      ],
-      imageContext: {
-        // Indique les langues probables pour améliorer la précision
-        languageHints: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ar', 'zh', 'ja', 'ru', 'ko']
-      }
-    }]
-  };
-
-  let res, data;
-  try {
-    res = await fetch(
-      `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_VISION_API_KEY}`,
-      {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(requestBody)
-      }
-    );
-    data = await res.json();
-  } catch(networkErr) {
-    throw new Error('Erreur réseau : ' + networkErr.message);
-  }
-
-  // ── Gestion des erreurs HTTP + erreurs Google ──
-  if(!res.ok || data.error) {
-    const code = data?.error?.code    || res.status;
-    const msg  = data?.error?.message || 'Erreur inconnue';
-    const status = data?.error?.status || '';
-
-    // Messages d'erreur explicites selon le code
-    if(code === 400) throw new Error(`Vision 400 : requête invalide — ${msg}`);
-    if(code === 401) throw new Error('Vision 401 : clé API invalide ou expirée. Vérifie la clé dans Google Cloud Console.');
-    if(code === 403) {
-      if(msg.includes('API') || msg.includes('not enabled') || msg.includes('disabled')) {
-        throw new Error('Vision 403 : Cloud Vision API pas activée. Va sur console.cloud.google.com → APIs → activer "Cloud Vision API"');
-      }
-      if(msg.includes('quota') || msg.includes('limit')) {
-        throw new Error('Vision 403 : quota dépassé. Vérifie ta console Google Cloud.');
-      }
-      throw new Error('Vision 403 : accès refusé — ' + msg);
-    }
-    if(code === 429) throw new Error('Vision 429 : trop de requêtes, attends quelques secondes et réessaie.');
-    if(code >= 500) throw new Error(`Vision ${code} : erreur serveur Google — ${msg}`);
-    throw new Error(`Vision ${code} (${status}) : ${msg}`);
-  }
-
-  // ── Vérification de la réponse par image ──
-  const imgResponse = data.responses?.[0];
-  if(!imgResponse) {
-    throw new Error('Vision : réponse vide reçue de Google.');
-  }
-  if(imgResponse.error) {
-    throw new Error('Vision image error : ' + (imgResponse.error.message || JSON.stringify(imgResponse.error)));
-  }
-
-  // ── Extraction du texte — priorité fullTextAnnotation ──
-  // fullTextAnnotation = résultat de DOCUMENT_TEXT_DETECTION (le plus complet)
-  const fullText = imgResponse.fullTextAnnotation?.text;
-  if(fullText && fullText.trim()) {
-    return { text: fullText.trim(), method: 'DOCUMENT_TEXT_DETECTION' };
-  }
-
-  // fallback : textAnnotations[0] = résultat TEXT_DETECTION (liste de mots concaténés)
-  const simpleText = imgResponse.textAnnotations?.[0]?.description;
-  if(simpleText && simpleText.trim()) {
-    return { text: simpleText.trim(), method: 'TEXT_DETECTION' };
-  }
-
-  // Aucun texte trouvé dans l'image
-  return { text: '', method: 'none' };
-}
-
+// ── EXTRACTION PRINCIPALE ──
 async function runOcrExtraction(){
-  if(S.plan<4){toast('Plan AI Premium requis');openPlansOverlay();return;}
+  if(S.plan < 3){ toast('Plan AI Pro requis'); openPlansOverlay(); return; }
 
-  // Rate limit : 1 extraction/heure pour le plan 4 (Premium), illimité pour plan 5
-  if(S.plan===4){
+  // Rate limit : 1/h pour Pro et Premium, illimité pour Premium+
+  if(S.plan < 5){
     const elapsed = Date.now() - OCR.lastOcrTs;
     if(OCR.lastOcrTs > 0 && elapsed < 3600000){
       const min = Math.ceil((3600000 - elapsed) / 60000);
-      toast(`Limite 1/heure (Premium) — disponible dans ${min} min`);
+      toast(`Limite 1/heure — disponible dans ${min} min`);
       updateOcrRateUI();
       return;
     }
@@ -4106,14 +4283,37 @@ async function runOcrExtraction(){
   const pending = OCR.images.filter(img => img.status !== 'done');
   if(!pending.length){ toast('Toutes les images sont déjà extraites'); return; }
 
+  // L'amélioration IA est automatique si : plan >= 4 ET aiEnabled = true
+  const useAI = OCR.aiEnabled && S.plan >= 4;
+
   OCR.lastOcrTs = Date.now();
   const extractBtn = G('ocr-extract-btn');
   const importBtn  = G('ocr-import-btn');
-  if(extractBtn) extractBtn.disabled = true;
-  toast(`⏳ Extraction OCR de ${pending.length} image(s) via Google Cloud Vision…`);
+  if(extractBtn){ extractBtn.disabled = true; extractBtn.textContent = '⏳ Extraction…'; }
+
+  // Afficher barre de progression
+  const progWrap = G('ocr-progress-bar-wrap');
+  const progFill = G('ocr-progress-fill');
+  const progLbl  = G('ocr-progress-label');
+  if(progWrap) progWrap.style.display = 'block';
+  if(progFill) progFill.style.width = '0%';
+
+  const lang = G('ocr-lang-select')?.value || 'fra';
+  toast(`⏳ Chargement Tesseract (${lang})…`);
+
+  let worker;
+  try{
+    worker = await _getTessWorker(lang);
+  }catch(loadErr){
+    toast('❌ Tesseract : ' + loadErr.message.substring(0, 80));
+    if(extractBtn){ extractBtn.disabled = false; extractBtn.textContent = 'Extraire'; }
+    if(progWrap) progWrap.style.display = 'none';
+    return;
+  }
 
   let doneCount = 0;
   let errCount  = 0;
+  const total   = pending.length;
 
   for(let i = 0; i < OCR.images.length; i++){
     const img = OCR.images[i];
@@ -4121,82 +4321,172 @@ async function runOcrExtraction(){
 
     OCR.images[i].status = 'processing';
     renderOcrImages();
+    renderOcrText();
+
+    // Mise à jour progress global
+    const globalPct = Math.round((doneCount / total) * 100);
+    if(progFill) progFill.style.width = globalPct + '%';
+    if(progLbl)  progLbl.textContent  = `Image ${doneCount+1}/${total}`;
 
     try{
-      // Extraire le base64 pur depuis le dataURL (retirer "data:image/jpeg;base64,")
-      const base64 = img.dataUrl.split(',')[1];
-      if(!base64) throw new Error('Impossible de lire l\'image (base64 manquant)');
+      // 1. Prétraitement de l'image (contraste, upscale)
+      const processedDataUrl = await _preprocessImage(img.dataUrl);
 
-      // Appel Google Cloud Vision
-      const result = await _callGoogleVisionOCR(base64);
+      // 2. OCR Tesseract
+      if(progFill) progFill.style.width = '0%'; // reset pour cette image
+      const { data } = await worker.recognize(processedDataUrl);
 
-      if(result.text){
-        OCR.images[i].text   = result.text;
-        OCR.images[i].status = 'done';
-        OCR.images[i]._method = result.method;
-        doneCount++;
-        console.log(`[OCR] ✓ "${img.name}" — ${result.text.length} car. via ${result.method}`);
-      } else {
-        // L'image ne contient pas de texte détectable
-        OCR.images[i].text   = '(Aucun texte détecté dans cette image)';
-        OCR.images[i].status = 'done';
-        doneCount++;
+      const rawText    = data.text || '';
+      const confidence = data.confidence || 0; // 0-100
+
+      OCR.images[i].rawText    = rawText;
+      OCR.images[i].confidence = confidence;
+
+      // 3. Amélioration IA si activée
+      let finalText = rawText;
+      if(useAI && rawText.trim().length > 10){
+        OCR.images[i].status = 'processing';
+        if(progLbl) progLbl.textContent = `IA améliore image ${doneCount+1}/${total}…`;
+        renderOcrImages();
+        finalText = await _aiImproveOcrText(rawText, lang);
+        OCR.images[i]._aiImproved = (finalText !== rawText);
       }
 
-    } catch(err){
+      OCR.images[i].text   = finalText.trim() || '(Aucun texte détecté dans cette image)';
+      OCR.images[i].status = 'done';
+      doneCount++;
+
+      console.log(`[OCR] ✓ "${img.name}" — conf:${confidence.toFixed(0)}% — ${rawText.length} car. brut${useAI?' → IA amélioré':''}`);
+
+    }catch(err){
       OCR.images[i].status = 'error';
-      OCR.images[i].text   = err.message;
+      OCR.images[i].text   = 'Erreur : ' + err.message;
       errCount++;
-      console.error(`[OCR] ✗ "${img.name}":`, err.message);
-      // Afficher le toast avec le message d'erreur complet pour debug
-      toast('❌ OCR erreur : ' + err.message.substring(0, 100));
+      console.error(`[OCR] ✗ "${img.name}":`, err);
+      toast('❌ ' + err.message.substring(0, 80));
     }
 
     renderOcrImages();
     renderOcrText();
   }
 
-  if(extractBtn) extractBtn.disabled = false;
+  // Fin
+  if(progFill) progFill.style.width = '100%';
+  if(progLbl)  progLbl.textContent  = 'Terminé';
+  setTimeout(() => { if(progWrap) progWrap.style.display = 'none'; }, 1500);
+
+  if(extractBtn){ extractBtn.disabled = false; extractBtn.innerHTML = `<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="margin-right:4px;vertical-align:middle"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Extraire`; }
   if(importBtn)  importBtn.disabled  = (doneCount === 0);
 
+  const aiNote = useAI ? ' · ✦ amélioré par IA' : '';
   if(errCount === 0){
-    toast(`✓ OCR terminé — ${doneCount} image(s) extraite(s) avec Google Vision`);
-  } else {
-    toast(`OCR : ${doneCount} OK · ${errCount} erreur(s) — voir détails dans les images`);
+    toast(`✓ OCR terminé — ${doneCount} image(s)${aiNote}`);
+  }else{
+    toast(`OCR : ${doneCount} OK · ${errCount} erreur(s)${aiNote}`);
   }
   updateOcrRateUI();
 }
 
+// ── Copier tout le texte OCR ──
+function copyOcrText(){
+  const texts = OCR.images.filter(img => img.text && img.status === 'done');
+  if(!texts.length){ toast('Aucun texte à copier'); return; }
+  copyText(texts.map(img => `[${img.name}]\n${img.text}`).join('\n\n'));
+  toast('📋 Texte OCR copié !');
+}
+
+// ── Effacer les résultats OCR ──
+function clearOcrText(){
+  OCR.images.forEach(img => { img.text=''; img.rawText=''; img.status='pending'; img.confidence=0; img._aiImproved=false; });
+  renderOcrImages();
+  renderOcrText();
+  G('ocr-extract-btn').disabled = false;
+  G('ocr-import-btn').disabled  = true;
+  toast('Texte effacé');
+}
+
+// ── Importer dans le chat ──
 function importOcrToChat(){
-  const texts=OCR.images.filter(img=>img.text);
-  if(!texts.length){toast('Aucun texte extrait à importer');return;}
-  const combined=texts.map(img=>`[Image: ${img.name}]\n${img.text}`).join('\n\n\n');
-  const label=`OCR — ${texts.length} image(s)`;
-  S.attachments.push({type:'text',name:label,content:`[EXTRACTION_OCR_WIKIMIND]\n${combined}\n[/EXTRACTION_OCR_WIKIMIND]`});
+  const texts = OCR.images.filter(img => img.text && img.status === 'done');
+  if(!texts.length){ toast('Aucun texte extrait à importer'); return; }
+  const combined = texts.map(img => `[Image: ${img.name}]\n${img.text}`).join('\n\n\n');
+  const label    = `OCR — ${texts.length} image(s)`;
+  S.attachments.push({ type:'text', name:label, content:`[EXTRACTION_OCR_WIKIMIND]\n${combined}\n[/EXTRACTION_OCR_WIKIMIND]` });
   updateAttachmentPreview();
   closeOcrPanel();
   G('user-input').focus();
   toast(`📄 Texte OCR importé dans le chat`);
 }
 
-// Drag & drop dans le panel OCR
+// ── Drag & drop zone OCR ──
 (function(){
-  const dz=document.getElementById('ocr-drop-zone');
+  const dz = document.getElementById('ocr-drop-zone');
   if(!dz) return;
-  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');});
-  dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
-  dz.addEventListener('drop',e=>{
-    e.preventDefault();dz.classList.remove('drag');
-    const files=Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/'));
-    if(!files.length){toast('Fichiers image uniquement');return;}
-    const remaining=20-OCR.images.length;
-    files.slice(0,remaining).forEach(f=>{
-      const r=new FileReader();
-      r.onload=ev=>{OCR.images.push({name:f.name,dataUrl:ev.target.result,text:'',status:'pending'});renderOcrImages();G('ocr-extract-btn').disabled=false;};
+  dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('drag');
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    if(!files.length){ toast('Fichiers image uniquement'); return; }
+    const remaining = 20 - OCR.images.length;
+    files.slice(0, remaining).forEach(f => {
+      const r = new FileReader();
+      r.onload = ev => {
+        OCR.images.push({ name:f.name, dataUrl:ev.target.result, text:'', rawText:'', status:'pending', confidence:0 });
+        renderOcrImages();
+        G('ocr-extract-btn').disabled = false;
+      };
       r.readAsDataURL(f);
     });
   });
 })();
+
+// ── Paste Ctrl+V OCR ──
+async function pasteOcrFromClipboard(){
+  try{
+    const items = await navigator.clipboard.read();
+    let found = false;
+    for(const item of items){
+      for(const type of item.types){
+        if(type.startsWith('image/')){
+          const blob   = await item.getType(type);
+          const reader = new FileReader();
+          reader.onload = ev => {
+            if(OCR.images.length >= 20){ toast('Limite 20 images'); return; }
+            OCR.images.push({ name:'clipboard_'+Date.now()+'.png', dataUrl:ev.target.result, text:'', rawText:'', status:'pending', confidence:0 });
+            renderOcrImages();
+            G('ocr-extract-btn').disabled = false;
+            toast('✓ Image collée depuis le presse-papier');
+          };
+          reader.readAsDataURL(blob);
+          found = true; break;
+        }
+      }
+      if(found) break;
+    }
+    if(!found) toast('Aucune image dans le presse-papier');
+  }catch(e){ toast('Presse-papier inaccessible (autorisez l\'accès)'); }
+}
+
+// Ctrl+V dans le panel OCR
+document.addEventListener('paste', e => {
+  if(!OCR.open) return;
+  const items   = Array.from(e.clipboardData?.items || []);
+  const imgItem = items.find(it => it.type.startsWith('image/'));
+  if(imgItem){
+    e.preventDefault();
+    const blob   = imgItem.getAsFile();
+    const reader = new FileReader();
+    reader.onload = ev => {
+      if(OCR.images.length >= 20){ toast('Limite 20 images'); return; }
+      OCR.images.push({ name:'paste_'+Date.now()+'.png', dataUrl:ev.target.result, text:'', rawText:'', status:'pending', confidence:0 });
+      renderOcrImages();
+      G('ocr-extract-btn').disabled = false;
+      toast('✓ Image collée (Ctrl+V)');
+    };
+    reader.readAsDataURL(blob);
+  }
+});
 
 // ── PROFILE PHOTO (AI Plus+) ──
 async function onProfilePhotoSelected(e){
@@ -5056,50 +5346,6 @@ function downloadDiagram(){
   if(svg){ const b=new Blob([new XMLSerializer().serializeToString(svg)],{type:'image/svg+xml'}); const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='wikimind-diagram.svg';a.click(); toast('SVG téléchargé'); }
   else{ const b=new Blob([DIAGRAM.currentCode],{type:'text/plain'}); const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='wikimind-diagram.mmd';a.click(); toast('Code téléchargé'); }
 }
-
-// ── OCR CLIPBOARD PASTE ──
-async function pasteOcrFromClipboard(){
-  try{
-    const items=await navigator.clipboard.read();
-    let found=false;
-    for(const item of items){
-      for(const type of item.types){
-        if(type.startsWith('image/')){
-          const blob=await item.getType(type);
-          const reader=new FileReader();
-          reader.onload=ev=>{
-            if(OCR.images.length>=20){toast('Limite 20 images atteinte');return;}
-            OCR.images.push({name:'clipboard_'+Date.now()+'.png',dataUrl:ev.target.result,text:'',status:'pending'});
-            renderOcrImages(); G('ocr-extract-btn').disabled=false;
-            toast('✓ Image collée depuis le presse-papier');
-          };
-          reader.readAsDataURL(blob); found=true; break;
-        }
-      }
-      if(found) break;
-    }
-    if(!found) toast('Aucune image dans le presse-papier');
-  }catch(e){ toast('Presse-papier inaccessible (autorisez l\'accès)'); }
-}
-
-// Also support Ctrl+V paste in OCR drop zone
-document.addEventListener('paste', e=>{
-  if(!OCR.open) return;
-  const items=Array.from(e.clipboardData?.items||[]);
-  const imgItem=items.find(it=>it.type.startsWith('image/'));
-  if(imgItem){
-    e.preventDefault();
-    const blob=imgItem.getAsFile();
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      if(OCR.images.length>=20){toast('Limite 20 images');return;}
-      OCR.images.push({name:'paste_'+Date.now()+'.png',dataUrl:ev.target.result,text:'',status:'pending'});
-      renderOcrImages(); G('ocr-extract-btn').disabled=false;
-      toast('✓ Image collée (Ctrl+V)');
-    };
-    reader.readAsDataURL(blob);
-  }
-});
 
 function updateCoderRateUI(){
   const badge=G('coder-plan-badge'); const rateBadge=G('coder-rate-badge'); const info=G('coder-rate-info');
@@ -6089,6 +6335,11 @@ function _updateUserUIExtras(){
   // Oral de Bac tool (AI Plus+)
   const toolOralBtn=G('tool-oral-btn');
   if(toolOralBtn) toolOralBtn.style.display=S.plan>=2?'flex':'none';
+  // OCR tool (Pro+, plan 3)
+  const toolOcrBtn=G('tool-ocr-btn');
+  if(toolOcrBtn) toolOcrBtn.style.display=S.plan>=3?'flex':'none';
+  // Sync OCR AI toggle state
+  syncOcrAIToggle();
   // Sync improve AI toggle
   syncImproveAIToggle();
 }
