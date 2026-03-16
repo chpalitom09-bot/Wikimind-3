@@ -1424,6 +1424,11 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
       <span class="tool-item-label">Lettre de motivation</span>
       <span class="tool-item-badge tool-badge-plus" id="tool-cl-badge">AI Plus</span>
     </button>
+    <button class="tool-item" onclick="openOralBacModal();closeToolsPanel()" id="tool-oral-btn" style="display:none">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      <span class="tool-item-label">Oral de Bac</span>
+      <span class="tool-item-badge tool-badge-plus">AI Plus</span>
+    </button>
 
     <div class="tools-section-label" style="margin-top:6px">AI Premium</div>
     <button class="tool-item" onclick="openOcrPanel();closeToolsPanel()" id="tool-ocr-btn">
@@ -2334,6 +2339,164 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
 </div>
 </div>
 
+<!-- ORAL BAC MODAL -->
+<div class="modal" id="oral-bac-modal" onclick="if(event.target===this)closeModal('oral-bac-modal')">
+<div class="modal-content" style="max-width:760px;padding:0;overflow:hidden;max-height:92vh;display:flex;flex-direction:column" onclick="event.stopPropagation()">
+  <!-- Header -->
+  <div style="padding:20px 24px 0;border-bottom:1px solid var(--border);flex-shrink:0">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        <h3 style="font-size:17px;font-weight:800;letter-spacing:-.02em">Oral de Bac IA</h3>
+        <span class="plan-badge plan-plus">AI Plus</span>
+      </div>
+      <button onclick="closeModal('oral-bac-modal')" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;transition:.2s" onmouseover="this.style.background='var(--select-bg)'" onmouseout="this.style.background='none'">✕</button>
+    </div>
+    <div style="display:flex;gap:2px">
+      <button class="codertab active" id="oraltab-config" onclick="switchOralTab('config')">⚙ Configuration</button>
+      <button class="codertab" id="oraltab-sujet" onclick="switchOralTab('sujet')">💡 Trouver un sujet</button>
+      <button class="codertab" id="oraltab-plan" onclick="switchOralTab('plan')">📋 Plan &amp; Structure</button>
+      <button class="codertab" id="oraltab-entrain" onclick="switchOralTab('entrain')">🎤 Entraînement</button>
+      <button class="codertab" id="oraltab-result" onclick="switchOralTab('result')">📄 Résultat</button>
+    </div>
+  </div>
+
+  <div style="flex:1;overflow-y:auto">
+
+    <!-- TAB CONFIG -->
+    <div id="oralbody-config" style="padding:20px 24px;display:flex;flex-direction:column;gap:14px">
+      <p style="font-size:13px;color:#888;margin:0">Configure ton oral de bac pour obtenir une aide personnalisée.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="cv-field">
+          <label>Spécialité / Matière</label>
+          <select id="oral-specialite" oninput="oralState.specialite=this.value" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13px;font-family:Inter,sans-serif;outline:none;appearance:none">
+            <option value="">-- Choisir --</option>
+            <optgroup label="Spécialités Terminale">
+              <option value="Mathématiques">Mathématiques</option>
+              <option value="Physique-Chimie">Physique-Chimie</option>
+              <option value="SVT">SVT (Sciences de la Vie et de la Terre)</option>
+              <option value="NSI">NSI (Numérique et Sciences Informatiques)</option>
+              <option value="SES">SES (Sciences Économiques et Sociales)</option>
+              <option value="Histoire-Géographie">Histoire-Géographie, Géopolitique, Sciences politiques</option>
+              <option value="Philosophie">Philosophie</option>
+              <option value="Littérature">Humanités, Littérature et Philosophie</option>
+              <option value="Langues">Langues, Littératures et Cultures Étrangères</option>
+              <option value="Arts">Arts (plastiques, théâtre, musique…)</option>
+              <option value="STMG">STMG (Sciences et Technologie du Management)</option>
+              <option value="STI2D">STI2D (Sciences et Technologies Industrielles)</option>
+              <option value="STSS">ST2S (Sciences et Technologies Santé-Social)</option>
+            </optgroup>
+            <optgroup label="Enseignements communs">
+              <option value="Français">Français (Première)</option>
+              <option value="Grand oral">Grand Oral (Terminale)</option>
+              <option value="EMC">EMC (Éducation Morale et Civique)</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="cv-field">
+          <label>Type d'oral</label>
+          <select id="oral-type" oninput="oralState.type=this.value" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13px;font-family:Inter,sans-serif;outline:none;appearance:none">
+            <option value="grand-oral">Grand Oral (20 min)</option>
+            <option value="explose">Exposé de spécialité (5-10 min)</option>
+            <option value="entretien">Entretien avec le jury</option>
+            <option value="commentaire">Commentaire de texte oral</option>
+            <option value="expose-libre">Exposé libre</option>
+          </select>
+        </div>
+        <div class="cv-field">
+          <label>Niveau</label>
+          <select id="oral-niveau" oninput="oralState.niveau=this.value" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13px;font-family:Inter,sans-serif;outline:none;appearance:none">
+            <option value="Première">Première</option>
+            <option value="Terminale" selected>Terminale</option>
+          </select>
+        </div>
+        <div class="cv-field">
+          <label>Thème ou sujet (optionnel)</label>
+          <input id="oral-theme" placeholder="Ex : l'intelligence artificielle, la démocratie…" oninput="oralState.theme=this.value" style="padding:10px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13px;font-family:Inter,sans-serif;outline:none;width:100%">
+        </div>
+      </div>
+      <div class="cv-field">
+        <label>Contexte / Ce que tu sais déjà (optionnel)</label>
+        <textarea rows="3" id="oral-contexte" placeholder="Ex : j'ai travaillé sur la photosynthèse et les OGM, je veux relier ça à des enjeux de société…" oninput="oralState.contexte=this.value" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13px;font-family:Inter,sans-serif;outline:none;resize:vertical;transition:border .2s"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="cv-btn primary" onclick="generateOralSubjects()" style="flex:1;min-width:140px">💡 Trouver des sujets</button>
+        <button class="cv-btn secondary" onclick="switchOralTab('sujet')" style="flex:none;padding:10px 18px">Suite →</button>
+      </div>
+    </div>
+
+    <!-- TAB SUJET -->
+    <div id="oralbody-sujet" style="display:none;padding:20px 24px;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <p style="font-size:13px;color:#888;flex:1;margin:0">Génère des idées de sujets en fonction de ta spécialité, ou entre directement le tien.</p>
+        <button class="cv-btn secondary" onclick="generateOralSubjects()" id="oral-gen-subjects-btn" style="flex:none;padding:8px 14px;font-size:11px">✦ Générer des idées</button>
+      </div>
+      <div id="oral-subjects-list" style="display:flex;flex-direction:column;gap:8px;min-height:60px">
+        <div style="color:#aaa;font-size:12px;text-align:center;padding:20px 0">Clique sur "Générer des idées" pour obtenir des propositions de sujets IA</div>
+      </div>
+      <div class="cv-field" style="margin-top:4px">
+        <label>Ou entre ton sujet directement</label>
+        <textarea rows="2" id="oral-sujet-custom" placeholder="Ex : En quoi les mathématiques sont-elles un langage universel ? Quels enjeux pour l'IA ?" oninput="oralState.sujetFinal=this.value" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13px;font-family:Inter,sans-serif;outline:none;resize:vertical"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button class="cv-btn primary" onclick="generateOralPlan()" style="flex:1">📋 Construire le plan</button>
+        <button class="cv-btn secondary" onclick="switchOralTab('config')" style="flex:none;padding:10px 18px">← Retour</button>
+      </div>
+    </div>
+
+    <!-- TAB PLAN -->
+    <div id="oralbody-plan" style="display:none;padding:20px 24px;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:2px">
+        <p style="font-size:13px;color:#888;flex:1;margin:0">Plan structuré, introduction, développement et conclusion pour ton oral.</p>
+        <button class="cv-btn secondary" onclick="generateOralPlan()" id="oral-gen-plan-btn" style="flex:none;padding:8px 14px;font-size:11px">✦ (Re)générer le plan</button>
+      </div>
+      <div id="oral-plan-content" style="background:var(--select-bg);border-radius:12px;padding:16px 18px;font-size:13px;line-height:1.75;min-height:120px;white-space:pre-wrap;color:var(--text)">
+        <span style="color:#aaa">Le plan apparaîtra ici…</span>
+      </div>
+      <div class="cv-field">
+        <label>Modifie ou complète le plan (optionnel)</label>
+        <textarea rows="3" id="oral-plan-notes" placeholder="Précisions, contraintes, axe à développer davantage…" oninput="oralState.planNotes=this.value" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13px;font-family:Inter,sans-serif;outline:none;resize:vertical"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="cv-btn primary" onclick="generateOralFull()" style="flex:1;min-width:160px">✦ Rédiger l'oral complet</button>
+        <button class="cv-btn secondary" onclick="generateOralQuestions()" style="flex:none;padding:10px 16px;font-size:11px">🎤 Questions jury</button>
+        <button class="cv-btn secondary" onclick="switchOralTab('sujet')" style="flex:none;padding:10px 18px">← Retour</button>
+      </div>
+    </div>
+
+    <!-- TAB ENTRAINEMENT -->
+    <div id="oralbody-entrain" style="display:none;padding:20px 24px;flex-direction:column;gap:14px">
+      <p style="font-size:13px;color:#888;margin:0">Entraîne-toi avec des questions de jury et obtiens des feedbacks personnalisés.</p>
+      <div id="oral-questions-wrap" style="display:flex;flex-direction:column;gap:8px;min-height:60px">
+        <div style="color:#aaa;font-size:12px;text-align:center;padding:20px 0">Génère d'abord un plan pour obtenir des questions de jury</div>
+      </div>
+      <div class="cv-field">
+        <label>Ta réponse à la question sélectionnée</label>
+        <textarea rows="5" id="oral-response-input" placeholder="Écris ta réponse ici, l'IA va l'analyser et te donner un feedback détaillé…" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13px;font-family:Inter,sans-serif;outline:none;resize:vertical"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="cv-btn primary" onclick="analyzeOralResponse()" style="flex:1;min-width:140px">🔍 Analyser ma réponse</button>
+        <button class="cv-btn secondary" onclick="generateOralQuestions()" style="flex:none;padding:10px 16px;font-size:11px">↻ Nouvelles questions</button>
+      </div>
+      <div id="oral-feedback-wrap" style="display:none;background:var(--select-bg);border-radius:12px;padding:16px 18px;font-size:13px;line-height:1.75;white-space:pre-wrap"></div>
+    </div>
+
+    <!-- TAB RÉSULTAT -->
+    <div id="oralbody-result" style="display:none;padding:20px 24px;flex-direction:column;gap:14px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+        <button class="cv-btn primary" onclick="exportOralPDF()" style="flex:none;padding:9px 16px;font-size:11px">⬇ PDF</button>
+        <button class="cv-btn secondary" onclick="copyOralResult()" style="flex:none;padding:9px 16px;font-size:11px">📋 Copier</button>
+        <button class="cv-btn secondary" onclick="importOralToChat()" style="flex:none;padding:9px 16px;font-size:11px">→ Chat</button>
+        <button class="cv-btn secondary" onclick="generateOralFull()" style="flex:none;padding:9px 16px;font-size:11px">↻ Régénérer</button>
+        <button class="cv-btn secondary" onclick="switchOralTab('plan')" style="flex:none;padding:9px 16px;font-size:11px">← Modifier</button>
+      </div>
+      <div id="oral-result-content" style="background:var(--bg);border:1px solid var(--border2);border-radius:12px;padding:24px 28px;font-size:13px;line-height:1.85;color:var(--text);white-space:pre-wrap;min-height:200px"></div>
+    </div>
+
+  </div>
+</div>
+</div>
+
 <!-- COVER LETTER MODAL -->
 <div class="modal" id="cl-modal" onclick="if(event.target===this)closeModal('cl-modal')">
 <div class="modal-content" style="max-width:700px;padding:0;overflow:hidden;max-height:88vh;display:flex;flex-direction:column" onclick="event.stopPropagation()">
@@ -2407,7 +2570,7 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
 <!-- ========== MAIN SCRIPT ========== -->
 <script>
 const MISTRAL_KEY = 'SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9';  // Chat principal (4 modèles)
-const MISTRAL_TOOLS_KEY = 'kFaRdrB2hxynR6Xb7Udjd2QgSweHvFQO'; // Outils IA (CV, codeur, diagrammes, OCR, aide texte)
+const MISTRAL_TOOLS_KEY = 'SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9'; // Outils IA (CV, codeur, diagrammes, OCR, aide texte) — même clé
 const PLAN_PRICES_MT = { 2: 11, 3: 22, 4: 39 };
 const PROMO_END = new Date('2025-04-14T23:59:59');
 
@@ -3732,7 +3895,7 @@ async function analyzeImageWithVision(imageDataUrl, question){
 
 // ── OCR — EXTRACTION DE TEXTE (Google Cloud Vision) ──
 // Client OAuth2 dédié : 137479541640-huvk8u289f3ovup8dkm6safkine2ab5e
-const GOOGLE_VISION_API_KEY = 'AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA'; // clé API projet wikimind-3-comments
+const GOOGLE_VISION_API_KEY = 'AIzaSyBk8kHf6UfrvZYKRTBcgcwvLq1Xi8888k9'; // clé API projet wikimind-3-comments (mise à jour)
 // State OCR
 const OCR = {
   images: [],       // [{name, dataUrl, text, status}]  status: 'pending'|'processing'|'done'|'error'
@@ -3873,16 +4036,17 @@ async function runOcrExtraction(){
           `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_VISION_API_KEY}`,
           {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}
         );
-        if(res.status===403||res.status===400){
+        if(res.status===403||res.status===400||res.status===401){
           throw new Error('vision_fallback');
         }
-        if(!res.ok) throw new Error('Vision API '+res.status);
+        if(!res.ok) throw new Error('vision_fallback');
         const data=await res.json();
         if(data.error) throw new Error('vision_fallback');
         const annotation=data.responses?.[0]?.fullTextAnnotation;
         text=annotation?.text||data.responses?.[0]?.textAnnotations?.[0]?.description||'';
+        if(!text) throw new Error('vision_fallback');
       }catch(visionErr){
-        if(visionErr.message==='vision_fallback'||visionErr.message.includes('403')||visionErr.message.includes('400')){
+        if(visionErr.message==='vision_fallback'||visionErr.message.includes('403')||visionErr.message.includes('400')||visionErr.message.includes('401')){
           // Fallback : Pixtral via Mistral avec retry queue pour 429
           const doPixtral = async ()=>{
             const pixRes=await fetch('https://api.mistral.ai/v1/chat/completions',{
@@ -5055,9 +5219,19 @@ async function runCoderAI(){
   if(S.coderFiles[S.coderActiveFile]) S.coderFiles[S.coderActiveFile].content=G('coder-editor').value;
   // Build context
   const context=S.coderFiles.map(f=>`// FICHIER: ${f.name}\n${f.content}`).join('\n\n---\n\n');
-  const sys=`Tu es WikiMind Codeur, un expert développeur full-stack. Tu reçois une demande et les fichiers existants du projet. Tu dois répondre UNIQUEMENT avec du JSON valide (sans backticks) au format suivant :
-{"files":[{"name":"nomfichier.ext","content":"contenu complet du fichier"},...],"explanation":"explication courte"}
-Crée ou modifie les fichiers nécessaires. Inclus TOUJOURS tous les fichiers du projet dans ta réponse (même inchangés). Sois précis, propre, commenté.`;
+  const sys=`Tu es WikiMind Codeur, un expert développeur full-stack senior avec 15 ans d'expérience. Tu produis du code PROPRE, MODERNE et PROFESSIONNEL.
+
+RÈGLES ABSOLUES :
+- Pour HTML/CSS : utilise des designs modernes (glassmorphism, gradients, animations CSS, flexbox/grid), jamais de styles basiques ou génériques.
+- Pour JS : code modulaire, ES6+, gestion d'erreurs robuste, commentaires utiles.
+- Pour les interfaces : responsive par défaut, dark/light mode si pertinent, micro-animations, typographie soignée.
+- TOUJOURS inclure les métadonnées, viewport, charset dans les fichiers HTML.
+- Préfère des polices Google Fonts (Inter, Poppins, etc.) pour les projets web.
+- Code commenté, structuré, avec des noms de variables clairs en anglais ou français selon le contexte.
+
+Tu reçois une demande et les fichiers existants du projet. Tu dois répondre UNIQUEMENT avec du JSON valide (sans backticks) au format suivant :
+{"files":[{"name":"nomfichier.ext","content":"contenu complet du fichier"},...],"explanation":"explication courte en français"}
+Crée ou modifie les fichiers nécessaires. Inclus TOUJOURS tous les fichiers du projet dans ta réponse (même inchangés si nécessaire pour le contexte). Produis du code de QUALITÉ PRODUCTION.`;
   try{
     const raw=await callMistralTools([
       {role:'system',content:sys},
@@ -5438,108 +5612,277 @@ function onCvPhotoSelected(e){
 }
 
 const CV_TEMPLATES={
-  moderne:(d)=>`<div style="display:flex;min-height:297mm;font-family:Inter,sans-serif">
-    <div style="width:200px;background:#1e293b;color:#fff;padding:28px 20px;flex-shrink:0">
-      ${d.photo?`<img src="${d.photo}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #3b82f6;margin-bottom:16px;display:block">`:'<div style="width:80px;height:80px;border-radius:50%;background:#334155;margin-bottom:16px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800">'+(d.name||'?').charAt(0)+'</div>'}
-      <h1 style="font-size:16px;font-weight:800;line-height:1.2;margin-bottom:4px">${d.name||''}</h1>
-      <p style="font-size:11px;color:#93c5fd;margin-bottom:20px">${d.title||''}</p>
-      <div style="font-size:10px;margin-bottom:16px"><div style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#93c5fd;margin-bottom:6px">Contact</div>${d.email?`<div style="margin-bottom:3px">✉ ${d.email}</div>`:''} ${d.phone?`<div style="margin-bottom:3px">📞 ${d.phone}</div>`:''} ${d.location?`<div style="margin-bottom:3px">📍 ${d.location}</div>`:''} ${d.link?`<div style="margin-bottom:3px">🔗 ${d.link}</div>`:''}</div>
-      ${d.skills?`<div style="font-size:10px"><div style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#93c5fd;margin-bottom:6px">Compétences</div>${d.skills.split(',').map(s=>`<div style="background:#334155;border-radius:4px;padding:2px 7px;margin-bottom:4px;font-size:10px">${s.trim()}</div>`).join('')}</div>`:''}
-      ${d.languages?`<div style="font-size:10px;margin-top:16px"><div style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#93c5fd;margin-bottom:6px">Langues</div><div>${d.languages}</div></div>`:''}
-    </div>
-    <div style="flex:1;padding:28px 32px;background:#fff;color:#111">
-      ${d._aiSummary?`<div style="margin-bottom:22px"><h2 style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#2563eb;border-bottom:2px solid #dbeafe;padding-bottom:6px;margin-bottom:10px">Profil</h2><p style="font-size:12px;line-height:1.7;color:#374151">${d._aiSummary}</p></div>`:''}
-      ${d.experiences?`<div style="margin-bottom:22px"><h2 style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#2563eb;border-bottom:2px solid #dbeafe;padding-bottom:6px;margin-bottom:10px">Expériences</h2><div style="font-size:12px;line-height:1.8;white-space:pre-wrap;color:#374151">${d._aiExperiences||d.experiences}</div></div>`:''}
-      ${d.education?`<div style="margin-bottom:22px"><h2 style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#2563eb;border-bottom:2px solid #dbeafe;padding-bottom:6px;margin-bottom:10px">Formation</h2><div style="font-size:12px;line-height:1.8;white-space:pre-wrap;color:#374151">${d.education}</div></div>`:''}
-      ${d.interests?`<div><h2 style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#2563eb;border-bottom:2px solid #dbeafe;padding-bottom:6px;margin-bottom:10px">Intérêts</h2><p style="font-size:12px;color:#374151">${d.interests}</p></div>`:''}
-    </div>
-  </div>`,
-
-  minimaliste:(d)=>`<div style="max-width:640px;margin:0 auto;padding:48px;font-family:Inter,sans-serif;background:#fff;color:#111">
-    <div style="border-bottom:1px solid #e5e7eb;padding-bottom:24px;margin-bottom:24px;display:flex;align-items:center;gap:20px">
-      ${d.photo?`<img src="${d.photo}" style="width:68px;height:68px;border-radius:50%;object-fit:cover;border:1px solid #e5e7eb">`:''}
-      <div><h1 style="font-size:24px;font-weight:900;letter-spacing:-.03em">${d.name||''}</h1><p style="font-size:13px;color:#6b7280;margin-top:3px">${d.title||''}</p>
-      <p style="font-size:11px;color:#9ca3af;margin-top:4px">${[d.email,d.phone,d.location].filter(Boolean).join(' · ')}</p></div>
-    </div>
-    ${d._aiSummary?`<p style="font-size:13px;line-height:1.75;color:#374151;margin-bottom:24px">${d._aiSummary}</p>`:''}
-    ${d.experiences?`<div style="margin-bottom:22px"><h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#9ca3af;margin-bottom:10px">Expériences</h2><div style="font-size:13px;line-height:1.75;white-space:pre-wrap;color:#111">${d._aiExperiences||d.experiences}</div></div>`:''}
-    ${d.education?`<div style="margin-bottom:22px"><h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#9ca3af;margin-bottom:10px">Formation</h2><div style="font-size:13px;line-height:1.75;white-space:pre-wrap">${d.education}</div></div>`:''}
-    ${d.skills?`<div style="margin-bottom:22px"><h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#9ca3af;margin-bottom:10px">Compétences</h2><div style="display:flex;flex-wrap:wrap;gap:6px">${d.skills.split(',').map(s=>`<span style="border:1px solid #e5e7eb;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:600">${s.trim()}</span>`).join('')}</div></div>`:''}
-    ${d.languages?`<div><h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#9ca3af;margin-bottom:6px">Langues</h2><p style="font-size:13px">${d.languages}</p></div>`:''}
-  </div>`,
-
-  coloré:(d)=>`<div style="font-family:Inter,sans-serif;background:#fff;min-height:297mm">
-    <div style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;padding:36px 40px">
-      <div style="display:flex;align-items:center;gap:20px">
-        ${d.photo?`<img src="${d.photo}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.4)">`:''}
-        <div><h1 style="font-size:28px;font-weight:900;letter-spacing:-.04em">${d.name||''}</h1><p style="font-size:14px;opacity:.85;margin-top:4px">${d.title||''}</p>
-        <p style="font-size:11px;opacity:.7;margin-top:6px">${[d.email,d.phone,d.location].filter(Boolean).join(' · ')}</p></div>
+  // ── MODERNE : sidebar sombre + accent néon bleu ──
+  moderne:(d)=>`<div style="display:flex;min-height:297mm;font-family:'Segoe UI',Inter,sans-serif;background:#fff">
+    <div style="width:210px;background:linear-gradient(180deg,#0f172a 0%,#1e293b 100%);color:#fff;padding:32px 20px;flex-shrink:0;display:flex;flex-direction:column;gap:0">
+      <div style="margin-bottom:24px;text-align:center">
+        ${d.photo
+          ?`<img src="${d.photo}" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:3px solid #38bdf8;box-shadow:0 0 0 6px rgba(56,189,248,.15);margin:0 auto 12px;display:block">`
+          :`<div style="width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,#38bdf8,#6366f1);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:900;box-shadow:0 0 0 6px rgba(56,189,248,.15)">${(d.name||'?').charAt(0)}</div>`}
+        <h1 style="font-size:15px;font-weight:800;line-height:1.2;margin-bottom:3px;letter-spacing:-.01em">${d.name||''}</h1>
+        <p style="font-size:10px;color:#38bdf8;font-weight:700;text-transform:uppercase;letter-spacing:.1em">${d.title||''}</p>
       </div>
+      <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:16px;margin-bottom:16px">
+        <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#38bdf8;margin-bottom:8px">Contact</div>
+        ${d.email?`<div style="font-size:10px;margin-bottom:5px;display:flex;align-items:flex-start;gap:6px"><span style="color:#38bdf8;flex-shrink:0">✉</span><span style="word-break:break-all">${d.email}</span></div>`:''}
+        ${d.phone?`<div style="font-size:10px;margin-bottom:5px;display:flex;gap:6px"><span style="color:#38bdf8;flex-shrink:0">📞</span>${d.phone}</div>`:''}
+        ${d.location?`<div style="font-size:10px;margin-bottom:5px;display:flex;gap:6px"><span style="color:#38bdf8;flex-shrink:0">📍</span>${d.location}</div>`:''}
+        ${d.link?`<div style="font-size:10px;display:flex;gap:6px"><span style="color:#38bdf8;flex-shrink:0">🔗</span><span style="word-break:break-all">${d.link}</span></div>`:''}
+      </div>
+      ${d.skills?`<div style="border-top:1px solid rgba(255,255,255,.1);padding-top:16px;margin-bottom:16px">
+        <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#38bdf8;margin-bottom:8px">Compétences</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">${d.skills.split(',').map(s=>`<span style="background:rgba(56,189,248,.15);color:#e0f2fe;border:1px solid rgba(56,189,248,.3);border-radius:4px;padding:2px 7px;font-size:9px;font-weight:700">${s.trim()}</span>`).join('')}</div>
+      </div>`:''}
+      ${d.languages?`<div style="border-top:1px solid rgba(255,255,255,.1);padding-top:16px">
+        <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#38bdf8;margin-bottom:6px">Langues</div>
+        <div style="font-size:10px;line-height:1.7">${d.languages}</div>
+      </div>`:''}
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
-      <div style="padding:28px 32px;border-right:1px solid #e5e7eb">
-        ${d._aiSummary?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#7c3aed;margin-bottom:8px">Profil</h2><p style="font-size:12px;line-height:1.7;color:#374151;margin-bottom:20px">${d._aiSummary}</p>`:''}
-        ${d.experiences?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#7c3aed;margin-bottom:8px">Expériences</h2><div style="font-size:12px;line-height:1.75;white-space:pre-wrap;color:#111">${d._aiExperiences||d.experiences}</div>`:''}
-      </div>
-      <div style="padding:28px 32px;background:#fafafa">
-        ${d.education?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#2563eb;margin-bottom:8px">Formation</h2><div style="font-size:12px;line-height:1.75;white-space:pre-wrap;margin-bottom:20px">${d.education}</div>`:''}
-        ${d.skills?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#2563eb;margin-bottom:8px">Compétences</h2><div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:20px">${d.skills.split(',').map(s=>`<span style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;border-radius:20px;padding:2px 10px;font-size:10px;font-weight:700">${s.trim()}</span>`).join('')}</div>`:''}
-        ${d.languages?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#2563eb;margin-bottom:6px">Langues</h2><p style="font-size:12px">${d.languages}</p>`:''}
-        ${d.interests?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#2563eb;margin-top:16px;margin-bottom:6px">Intérêts</h2><p style="font-size:12px">${d.interests}</p>`:''}
-      </div>
+    <div style="flex:1;padding:32px 36px;background:#fff;color:#111">
+      ${d._aiSummary?`<div style="background:#f0f9ff;border-left:4px solid #38bdf8;padding:12px 16px;border-radius:0 8px 8px 0;margin-bottom:24px">
+        <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#0284c7;margin-bottom:5px">Profil</div>
+        <p style="font-size:12px;line-height:1.75;color:#374151;margin:0">${d._aiSummary}</p>
+      </div>`:''}
+      ${d.experiences?`<div style="margin-bottom:22px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div style="width:18px;height:18px;background:#0f172a;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#38bdf8;font-size:10px;font-weight:900">▸</span></div>
+          <h2 style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#0f172a;margin:0">Expériences professionnelles</h2>
+        </div>
+        <div style="font-size:12px;line-height:1.8;white-space:pre-wrap;color:#374151;padding-left:26px">${d._aiExperiences||d.experiences}</div>
+      </div>`:''}
+      ${d.education?`<div style="margin-bottom:22px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div style="width:18px;height:18px;background:#0f172a;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#38bdf8;font-size:10px;font-weight:900">▸</span></div>
+          <h2 style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#0f172a;margin:0">Formation</h2>
+        </div>
+        <div style="font-size:12px;line-height:1.8;white-space:pre-wrap;color:#374151;padding-left:26px">${d.education}</div>
+      </div>`:''}
+      ${d.interests?`<div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div style="width:18px;height:18px;background:#0f172a;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span style="color:#38bdf8;font-size:10px;font-weight:900">▸</span></div>
+          <h2 style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#0f172a;margin:0">Intérêts</h2>
+        </div>
+        <p style="font-size:12px;color:#374151;padding-left:26px">${d.interests}</p>
+      </div>`:''}
     </div>
   </div>`,
 
-  classique:(d)=>`<div style="max-width:640px;margin:0 auto;padding:52px;font-family:Georgia,serif;background:#fff;color:#1a1a1a">
-    <div style="text-align:center;border-bottom:2px solid #92400e;padding-bottom:20px;margin-bottom:28px">
-      ${d.photo?`<img src="${d.photo}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid #92400e;margin-bottom:12px;display:inline-block">`:''}
-      <h1 style="font-size:26px;font-weight:bold;letter-spacing:.04em;text-transform:uppercase">${d.name||''}</h1>
-      <p style="font-size:13px;font-style:italic;color:#92400e;margin-top:4px">${d.title||''}</p>
-      <p style="font-size:11px;color:#6b7280;margin-top:6px">${[d.email,d.phone,d.location].filter(Boolean).join(' | ')}</p>
+  // ── MINIMALISTE : ultra-clean, typographie forte ──
+  minimaliste:(d)=>`<div style="max-width:680px;margin:0 auto;padding:56px 52px;font-family:'Helvetica Neue',Inter,sans-serif;background:#fff;color:#111">
+    <div style="margin-bottom:36px">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:18px">
+          ${d.photo?`<img src="${d.photo}" style="width:72px;height:72px;border-radius:12px;object-fit:cover">`:''}
+          <div>
+            <h1 style="font-size:32px;font-weight:900;letter-spacing:-.06em;line-height:1;margin-bottom:5px">${d.name||''}</h1>
+            <p style="font-size:14px;color:#6b7280;font-weight:400;letter-spacing:.01em">${d.title||''}</p>
+          </div>
+        </div>
+        <div style="text-align:right;font-size:11px;color:#9ca3af;line-height:1.9">
+          ${d.email?`<div>${d.email}</div>`:''}
+          ${d.phone?`<div>${d.phone}</div>`:''}
+          ${d.location?`<div>${d.location}</div>`:''}
+          ${d.link?`<div>${d.link}</div>`:''}
+        </div>
+      </div>
+      <div style="height:2px;background:#111;margin-top:20px"></div>
     </div>
-    ${d._aiSummary?`<div style="margin-bottom:24px"><h2 style="font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid #e5e7eb;padding-bottom:5px;margin-bottom:8px">Objectif professionnel</h2><p style="font-size:12px;line-height:1.75;font-style:italic">${d._aiSummary}</p></div>`:''}
-    ${d.experiences?`<div style="margin-bottom:24px"><h2 style="font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid #e5e7eb;padding-bottom:5px;margin-bottom:8px">Expériences professionnelles</h2><div style="font-size:12px;line-height:1.8;white-space:pre-wrap">${d._aiExperiences||d.experiences}</div></div>`:''}
-    ${d.education?`<div style="margin-bottom:24px"><h2 style="font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid #e5e7eb;padding-bottom:5px;margin-bottom:8px">Formation</h2><div style="font-size:12px;line-height:1.8;white-space:pre-wrap">${d.education}</div></div>`:''}
-    ${d.skills?`<div><h2 style="font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid #e5e7eb;padding-bottom:5px;margin-bottom:8px">Compétences</h2><p style="font-size:12px">${d.skills}</p></div>`:''}
+    ${d._aiSummary?`<div style="margin-bottom:28px"><p style="font-size:13px;line-height:1.8;color:#374151;font-style:italic;border-left:2px solid #e5e7eb;padding-left:14px">${d._aiSummary}</p></div>`:''}
+    ${d.experiences?`<div style="margin-bottom:28px">
+      <h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.2em;color:#9ca3af;margin-bottom:12px">Expériences</h2>
+      <div style="font-size:13px;line-height:1.8;white-space:pre-wrap;color:#111">${d._aiExperiences||d.experiences}</div>
+    </div>`:''}
+    ${d.education?`<div style="margin-bottom:28px">
+      <h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.2em;color:#9ca3af;margin-bottom:12px">Formation</h2>
+      <div style="font-size:13px;line-height:1.8;white-space:pre-wrap">${d.education}</div>
+    </div>`:''}
+    ${d.skills?`<div style="margin-bottom:28px">
+      <h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.2em;color:#9ca3af;margin-bottom:12px">Compétences</h2>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${d.skills.split(',').map(s=>`<span style="border:1.5px solid #111;border-radius:3px;padding:3px 10px;font-size:11px;font-weight:700;letter-spacing:.02em">${s.trim()}</span>`).join('')}</div>
+    </div>`:''}
+    ${d.languages?`<div><h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.2em;color:#9ca3af;margin-bottom:8px">Langues</h2><p style="font-size:13px">${d.languages}</p></div>`:''}
   </div>`,
 
-  créatif:(d)=>`<div style="font-family:Inter,sans-serif;background:#fff;min-height:297mm">
-    <div style="background:linear-gradient(135deg,#0f766e,#0284c7);padding:40px;color:#fff;position:relative;overflow:hidden">
-      <div style="position:absolute;right:-20px;top:-20px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.08)"></div>
+  // ── COLORÉ : glassmorphism violet/bleu, card moderne ──
+  coloré:(d)=>`<div style="font-family:Inter,sans-serif;background:linear-gradient(135deg,#f5f3ff 0%,#eff6ff 100%);min-height:297mm">
+    <div style="background:linear-gradient(135deg,#6d28d9,#4f46e5,#2563eb);padding:40px 44px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:-40px;right:-40px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06)"></div>
+      <div style="position:absolute;bottom:-20px;left:30%;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.04)"></div>
       <div style="display:flex;align-items:center;gap:24px;position:relative">
-        ${d.photo?`<img src="${d.photo}" style="width:90px;height:90px;border-radius:16px;object-fit:cover;border:3px solid rgba(255,255,255,.4)">`:''}
-        <div><h1 style="font-size:26px;font-weight:900;letter-spacing:-.03em">${d.name||''}</h1><p style="font-size:14px;opacity:.85;margin-top:4px">${d.title||''}</p>
-        <div style="display:flex;gap:12px;margin-top:8px;font-size:11px;opacity:.8">${d.email?`<span>✉ ${d.email}</span>`:''}${d.phone?`<span>📞 ${d.phone}</span>`:''}${d.location?`<span>📍 ${d.location}</span>`:''}</div></div>
+        ${d.photo
+          ?`<img src="${d.photo}" style="width:88px;height:88px;border-radius:20px;object-fit:cover;border:3px solid rgba(255,255,255,.35);box-shadow:0 8px 32px rgba(0,0,0,.2)">`
+          :`<div style="width:88px;height:88px;border-radius:20px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:900;color:#fff;border:3px solid rgba(255,255,255,.3)">${(d.name||'?').charAt(0)}</div>`}
+        <div>
+          <h1 style="font-size:28px;font-weight:900;letter-spacing:-.04em;color:#fff;margin-bottom:4px;text-shadow:0 2px 8px rgba(0,0,0,.15)">${d.name||''}</h1>
+          <p style="font-size:13px;color:rgba(255,255,255,.85);margin-bottom:10px;font-weight:500">${d.title||''}</p>
+          <div style="display:flex;flex-wrap:wrap;gap:10px">
+            ${d.email?`<span style="background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:3px 10px;font-size:10px;color:rgba(255,255,255,.9);font-weight:600">✉ ${d.email}</span>`:''}
+            ${d.phone?`<span style="background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:3px 10px;font-size:10px;color:rgba(255,255,255,.9);font-weight:600">📞 ${d.phone}</span>`:''}
+            ${d.location?`<span style="background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:3px 10px;font-size:10px;color:rgba(255,255,255,.9);font-weight:600">📍 ${d.location}</span>`:''}
+          </div>
+        </div>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:2fr 1fr">
-      <div style="padding:32px 36px">
-        ${d._aiSummary?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#0f766e;margin-bottom:8px">À propos</h2><p style="font-size:13px;line-height:1.75;color:#374151;margin-bottom:24px">${d._aiSummary}</p>`:''}
-        ${d.experiences?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#0f766e;margin-bottom:10px">Expériences</h2><div style="font-size:12px;line-height:1.8;white-space:pre-wrap;color:#111">${d._aiExperiences||d.experiences}</div>`:''}
+    <div style="display:grid;grid-template-columns:3fr 2fr;gap:0;padding:28px 36px;gap:24px">
+      <div>
+        ${d._aiSummary?`<div style="background:#fff;border-radius:12px;padding:16px 18px;margin-bottom:18px;box-shadow:0 2px 12px rgba(99,102,241,.08)">
+          <h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#6d28d9;margin-bottom:7px">Profil</h2>
+          <p style="font-size:12px;line-height:1.75;color:#374151;margin:0">${d._aiSummary}</p>
+        </div>`:''}
+        ${d.experiences?`<div style="background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 2px 12px rgba(99,102,241,.08)">
+          <h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#6d28d9;margin-bottom:7px">Expériences</h2>
+          <div style="font-size:12px;line-height:1.75;white-space:pre-wrap;color:#111">${d._aiExperiences||d.experiences}</div>
+        </div>`:''}
       </div>
-      <div style="padding:32px 24px;background:#f0fdfa">
-        ${d.education?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#0284c7;margin-bottom:8px">Formation</h2><div style="font-size:12px;line-height:1.7;white-space:pre-wrap;margin-bottom:20px">${d.education}</div>`:''}
-        ${d.skills?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#0284c7;margin-bottom:8px">Skills</h2><div style="display:flex;flex-direction:column;gap:5px;margin-bottom:20px">${d.skills.split(',').map(s=>`<div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;border-radius:50%;background:#0f766e;flex-shrink:0"></div><span style="font-size:11px;font-weight:600">${s.trim()}</span></div>`).join('')}</div>`:''}
-        ${d.languages?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#0284c7;margin-bottom:6px">Langues</h2><p style="font-size:11px;line-height:1.7">${d.languages}</p>`:''}
+      <div style="display:flex;flex-direction:column;gap:16px">
+        ${d.education?`<div style="background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 2px 12px rgba(99,102,241,.08)">
+          <h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#4f46e5;margin-bottom:7px">Formation</h2>
+          <div style="font-size:11px;line-height:1.7;white-space:pre-wrap">${d.education}</div>
+        </div>`:''}
+        ${d.skills?`<div style="background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 2px 12px rgba(99,102,241,.08)">
+          <h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#4f46e5;margin-bottom:8px">Compétences</h2>
+          <div style="display:flex;flex-wrap:wrap;gap:5px">${d.skills.split(',').map(s=>`<span style="background:linear-gradient(135deg,#6d28d9,#4f46e5);color:#fff;border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700">${s.trim()}</span>`).join('')}</div>
+        </div>`:''}
+        ${d.languages?`<div style="background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 2px 12px rgba(99,102,241,.08)">
+          <h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#4f46e5;margin-bottom:6px">Langues</h2>
+          <p style="font-size:11px;line-height:1.7">${d.languages}</p>
+          ${d.interests?`<h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#4f46e5;margin-top:12px;margin-bottom:5px">Intérêts</h2><p style="font-size:11px">${d.interests}</p>`:''}
+        </div>`:''}
       </div>
     </div>
   </div>`,
 
-  professionnel:(d)=>`<div style="font-family:Inter,sans-serif;background:#fff;color:#111;min-height:297mm">
-    <div style="background:#1f2937;color:#fff;padding:36px 44px">
-      <div style="display:flex;align-items:center;gap:22px">
-        ${d.photo?`<img src="${d.photo}" style="width:76px;height:76px;border-radius:8px;object-fit:cover;border:2px solid #374151">`:''}
-        <div><h1 style="font-size:24px;font-weight:900;letter-spacing:-.02em">${d.name||''}</h1><p style="font-size:13px;color:#9ca3af;margin-top:4px">${d.title||''}</p>
-        <p style="font-size:11px;color:#6b7280;margin-top:5px">${[d.email,d.phone,d.location,d.link].filter(Boolean).join(' · ')}</p></div>
+  // ── CLASSIQUE : élégance sobre, serif, doré ──
+  classique:(d)=>`<div style="max-width:680px;margin:0 auto;padding:52px;font-family:Georgia,serif;background:#fefdf8;color:#1a1a1a">
+    <div style="text-align:center;padding-bottom:24px;margin-bottom:28px;position:relative">
+      <div style="width:100%;height:1px;background:linear-gradient(90deg,transparent,#c2975a,transparent);margin-bottom:20px"></div>
+      ${d.photo?`<img src="${d.photo}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid #c2975a;margin-bottom:14px;display:inline-block;box-shadow:0 2px 12px rgba(194,151,90,.2)">`:''}
+      <h1 style="font-size:28px;font-weight:bold;letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px">${d.name||''}</h1>
+      <div style="width:40px;height:2px;background:#c2975a;margin:8px auto"></div>
+      <p style="font-size:13px;font-style:italic;color:#c2975a;margin:6px 0">${d.title||''}</p>
+      <p style="font-size:11px;color:#6b7280;margin-top:6px;letter-spacing:.04em">${[d.email,d.phone,d.location].filter(Boolean).join('  ·  ')}</p>
+      <div style="width:100%;height:1px;background:linear-gradient(90deg,transparent,#c2975a,transparent);margin-top:20px"></div>
+    </div>
+    ${d._aiSummary?`<div style="margin-bottom:26px;padding:14px 18px;background:rgba(194,151,90,.06);border:1px solid rgba(194,151,90,.2);border-radius:4px">
+      <h2 style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.14em;color:#92400e;margin-bottom:7px">Objectif professionnel</h2>
+      <p style="font-size:12px;line-height:1.8;font-style:italic;color:#44403c;margin:0">${d._aiSummary}</p>
+    </div>`:''}
+    ${d.experiences?`<div style="margin-bottom:24px">
+      <h2 style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.14em;color:#92400e;border-bottom:1px solid #e7d8c0;padding-bottom:6px;margin-bottom:10px">Expériences professionnelles</h2>
+      <div style="font-size:12px;line-height:1.85;white-space:pre-wrap;color:#292524">${d._aiExperiences||d.experiences}</div>
+    </div>`:''}
+    ${d.education?`<div style="margin-bottom:24px">
+      <h2 style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.14em;color:#92400e;border-bottom:1px solid #e7d8c0;padding-bottom:6px;margin-bottom:10px">Formation</h2>
+      <div style="font-size:12px;line-height:1.85;white-space:pre-wrap">${d.education}</div>
+    </div>`:''}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+      ${d.skills?`<div>
+        <h2 style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.14em;color:#92400e;border-bottom:1px solid #e7d8c0;padding-bottom:6px;margin-bottom:10px">Compétences</h2>
+        <p style="font-size:12px;line-height:1.8;color:#292524">${d.skills}</p>
+      </div>`:''}
+      ${d.languages?`<div>
+        <h2 style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.14em;color:#92400e;border-bottom:1px solid #e7d8c0;padding-bottom:6px;margin-bottom:10px">Langues</h2>
+        <p style="font-size:12px;line-height:1.8">${d.languages}</p>
+        ${d.interests?`<h2 style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.14em;color:#92400e;border-bottom:1px solid #e7d8c0;padding-bottom:6px;margin-bottom:8px;margin-top:14px">Intérêts</h2><p style="font-size:12px">${d.interests}</p>`:''}
+      </div>`:''}
+    </div>
+  </div>`,
+
+  // ── CRÉATIF : dark mode audacieux, accent émeraude ──
+  créatif:(d)=>`<div style="font-family:Inter,sans-serif;background:#0a0a0a;color:#e5e5e5;min-height:297mm">
+    <div style="padding:40px 44px;background:linear-gradient(135deg,#0a0a0a 0%,#111827 100%);position:relative;overflow:hidden">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#10b981,#06b6d4,#8b5cf6)"></div>
+      <div style="position:absolute;right:-60px;top:-60px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(16,185,129,.08),transparent 70%)"></div>
+      <div style="display:flex;align-items:center;gap:28px;position:relative">
+        ${d.photo
+          ?`<img src="${d.photo}" style="width:96px;height:96px;border-radius:20px;object-fit:cover;border:2px solid #10b981;box-shadow:0 0 0 6px rgba(16,185,129,.12)">`
+          :`<div style="width:96px;height:96px;border-radius:20px;background:linear-gradient(135deg,#10b981,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:900;color:#fff">${(d.name||'?').charAt(0)}</div>`}
+        <div>
+          <h1 style="font-size:30px;font-weight:900;letter-spacing:-.04em;color:#fff;margin-bottom:4px">${d.name||''}</h1>
+          <p style="font-size:13px;color:#10b981;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">${d.title||''}</p>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            ${d.email?`<span style="background:#1f2937;color:#9ca3af;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:600">✉ ${d.email}</span>`:''}
+            ${d.phone?`<span style="background:#1f2937;color:#9ca3af;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:600">📞 ${d.phone}</span>`:''}
+            ${d.location?`<span style="background:#1f2937;color:#9ca3af;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:600">📍 ${d.location}</span>`:''}
+          </div>
+        </div>
       </div>
     </div>
-    <div style="padding:32px 44px">
-      ${d._aiSummary?`<div style="background:#f9fafb;border-left:3px solid #374151;padding:14px 18px;border-radius:0 8px 8px 0;margin-bottom:24px"><p style="font-size:12px;line-height:1.75;color:#374151">${d._aiSummary}</p></div>`:''}
-      ${d.experiences?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#374151;margin-bottom:10px">Expériences</h2><div style="font-size:12px;line-height:1.8;white-space:pre-wrap;margin-bottom:22px;color:#111">${d._aiExperiences||d.experiences}</div>`:''}
-      ${d.education?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#374151;margin-bottom:10px">Formation</h2><div style="font-size:12px;line-height:1.8;white-space:pre-wrap;margin-bottom:22px">${d.education}</div>`:''}
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
-        ${d.skills?`<div><h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#374151;margin-bottom:8px">Compétences</h2>${d.skills.split(',').map(s=>`<div style="display:flex;align-items:center;gap:7px;margin-bottom:4px"><div style="width:6px;height:6px;border-radius:50%;background:#1f2937"></div><span style="font-size:12px">${s.trim()}</span></div>`).join('')}</div>`:''}
-        ${d.languages?`<div><h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#374151;margin-bottom:8px">Langues</h2><p style="font-size:12px;line-height:1.8">${d.languages}</p>${d.interests?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#374151;margin-top:14px;margin-bottom:6px">Intérêts</h2><p style="font-size:12px">${d.interests}</p>`:''}</div>`:''}
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:0">
+      <div style="padding:28px 32px;border-right:1px solid #1f2937">
+        ${d._aiSummary?`<div style="margin-bottom:22px">
+          <h2 style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.16em;color:#10b981;margin-bottom:8px;display:flex;align-items:center;gap:6px"><span style="width:20px;height:1px;background:#10b981;display:inline-block"></span>À propos<span style="flex:1;height:1px;background:#1f2937;display:inline-block"></span></h2>
+          <p style="font-size:12px;line-height:1.75;color:#d1d5db">${d._aiSummary}</p>
+        </div>`:''}
+        ${d.experiences?`<div>
+          <h2 style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.16em;color:#10b981;margin-bottom:8px;display:flex;align-items:center;gap:6px"><span style="width:20px;height:1px;background:#10b981;display:inline-block"></span>Expériences<span style="flex:1;height:1px;background:#1f2937;display:inline-block"></span></h2>
+          <div style="font-size:12px;line-height:1.8;white-space:pre-wrap;color:#d1d5db">${d._aiExperiences||d.experiences}</div>
+        </div>`:''}
+      </div>
+      <div style="padding:28px 22px;background:#111">
+        ${d.education?`<div style="margin-bottom:18px">
+          <h2 style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:#06b6d4;margin-bottom:8px">Formation</h2>
+          <div style="font-size:11px;line-height:1.7;white-space:pre-wrap;color:#d1d5db">${d.education}</div>
+        </div>`:''}
+        ${d.skills?`<div style="margin-bottom:18px">
+          <h2 style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:#06b6d4;margin-bottom:8px">Skills</h2>
+          <div style="display:flex;flex-direction:column;gap:5px">${d.skills.split(',').map(s=>`<div style="display:flex;align-items:center;gap:7px"><div style="width:6px;height:6px;border-radius:50%;background:linear-gradient(135deg,#10b981,#06b6d4);flex-shrink:0"></div><span style="font-size:11px;font-weight:600;color:#d1d5db">${s.trim()}</span></div>`).join('')}</div>
+        </div>`:''}
+        ${d.languages?`<div style="margin-bottom:18px">
+          <h2 style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:#06b6d4;margin-bottom:6px">Langues</h2>
+          <p style="font-size:11px;line-height:1.7;color:#9ca3af">${d.languages}</p>
+        </div>`:''}
+        ${d.interests?`<div>
+          <h2 style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:#06b6d4;margin-bottom:6px">Intérêts</h2>
+          <p style="font-size:11px;color:#9ca3af">${d.interests}</p>
+        </div>`:''}
+      </div>
+    </div>
+  </div>`,
+
+  // ── PROFESSIONNEL : corporate premium, bicolore gris/blanc ──
+  professionnel:(d)=>`<div style="font-family:Inter,sans-serif;background:#fff;color:#111;min-height:297mm">
+    <div style="background:#111827;padding:36px 48px;position:relative;overflow:hidden">
+      <div style="position:absolute;right:0;top:0;bottom:0;width:6px;background:linear-gradient(180deg,#f59e0b,#ef4444)"></div>
+      <div style="display:flex;align-items:center;gap:24px">
+        ${d.photo
+          ?`<img src="${d.photo}" style="width:80px;height:80px;border-radius:10px;object-fit:cover;border:2px solid #374151">`
+          :`<div style="width:80px;height:80px;border-radius:10px;background:#1f2937;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900;color:#f59e0b;border:2px solid #374151">${(d.name||'?').charAt(0)}</div>`}
+        <div style="flex:1">
+          <h1 style="font-size:26px;font-weight:900;letter-spacing:-.03em;color:#fff;margin-bottom:3px">${d.name||''}</h1>
+          <p style="font-size:12px;color:#f59e0b;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">${d.title||''}</p>
+          <div style="display:flex;flex-wrap:wrap;gap:12px">
+            ${d.email?`<span style="color:#9ca3af;font-size:10px;font-weight:600">✉ ${d.email}</span>`:''}
+            ${d.phone?`<span style="color:#9ca3af;font-size:10px;font-weight:600">📞 ${d.phone}</span>`:''}
+            ${d.location?`<span style="color:#9ca3af;font-size:10px;font-weight:600">📍 ${d.location}</span>`:''}
+            ${d.link?`<span style="color:#9ca3af;font-size:10px;font-weight:600">🔗 ${d.link}</span>`:''}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:32px 48px">
+      ${d._aiSummary?`<div style="background:#f9fafb;border:1px solid #e5e7eb;border-left:4px solid #f59e0b;padding:14px 18px;border-radius:0 8px 8px 0;margin-bottom:26px">
+        <p style="font-size:12px;line-height:1.8;color:#374151;margin:0;font-style:italic">${d._aiSummary}</p>
+      </div>`:''}
+      ${d.experiences?`<div style="margin-bottom:24px">
+        <h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.15em;color:#111827;border-bottom:2px solid #111827;padding-bottom:6px;margin-bottom:12px">Expériences professionnelles</h2>
+        <div style="font-size:12px;line-height:1.85;white-space:pre-wrap;color:#374151">${d._aiExperiences||d.experiences}</div>
+      </div>`:''}
+      ${d.education?`<div style="margin-bottom:24px">
+        <h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.15em;color:#111827;border-bottom:2px solid #111827;padding-bottom:6px;margin-bottom:12px">Formation</h2>
+        <div style="font-size:12px;line-height:1.85;white-space:pre-wrap">${d.education}</div>
+      </div>`:''}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px">
+        ${d.skills?`<div>
+          <h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.15em;color:#111827;border-bottom:2px solid #111827;padding-bottom:6px;margin-bottom:10px">Compétences</h2>
+          <div style="display:flex;flex-direction:column;gap:5px">${d.skills.split(',').map(s=>`<div style="display:flex;align-items:center;gap:8px"><div style="width:18px;height:3px;background:linear-gradient(90deg,#f59e0b,#ef4444);border-radius:2px;flex-shrink:0"></div><span style="font-size:12px;color:#374151">${s.trim()}</span></div>`).join('')}</div>
+        </div>`:''}
+        <div>
+          ${d.languages?`<h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.15em;color:#111827;border-bottom:2px solid #111827;padding-bottom:6px;margin-bottom:10px">Langues</h2>
+          <p style="font-size:12px;line-height:1.8;margin-bottom:16px">${d.languages}</p>`:''}
+          ${d.interests?`<h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.15em;color:#111827;border-bottom:2px solid #111827;padding-bottom:6px;margin-bottom:8px">Intérêts</h2>
+          <p style="font-size:12px">${d.interests}</p>`:''}
+        </div>
       </div>
     </div>
   </div>`,
@@ -5674,8 +6017,283 @@ function _updateUserUIExtras(){
   // Cover letter tool (AI Plus+)
   const toolClBtn=G('tool-cl-btn');
   if(toolClBtn) toolClBtn.style.display=S.plan>=2?'flex':'none';
+  // Oral de Bac tool (AI Plus+)
+  const toolOralBtn=G('tool-oral-btn');
+  if(toolOralBtn) toolOralBtn.style.display=S.plan>=2?'flex':'none';
   // Sync improve AI toggle
   syncImproveAIToggle();
+}
+
+// ── ORAL DE BAC ──
+const oralState = {
+  specialite:'', type:'grand-oral', niveau:'Terminale',
+  theme:'', contexte:'', sujetFinal:'',
+  plan:'', planNotes:'', fullText:'',
+  questions:[], selectedQuestion:''
+};
+
+function openOralBacModal(){
+  if(S.plan<2){ toast('Oral de Bac — plan AI Plus requis'); openPlansOverlay(); return; }
+  switchOralTab('config');
+  openModal('oral-bac-modal');
+}
+
+function switchOralTab(tab){
+  const tabs=['config','sujet','plan','entrain','result'];
+  tabs.forEach(t=>{
+    const btn=G('oraltab-'+t); if(btn) btn.classList.toggle('active',t===tab);
+    const body=G('oralbody-'+t); if(body) body.style.display=t===tab?'flex':'none';
+  });
+}
+
+function _oralSysPrompt(){
+  const spec=oralState.specialite||'spécialité de terminale';
+  const type=oralState.type||'grand oral';
+  const niv=oralState.niveau||'Terminale';
+  return `Tu es un professeur préparateur aux épreuves orales du baccalauréat français, expert en ${spec} (niveau ${niv}). Tu prépares un élève pour un ${type}. Réponds en français, avec précision pédagogique. Sois structuré, clair et motivant.`;
+}
+
+async function generateOralSubjects(){
+  if(!oralState.specialite){ toast('Sélectionne une spécialité d\'abord'); switchOralTab('config'); return; }
+  const btn=G('oral-gen-subjects-btn');
+  const list=G('oral-subjects-list');
+  if(btn){btn.disabled=true;btn.textContent='✦ Génération…';}
+  if(list) list.innerHTML='<div style="color:#aaa;font-size:12px;text-align:center;padding:20px 0">⏳ Génération des sujets…</div>';
+  switchOralTab('sujet');
+  const prompt=`Propose 6 sujets de ${oralState.type==='grand-oral'?'Grand Oral':'oral de bac'} originaux et stimulants en ${oralState.specialite} (niveau ${oralState.niveau}).${oralState.theme?' Le thème général : '+oralState.theme+'.':''}${oralState.contexte?' Contexte de l\'élève : '+oralState.contexte:''}
+Chaque sujet doit être une question problématique précise, sous la forme "En quoi... ?" ou "Dans quelle mesure... ?" ou "Peut-on affirmer que... ?"
+Réponds UNIQUEMENT en JSON valide sans backticks, format : {"sujets":[{"titre":"...","angle":"description de l'angle en 1 phrase","niveau":"★☆☆ ou ★★☆ ou ★★★"}]}`;
+  try{
+    const raw=await callMistral([{role:'system',content:_oralSysPrompt()},{role:'user',content:prompt}],'mistral-medium-latest',1500);
+    const clean=raw.replace(/```json|```/g,'').trim();
+    const parsed=JSON.parse(clean);
+    if(parsed.sujets?.length){
+      list.innerHTML=parsed.sujets.map((s,i)=>`
+        <div style="border:1.5px solid var(--border2);border-radius:10px;padding:12px 14px;cursor:pointer;transition:.15s;background:var(--bg)"
+          onclick="selectOralSubject(${i},event)"
+          onmouseover="this.style.borderColor='var(--accent)'"
+          onmouseout="this.style.borderColor='var(--border2)'"
+          id="oral-subject-${i}">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+            <div style="font-size:13px;font-weight:700;color:var(--text);flex:1">${esc(s.titre)}</div>
+            <span style="font-size:12px;flex-shrink:0">${s.niveau||'★★☆'}</span>
+          </div>
+          <div style="font-size:11px;color:#888;margin-top:5px">${esc(s.angle||'')}</div>
+        </div>`).join('');
+      window._oralSubjects=parsed.sujets;
+    }else{ list.innerHTML='<div style="color:#aaa;font-size:12px;text-align:center;padding:12px 0">Aucun sujet généré, réessaie</div>'; }
+  }catch(e){
+    list.innerHTML='<div style="color:#ef4444;font-size:12px;text-align:center;padding:12px 0">Erreur : '+esc(e.message.substring(0,60))+'</div>';
+  }
+  if(btn){btn.disabled=false;btn.textContent='✦ Générer des idées';}
+}
+
+function selectOralSubject(i, e){
+  document.querySelectorAll('[id^="oral-subject-"]').forEach(el=>{
+    el.style.borderColor='var(--border2)';
+    el.style.background='var(--bg)';
+  });
+  const el=G('oral-subject-'+i);
+  if(el){ el.style.borderColor='var(--accent)'; el.style.background='var(--select-bg)'; }
+  const s=window._oralSubjects?.[i];
+  if(s){
+    oralState.sujetFinal=s.titre;
+    const inp=G('oral-sujet-custom');
+    if(inp) inp.value=s.titre;
+    toast('✓ Sujet sélectionné');
+  }
+}
+
+async function generateOralPlan(){
+  const sujet=oralState.sujetFinal||(G('oral-sujet-custom')?.value?.trim());
+  if(!sujet){ toast('Sélectionne ou entre un sujet'); return; }
+  oralState.sujetFinal=sujet;
+  const btn=G('oral-gen-plan-btn');
+  const planEl=G('oral-plan-content');
+  if(btn){btn.disabled=true;btn.textContent='✦ Génération…';}
+  if(planEl) planEl.innerHTML='<span style="color:#aaa">⏳ Construction du plan…</span>';
+  switchOralTab('plan');
+  const prompt=`Construis un plan détaillé pour l'oral suivant :
+Spécialité : ${oralState.specialite||'non précisée'}
+Type : ${oralState.type}
+Sujet : "${sujet}"
+
+Le plan doit inclure :
+1. Une INTRODUCTION percutante (accroche + définition des termes + problématique + annonce du plan)
+2. DÉVELOPPEMENT en 2 ou 3 parties (I, II, III) avec des sous-parties A, B, C pour chaque partie
+3. Une CONCLUSION (synthèse + ouverture)
+4. Des exemples, références ou expériences pour chaque partie
+
+Sois précis, structuré, et adapté au niveau lycée. Utilise des puces et une mise en forme claire.`;
+  try{
+    const result=await callMistral([{role:'system',content:_oralSysPrompt()},{role:'user',content:prompt}],'mistral-medium-latest',2500);
+    oralState.plan=result;
+    if(planEl) planEl.textContent=result;
+    // Auto-generate questions
+    generateOralQuestions(true);
+  }catch(e){
+    if(planEl) planEl.innerHTML='<span style="color:#ef4444">Erreur : '+esc(e.message.substring(0,60))+'</span>';
+  }
+  if(btn){btn.disabled=false;btn.textContent='✦ (Re)générer le plan';}
+}
+
+async function generateOralQuestions(silent=false){
+  const sujet=oralState.sujetFinal;
+  const plan=oralState.plan;
+  if(!sujet&&!plan){ if(!silent) toast('Génère d\'abord un plan'); return; }
+  const questionsWrap=G('oral-questions-wrap');
+  if(questionsWrap) questionsWrap.innerHTML='<div style="color:#aaa;font-size:12px;text-align:center;padding:10px 0">⏳ Génération des questions…</div>';
+  try{
+    const raw=await callMistral([
+      {role:'system',content:_oralSysPrompt()},
+      {role:'user',content:`Génère 8 questions de jury typiques et variées pour cet oral de bac en ${oralState.specialite||'spécialité'}.
+Sujet : "${sujet||'oral de spécialité'}"
+${plan?'Plan connu : oui':''}
+
+Questions variées : compréhension, approfondissement, liens interdisciplinaires, questions pièges, ouverture.
+Réponds UNIQUEMENT en JSON valide sans backticks : {"questions":["question 1","question 2",...]}`}
+    ],'mistral-small-latest',800);
+    const clean=raw.replace(/```json|```/g,'').trim();
+    const parsed=JSON.parse(clean);
+    oralState.questions=parsed.questions||[];
+    if(questionsWrap&&oralState.questions.length){
+      questionsWrap.innerHTML=oralState.questions.map((q,i)=>`
+        <div style="border:1.5px solid var(--border2);border-radius:8px;padding:10px 13px;cursor:pointer;font-size:12px;transition:.15s;background:var(--bg)"
+          onclick="selectOralQuestion(${i},this)"
+          onmouseover="this.style.borderColor='var(--accent)'"
+          onmouseout="if(!this.classList.contains('selected'))this.style.borderColor='var(--border2)'"
+          class="oral-q-item">
+          <span style="color:#888;font-weight:700;margin-right:6px">${i+1}.</span>${esc(q)}
+        </div>`).join('');
+    }else if(questionsWrap){
+      questionsWrap.innerHTML='<div style="color:#aaa;font-size:12px;text-align:center;padding:10px 0">Aucune question générée</div>';
+    }
+  }catch(e){
+    if(questionsWrap) questionsWrap.innerHTML='<div style="color:#ef4444;font-size:12px;padding:8px 0">Erreur : '+esc(e.message.substring(0,60))+'</div>';
+  }
+}
+
+function selectOralQuestion(i, el){
+  document.querySelectorAll('.oral-q-item').forEach(q=>{
+    q.classList.remove('selected');
+    q.style.borderColor='var(--border2)';
+    q.style.background='var(--bg)';
+  });
+  el.classList.add('selected');
+  el.style.borderColor='var(--accent)';
+  el.style.background='var(--select-bg)';
+  oralState.selectedQuestion=oralState.questions[i];
+  const inp=G('oral-response-input');
+  if(inp) inp.placeholder=`Question sélectionnée : "${oralState.questions[i]}"\n\nÉcris ta réponse ici…`;
+  switchOralTab('entrain');
+  toast('Question sélectionnée — écris ta réponse');
+}
+
+async function analyzeOralResponse(){
+  const response=G('oral-response-input')?.value?.trim();
+  if(!response){ toast('Écris une réponse d\'abord'); return; }
+  const question=oralState.selectedQuestion||'Question de jury';
+  const feedbackWrap=G('oral-feedback-wrap');
+  if(feedbackWrap){feedbackWrap.style.display='block'; feedbackWrap.textContent='⏳ Analyse en cours…';}
+  try{
+    const result=await callMistral([
+      {role:'system',content:_oralSysPrompt()+'\nTu es un correcteur bienveillant et exigeant.'},
+      {role:'user',content:`Question du jury : "${question}"
+
+Réponse de l'élève :
+"${response}"
+
+Analyse cette réponse et donne un feedback structuré avec :
+1. ✅ Points forts (ce qui est bien)
+2. ⚠️ Points à améliorer
+3. 💡 Suggestions concrètes (formulations, exemples, arguments manquants)
+4. 🎯 Note estimée /20 avec justification
+
+Sois constructif, précis et encourageant.`}
+    ],'mistral-medium-latest',1200);
+    if(feedbackWrap) feedbackWrap.textContent=result;
+    oralState.lastFeedback=result;
+  }catch(e){
+    if(feedbackWrap) feedbackWrap.textContent='Erreur : '+e.message;
+  }
+}
+
+async function generateOralFull(){
+  const sujet=oralState.sujetFinal;
+  const plan=oralState.plan;
+  if(!sujet&&!plan){ toast('Génère d\'abord un plan'); switchOralTab('plan'); return; }
+  const btn=document.querySelector('[onclick="generateOralFull()"]');
+  if(btn){btn.disabled=true;btn.textContent='✦ Rédaction…';}
+  switchOralTab('result');
+  const resultEl=G('oral-result-content');
+  if(resultEl) resultEl.textContent='⏳ Rédaction de votre oral en cours…';
+  const notes=oralState.planNotes?`\nNotes supplémentaires de l'élève : ${oralState.planNotes}`:'';
+  const prompt=`Rédige le texte COMPLET de l'oral pour l'élève, prêt à être lu et récité.
+Spécialité : ${oralState.specialite||'non précisée'}
+Type : ${oralState.type}
+Sujet : "${sujet||'oral de spécialité'}"
+${plan?'Plan établi :\n'+plan:''}${notes}
+
+INSTRUCTIONS :
+- Rédige en style oral naturel (pas trop scolaire, mais sérieux et précis)
+- Introduction percutante avec accroche mémorable
+- Développement avec transitions fluides entre les parties
+- Exemples concrets, chiffres, références si pertinent
+- Conclusion ouverte et marquante
+- Durée estimée pour chaque partie entre parenthèses
+- Adapté au niveau terminale / baccalauréat
+
+Commence directement par le texte de l'oral.`;
+  try{
+    const result=await callMistral([{role:'system',content:_oralSysPrompt()},{role:'user',content:prompt}],'mistral-large-latest',4000);
+    oralState.fullText=result;
+    if(resultEl) resultEl.textContent=result;
+    toast('✓ Oral rédigé !');
+  }catch(e){
+    if(resultEl) resultEl.textContent='Erreur : '+e.message;
+    toast('Erreur : '+e.message.substring(0,50));
+  }
+  if(btn){btn.disabled=false;btn.textContent='✦ Rédiger l\'oral complet';}
+}
+
+async function exportOralPDF(){
+  const content=G('oral-result-content')?.textContent; if(!content?.trim()){toast('Aucun oral à exporter');return;}
+  toast('📄 Génération PDF…');
+  try{
+    if(typeof html2pdf==='undefined') throw new Error('html2pdf non chargé');
+    const tmp=document.createElement('div');
+    tmp.style.cssText='position:fixed;left:-9999px;top:0;width:794px;padding:60px 72px;background:#fff;color:#111;font-family:Georgia,serif;font-size:13px;line-height:1.9;white-space:pre-wrap;';
+    const header=`<div style="border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:24px;font-family:Inter,sans-serif">
+      <div style="font-size:20px;font-weight:900;letter-spacing:-.03em">Oral de Bac — ${esc(oralState.specialite||'')}</div>
+      <div style="font-size:12px;color:#666;margin-top:4px">${esc(oralState.sujetFinal||'')} · ${esc(oralState.type||'')} · ${esc(oralState.niveau||'Terminale')}</div>
+    </div>`;
+    tmp.innerHTML=header+`<div style="white-space:pre-wrap">${esc(content)}</div>`;
+    document.body.appendChild(tmp);
+    await html2pdf().set({
+      margin:[18,18,18,18],filename:'oral-bac-wikimind.pdf',
+      image:{type:'jpeg',quality:0.97},
+      html2canvas:{scale:2,backgroundColor:'#ffffff'},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
+    }).from(tmp).save();
+    document.body.removeChild(tmp);
+    toast('✓ PDF exporté !');
+  }catch(e){ toast('Erreur PDF : '+e.message.substring(0,40)); }
+}
+
+function copyOralResult(){
+  const el=G('oral-result-content'); if(!el) return;
+  copyText(el.textContent||'');
+  toast('📋 Oral copié !');
+}
+
+function importOralToChat(){
+  const el=G('oral-result-content'); if(!el) return;
+  const text=el.textContent?.trim(); if(!text){toast('Aucun oral à importer');return;}
+  S.attachments.push({type:'text',name:`Oral Bac — ${oralState.specialite||''} — ${oralState.sujetFinal?.substring(0,40)||''}`,content:text});
+  updateAttachmentPreview();
+  closeModal('oral-bac-modal');
+  G('user-input').focus();
+  toast('Oral importé dans le chat');
 }
 
 window.bootUser=bootUser;
