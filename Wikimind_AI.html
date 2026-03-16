@@ -19,6 +19,8 @@
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@orama/orama@2/dist/browser/index.global.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
 :root {
@@ -556,6 +558,169 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 
 /* Plans grid fallback */
 .plans-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* ── COLOR PICKER for Diagrams/Charts ── */
+.color-palette-btn{
+  width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;
+  transition:.2s;flex-shrink:0;position:relative;
+}
+.color-palette-btn.active{border-color:var(--text);transform:scale(1.2);}
+.color-palette-wrap{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:4px 0;}
+.color-palette-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#aaa;margin-right:2px;}
+/* color schemes */
+.cp-blue{background:linear-gradient(135deg,#3b82f6,#8b5cf6);}
+.cp-purple{background:linear-gradient(135deg,#8b5cf6,#ec4899);}
+.cp-red{background:linear-gradient(135deg,#ef4444,#f97316);}
+.cp-green{background:linear-gradient(135deg,#10b981,#06b6d4);}
+.cp-amber{background:linear-gradient(135deg,#f59e0b,#ef4444);}
+.cp-mono{background:linear-gradient(135deg,#374151,#9ca3af);}
+
+/* ── CODER PREVIEW (iframe) ── */
+#coder-preview-wrap{
+  flex:1;display:none;flex-direction:column;overflow:hidden;background:var(--bg);
+}
+#coder-preview-wrap.show{display:flex;}
+#coder-iframe{
+  flex:1;border:none;background:#fff;border-radius:0;
+}
+.coder-preview-bar{
+  display:flex;align-items:center;gap:8px;padding:6px 12px;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+  background:var(--select-bg);
+}
+.coder-preview-bar-label{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;}
+.coder-preview-refresh{
+  font-size:10px;font-weight:800;text-transform:uppercase;padding:3px 10px;
+  border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text);
+  cursor:pointer;transition:.15s;font-family:'Inter',sans-serif;margin-left:auto;
+}
+.coder-preview-refresh:hover{background:var(--border2);}
+
+/* ── PYTHON RUN BUTTON in code blocks ── */
+.run-python-btn{
+  position:absolute;top:6px;right:130px;background:rgba(16,185,129,.12);color:#10b981;
+  border:none;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:800;
+  cursor:pointer;transition:.2s;font-family:'Inter',sans-serif;text-transform:uppercase;
+}
+.run-python-btn:hover{background:#10b981;color:#fff;}
+.python-output{
+  background:#0f172a;color:#a3e635;border-radius:0 0 12px 12px;
+  padding:10px 14px;font-family:'Menlo','Monaco',monospace;font-size:12px;
+  border-top:1px solid #1e293b;white-space:pre-wrap;max-height:200px;overflow-y:auto;
+}
+.python-output.error{color:#f87171;}
+.python-output-wrap{margin-top:-1px;}
+
+/* ── CV CREATOR ── */
+#cv-modal .modal-content{max-width:680px;max-height:85vh;overflow-y:auto;padding:0;}
+.cv-step{display:none;padding:24px 28px;}
+.cv-step.active{display:block;}
+.cv-progress{
+  display:flex;align-items:center;padding:16px 28px;border-bottom:1px solid var(--border);
+  gap:6px;overflow-x:auto;
+}
+.cv-progress-dot{
+  width:28px;height:28px;border-radius:50%;border:2px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;
+  flex-shrink:0;transition:.2s;color:#aaa;
+}
+.cv-progress-dot.done{background:var(--accent);color:var(--accent-inv);border-color:var(--accent);}
+.cv-progress-dot.active{border-color:var(--accent);color:var(--accent);}
+.cv-progress-line{flex:1;height:1px;background:var(--border2);min-width:12px;}
+.cv-step-title{font-size:16px;font-weight:800;margin-bottom:4px;}
+.cv-step-sub{font-size:12px;color:#888;margin-bottom:18px;}
+.cv-field{margin-bottom:14px;}
+.cv-field label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#888;display:block;margin-bottom:5px;}
+.cv-field input,.cv-field textarea,.cv-field select{
+  width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);
+  background:var(--input-bg);color:var(--text);font-size:13px;
+  font-family:'Inter',sans-serif;outline:none;transition:border .2s;
+}
+.cv-field input:focus,.cv-field textarea:focus{border-color:#888;}
+.cv-field textarea{resize:vertical;min-height:80px;}
+.cv-templates-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;}
+.cv-template-card{
+  border:2px solid var(--border2);border-radius:12px;padding:10px;cursor:pointer;
+  transition:.2s;text-align:center;background:var(--select-bg);
+}
+.cv-template-card:hover{border-color:var(--accent);background:var(--card-hover);}
+.cv-template-card.selected{border-color:var(--accent);background:var(--select-bg);}
+.cv-template-preview{
+  width:100%;aspect-ratio:3/4;border-radius:8px;margin-bottom:6px;
+  display:flex;align-items:center;justify-content:center;font-size:28px;
+  border:1px solid var(--border);
+}
+.cv-template-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+.cv-photo-upload{
+  width:88px;height:88px;border-radius:50%;border:2px dashed var(--border2);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:.2s;overflow:hidden;flex-shrink:0;background:var(--select-bg);
+}
+.cv-photo-upload:hover{border-color:var(--accent);}
+.cv-photo-upload img{width:100%;height:100%;object-fit:cover;}
+.cv-nav-btns{display:flex;gap:10px;margin-top:20px;}
+.cv-btn{
+  padding:10px 20px;border-radius:10px;font-size:12px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.05em;cursor:pointer;border:none;
+  transition:.2s;flex:1;
+}
+.cv-btn.primary{background:var(--accent);color:var(--accent-inv);}
+.cv-btn.primary:hover{opacity:.85;}
+.cv-btn.secondary{background:var(--select-bg);color:var(--text);border:1px solid var(--border2);}
+.cv-btn.secondary:hover{background:var(--border2);}
+.cv-btn:disabled{opacity:.4;cursor:not-allowed;}
+#cv-output-wrap{padding:20px;overflow-y:auto;}
+#cv-output-content{
+  background:#fff;color:#111;border-radius:12px;box-shadow:0 4px 32px rgba(0,0,0,.12);
+  max-width:640px;margin:0 auto;overflow:hidden;
+}
+
+/* ── VERSION SELECTOR (regen) ── */
+.version-selector{
+  display:flex;align-items:center;gap:8px;padding:8px 0 0;
+}
+.version-selector-label{font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.06em;}
+.version-btn{
+  width:26px;height:26px;border-radius:7px;border:1.5px solid var(--border2);
+  background:none;cursor:pointer;font-size:11px;font-weight:800;color:#888;
+  transition:.15s;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;
+}
+.version-btn.active{background:var(--accent);color:var(--accent-inv);border-color:var(--accent);}
+.version-btn:hover:not(.active){background:var(--select-bg);color:var(--text);}
+
+/* ── AB TEST SELECTION (améliorer IA) ── */
+.ab-test-wrap{
+  background:var(--select-bg);border:1px solid var(--border2);border-radius:14px;
+  padding:12px 14px;margin-bottom:16px;
+}
+.ab-test-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:8px;}
+.ab-test-responses{display:flex;gap:8px;flex-direction:column;}
+.ab-response-card{
+  border:2px solid var(--border2);border-radius:10px;padding:10px 12px;
+  cursor:pointer;transition:.2s;font-size:13px;line-height:1.6;background:var(--bg);
+}
+.ab-response-card:hover{border-color:var(--accent);}
+.ab-response-card.selected{border-color:#22c55e;background:rgba(34,197,94,.04);}
+.ab-response-card-hdr{font-size:10px;font-weight:800;text-transform:uppercase;color:#aaa;margin-bottom:6px;}
+.ab-select-btn{
+  width:100%;margin-top:6px;padding:6px;border-radius:7px;border:none;
+  background:var(--accent);color:var(--accent-inv);font-size:10px;font-weight:800;
+  text-transform:uppercase;cursor:pointer;transition:.2s;
+}
+.ab-select-btn:hover{opacity:.85;}
+
+/* ── PDF EXPORT BUTTON in Canvas ── */
+.cvs-pdf-btn{
+  font-size:10px;font-weight:800;text-transform:uppercase;padding:5px 10px;
+  border-radius:7px;border:1px solid var(--border2);background:none;color:var(--text);
+  cursor:pointer;transition:.15s;display:flex;align-items:center;gap:4px;
+}
+.cvs-pdf-btn:hover{background:var(--select-bg);}
+
+/* ── IMPROVE AI TOGGLE ── */
+.improve-ai-notice{
+  font-size:10px;color:#888;margin-top:4px;font-style:italic;
+}
 
 /* ── TOOLS SIDE PANEL (replaces sidebar dropdowns) ── */
 #tools-panel{
@@ -1383,6 +1548,10 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
       <button class="cvs-action-btn" onclick="cvsDL()" title="Télécharger">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       </button>
+      <button class="cvs-action-btn cvs-pdf-btn" onclick="exportCanvasPDF()" title="Exporter en PDF" id="canvas-pdf-btn" style="display:none">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        PDF
+      </button>
       <button class="cvs-action-btn" onclick="cvsClear()" title="Effacer" style="color:#ef4444;opacity:.6">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
       </button>
@@ -1508,8 +1677,8 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
   <div class="coder-hdr">
     <div class="coder-hdr-left">
       <span class="coder-hdr-title">Codeur</span>
-      <span class="coder-plan-badge" id="coder-plan-badge">Pro</span>
-      <span class="coder-rate-badge" id="coder-rate-badge">1/j</span>
+      <span class="coder-plan-badge" id="coder-plan-badge">AI Plus</span>
+      <span class="coder-rate-badge" id="coder-rate-badge">1/h</span>
     </div>
     <div class="coder-hdr-actions">
       <button class="cvs-action-btn" onclick="coderCopyActive()" title="Copier le fichier actif"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
@@ -1529,6 +1698,7 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
   </div>
   <div class="coder-tabs">
     <button class="codertab active" id="codertab-edit" onclick="switchCoderTab('edit')">Éditeur</button>
+    <button class="codertab" id="codertab-preview" onclick="switchCoderTab('preview')">▶ Aperçu Web</button>
     <button class="codertab" id="codertab-graph" onclick="switchCoderTab('graph')">Arborescence</button>
   </div>
   <div id="coder-body" style="display:flex;flex:1;overflow:hidden">
@@ -1540,7 +1710,7 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
       </div>
       <div class="coder-tree-list" id="coder-tree-list"></div>
     </div>
-    <!-- Editor + graph -->
+    <!-- Editor + graph + preview -->
     <div id="coder-editor-wrap">
       <div class="coder-editor-bar" id="coder-editor-bar">
         <span class="coder-editor-filename" id="coder-active-filename">—</span>
@@ -1549,6 +1719,15 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
       <div class="coder-content-area" style="flex:1;overflow:hidden">
         <textarea id="coder-editor" placeholder="Le code apparaîtra ici…&#10;Utilisez le prompt ci-dessous pour demander à l'IA de coder." oninput="coderOnEdit()"></textarea>
         <div id="coder-graph"></div>
+        <!-- Web Preview -->
+        <div id="coder-preview-wrap">
+          <div class="coder-preview-bar">
+            <span class="coder-preview-bar-label">Aperçu Web</span>
+            <span style="font-size:10px;color:#aaa">Exécution live HTML/CSS/JS dans le navigateur</span>
+            <button class="coder-preview-refresh" onclick="refreshCoderPreview()">↻ Rafraîchir</button>
+          </div>
+          <iframe id="coder-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-modals" title="Aperçu Web WikiMind"></iframe>
+        </div>
       </div>
     </div>
   </div>
@@ -1843,8 +2022,17 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
             </div>
           </div>
         </div>
-        <div class="settings-section-label">Actions</div>
+        <div class="settings-section-label">Préférences</div>
+        <div class="toggle-row" id="improve-ai-row" style="display:none">
+          <div>
+            <span style="font-size:13px;font-weight:600">Aider à améliorer l'IA</span>
+            <div class="improve-ai-notice">1 réponse sur 10 sera générée en double pour comparaison — Premium+ uniquement</div>
+          </div>
+          <div class="toggle-bg" id="improve-ai-toggle" onclick="toggleImproveAI()"><div class="toggle-dot"></div></div>
+        </div>
+        <div class="settings-section-label" style="margin-top:16px">Actions</div>
         <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+          <button class="modal-btn secondary" onclick="openModal('cv-modal');closeModal('settings-modal')" id="cv-creator-btn" style="display:none">🎓 Créateur de CV IA</button>
           <a href="../AI/Wikimind_forfaits.html" class="modal-btn secondary" style="text-align:center;display:block;text-decoration:none">Gérer mes tokens &amp; forfaits</a>
           <button class="modal-btn secondary" onclick="openPlansOverlay();closeModal('settings-modal')">Voir les forfaits</button>
           <button class="modal-btn secondary" style="color:#ef4444;border-color:rgba(239,68,68,.2)" onclick="doSignOut()">Se déconnecter</button>
@@ -1993,9 +2181,131 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
 
 <div id="toast"></div>
 
+<!-- CV CREATOR MODAL -->
+<div class="modal" id="cv-modal" onclick="if(event.target===this&&cvState.step===0)closeModal('cv-modal')">
+<div class="modal-content" id="cv-modal-content" style="max-width:700px;padding:0;overflow:hidden;max-height:88vh;display:flex;flex-direction:column" onclick="event.stopPropagation()">
+  <!-- Progress bar -->
+  <div class="cv-progress" id="cv-progress-bar">
+    <div class="cv-progress-dot active" id="cvdot-0">1</div>
+    <div class="cv-progress-line"></div>
+    <div class="cv-progress-dot" id="cvdot-1">2</div>
+    <div class="cv-progress-line"></div>
+    <div class="cv-progress-dot" id="cvdot-2">3</div>
+    <div class="cv-progress-line"></div>
+    <div class="cv-progress-dot" id="cvdot-3">4</div>
+    <div class="cv-progress-line"></div>
+    <div class="cv-progress-dot" id="cvdot-4">5</div>
+  </div>
+  <div style="flex:1;overflow-y:auto;">
+    <!-- Step 0: Infos perso -->
+    <div class="cv-step active" id="cv-step-0">
+      <div class="cv-step-title">Informations personnelles</div>
+      <div class="cv-step-sub">Commençons par les bases de votre CV</div>
+      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:14px">
+        <div class="cv-photo-upload" id="cv-photo-zone" onclick="G('cv-photo-input').click()" title="Cliquez pour ajouter votre photo">
+          <svg width="28" height="28" fill="none" stroke="#aaa" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <input type="file" id="cv-photo-input" accept="image/*" style="display:none" onchange="onCvPhotoSelected(event)">
+        <div style="flex:1">
+          <div class="cv-field"><label>Prénom &amp; Nom</label><input id="cv-name" placeholder="Jean Dupont" oninput="cvState.data.name=this.value"></div>
+          <div class="cv-field"><label>Titre / Poste visé</label><input id="cv-title" placeholder="Développeur Full-Stack Senior" oninput="cvState.data.title=this.value"></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="cv-field"><label>Email</label><input id="cv-email" type="email" placeholder="jean@email.com" oninput="cvState.data.email=this.value"></div>
+        <div class="cv-field"><label>Téléphone</label><input id="cv-phone" placeholder="+33 6 00 00 00 00" oninput="cvState.data.phone=this.value"></div>
+        <div class="cv-field"><label>Ville / Pays</label><input id="cv-location" placeholder="Paris, France" oninput="cvState.data.location=this.value"></div>
+        <div class="cv-field"><label>LinkedIn / Site</label><input id="cv-link" placeholder="linkedin.com/in/jean" oninput="cvState.data.link=this.value"></div>
+      </div>
+      <div class="cv-nav-btns"><button class="cv-btn primary" onclick="cvNext()">Suivant →</button></div>
+    </div>
+    <!-- Step 1: Expériences -->
+    <div class="cv-step" id="cv-step-1">
+      <div class="cv-step-title">Expériences professionnelles</div>
+      <div class="cv-step-sub">Décrivez vos principales expériences — l'IA les reformulera pour vous</div>
+      <div class="cv-field"><label>Expériences (une par ligne ou texte libre)</label>
+        <textarea id="cv-experiences" rows="6" placeholder="Ex: 2022-2024 : Chef de projet chez TechCorp — gestion d'une équipe de 5, lancement de 3 produits SaaS&#10;2019-2022 : Développeur junior chez StartupXY — React, Node.js, MongoDB" oninput="cvState.data.experiences=this.value"></textarea>
+      </div>
+      <div class="cv-field"><label>Formations</label>
+        <textarea id="cv-education" rows="3" placeholder="Ex: 2019 : Master Informatique — Université Paris-Saclay&#10;2017 : Licence Info — Paris 6" oninput="cvState.data.education=this.value"></textarea>
+      </div>
+      <div class="cv-nav-btns">
+        <button class="cv-btn secondary" onclick="cvPrev()">← Retour</button>
+        <button class="cv-btn primary" onclick="cvNext()">Suivant →</button>
+      </div>
+    </div>
+    <!-- Step 2: Compétences -->
+    <div class="cv-step" id="cv-step-2">
+      <div class="cv-step-title">Compétences &amp; Langues</div>
+      <div class="cv-step-sub">Listez vos compétences techniques et langues maîtrisées</div>
+      <div class="cv-field"><label>Compétences (séparées par des virgules)</label>
+        <input id="cv-skills" placeholder="JavaScript, React, Python, SQL, Figma, Gestion de projet…" oninput="cvState.data.skills=this.value">
+      </div>
+      <div class="cv-field"><label>Langues</label>
+        <input id="cv-languages" placeholder="Français (natif), Anglais (C1), Espagnol (B2)…" oninput="cvState.data.languages=this.value">
+      </div>
+      <div class="cv-field"><label>Centres d'intérêt (optionnel)</label>
+        <input id="cv-interests" placeholder="Photographie, Randonnée, Open Source…" oninput="cvState.data.interests=this.value">
+      </div>
+      <div class="cv-nav-btns">
+        <button class="cv-btn secondary" onclick="cvPrev()">← Retour</button>
+        <button class="cv-btn primary" onclick="cvNext()">Suivant →</button>
+      </div>
+    </div>
+    <!-- Step 3: Template -->
+    <div class="cv-step" id="cv-step-3">
+      <div class="cv-step-title">Choisissez votre template</div>
+      <div class="cv-step-sub">Sélectionnez le design de votre CV</div>
+      <div class="cv-templates-grid">
+        <div class="cv-template-card selected" onclick="selectCvTemplate('moderne')" id="cvtpl-moderne">
+          <div class="cv-template-preview" style="background:linear-gradient(135deg,#1e293b,#334155)">🎨</div>
+          <div class="cv-template-name">Moderne</div>
+        </div>
+        <div class="cv-template-card" onclick="selectCvTemplate('minimaliste')" id="cvtpl-minimaliste">
+          <div class="cv-template-preview" style="background:linear-gradient(135deg,#f8fafc,#e2e8f0)">⬜</div>
+          <div class="cv-template-name">Minimaliste</div>
+        </div>
+        <div class="cv-template-card" onclick="selectCvTemplate('coloré')" id="cvtpl-coloré">
+          <div class="cv-template-preview" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">🌈</div>
+          <div class="cv-template-name">Coloré</div>
+        </div>
+        <div class="cv-template-card" onclick="selectCvTemplate('classique')" id="cvtpl-classique">
+          <div class="cv-template-preview" style="background:linear-gradient(135deg,#78350f,#92400e)">📜</div>
+          <div class="cv-template-name">Classique</div>
+        </div>
+        <div class="cv-template-card" onclick="selectCvTemplate('créatif')" id="cvtpl-créatif">
+          <div class="cv-template-preview" style="background:linear-gradient(135deg,#0f766e,#0284c7)">✨</div>
+          <div class="cv-template-name">Créatif</div>
+        </div>
+        <div class="cv-template-card" onclick="selectCvTemplate('professionnel')" id="cvtpl-professionnel">
+          <div class="cv-template-preview" style="background:linear-gradient(135deg,#1f2937,#374151)">💼</div>
+          <div class="cv-template-name">Professionnel</div>
+        </div>
+      </div>
+      <div class="cv-nav-btns">
+        <button class="cv-btn secondary" onclick="cvPrev()">← Retour</button>
+        <button class="cv-btn primary" id="cv-generate-btn" onclick="generateCvWithAI()">✦ Générer mon CV</button>
+      </div>
+    </div>
+    <!-- Step 4: Résultat -->
+    <div class="cv-step" id="cv-step-4">
+      <div class="cv-step-title">Votre CV est prêt !</div>
+      <div class="cv-step-sub">Généré par WikiMind AI — vous pouvez l'exporter en PDF</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="cv-btn primary" onclick="exportCvPDF()" style="flex:none;padding:10px 18px">⬇ Télécharger PDF</button>
+        <button class="cv-btn secondary" onclick="cvPrev()" style="flex:none;padding:10px 18px">← Modifier</button>
+        <button class="cv-btn secondary" onclick="closeModal('cv-modal')" style="flex:none;padding:10px 18px">Fermer</button>
+      </div>
+      <div id="cv-output-content" style="background:#fff;color:#111;border-radius:12px;box-shadow:0 4px 32px rgba(0,0,0,.12);overflow:hidden;max-width:100%"></div>
+    </div>
+  </div>
+</div>
+</div>
+
 <!-- ========== MAIN SCRIPT ========== -->
 <script>
-const MISTRAL_KEY = 'SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9';
+const MISTRAL_KEY = 'SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9';  // Chat principal (4 modèles)
+const MISTRAL_TOOLS_KEY = 'kFaRdrB2hxynR6Xb7Udjd2QgSweHvFQO'; // Outils IA (CV, codeur, diagrammes, OCR, aide texte)
 const PLAN_PRICES_MT = { 2: 11, 3: 22, 4: 39 };
 const PROMO_END = new Date('2025-04-14T23:59:59');
 
@@ -2025,6 +2335,7 @@ const S = {
   importInlineOpen:false, premiumPlusRing:'ring-premium-plus',
   coderOpen:false, coderActive:false, lastCoderTs:0, coderFiles:[], coderActiveFile:0,
   textHelperOpen:false,
+  improveAI:false,
 };
 
 const G  = id => document.getElementById(id);
@@ -2036,6 +2347,7 @@ window.addEventListener('load', () => {
   updateHlTheme(); syncDarkToggle();
   S.writingAnim = localStorage.getItem('wm_writing_anim')==='1';
   syncWritingAnimToggle();
+  S.improveAI = localStorage.getItem('wm_improve_ai')==='1';
   try { const c=localStorage.getItem('wm_connectors'); if(c) S.connectors=JSON.parse(c); } catch(e){}
   try { const r=localStorage.getItem('wm_pp_ring'); if(r) S.premiumPlusRing=r; } catch(e){}
   try { S.gmailToken=sessionStorage.getItem('wm_gmail_token')||null; S.gdriveToken=sessionStorage.getItem('wm_gdrive_token')||null; } catch(e){}
@@ -2142,7 +2454,14 @@ function updateTokenDisplay(){
 }
 
 async function loadChats(uid){
-  if(S.plan<2){ try{const raw=localStorage.getItem('wm_local_chats');if(raw)S.chats=JSON.parse(raw);}catch(e){} return; }
+  if(S.plan<2){
+    try{
+      // Use localforage (IndexedDB) instead of localStorage — much larger capacity
+      const raw=await localforage.getItem('wm_local_chats');
+      if(raw) S.chats=typeof raw==='string'?JSON.parse(raw):raw;
+    }catch(e){ try{const r=localStorage.getItem('wm_local_chats');if(r)S.chats=JSON.parse(r);}catch(e2){} }
+    return;
+  }
   const fb=window._fb; if(!fb?.db) return;
   try{ const snap=await fb.get(fb.ref(fb.db,`users/${uid}/conversations`)); if(snap.exists())S.chats=snap.val()||{}; }catch(e){}
 }
@@ -2212,6 +2531,7 @@ function updateUserUI(){
   // Connector UI sync
   syncConnectorUI('gmail'); syncConnectorUI('gdrive');
   renderPlansGrid(); renderInstructions(); updateTokenDisplay();
+  _updateUserUIExtras();
 }
 
 function updateModelOptions(){
@@ -2394,7 +2714,14 @@ async function delChat(e,id){
   toast('Conversation supprimée');
 }
 async function persistChat(){
-  if(S.plan<2||S.user?.isGuest){try{localStorage.setItem('wm_local_chats',JSON.stringify(S.chats));}catch(e){}return;}
+  if(S.plan<2||S.user?.isGuest){
+    try{
+      // Use localforage (IndexedDB) — much larger than localStorage (up to 1GB)
+      if(window.localforage){ await localforage.setItem('wm_local_chats', S.chats); }
+      else{ localStorage.setItem('wm_local_chats',JSON.stringify(S.chats)); }
+    }catch(e){ console.warn('persistChat local:',e); }
+    return;
+  }
   if(!S.chatId) return;
   const fb=window._fb; if(!fb?.db) return;
   try{await fb.set(fb.ref(fb.db,`users/${S.user.uid}/conversations/${S.chatId}`),S.chats[S.chatId]);}catch(e){}
@@ -2464,7 +2791,7 @@ function renderMsg(msg, doScroll=true){
       const dataUrl=msg.content.replace('[WM_IMAGE:','').replace(']','');
       div.innerHTML=`<div style="margin:8px 0"><img src="${dataUrl}" style="max-width:100%;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.12)" alt="Image générée"><div style="font-size:11px;color:#999;margin-top:6px;display:flex;align-items:center;gap:6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Générée par Stable Diffusion XL · <a href="${dataUrl}" download="wikimind-image.png" style="color:#2563eb;text-decoration:underline;cursor:pointer">Télécharger</a></div></div>`;
     } else if(S.writingAnim&&doScroll){ typewriterEffect(div,msg.content); }
-    else{ div.innerHTML=formatMarkdown(msg.content); applyMath(div); applyHljs(div); }
+    else{ div.innerHTML=formatMarkdown(msg.content); applyMath(div); applyHljs(div); injectPythonRunButtons(div); }
     cc.appendChild(div);
     const msgIdx=S.msgs.indexOf(msg);
     const acts=document.createElement('div'); acts.className='msg-actions';
@@ -2489,6 +2816,34 @@ function renderMsg(msg, doScroll=true){
       <button class="action-btn" title="Régénérer" onclick="regenMsg(${msgIdx})">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
       </button>`;
+    // ── A/B test card ──
+    if(msg._abPending && msg._abVersion){
+      const abWrap=document.createElement('div'); abWrap.className='ab-test-wrap'; abWrap.id=`ab-wrap-${msgIdx}`;
+      abWrap.innerHTML=`<div class="ab-test-label">🔬 Aidez l'IA à s'améliorer — Quelle réponse préférez-vous ?</div>
+        <div class="ab-test-responses">
+          <div class="ab-response-card" id="ab-a-${msgIdx}">
+            <div class="ab-response-card-hdr">Version A</div>
+            <div style="font-size:12px;line-height:1.6;opacity:.85">${esc(msg.content.substring(0,280))}${msg.content.length>280?'…':''}</div>
+            <button class="ab-select-btn" onclick="pickAbVersion(${msgIdx},'a')">✓ Choisir cette version</button>
+          </div>
+          <div class="ab-response-card" id="ab-b-${msgIdx}">
+            <div class="ab-response-card-hdr">Version B</div>
+            <div style="font-size:12px;line-height:1.6;opacity:.85">${esc(msg._abVersion.substring(0,280))}${msg._abVersion.length>280?'…':''}</div>
+            <button class="ab-select-btn" onclick="pickAbVersion(${msgIdx},'b')">✓ Choisir cette version</button>
+          </div>
+        </div>`;
+      cc.appendChild(abWrap);
+    }
+
+    // ── Version selector (regen history) ──
+    if(msg._versions && msg._versions.length > 1){
+      const vWrap=document.createElement('div'); vWrap.className='version-selector';
+      vWrap.innerHTML=`<span class="version-selector-label">Versions :</span>`+
+        msg._versions.map((_,vi)=>
+          `<button class="version-btn ${vi===msg._activeVersion?'active':''}" onclick="switchMsgVersion(${msgIdx},${vi})">${vi+1}</button>`
+        ).join('');
+      cc.appendChild(vWrap);
+    }
     cc.appendChild(acts);
   }
   if(doScroll) cc.scrollTop=cc.scrollHeight;
@@ -2505,7 +2860,7 @@ function typewriterEffect(el,fullText){
   function tick(){
     i+=Math.ceil(plain.length/400); el.innerHTML=formatMarkdown(plain.substring(0,i));
     if(!isUserScrolledUp()) cc.scrollTop=cc.scrollHeight;
-    if(i<plain.length){setTimeout(tick,speed);}else{el.innerHTML=formatMarkdown(fullText);el.classList.remove('typing-cursor');applyMath(el);applyHljs(el);}
+    if(i<plain.length){setTimeout(tick,speed);}else{el.innerHTML=formatMarkdown(fullText);el.classList.remove('typing-cursor');applyMath(el);applyHljs(el);injectPythonRunButtons(el);}
   }
   tick();
 }
@@ -2530,7 +2885,30 @@ function toggleDislike(i){
 function editUserMsg(i){const ea=G('edit-area-'+i);if(!ea)return;ea.style.display='block';const ta=G('edit-ta-'+i);if(ta){ta.focus();autoResize(ta);}}
 function cancelEdit(i){const ea=G('edit-area-'+i);if(ea)ea.style.display='none';}
 async function submitEdit(i){const ta=G('edit-ta-'+i);if(!ta)return;const t=ta.value.trim();if(!t)return;S.msgs=S.msgs.slice(0,i);G('chat-container').innerHTML='';S.msgs.forEach(m=>renderMsg(m,false));showWelcome();G('user-input').value=t;await sendMsg(t);}
-async function regenMsg(i){if(S.generating)return;const um=S.msgs.slice(0,i).filter(m=>m.role==='user').pop();if(!um)return;S.msgs=S.msgs.slice(0,i);G('chat-container').innerHTML='';S.msgs.forEach(m=>renderMsg(m,false));showWelcome();await sendMsg(um.content);}
+async function regenMsg(i){
+  if(S.generating)return;
+  const um=S.msgs.slice(0,i).filter(m=>m.role==='user').pop(); if(!um) return;
+  const prevMsg=S.msgs[i]; // The assistant message being regenerated
+  S.msgs=S.msgs.slice(0,i);
+  G('chat-container').innerHTML='';
+  S.msgs.forEach(m=>renderMsg(m,false));
+  showWelcome();
+  await sendMsg(um.content, prevMsg); // pass prevMsg so we can store version
+}
+
+function switchMsgVersion(msgIdx, versionIdx){
+  const msg=S.msgs[msgIdx]; if(!msg||!msg._versions) return;
+  msg._activeVersion=versionIdx;
+  msg.content=msg._versions[versionIdx];
+  // Re-render from this message
+  const cc=G('chat-container');
+  const allBubbles=cc.querySelectorAll('.chat-bubble.model, .msg-actions, .version-selector, .reflect-box');
+  // Simple approach: re-render all messages
+  cc.innerHTML='';
+  S.msgs.forEach(m=>renderMsg(m,false));
+  cc.scrollTop=cc.scrollHeight;
+  toast(`Version ${versionIdx+1} affichée`);
+}
 
 // ── MARKDOWN / MATH / HLJS ──
 function formatMarkdown(text){
@@ -3057,7 +3435,7 @@ async function createOfficeDocFromCanvas(appType){
 }
 
 // ── SEND ──
-async function sendMsg(overrideText){
+async function sendMsg(overrideText, _prevAssistantMsg=null){
   if(S.generating) return;
   const input=G('user-input');
   const text=overrideText!==undefined?overrideText:input.value.trim();
@@ -3186,6 +3564,32 @@ async function sendMsg(overrideText){
 
     rmTyping(tyId);
     const am={role:'assistant',content:aiContent,canvasContent:null,steps,toolCalls,_stepsRenderedLive:S.model==='reflect',ts:Date.now()};
+
+    // ── Version history ──
+    if(_prevAssistantMsg && _prevAssistantMsg._versions){
+      // Add new version to existing history
+      am._versions=[..._prevAssistantMsg._versions, aiContent];
+      am._activeVersion=am._versions.length-1;
+    } else if(_prevAssistantMsg){
+      // First regen — create version array with original + new
+      am._versions=[_prevAssistantMsg.content, aiContent];
+      am._activeVersion=1;
+    } else {
+      am._versions=[aiContent];
+      am._activeVersion=0;
+    }
+
+    // ── A/B Test (améliorer l'IA — Premium+ only) ──
+    const shouldAB = S.plan>=5 && S.improveAI && Math.random()<0.1 && !_prevAssistantMsg;
+    if(shouldAB){
+      try{
+        toast('🔬 Génération double (amélioration IA)…');
+        const ab2=await callMistral(buildHistory(finalFullContent), MISTRAL_MODELS[S.model]?.id||MISTRAL_MODELS.flash.id);
+        am._abVersion=ab2;
+        am._abPending=true; // user needs to pick
+      }catch(e){ am._abPending=false; }
+    }
+
     S.msgs.push(am); renderMsg(am);
     if(S.chats[S.chatId]){S.chats[S.chatId].messages=S.msgs;S.chats[S.chatId].updatedAt=Date.now();await persistChat();}
   }catch(ex){
@@ -3612,21 +4016,19 @@ async function waitQueue429(retryFn, maxWaitMs=60000){
   });
 }
 
-async function callMistral(messages, modelId, maxTokens=4096){
+async function callMistral(messages, modelId, maxTokens=4096, useToolsKey=false){
+  const apiKey = useToolsKey ? MISTRAL_TOOLS_KEY : MISTRAL_KEY;
   _currentAbortController = new AbortController();
-  const signal = _currentAbortController.signal;
   const doFetch = async ()=>{
     const ctrl = new AbortController();
     _currentAbortController = ctrl;
     const res = await fetch('https://api.mistral.ai/v1/chat/completions',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+MISTRAL_KEY},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
       body:JSON.stringify({model:modelId,messages,max_tokens:maxTokens,temperature:0.7}),
       signal: ctrl.signal
     });
-    if(res.status === 429){
-      throw new Error('429 — serveurs surchargés');
-    }
+    if(res.status === 429){ throw new Error('429 — serveurs surchargés'); }
     if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.message||`Mistral API ${res.status}`);}
     return (await res.json()).choices[0].message.content;
   };
@@ -3639,6 +4041,10 @@ async function callMistral(messages, modelId, maxTokens=4096){
     }
     throw e;
   }
+}
+// Shorthand for tools API calls
+function callMistralTools(messages, modelId='mistral-large-latest', maxTokens=4096){
+  return callMistral(messages, modelId, maxTokens, true);
 }
 
 // ── REFLECTION ──
@@ -3878,7 +4284,7 @@ function switchCvsTab(tab){
   }else{
     ed.style.display='none';pv.style.display='block';
     pv.innerHTML=formatMarkdown(ed.value);
-    applyMath(pv);applyHljs(pv);
+    applyMath(pv);applyHljs(pv);injectPythonRunButtons(pv);
     // Scroll to top on switch
     pv.scrollTop=0;
   }
@@ -4221,6 +4627,7 @@ function toggleDiagramPanel(){
     DIAGRAM.open = true;
     G('diagram-panel')?.classList.add('open');
     updateDiagramRateUI();
+    setTimeout(renderColorPalettePicker, 50);
   }else{
     DIAGRAM.open = false;
     G('diagram-panel')?.classList.remove('open');
@@ -4272,7 +4679,7 @@ async function runDiagramAI(){
   const typeLabels={flowchart:'un organigramme de flux',sequenceDiagram:'un diagramme de séquence',classDiagram:'un diagramme de classes UML',gantt:'un diagramme de Gantt',mindmap:'une mindmap',erDiagram:'un diagramme entités-relations',gitGraph:'un graphe Git',pie:'un diagramme en camembert'};
   try{
     const sys=`Tu es expert Mermaid.js. Génère UNIQUEMENT du code Mermaid valide pour ${typeLabels[diagramType]||diagramType}. RÉPONDS UNIQUEMENT avec le code Mermaid brut, pas de backticks, pas d'explication. Commence par "${diagramType==='flowchart'?'flowchart LR':diagramType}".`;
-    let raw=await callMistral([{role:'system',content:sys},{role:'user',content:prompt}],MISTRAL_MODELS.work.id,2048);
+    let raw=await callMistralTools([{role:'system',content:sys},{role:'user',content:prompt}], MISTRAL_MODELS.work.id, 2048);
     let code=raw.replace(/```mermaid/gi,'').replace(/```/g,'').trim();
     if(diagramType==='flowchart'&&!code.startsWith('graph')&&!code.startsWith('flowchart')) code='flowchart LR\n'+code;
     else if(!code.startsWith(diagramType)&&!code.startsWith('graph')&&diagramType!=='flowchart') code=diagramType+'\n'+code;
@@ -4456,9 +4863,34 @@ function renderCoderEditor(){
 function switchCoderTab(tab){
   G('codertab-edit')?.classList.toggle('active',tab==='edit');
   G('codertab-graph')?.classList.toggle('active',tab==='graph');
-  const ed=G('coder-editor'); const gr=G('coder-graph');
-  if(tab==='edit'){ed.style.display='block';gr.style.display='none';}
-  else{ed.style.display='none';gr.style.display='block';renderCoderGraph();}
+  G('codertab-preview')?.classList.toggle('active',tab==='preview');
+  const ed=G('coder-editor'); const gr=G('coder-graph'); const pv=G('coder-preview-wrap');
+  if(tab==='edit'){
+    if(ed)ed.style.display='block'; if(gr)gr.style.display='none'; if(pv)pv.classList.remove('show');
+  }else if(tab==='preview'){
+    if(ed)ed.style.display='none'; if(gr)gr.style.display='none'; if(pv)pv.classList.add('show');
+    refreshCoderPreview();
+  }else{
+    if(ed)ed.style.display='none'; if(gr){gr.style.display='block';renderCoderGraph();} if(pv)pv.classList.remove('show');
+  }
+}
+
+function refreshCoderPreview(){
+  const iframe=G('coder-iframe'); if(!iframe) return;
+  // Find all files
+  const html=S.coderFiles.find(f=>f.name.endsWith('.html'))?.content||'';
+  const css=S.coderFiles.filter(f=>f.name.endsWith('.css')).map(f=>f.content).join('\n');
+  const js=S.coderFiles.filter(f=>f.name.endsWith('.js')).map(f=>f.content).join('\n');
+  if(!html && !css && !js){ iframe.srcdoc='<div style="font-family:sans-serif;color:#aaa;text-align:center;padding:40px;font-size:14px">Aucun fichier HTML/CSS/JS trouvé</div>'; return; }
+  let combined=html;
+  if(!combined.includes('<html')){ combined=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${css}</style></head><body>${combined}<script>${js}<\/script></body></html>`; }
+  else{
+    if(css && !combined.includes('<style')) combined=combined.replace('</head>',`<style>${css}</style></head>`);
+    if(js && !combined.includes('<script')) combined=combined.replace('</body>',`<script>${js}<\/script></body>`);
+  }
+  const blob=new Blob([combined],{type:'text/html'});
+  iframe.src=URL.createObjectURL(blob);
+  toast('✓ Aperçu Web mis à jour');
 }
 
 function renderCoderGraph(){
@@ -4525,10 +4957,10 @@ async function runCoderAI(){
 {"files":[{"name":"nomfichier.ext","content":"contenu complet du fichier"},...],"explanation":"explication courte"}
 Crée ou modifie les fichiers nécessaires. Inclus TOUJOURS tous les fichiers du projet dans ta réponse (même inchangés). Sois précis, propre, commenté.`;
   try{
-    const raw=await callMistral([
+    const raw=await callMistralTools([
       {role:'system',content:sys},
       {role:'user',content:`Fichiers actuels :\n${context}\n\nDemande : ${prompt}`}
-    ],MISTRAL_MODELS.work.id,4096);
+    ], MISTRAL_MODELS.work.id, 4096);
     const clean=raw.replace(/```json|```/g,'').trim();
     const parsed=JSON.parse(clean);
     if(parsed.files?.length){
@@ -4581,7 +5013,7 @@ async function runTextHelper(action){
   const result=G('th-result-literary');
   if(result) result.innerHTML='<span class="th-result-placeholder">Traitement…</span>';
   try{
-    const out=await callMistral([
+    const out=await callMistralTools([
       {role:'system',content:'Tu es un expert en rédaction française. Effectue EXACTEMENT l\'action demandée sur le texte fourni. Réponds UNIQUEMENT avec le texte résultant, sans commentaire ni introduction.'},
       {role:'user',content:`Action : ${action}\n\nTexte :\n${input}`}
     ],'mistral-small-latest',2000);
@@ -4644,6 +5076,388 @@ function swapThText(){
   G('th-input-text').value=result;
   G('th-result-literary').innerHTML='<span class="th-result-placeholder">Le résultat apparaîtra ici…</span>';
   toast('Texte source mis à jour');
+}
+
+// ── A/B VERSION PICKER ──
+function pickAbVersion(msgIdx, pick){
+  const msg=S.msgs[msgIdx]; if(!msg) return;
+  if(pick==='b'){ msg.content=msg._abVersion; msg._versions=[msg.content]; msg._activeVersion=0; }
+  msg._abPending=false; delete msg._abVersion;
+  G('chat-container').innerHTML='';
+  S.msgs.forEach(m=>renderMsg(m,false));
+  G('chat-container').scrollTop=G('chat-container').scrollHeight;
+  toast('✓ Version sélectionnée — merci !');
+  persistChat();
+}
+
+// ── IMPROVE AI TOGGLE ──
+function toggleImproveAI(){
+  S.improveAI=!S.improveAI;
+  try{ localStorage.setItem('wm_improve_ai', S.improveAI?'1':'0'); }catch(e){}
+  syncImproveAIToggle();
+  toast(S.improveAI?'🔬 Amélioration IA activée':'Amélioration IA désactivée');
+}
+function syncImproveAIToggle(){
+  const el=G('improve-ai-toggle'); if(!el) return;
+  const dot=el.querySelector('.toggle-dot');
+  if(S.improveAI){ el.style.background='#22c55e'; if(dot) dot.style.left='22px'; }
+  else{ el.style.background='#ddd'; if(dot) dot.style.left='2px'; }
+}
+
+// ── CANVAS PDF EXPORT ──
+async function exportCanvasPDF(){
+  const content=G('canvas-editor')?.value; if(!content?.trim()){toast('Canvas vide');return;}
+  toast('📄 Génération du PDF…');
+  // Create a temporary rendered div
+  const tmp=document.createElement('div');
+  tmp.style.cssText='position:fixed;left:-9999px;top:0;width:794px;padding:48px 56px;background:#fff;color:#111;font-family:Inter,sans-serif;font-size:14px;line-height:1.7;';
+  tmp.innerHTML=formatMarkdown(content);
+  document.body.appendChild(tmp);
+  // Apply highlight.js
+  tmp.querySelectorAll('pre code').forEach(b=>{try{hljs.highlightElement(b);}catch(e){}});
+  try{
+    if(typeof html2pdf==='undefined') throw new Error('html2pdf non chargé');
+    await html2pdf().set({
+      margin:[15,15,15,15],
+      filename:'wikimind-canvas.pdf',
+      image:{type:'jpeg',quality:0.95},
+      html2canvas:{scale:2,useCORS:true},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
+    }).from(tmp).save();
+    toast('✓ PDF exporté !');
+  }catch(e){ toast('Erreur PDF: '+e.message.substring(0,40)); }
+  document.body.removeChild(tmp);
+}
+
+// ── CV EXPORT PDF ──
+async function exportCvPDF(){
+  const el=G('cv-output-content'); if(!el){toast('Aucun CV à exporter');return;}
+  toast('📄 Génération du PDF CV…');
+  try{
+    if(typeof html2pdf==='undefined') throw new Error('html2pdf non chargé');
+    await html2pdf().set({
+      margin:0,filename:'mon-cv-wikimind.pdf',
+      image:{type:'jpeg',quality:0.98},
+      html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
+    }).from(el).save();
+    toast('✓ CV PDF exporté !');
+  }catch(e){ toast('Erreur PDF CV: '+e.message.substring(0,40)); }
+}
+
+// ── PYODIDE PYTHON RUNNER ──
+window._pyodide=null; window._pyodideLoading=false;
+async function loadPyodide(){
+  if(window._pyodide) return window._pyodide;
+  if(window._pyodideLoading){ await new Promise(r=>setTimeout(r,3000)); return window._pyodide; }
+  window._pyodideLoading=true;
+  toast('🐍 Chargement Python (Pyodide)…');
+  try{
+    const {loadPyodide:lp}=await import('https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.mjs');
+    window._pyodide=await lp({indexURL:'https://cdn.jsdelivr.net/pyodide/v0.25.0/full/'});
+    toast('✓ Python prêt !');
+    return window._pyodide;
+  }catch(e){ toast('Erreur chargement Python: '+e.message.substring(0,40)); return null; }
+  finally{ window._pyodideLoading=false; }
+}
+
+async function runPythonCode(codeKey, outputId){
+  const code=(window._wmCopyStore&&window._wmCopyStore[codeKey])||'';
+  if(!code){toast('Code introuvable');return;}
+  const btn=G('pybtn-'+codeKey);
+  const outWrap=G('pyout-'+codeKey);
+  if(btn){btn.textContent='⏳ Chargement…';btn.disabled=true;}
+  if(outWrap){outWrap.style.display='block';}
+  const outEl=G('pytext-'+codeKey);
+  if(outEl){outEl.textContent='Chargement de Python…'; outEl.className='python-output';}
+  try{
+    const py=await loadPyodide(); if(!py) throw new Error('Pyodide non disponible');
+    // Redirect stdout
+    let output='';
+    py.globals.set('_wm_out',[]);
+    const patchedCode=`
+import sys, io
+_wm_buf=io.StringIO()
+sys.stdout=_wm_buf
+sys.stderr=_wm_buf
+try:
+${code.split('\n').map(l=>'    '+l).join('\n')}
+except Exception as e:
+    print(f"Erreur: {e}")
+finally:
+    sys.stdout=sys.__stdout__
+    sys.stderr=sys.__stderr__
+_wm_out_str=_wm_buf.getvalue()
+`;
+    await py.runPythonAsync(patchedCode);
+    output=py.globals.get('_wm_out_str')||'(Aucune sortie)';
+    if(outEl){outEl.textContent=output; outEl.className='python-output';}
+    toast('✓ Code exécuté');
+  }catch(e){
+    if(outEl){outEl.textContent='Erreur: '+e.message; outEl.className='python-output error';}
+    toast('Erreur Python: '+e.message.substring(0,40));
+  }
+  if(btn){btn.textContent='▶ Réexécuter';btn.disabled=false;}
+}
+
+// Inject Python run button into code blocks — call after formatMarkdown
+function injectPythonRunButtons(el){
+  if(!el) return;
+  el.querySelectorAll('.code-wrapper').forEach(wrapper=>{
+    const langLabel=wrapper.querySelector('.code-lang');
+    if(langLabel&&langLabel.textContent.toLowerCase()==='python'){
+      if(wrapper.querySelector('.run-python-btn')) return; // Already injected
+      // Find the codeKey
+      const copyBtn=wrapper.querySelector('.copy-code-btn');
+      if(!copyBtn) return;
+      const onclickStr=copyBtn.getAttribute('onclick')||'';
+      const match=onclickStr.match(/copyStoredText\('([^']+)'\)/);
+      if(!match) return;
+      const codeKey=match[1];
+      // Create output area
+      const outId='pyout-'+codeKey;
+      const outWrap=document.createElement('div');
+      outWrap.id=outId; outWrap.className='python-output-wrap'; outWrap.style.display='none';
+      outWrap.innerHTML=`<div class="python-output" id="pytext-${codeKey}">(Résultat ici)</div>`;
+      wrapper.after(outWrap);
+      // Create run button
+      const btn=document.createElement('button');
+      btn.className='run-python-btn'; btn.id='pybtn-'+codeKey;
+      btn.textContent='▶ Exécuter'; btn.style.right='195px';
+      btn.onclick=()=>runPythonCode(codeKey, outId);
+      wrapper.appendChild(btn);
+    }
+  });
+}
+
+// ── COLOR PALETTE for Diagrams ──
+const COLOR_PALETTES={
+  blue:   ['#1e40af','#2563eb','#3b82f6','#60a5fa','#93c5fd'],
+  purple: ['#5b21b6','#7c3aed','#8b5cf6','#a78bfa','#c4b5fd'],
+  red:    ['#991b1b','#dc2626','#ef4444','#f87171','#fca5a5'],
+  green:  ['#065f46','#059669','#10b981','#34d399','#6ee7b7'],
+  amber:  ['#92400e','#d97706','#f59e0b','#fbbf24','#fde68a'],
+  mono:   ['#111827','#374151','#6b7280','#9ca3af','#d1d5db'],
+};
+let _currentPalette='blue';
+
+function getDiagramColors(paletteName){
+  return COLOR_PALETTES[paletteName]||COLOR_PALETTES.blue;
+}
+
+// Add color palette picker to diagram footer
+function renderColorPalettePicker(){
+  const footer=G('diagram-footer'); if(!footer) return;
+  if(G('diagram-color-picker')) return; // Already rendered
+  const wrap=document.createElement('div');
+  wrap.id='diagram-color-picker';
+  wrap.className='color-palette-wrap';
+  wrap.innerHTML=`<span class="color-palette-label">Couleurs :</span>`+
+    Object.keys(COLOR_PALETTES).map(k=>{
+      const colors=COLOR_PALETTES[k];
+      return `<div class="color-palette-btn ${k===_currentPalette?'active':''}" 
+        title="${k}" onclick="selectColorPalette('${k}')"
+        style="background:linear-gradient(135deg,${colors[0]},${colors[2]},${colors[4]})"></div>`;
+    }).join('');
+  footer.insertBefore(wrap, footer.querySelector('.diagram-rate-info'));
+}
+
+function selectColorPalette(name){
+  _currentPalette=name;
+  document.querySelectorAll('.color-palette-btn').forEach(b=>b.classList.toggle('active',b.getAttribute('title')===name));
+  toast(`Palette ${name} sélectionnée`);
+}
+
+// ── CV CREATOR ──
+const cvState={
+  step:0,
+  data:{name:'',title:'',email:'',phone:'',location:'',link:'',experiences:'',education:'',skills:'',languages:'',interests:'',photo:''},
+  template:'moderne'
+};
+
+function cvNext(){
+  if(cvState.step>=4) return;
+  cvState.step++;
+  renderCvStep();
+}
+function cvPrev(){
+  if(cvState.step<=0) return;
+  cvState.step--;
+  renderCvStep();
+}
+function renderCvStep(){
+  for(let i=0;i<=4;i++){
+    const s=G('cv-step-'+i); if(s) s.classList.toggle('active',i===cvState.step);
+    const d=G('cvdot-'+i); if(d){
+      d.classList.toggle('done',i<cvState.step);
+      d.classList.toggle('active',i===cvState.step);
+    }
+  }
+}
+function selectCvTemplate(tpl){
+  cvState.template=tpl;
+  document.querySelectorAll('.cv-template-card').forEach(c=>c.classList.remove('selected'));
+  const card=G('cvtpl-'+tpl); if(card) card.classList.add('selected');
+}
+function onCvPhotoSelected(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    cvState.data.photo=ev.target.result;
+    const zone=G('cv-photo-zone');
+    if(zone) zone.innerHTML=`<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+const CV_TEMPLATES={
+  moderne:(d)=>`<div style="display:flex;min-height:297mm;font-family:Inter,sans-serif">
+    <div style="width:200px;background:#1e293b;color:#fff;padding:28px 20px;flex-shrink:0">
+      ${d.photo?`<img src="${d.photo}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #3b82f6;margin-bottom:16px;display:block">`:'<div style="width:80px;height:80px;border-radius:50%;background:#334155;margin-bottom:16px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800">'+(d.name||'?').charAt(0)+'</div>'}
+      <h1 style="font-size:16px;font-weight:800;line-height:1.2;margin-bottom:4px">${d.name||''}</h1>
+      <p style="font-size:11px;color:#93c5fd;margin-bottom:20px">${d.title||''}</p>
+      <div style="font-size:10px;margin-bottom:16px"><div style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#93c5fd;margin-bottom:6px">Contact</div>${d.email?`<div style="margin-bottom:3px">✉ ${d.email}</div>`:''} ${d.phone?`<div style="margin-bottom:3px">📞 ${d.phone}</div>`:''} ${d.location?`<div style="margin-bottom:3px">📍 ${d.location}</div>`:''} ${d.link?`<div style="margin-bottom:3px">🔗 ${d.link}</div>`:''}</div>
+      ${d.skills?`<div style="font-size:10px"><div style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#93c5fd;margin-bottom:6px">Compétences</div>${d.skills.split(',').map(s=>`<div style="background:#334155;border-radius:4px;padding:2px 7px;margin-bottom:4px;font-size:10px">${s.trim()}</div>`).join('')}</div>`:''}
+      ${d.languages?`<div style="font-size:10px;margin-top:16px"><div style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#93c5fd;margin-bottom:6px">Langues</div><div>${d.languages}</div></div>`:''}
+    </div>
+    <div style="flex:1;padding:28px 32px;background:#fff;color:#111">
+      ${d._aiSummary?`<div style="margin-bottom:22px"><h2 style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#2563eb;border-bottom:2px solid #dbeafe;padding-bottom:6px;margin-bottom:10px">Profil</h2><p style="font-size:12px;line-height:1.7;color:#374151">${d._aiSummary}</p></div>`:''}
+      ${d.experiences?`<div style="margin-bottom:22px"><h2 style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#2563eb;border-bottom:2px solid #dbeafe;padding-bottom:6px;margin-bottom:10px">Expériences</h2><div style="font-size:12px;line-height:1.8;white-space:pre-wrap;color:#374151">${d._aiExperiences||d.experiences}</div></div>`:''}
+      ${d.education?`<div style="margin-bottom:22px"><h2 style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#2563eb;border-bottom:2px solid #dbeafe;padding-bottom:6px;margin-bottom:10px">Formation</h2><div style="font-size:12px;line-height:1.8;white-space:pre-wrap;color:#374151">${d.education}</div></div>`:''}
+      ${d.interests?`<div><h2 style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#2563eb;border-bottom:2px solid #dbeafe;padding-bottom:6px;margin-bottom:10px">Intérêts</h2><p style="font-size:12px;color:#374151">${d.interests}</p></div>`:''}
+    </div>
+  </div>`,
+
+  minimaliste:(d)=>`<div style="max-width:640px;margin:0 auto;padding:48px;font-family:Inter,sans-serif;background:#fff;color:#111">
+    <div style="border-bottom:1px solid #e5e7eb;padding-bottom:24px;margin-bottom:24px;display:flex;align-items:center;gap:20px">
+      ${d.photo?`<img src="${d.photo}" style="width:68px;height:68px;border-radius:50%;object-fit:cover;border:1px solid #e5e7eb">`:''}
+      <div><h1 style="font-size:24px;font-weight:900;letter-spacing:-.03em">${d.name||''}</h1><p style="font-size:13px;color:#6b7280;margin-top:3px">${d.title||''}</p>
+      <p style="font-size:11px;color:#9ca3af;margin-top:4px">${[d.email,d.phone,d.location].filter(Boolean).join(' · ')}</p></div>
+    </div>
+    ${d._aiSummary?`<p style="font-size:13px;line-height:1.75;color:#374151;margin-bottom:24px">${d._aiSummary}</p>`:''}
+    ${d.experiences?`<div style="margin-bottom:22px"><h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#9ca3af;margin-bottom:10px">Expériences</h2><div style="font-size:13px;line-height:1.75;white-space:pre-wrap;color:#111">${d._aiExperiences||d.experiences}</div></div>`:''}
+    ${d.education?`<div style="margin-bottom:22px"><h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#9ca3af;margin-bottom:10px">Formation</h2><div style="font-size:13px;line-height:1.75;white-space:pre-wrap">${d.education}</div></div>`:''}
+    ${d.skills?`<div style="margin-bottom:22px"><h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#9ca3af;margin-bottom:10px">Compétences</h2><div style="display:flex;flex-wrap:wrap;gap:6px">${d.skills.split(',').map(s=>`<span style="border:1px solid #e5e7eb;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:600">${s.trim()}</span>`).join('')}</div></div>`:''}
+    ${d.languages?`<div><h2 style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#9ca3af;margin-bottom:6px">Langues</h2><p style="font-size:13px">${d.languages}</p></div>`:''}
+  </div>`,
+
+  coloré:(d)=>`<div style="font-family:Inter,sans-serif;background:#fff;min-height:297mm">
+    <div style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;padding:36px 40px">
+      <div style="display:flex;align-items:center;gap:20px">
+        ${d.photo?`<img src="${d.photo}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.4)">`:''}
+        <div><h1 style="font-size:28px;font-weight:900;letter-spacing:-.04em">${d.name||''}</h1><p style="font-size:14px;opacity:.85;margin-top:4px">${d.title||''}</p>
+        <p style="font-size:11px;opacity:.7;margin-top:6px">${[d.email,d.phone,d.location].filter(Boolean).join(' · ')}</p></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+      <div style="padding:28px 32px;border-right:1px solid #e5e7eb">
+        ${d._aiSummary?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#7c3aed;margin-bottom:8px">Profil</h2><p style="font-size:12px;line-height:1.7;color:#374151;margin-bottom:20px">${d._aiSummary}</p>`:''}
+        ${d.experiences?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#7c3aed;margin-bottom:8px">Expériences</h2><div style="font-size:12px;line-height:1.75;white-space:pre-wrap;color:#111">${d._aiExperiences||d.experiences}</div>`:''}
+      </div>
+      <div style="padding:28px 32px;background:#fafafa">
+        ${d.education?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#2563eb;margin-bottom:8px">Formation</h2><div style="font-size:12px;line-height:1.75;white-space:pre-wrap;margin-bottom:20px">${d.education}</div>`:''}
+        ${d.skills?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#2563eb;margin-bottom:8px">Compétences</h2><div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:20px">${d.skills.split(',').map(s=>`<span style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;border-radius:20px;padding:2px 10px;font-size:10px;font-weight:700">${s.trim()}</span>`).join('')}</div>`:''}
+        ${d.languages?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#2563eb;margin-bottom:6px">Langues</h2><p style="font-size:12px">${d.languages}</p>`:''}
+        ${d.interests?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#2563eb;margin-top:16px;margin-bottom:6px">Intérêts</h2><p style="font-size:12px">${d.interests}</p>`:''}
+      </div>
+    </div>
+  </div>`,
+
+  classique:(d)=>`<div style="max-width:640px;margin:0 auto;padding:52px;font-family:Georgia,serif;background:#fff;color:#1a1a1a">
+    <div style="text-align:center;border-bottom:2px solid #92400e;padding-bottom:20px;margin-bottom:28px">
+      ${d.photo?`<img src="${d.photo}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid #92400e;margin-bottom:12px;display:inline-block">`:''}
+      <h1 style="font-size:26px;font-weight:bold;letter-spacing:.04em;text-transform:uppercase">${d.name||''}</h1>
+      <p style="font-size:13px;font-style:italic;color:#92400e;margin-top:4px">${d.title||''}</p>
+      <p style="font-size:11px;color:#6b7280;margin-top:6px">${[d.email,d.phone,d.location].filter(Boolean).join(' | ')}</p>
+    </div>
+    ${d._aiSummary?`<div style="margin-bottom:24px"><h2 style="font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid #e5e7eb;padding-bottom:5px;margin-bottom:8px">Objectif professionnel</h2><p style="font-size:12px;line-height:1.75;font-style:italic">${d._aiSummary}</p></div>`:''}
+    ${d.experiences?`<div style="margin-bottom:24px"><h2 style="font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid #e5e7eb;padding-bottom:5px;margin-bottom:8px">Expériences professionnelles</h2><div style="font-size:12px;line-height:1.8;white-space:pre-wrap">${d._aiExperiences||d.experiences}</div></div>`:''}
+    ${d.education?`<div style="margin-bottom:24px"><h2 style="font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid #e5e7eb;padding-bottom:5px;margin-bottom:8px">Formation</h2><div style="font-size:12px;line-height:1.8;white-space:pre-wrap">${d.education}</div></div>`:''}
+    ${d.skills?`<div><h2 style="font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid #e5e7eb;padding-bottom:5px;margin-bottom:8px">Compétences</h2><p style="font-size:12px">${d.skills}</p></div>`:''}
+  </div>`,
+
+  créatif:(d)=>`<div style="font-family:Inter,sans-serif;background:#fff;min-height:297mm">
+    <div style="background:linear-gradient(135deg,#0f766e,#0284c7);padding:40px;color:#fff;position:relative;overflow:hidden">
+      <div style="position:absolute;right:-20px;top:-20px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.08)"></div>
+      <div style="display:flex;align-items:center;gap:24px;position:relative">
+        ${d.photo?`<img src="${d.photo}" style="width:90px;height:90px;border-radius:16px;object-fit:cover;border:3px solid rgba(255,255,255,.4)">`:''}
+        <div><h1 style="font-size:26px;font-weight:900;letter-spacing:-.03em">${d.name||''}</h1><p style="font-size:14px;opacity:.85;margin-top:4px">${d.title||''}</p>
+        <div style="display:flex;gap:12px;margin-top:8px;font-size:11px;opacity:.8">${d.email?`<span>✉ ${d.email}</span>`:''}${d.phone?`<span>📞 ${d.phone}</span>`:''}${d.location?`<span>📍 ${d.location}</span>`:''}</div></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:2fr 1fr">
+      <div style="padding:32px 36px">
+        ${d._aiSummary?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#0f766e;margin-bottom:8px">À propos</h2><p style="font-size:13px;line-height:1.75;color:#374151;margin-bottom:24px">${d._aiSummary}</p>`:''}
+        ${d.experiences?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#0f766e;margin-bottom:10px">Expériences</h2><div style="font-size:12px;line-height:1.8;white-space:pre-wrap;color:#111">${d._aiExperiences||d.experiences}</div>`:''}
+      </div>
+      <div style="padding:32px 24px;background:#f0fdfa">
+        ${d.education?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#0284c7;margin-bottom:8px">Formation</h2><div style="font-size:12px;line-height:1.7;white-space:pre-wrap;margin-bottom:20px">${d.education}</div>`:''}
+        ${d.skills?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#0284c7;margin-bottom:8px">Skills</h2><div style="display:flex;flex-direction:column;gap:5px;margin-bottom:20px">${d.skills.split(',').map(s=>`<div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;border-radius:50%;background:#0f766e;flex-shrink:0"></div><span style="font-size:11px;font-weight:600">${s.trim()}</span></div>`).join('')}</div>`:''}
+        ${d.languages?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#0284c7;margin-bottom:6px">Langues</h2><p style="font-size:11px;line-height:1.7">${d.languages}</p>`:''}
+      </div>
+    </div>
+  </div>`,
+
+  professionnel:(d)=>`<div style="font-family:Inter,sans-serif;background:#fff;color:#111;min-height:297mm">
+    <div style="background:#1f2937;color:#fff;padding:36px 44px">
+      <div style="display:flex;align-items:center;gap:22px">
+        ${d.photo?`<img src="${d.photo}" style="width:76px;height:76px;border-radius:8px;object-fit:cover;border:2px solid #374151">`:''}
+        <div><h1 style="font-size:24px;font-weight:900;letter-spacing:-.02em">${d.name||''}</h1><p style="font-size:13px;color:#9ca3af;margin-top:4px">${d.title||''}</p>
+        <p style="font-size:11px;color:#6b7280;margin-top:5px">${[d.email,d.phone,d.location,d.link].filter(Boolean).join(' · ')}</p></div>
+      </div>
+    </div>
+    <div style="padding:32px 44px">
+      ${d._aiSummary?`<div style="background:#f9fafb;border-left:3px solid #374151;padding:14px 18px;border-radius:0 8px 8px 0;margin-bottom:24px"><p style="font-size:12px;line-height:1.75;color:#374151">${d._aiSummary}</p></div>`:''}
+      ${d.experiences?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#374151;margin-bottom:10px">Expériences</h2><div style="font-size:12px;line-height:1.8;white-space:pre-wrap;margin-bottom:22px;color:#111">${d._aiExperiences||d.experiences}</div>`:''}
+      ${d.education?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#374151;margin-bottom:10px">Formation</h2><div style="font-size:12px;line-height:1.8;white-space:pre-wrap;margin-bottom:22px">${d.education}</div>`:''}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        ${d.skills?`<div><h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#374151;margin-bottom:8px">Compétences</h2>${d.skills.split(',').map(s=>`<div style="display:flex;align-items:center;gap:7px;margin-bottom:4px"><div style="width:6px;height:6px;border-radius:50%;background:#1f2937"></div><span style="font-size:12px">${s.trim()}</span></div>`).join('')}</div>`:''}
+        ${d.languages?`<div><h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#374151;margin-bottom:8px">Langues</h2><p style="font-size:12px;line-height:1.8">${d.languages}</p>${d.interests?`<h2 style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#374151;margin-top:14px;margin-bottom:6px">Intérêts</h2><p style="font-size:12px">${d.interests}</p>`:''}</div>`:''}
+      </div>
+    </div>
+  </div>`,
+};
+
+async function generateCvWithAI(){
+  const btn=G('cv-generate-btn');
+  if(btn){btn.disabled=true;btn.textContent='✦ Génération IA…';}
+  const d=cvState.data;
+  if(!d.name){toast('Veuillez saisir votre nom');if(btn){btn.disabled=false;btn.textContent='✦ Générer mon CV';}return;}
+  try{
+    // AI reformulation of experiences and summary
+    const sys='Tu es un expert en rédaction de CV professionnel. Reformule et améliore le texte fourni pour un CV percutant et professionnel. Réponds UNIQUEMENT avec le texte amélioré, sans introduction ni commentaire.';
+    if(d.experiences){
+      const exp=await callMistralTools([{role:'system',content:sys},{role:'user',content:`Reformule ces expériences professionnelles de façon percutante et concise pour un CV (utilise des verbes d'action, garde les dates et entreprises) :\n${d.experiences}`}],'mistral-small-latest',800);
+      d._aiExperiences=exp;
+    }
+    const summary=await callMistralTools([{role:'system',content:sys},{role:'user',content:`Écris un court profil professionnel de 2-3 phrases percutantes pour ce CV:\nNom: ${d.name}\nPoste: ${d.title}\nExpériences: ${d.experiences?.substring(0,300)||''}\nCompétences: ${d.skills||''}`}],'mistral-small-latest',300);
+    d._aiSummary=summary;
+    // Render the template
+    const templateFn=CV_TEMPLATES[cvState.template]||CV_TEMPLATES.moderne;
+    const html=templateFn(d);
+    const output=G('cv-output-content');
+    if(output) output.innerHTML=html;
+    cvNext(); // go to step 4
+    toast('✓ CV généré avec succès !');
+  }catch(e){
+    toast('Erreur génération CV : '+e.message.substring(0,50));
+  }
+  if(btn){btn.disabled=false;btn.textContent='✦ Générer mon CV';}
+}
+
+// Update updateUserUI additions for new features
+function _updateUserUIExtras(){
+  // Canvas PDF button (Pro+)
+  const cvsPdfBtn=G('canvas-pdf-btn');
+  if(cvsPdfBtn) cvsPdfBtn.style.display=S.plan>=3?'flex':'none';
+  // Improve AI toggle (Premium+ only)
+  const improveRow=G('improve-ai-row');
+  if(improveRow) improveRow.style.display=S.plan>=5?'flex':'none';
+  // CV creator button (AI Plus+)
+  const cvBtn=G('cv-creator-btn');
+  if(cvBtn) cvBtn.style.display=S.plan>=2?'block':'none';
+  // Sync improve AI toggle
+  syncImproveAIToggle();
 }
 
 window.bootUser=bootUser;
