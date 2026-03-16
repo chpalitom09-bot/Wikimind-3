@@ -3893,13 +3893,14 @@ async function analyzeImageWithVision(imageDataUrl, question){
   }catch(e){console.warn('Vision error:',e);return null;}
 }
 
-// ── OCR — EXTRACTION DE TEXTE (Google Cloud Vision) ──
+// ── GOOGLE CLOUD VISION OCR — 100% Google, sans fallback Pixtral ──
 // Clé API du projet wikimind-3-comments (même que Firebase)
 const GOOGLE_VISION_API_KEY = 'AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA';
+
 // State OCR
 const OCR = {
-  images: [],       // [{name, dataUrl, text, status}]  status: 'pending'|'processing'|'done'|'error'
-  lastOcrTs: 0,     // timestamp dernière extraction (premium rate limit)
+  images: [],    // [{name, dataUrl, text, status}]
+  lastOcrTs: 0,  // timestamp dernière extraction (rate limit premium)
   open: false,
 };
 
@@ -4002,160 +4003,167 @@ function renderOcrText(){
   el.textContent=texts.map(img=>`[Image: ${img.name}]\n${img.text}`).join('\n\n\n');
 }
 
-// ── GOOGLE CLOUD VISION : appel direct avec DOCUMENT_TEXT_DETECTION + TEXT_DETECTION ──
-async function _callGoogleVision(base64, mimeType){
-  // On envoie les deux features : DOCUMENT_TEXT_DETECTION (prioritaire, texte dense+manuscrit)
-  // ET TEXT_DETECTION (texte épars). DOCUMENT_TEXT_DETECTION est prioritaire si les deux sont présents.
-  const body = {
+// ── GOOGLE CLOUD VISION : DOCUMENT_TEXT_DETECTION + TEXT_DETECTION ──
+async function _callGoogleVisionOCR(base64){
+  // Corps de la requête : on utilise DOCUMENT_TEXT_DETECTION EN PREMIER
+  // (prioritaire sur TEXT_DETECTION selon la doc Google Cloud Vision v1)
+  // DOCUMENT_TEXT_DETECTION = optimal pour : texte dense, documents scannés, manuscrits
+  // TEXT_DETECTION = optimal pour : texte épars dans une image (panneaux, photos…)
+  const requestBody = {
     requests: [{
-      image: { content: base64 },
+      image: {
+        content: base64   // base64 pur, sans le préfixe data:image/...
+      },
       features: [
-        { type: 'DOCUMENT_TEXT_DETECTION', maxResults: 1 },
-        { type: 'TEXT_DETECTION',          maxResults: 1 }
+        { type: 'DOCUMENT_TEXT_DETECTION' },  // prioritaire
+        { type: 'TEXT_DETECTION'          }   // fallback interne Google
       ],
       imageContext: {
-        languageHints: ['fr','en','es','de','it','pt','ar','zh','ja','ru']
+        // Indique les langues probables pour améliorer la précision
+        languageHints: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ar', 'zh', 'ja', 'ru', 'ko']
       }
     }]
   };
 
-  const res = await fetch(
-    `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_VISION_API_KEY}`,
-    { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) }
-  );
-
-  // Lire la réponse même si erreur HTTP pour avoir le message d'erreur complet
-  const data = await res.json();
-
-  if(!res.ok){
-    const errMsg = data?.error?.message || `HTTP ${res.status}`;
-    const errCode = data?.error?.code || res.status;
-    throw new Error(`Vision API ${errCode}: ${errMsg}`);
+  let res, data;
+  try {
+    res = await fetch(
+      `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_VISION_API_KEY}`,
+      {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(requestBody)
+      }
+    );
+    data = await res.json();
+  } catch(networkErr) {
+    throw new Error('Erreur réseau : ' + networkErr.message);
   }
 
-  // Vérifier erreur dans le corps (ex: clé invalide, quota dépassé)
-  if(data.error){
-    throw new Error(`Vision API error: ${data.error.message || JSON.stringify(data.error)}`);
+  // ── Gestion des erreurs HTTP + erreurs Google ──
+  if(!res.ok || data.error) {
+    const code = data?.error?.code    || res.status;
+    const msg  = data?.error?.message || 'Erreur inconnue';
+    const status = data?.error?.status || '';
+
+    // Messages d'erreur explicites selon le code
+    if(code === 400) throw new Error(`Vision 400 : requête invalide — ${msg}`);
+    if(code === 401) throw new Error('Vision 401 : clé API invalide ou expirée. Vérifie la clé dans Google Cloud Console.');
+    if(code === 403) {
+      if(msg.includes('API') || msg.includes('not enabled') || msg.includes('disabled')) {
+        throw new Error('Vision 403 : Cloud Vision API pas activée. Va sur console.cloud.google.com → APIs → activer "Cloud Vision API"');
+      }
+      if(msg.includes('quota') || msg.includes('limit')) {
+        throw new Error('Vision 403 : quota dépassé. Vérifie ta console Google Cloud.');
+      }
+      throw new Error('Vision 403 : accès refusé — ' + msg);
+    }
+    if(code === 429) throw new Error('Vision 429 : trop de requêtes, attends quelques secondes et réessaie.');
+    if(code >= 500) throw new Error(`Vision ${code} : erreur serveur Google — ${msg}`);
+    throw new Error(`Vision ${code} (${status}) : ${msg}`);
   }
 
-  const response = data.responses?.[0];
-  if(!response){
-    throw new Error('Vision API: réponse vide');
+  // ── Vérification de la réponse par image ──
+  const imgResponse = data.responses?.[0];
+  if(!imgResponse) {
+    throw new Error('Vision : réponse vide reçue de Google.');
+  }
+  if(imgResponse.error) {
+    throw new Error('Vision image error : ' + (imgResponse.error.message || JSON.stringify(imgResponse.error)));
   }
 
-  // Erreur au niveau de l'image individuelle
-  if(response.error){
-    throw new Error(`Vision image error: ${response.error.message}`);
+  // ── Extraction du texte — priorité fullTextAnnotation ──
+  // fullTextAnnotation = résultat de DOCUMENT_TEXT_DETECTION (le plus complet)
+  const fullText = imgResponse.fullTextAnnotation?.text;
+  if(fullText && fullText.trim()) {
+    return { text: fullText.trim(), method: 'DOCUMENT_TEXT_DETECTION' };
   }
 
-  // Priorité : fullTextAnnotation (DOCUMENT_TEXT_DETECTION) → textAnnotations[0] (TEXT_DETECTION)
-  const fullText = response.fullTextAnnotation?.text;
-  if(fullText && fullText.trim()){
-    return fullText.trim();
+  // fallback : textAnnotations[0] = résultat TEXT_DETECTION (liste de mots concaténés)
+  const simpleText = imgResponse.textAnnotations?.[0]?.description;
+  if(simpleText && simpleText.trim()) {
+    return { text: simpleText.trim(), method: 'TEXT_DETECTION' };
   }
 
-  const simpleText = response.textAnnotations?.[0]?.description;
-  if(simpleText && simpleText.trim()){
-    return simpleText.trim();
-  }
-
-  return ''; // Aucun texte détecté (image sans texte)
+  // Aucun texte trouvé dans l'image
+  return { text: '', method: 'none' };
 }
 
 async function runOcrExtraction(){
   if(S.plan<4){toast('Plan AI Premium requis');openPlansOverlay();return;}
-  // Rate limit : 1/h pour plan 4, illimité pour plan 5
+
+  // Rate limit : 1 extraction/heure pour le plan 4 (Premium), illimité pour plan 5
   if(S.plan===4){
-    const elapsed=Date.now()-OCR.lastOcrTs;
-    if(OCR.lastOcrTs>0&&elapsed<3600000){
-      const min=Math.ceil((3600000-elapsed)/60000);
-      toast(`Limite 1/heure (Premium) — disponible dans ${min}min`);
-      updateOcrRateUI(); return;
+    const elapsed = Date.now() - OCR.lastOcrTs;
+    if(OCR.lastOcrTs > 0 && elapsed < 3600000){
+      const min = Math.ceil((3600000 - elapsed) / 60000);
+      toast(`Limite 1/heure (Premium) — disponible dans ${min} min`);
+      updateOcrRateUI();
+      return;
     }
   }
-  const pending=OCR.images.filter(img=>img.status!=='done');
-  if(!pending.length){toast('Toutes les images sont déjà extraites');return;}
 
-  OCR.lastOcrTs=Date.now();
-  G('ocr-extract-btn').disabled=true;
-  toast(`⏳ Extraction OCR de ${pending.length} image(s)…`);
+  const pending = OCR.images.filter(img => img.status !== 'done');
+  if(!pending.length){ toast('Toutes les images sont déjà extraites'); return; }
 
-  for(let i=0;i<OCR.images.length;i++){
-    const img=OCR.images[i];
-    if(img.status==='done') continue;
-    OCR.images[i].status='processing';
+  OCR.lastOcrTs = Date.now();
+  const extractBtn = G('ocr-extract-btn');
+  const importBtn  = G('ocr-import-btn');
+  if(extractBtn) extractBtn.disabled = true;
+  toast(`⏳ Extraction OCR de ${pending.length} image(s) via Google Cloud Vision…`);
+
+  let doneCount = 0;
+  let errCount  = 0;
+
+  for(let i = 0; i < OCR.images.length; i++){
+    const img = OCR.images[i];
+    if(img.status === 'done') continue;
+
+    OCR.images[i].status = 'processing';
     renderOcrImages();
 
     try{
-      const base64  = img.dataUrl.split(',')[1];
-      const mimeType = img.dataUrl.match(/^data:([^;]+)/)?.[1] || 'image/jpeg';
-      let text = '';
+      // Extraire le base64 pur depuis le dataURL (retirer "data:image/jpeg;base64,")
+      const base64 = img.dataUrl.split(',')[1];
+      if(!base64) throw new Error('Impossible de lire l\'image (base64 manquant)');
 
-      // ── Tentative 1 : Google Cloud Vision (DOCUMENT_TEXT_DETECTION prioritaire) ──
-      try{
-        text = await _callGoogleVision(base64, mimeType);
-        console.log(`[OCR] Vision OK pour "${img.name}" — ${text.length} caractères`);
-      }catch(visionErr){
-        // Log pour debug mais on continue avec le fallback
-        console.warn(`[OCR] Vision échoué pour "${img.name}":`, visionErr.message);
+      // Appel Google Cloud Vision
+      const result = await _callGoogleVisionOCR(base64);
 
-        // ── Fallback : Pixtral (Mistral vision multimodale) ──
-        const doPixtral = async () => {
-          const pixRes = await fetch('https://api.mistral.ai/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+MISTRAL_KEY },
-            body: JSON.stringify({
-              model: 'pixtral-12b-2409',
-              max_tokens: 3000,
-              messages: [{
-                role: 'user',
-                content: [
-                  { type:'image_url', image_url:{ url:'data:'+mimeType+';base64,'+base64 } },
-                  { type:'text', text:'Extrais et retranscris INTÉGRALEMENT tout le texte visible dans cette image, mot pour mot, en conservant la mise en page originale (sauts de ligne, colonnes, etc.). Ne fais aucun commentaire ni introduction. Retourne uniquement le texte extrait.' }
-                ]
-              }]
-            })
-          });
-          if(pixRes.status===429) throw new Error('429 — serveurs surchargés');
-          if(!pixRes.ok){
-            const d=await pixRes.json().catch(()=>({}));
-            throw new Error('Pixtral ' + pixRes.status + (d?.message?' : '+d.message:''));
-          }
-          const pixData = await pixRes.json();
-          return pixData.choices?.[0]?.message?.content || '';
-        };
-
-        try{
-          text = await doPixtral();
-          console.log(`[OCR] Pixtral fallback OK pour "${img.name}" — ${text.length} caractères`);
-        }catch(pixErr){
-          if(pixErr.message.includes('429')){
-            toast('⏳ Serveurs OCR chargés — mise en file d\'attente (max 60s)…');
-            text = await waitQueue429(doPixtral, 60000);
-          }else{
-            throw pixErr; // Remonte l'erreur
-          }
-        }
+      if(result.text){
+        OCR.images[i].text   = result.text;
+        OCR.images[i].status = 'done';
+        OCR.images[i]._method = result.method;
+        doneCount++;
+        console.log(`[OCR] ✓ "${img.name}" — ${result.text.length} car. via ${result.method}`);
+      } else {
+        // L'image ne contient pas de texte détectable
+        OCR.images[i].text   = '(Aucun texte détecté dans cette image)';
+        OCR.images[i].status = 'done';
+        doneCount++;
       }
 
-      OCR.images[i].text   = text.trim() || '(Aucun texte détecté dans cette image)';
-      OCR.images[i].status = 'done';
-
-    }catch(err){
+    } catch(err){
       OCR.images[i].status = 'error';
-      OCR.images[i].text   = '(Erreur OCR : ' + err.message + ')';
-      console.error('[OCR] Erreur finale:', err);
+      OCR.images[i].text   = err.message;
+      errCount++;
+      console.error(`[OCR] ✗ "${img.name}":`, err.message);
+      // Afficher le toast avec le message d'erreur complet pour debug
+      toast('❌ OCR erreur : ' + err.message.substring(0, 100));
     }
 
     renderOcrImages();
     renderOcrText();
   }
 
-  const doneCount = OCR.images.filter(img=>img.status==='done').length;
-  const errCount  = OCR.images.filter(img=>img.status==='error').length;
-  toast(`✓ OCR terminé — ${doneCount} image(s) extraite(s)${errCount?' · '+errCount+' erreur(s)':''}`);
-  G('ocr-extract-btn').disabled=false;
-  G('ocr-import-btn').disabled=doneCount===0;
+  if(extractBtn) extractBtn.disabled = false;
+  if(importBtn)  importBtn.disabled  = (doneCount === 0);
+
+  if(errCount === 0){
+    toast(`✓ OCR terminé — ${doneCount} image(s) extraite(s) avec Google Vision`);
+  } else {
+    toast(`OCR : ${doneCount} OK · ${errCount} erreur(s) — voir détails dans les images`);
+  }
   updateOcrRateUI();
 }
 
