@@ -613,8 +613,30 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 
 /* ── CV CREATOR ── */
 #cv-modal .modal-content{max-width:680px;max-height:85vh;overflow-y:auto;padding:0;}
-.cv-step{display:none;padding:24px 28px;}
+.cv-step{
+  display:none;padding:24px 28px;
+  animation:cvSlideIn .35s cubic-bezier(.4,0,.2,1);
+}
 .cv-step.active{display:block;}
+.cv-step.slide-out{
+  animation:cvSlideOut .25s cubic-bezier(.4,0,.2,1) forwards;
+}
+@keyframes cvSlideIn{
+  from{opacity:0;transform:translateX(28px);}
+  to{opacity:1;transform:translateX(0);}
+}
+@keyframes cvSlideOut{
+  from{opacity:1;transform:translateX(0);}
+  to{opacity:0;transform:translateX(-28px);}
+}
+@keyframes cvSlideInBack{
+  from{opacity:0;transform:translateX(-28px);}
+  to{opacity:1;transform:translateX(0);}
+}
+@keyframes cvSlideOutRight{
+  from{opacity:1;transform:translateX(0);}
+  to{opacity:0;transform:translateX(28px);}
+}
 .cv-progress{
   display:flex;align-items:center;padding:16px 28px;border-bottom:1px solid var(--border);
   gap:6px;overflow-x:auto;
@@ -1392,6 +1414,16 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
       <span class="tool-item-label">Diagrammes</span>
       <span class="tool-item-badge tool-badge-plus" id="tool-diagram-badge">AI Plus</span>
     </button>
+    <button class="tool-item" onclick="openCvModal();closeToolsPanel()" id="tool-cv-btn" style="display:none">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span class="tool-item-label">Créateur de CV</span>
+      <span class="tool-item-badge tool-badge-plus" id="tool-cv-badge">AI Plus</span>
+    </button>
+    <button class="tool-item" onclick="openCoverLetterModal();closeToolsPanel()" id="tool-cl-btn" style="display:none">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      <span class="tool-item-label">Lettre de motivation</span>
+      <span class="tool-item-badge tool-badge-plus" id="tool-cl-badge">AI Plus</span>
+    </button>
 
     <div class="tools-section-label" style="margin-top:6px">AI Premium</div>
     <button class="tool-item" onclick="openOcrPanel();closeToolsPanel()" id="tool-ocr-btn">
@@ -2032,7 +2064,7 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
         </div>
         <div class="settings-section-label" style="margin-top:16px">Actions</div>
         <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
-          <button class="modal-btn secondary" onclick="openModal('cv-modal');closeModal('settings-modal')" id="cv-creator-btn" style="display:none">🎓 Créateur de CV IA</button>
+          <button class="modal-btn secondary" onclick="openCvModal();closeModal('settings-modal')" id="cv-creator-btn" style="display:none">🎓 Créateur de CV IA</button>
           <a href="../AI/Wikimind_forfaits.html" class="modal-btn secondary" style="text-align:center;display:block;text-decoration:none">Gérer mes tokens &amp; forfaits</a>
           <button class="modal-btn secondary" onclick="openPlansOverlay();closeModal('settings-modal')">Voir les forfaits</button>
           <button class="modal-btn secondary" style="color:#ef4444;border-color:rgba(239,68,68,.2)" onclick="doSignOut()">Se déconnecter</button>
@@ -2297,6 +2329,76 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
         <button class="cv-btn secondary" onclick="closeModal('cv-modal')" style="flex:none;padding:10px 18px">Fermer</button>
       </div>
       <div id="cv-output-content" style="background:#fff;color:#111;border-radius:12px;box-shadow:0 4px 32px rgba(0,0,0,.12);overflow:hidden;max-width:100%"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- COVER LETTER MODAL -->
+<div class="modal" id="cl-modal" onclick="if(event.target===this)closeModal('cl-modal')">
+<div class="modal-content" style="max-width:700px;padding:0;overflow:hidden;max-height:88vh;display:flex;flex-direction:column" onclick="event.stopPropagation()">
+  <div style="padding:20px 24px 0;border-bottom:1px solid var(--border);flex-shrink:0">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <h3 style="font-size:16px;font-weight:800">Lettre de motivation IA</h3>
+        <span class="plan-badge plan-plus">AI Plus</span>
+      </div>
+      <button onclick="closeModal('cl-modal')" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;transition:.2s" onmouseover="this.style.background='var(--select-bg)'" onmouseout="this.style.background='none'">✕</button>
+    </div>
+    <!-- Tabs -->
+    <div style="display:flex;gap:2px">
+      <button class="codertab active" id="cltab-form" onclick="switchClTab('form')">✍ Créer</button>
+      <button class="codertab" id="cltab-result" onclick="switchClTab('result')" id="cltab-result">📄 Résultat</button>
+    </div>
+  </div>
+  <div style="flex:1;overflow-y:auto">
+    <!-- FORM TAB -->
+    <div id="clbody-form" style="padding:20px 24px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="cv-field"><label>Votre prénom &amp; nom</label><input id="cl-name" placeholder="Jean Dupont" oninput="clState.name=this.value"></div>
+        <div class="cv-field"><label>Poste visé</label><input id="cl-poste" placeholder="Développeur React" oninput="clState.poste=this.value"></div>
+        <div class="cv-field"><label>Entreprise cible</label><input id="cl-company" placeholder="Google France" oninput="clState.company=this.value"></div>
+        <div class="cv-field"><label>Secteur / Activité</label><input id="cl-sector" placeholder="Tech, IA, e-commerce…" oninput="clState.sector=this.value"></div>
+      </div>
+      <div class="cv-field"><label>Vos points forts &amp; compétences clés</label>
+        <textarea rows="3" id="cl-strengths" placeholder="Ex: 5 ans d'expérience React, leadership d'équipe, passionné par l'IA, projets open-source…" oninput="clState.strengths=this.value" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13px;font-family:Inter,sans-serif;outline:none;resize:vertical;transition:border .2s"></textarea>
+      </div>
+      <div class="cv-field"><label>Pourquoi cette entreprise ? (optionnel)</label>
+        <textarea rows="2" id="cl-why" placeholder="Ex: J'admire votre engagement dans l'IA open-source et vos valeurs d'innovation…" oninput="clState.why=this.value" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13px;font-family:Inter,sans-serif;outline:none;resize:vertical;transition:border .2s"></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="cv-field"><label>Ton de la lettre</label>
+          <select id="cl-tone" oninput="clState.tone=this.value" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13px;font-family:Inter,sans-serif;outline:none;appearance:none">
+            <option value="professionnel">Professionnel</option>
+            <option value="dynamique">Dynamique &amp; enthousiaste</option>
+            <option value="formel">Formel &amp; classique</option>
+            <option value="créatif">Créatif &amp; original</option>
+            <option value="concis">Concis &amp; percutant</option>
+          </select>
+        </div>
+        <div class="cv-field"><label>Longueur</label>
+          <select id="cl-length" oninput="clState.length=this.value" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13px;font-family:Inter,sans-serif;outline:none;appearance:none">
+            <option value="courte">Courte (1 paragraphe)</option>
+            <option value="standard" selected>Standard (3 paragraphes)</option>
+            <option value="longue">Détaillée (4-5 paragraphes)</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button class="cv-btn primary" id="cl-generate-btn" onclick="generateCoverLetter()" style="flex:1">✦ Générer la lettre</button>
+        <button class="cv-btn secondary" onclick="closeModal('cl-modal')" style="flex:none;padding:10px 18px">Annuler</button>
+      </div>
+    </div>
+    <!-- RESULT TAB -->
+    <div id="clbody-result" style="display:none;padding:20px 24px">
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="cv-btn primary" onclick="exportClPDF()" style="flex:none;padding:9px 16px;font-size:11px">⬇ PDF</button>
+        <button class="cv-btn secondary" onclick="copyClResult()" style="flex:none;padding:9px 16px;font-size:11px">📋 Copier</button>
+        <button class="cv-btn secondary" onclick="importClToChat()" style="flex:none;padding:9px 16px;font-size:11px">→ Chat</button>
+        <button class="cv-btn secondary" onclick="switchClTab('form')" style="flex:none;padding:9px 16px;font-size:11px">← Modifier</button>
+      </div>
+      <div id="cl-result-content" style="background:var(--bg);border:1px solid var(--border2);border-radius:12px;padding:28px 32px;font-family:Georgia,serif;font-size:14px;line-height:1.9;color:var(--text);white-space:pre-wrap;min-height:200px"></div>
     </div>
   </div>
 </div>
@@ -5277,20 +5379,45 @@ const cvState={
 
 function cvNext(){
   if(cvState.step>=4) return;
+  _animateCvStep(cvState.step, cvState.step+1, 'forward');
   cvState.step++;
-  renderCvStep();
 }
 function cvPrev(){
   if(cvState.step<=0) return;
+  _animateCvStep(cvState.step, cvState.step-1, 'back');
   cvState.step--;
-  renderCvStep();
+}
+function _animateCvStep(fromIdx, toIdx, direction){
+  const from=G('cv-step-'+fromIdx);
+  const to=G('cv-step-'+toIdx);
+  if(!from||!to) return;
+  // Slide out current
+  from.style.animation=direction==='forward'
+    ?'cvSlideOut .25s cubic-bezier(.4,0,.2,1) forwards'
+    :'cvSlideOutRight .25s cubic-bezier(.4,0,.2,1) forwards';
+  setTimeout(()=>{
+    from.classList.remove('active');
+    from.style.animation='';
+    to.classList.add('active');
+    to.style.animation=direction==='forward'
+      ?'cvSlideIn .35s cubic-bezier(.4,0,.2,1)'
+      :'cvSlideInBack .35s cubic-bezier(.4,0,.2,1)';
+    setTimeout(()=>{ to.style.animation=''; }, 350);
+    _updateCvDots(toIdx);
+  }, 240);
 }
 function renderCvStep(){
+  // Called on direct jump — no animation
   for(let i=0;i<=4;i++){
-    const s=G('cv-step-'+i); if(s) s.classList.toggle('active',i===cvState.step);
+    const s=G('cv-step-'+i); if(s){ s.classList.toggle('active',i===cvState.step); s.style.animation=''; }
+  }
+  _updateCvDots(cvState.step);
+}
+function _updateCvDots(activeIdx){
+  for(let i=0;i<=4;i++){
     const d=G('cvdot-'+i); if(d){
-      d.classList.toggle('done',i<cvState.step);
-      d.classList.toggle('active',i===cvState.step);
+      d.classList.toggle('done',i<activeIdx);
+      d.classList.toggle('active',i===activeIdx);
     }
   }
 }
@@ -5424,25 +5551,110 @@ async function generateCvWithAI(){
   const d=cvState.data;
   if(!d.name){toast('Veuillez saisir votre nom');if(btn){btn.disabled=false;btn.textContent='✦ Générer mon CV';}return;}
   try{
-    // AI reformulation of experiences and summary
+    // Uses main MISTRAL_KEY (public, authorized) — NOT tools key
     const sys='Tu es un expert en rédaction de CV professionnel. Reformule et améliore le texte fourni pour un CV percutant et professionnel. Réponds UNIQUEMENT avec le texte amélioré, sans introduction ni commentaire.';
     if(d.experiences){
-      const exp=await callMistralTools([{role:'system',content:sys},{role:'user',content:`Reformule ces expériences professionnelles de façon percutante et concise pour un CV (utilise des verbes d'action, garde les dates et entreprises) :\n${d.experiences}`}],'mistral-small-latest',800);
+      const exp=await callMistral([{role:'system',content:sys},{role:'user',content:`Reformule ces expériences professionnelles de façon percutante et concise pour un CV (utilise des verbes d'action, garde les dates et entreprises) :\n${d.experiences}`}],'mistral-small-latest',800);
       d._aiExperiences=exp;
     }
-    const summary=await callMistralTools([{role:'system',content:sys},{role:'user',content:`Écris un court profil professionnel de 2-3 phrases percutantes pour ce CV:\nNom: ${d.name}\nPoste: ${d.title}\nExpériences: ${d.experiences?.substring(0,300)||''}\nCompétences: ${d.skills||''}`}],'mistral-small-latest',300);
+    const summary=await callMistral([{role:'system',content:sys},{role:'user',content:`Écris un court profil professionnel de 2-3 phrases percutantes pour ce CV:\nNom: ${d.name}\nPoste: ${d.title}\nExpériences: ${d.experiences?.substring(0,300)||''}\nCompétences: ${d.skills||''}`}],'mistral-small-latest',300);
     d._aiSummary=summary;
-    // Render the template
     const templateFn=CV_TEMPLATES[cvState.template]||CV_TEMPLATES.moderne;
     const html=templateFn(d);
     const output=G('cv-output-content');
     if(output) output.innerHTML=html;
-    cvNext(); // go to step 4
+    cvNext();
     toast('✓ CV généré avec succès !');
   }catch(e){
     toast('Erreur génération CV : '+e.message.substring(0,50));
   }
   if(btn){btn.disabled=false;btn.textContent='✦ Générer mon CV';}
+}
+
+// ── OPEN CV MODAL (with reset) ──
+function openCvModal(){
+  if(S.plan<2){ toast('Créateur de CV — plan AI Plus requis'); openPlansOverlay(); return; }
+  // Reset state for fresh start
+  cvState.step=0; cvState.data={name:'',title:'',email:'',phone:'',location:'',link:'',experiences:'',education:'',skills:'',languages:'',interests:'',photo:''}; cvState.template='moderne';
+  renderCvStep();
+  // Reset form fields
+  ['cv-name','cv-title','cv-email','cv-phone','cv-location','cv-link','cv-experiences','cv-education','cv-skills','cv-languages','cv-interests'].forEach(id=>{const el=G(id);if(el)el.value='';});
+  const zone=G('cv-photo-zone');
+  if(zone) zone.innerHTML=`<svg width="28" height="28" fill="none" stroke="#aaa" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+  openModal('cv-modal');
+}
+
+// ── COVER LETTER ──
+const clState={name:'',poste:'',company:'',sector:'',strengths:'',why:'',tone:'professionnel',length:'standard'};
+
+function openCoverLetterModal(){
+  if(S.plan<2){ toast('Lettre de motivation — plan AI Plus requis'); openPlansOverlay(); return; }
+  openModal('cl-modal');
+}
+
+function switchClTab(tab){
+  G('cltab-form')?.classList.toggle('active',tab==='form');
+  G('cltab-result')?.classList.toggle('active',tab==='result');
+  G('clbody-form').style.display=tab==='form'?'flex':'none';
+  G('clbody-result').style.display=tab==='result'?'block':'none';
+}
+
+async function generateCoverLetter(){
+  const btn=G('cl-generate-btn');
+  if(!clState.name||!clState.poste||!clState.company){
+    toast('Remplissez au minimum : nom, poste et entreprise'); return;
+  }
+  if(btn){btn.disabled=true;btn.textContent='✦ Génération…';}
+  const lengthGuide={courte:'1 seul paragraphe de 5-6 lignes',standard:'3 paragraphes bien structurés (accroche, argumentation, conclusion)',longue:'4 à 5 paragraphes détaillés avec des exemples concrets'};
+  const sys=`Tu es un expert en rédaction de lettres de motivation professionnelles françaises. Écris une lettre de motivation ${clState.tone} pour une candidature. Longueur : ${lengthGuide[clState.length]||lengthGuide.standard}. Utilise des formules de politesse françaises appropriées. Réponds UNIQUEMENT avec la lettre, sans commentaire.`;
+  const prompt=`Candidat : ${clState.name}\nPoste visé : ${clState.poste}\nEntreprise : ${clState.company}${clState.sector?'\nSecteur : '+clState.sector:''}\nPoints forts : ${clState.strengths||'Non précisé'}${clState.why?'\nMotivation spécifique : '+clState.why:''}`;
+  try{
+    // Uses main MISTRAL_KEY — authorized
+    const result=await callMistral([{role:'system',content:sys},{role:'user',content:prompt}],'mistral-small-latest',1200);
+    const el=G('cl-result-content');
+    if(el) el.textContent=result;
+    switchClTab('result');
+    toast('✓ Lettre générée !');
+  }catch(e){
+    toast('Erreur : '+e.message.substring(0,50));
+  }
+  if(btn){btn.disabled=false;btn.textContent='✦ Générer la lettre';}
+}
+
+async function exportClPDF(){
+  const content=G('cl-result-content')?.textContent; if(!content?.trim()){toast('Aucune lettre à exporter');return;}
+  toast('📄 Génération PDF…');
+  try{
+    if(typeof html2pdf==='undefined') throw new Error('html2pdf non chargé');
+    const tmp=document.createElement('div');
+    tmp.style.cssText='position:fixed;left:-9999px;top:0;width:794px;padding:70px 80px;background:#fff;color:#111;font-family:Georgia,serif;font-size:13px;line-height:1.9;white-space:pre-wrap;';
+    tmp.textContent=content;
+    document.body.appendChild(tmp);
+    await html2pdf().set({
+      margin:[20,20,20,20],filename:'lettre-motivation-wikimind.pdf',
+      image:{type:'jpeg',quality:0.97},
+      html2canvas:{scale:2,backgroundColor:'#ffffff'},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
+    }).from(tmp).save();
+    document.body.removeChild(tmp);
+    toast('✓ PDF exporté !');
+  }catch(e){ toast('Erreur PDF : '+e.message.substring(0,40)); }
+}
+
+function copyClResult(){
+  const el=G('cl-result-content'); if(!el) return;
+  copyText(el.textContent||'');
+  toast('📋 Lettre copiée !');
+}
+
+function importClToChat(){
+  const el=G('cl-result-content'); if(!el) return;
+  const text=el.textContent?.trim(); if(!text){toast('Aucune lettre à importer');return;}
+  S.attachments.push({type:'text',name:`Lettre — ${clState.poste} @ ${clState.company}`,content:text});
+  updateAttachmentPreview();
+  closeModal('cl-modal');
+  G('user-input').focus();
+  toast('Lettre importée dans le chat');
 }
 
 // Update updateUserUI additions for new features
@@ -5453,9 +5665,15 @@ function _updateUserUIExtras(){
   // Improve AI toggle (Premium+ only)
   const improveRow=G('improve-ai-row');
   if(improveRow) improveRow.style.display=S.plan>=5?'flex':'none';
-  // CV creator button (AI Plus+)
+  // CV creator button in account settings (AI Plus+)
   const cvBtn=G('cv-creator-btn');
   if(cvBtn) cvBtn.style.display=S.plan>=2?'block':'none';
+  // CV tool in tools panel (AI Plus+)
+  const toolCvBtn=G('tool-cv-btn');
+  if(toolCvBtn) toolCvBtn.style.display=S.plan>=2?'flex':'none';
+  // Cover letter tool (AI Plus+)
+  const toolClBtn=G('tool-cl-btn');
+  if(toolClBtn) toolClBtn.style.display=S.plan>=2?'flex':'none';
   // Sync improve AI toggle
   syncImproveAIToggle();
 }
