@@ -16,6 +16,9 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" id="hljs-dark" disabled>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@orama/orama@2/dist/browser/index.global.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 
 <style>
 :root {
@@ -553,6 +556,169 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 
 /* Plans grid fallback */
 .plans-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* ── TOOLS SIDE PANEL (replaces sidebar dropdowns) ── */
+#tools-panel{
+  width:0;overflow:hidden;background:var(--sidebar);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;z-index:48;
+  transition:width .35s cubic-bezier(.4,0,.2,1);
+}
+#tools-panel.open{width:260px;}
+@media(max-width:900px){#tools-panel.open{width:100%;position:fixed;inset:0;z-index:150;}}
+.tools-panel-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.tools-panel-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;}
+.tools-list{flex:1;overflow-y:auto;padding:10px 10px;}
+.tool-item{
+  display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;
+  cursor:pointer;font-size:12px;font-weight:600;color:var(--text);transition:.15s;
+  border:none;background:none;width:100%;text-align:left;
+}
+.tool-item:hover{background:var(--select-bg);}
+.tool-item svg{width:16px;height:16px;flex-shrink:0;color:#888;}
+.tool-item-label{flex:1;}
+.tool-item-badge{font-size:9px;font-weight:800;text-transform:uppercase;padding:2px 6px;border-radius:20px;letter-spacing:.04em;}
+.tool-badge-free{background:#f3f4f6;color:#6b7280;}
+.tool-badge-plus{background:#dbeafe;color:#1d4ed8;}
+.tool-badge-pro{background:#ede9fe;color:#7c3aed;}
+.tool-badge-premium{background:#fef3c7;color:#d97706;}
+.tool-badge-premium-plus{background:linear-gradient(135deg,#fee2e2,#fef3c7);color:#c2410c;}
+.dark-mode .tool-badge-free{background:#27272a;color:#a1a1aa;}
+.dark-mode .tool-badge-plus{background:#1e3a5f;color:#60a5fa;}
+.dark-mode .tool-badge-pro{background:#3b1f5e;color:#c084fc;}
+.dark-mode .tool-badge-premium{background:#44330f;color:#fbbf24;}
+.dark-mode .tool-badge-premium-plus{background:linear-gradient(135deg,#44110f,#44330f);color:#fb923c;}
+.tools-section-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#aaa;padding:8px 12px 4px;}
+
+/* ── STOP GENERATION BUTTON ── */
+#stop-btn{
+  background:#ef4444;color:#fff;width:40px;height:40px;border-radius:50%;
+  display:none;align-items:center;justify-content:center;border:none;cursor:pointer;
+  transition:transform .15s,opacity .15s;margin-right:4px;
+}
+#stop-btn.show{display:flex;}
+#stop-btn:hover{transform:scale(1.08);}
+#stop-btn svg{width:16px;height:16px;}
+
+/* ── DIAGRAM PANEL ── */
+#diagram-panel{
+  width:0;overflow:hidden;background:var(--bg);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;
+  transition:width .35s cubic-bezier(.4,0,.2,1);
+}
+#diagram-panel.open{width:540px;}
+@media(max-width:1200px){#diagram-panel.open{width:420px;}}
+@media(max-width:768px){#diagram-panel.open{width:100%;position:fixed;inset:0;z-index:100;}}
+.diagram-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px 14px 20px;border-bottom:1px solid var(--border);flex-shrink:0;gap:10px;
+}
+.diagram-hdr-left{display:flex;align-items:center;gap:10px;}
+.diagram-hdr-title{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;}
+.diagram-type-select{
+  appearance:none;-webkit-appearance:none;
+  background:var(--select-bg);border:1.5px solid var(--border2);
+  padding:5px 22px 5px 8px;font-size:10px;font-weight:700;color:var(--text);
+  outline:none;cursor:pointer;font-family:'Inter',sans-serif;
+  text-transform:uppercase;letter-spacing:.05em;border-radius:8px;
+}
+.diagram-body{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+.diagram-prompt-area{padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.diagram-prompt-input{
+  width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);
+  background:var(--input-bg);color:var(--text);font-size:12px;
+  font-family:'Inter',sans-serif;outline:none;resize:none;min-height:60px;
+  transition:border .2s;
+}
+.diagram-prompt-input:focus{border-color:#888;}
+.diagram-preview{flex:1;overflow:auto;padding:20px;display:flex;align-items:flex-start;justify-content:center;}
+.diagram-preview .mermaid{max-width:100%;}
+.diagram-footer{padding:10px 14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.diagram-gen-btn{
+  padding:8px 16px;border-radius:10px;font-size:11px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.05em;cursor:pointer;
+  background:var(--accent);color:var(--accent-inv);border:none;transition:.2s;
+}
+.diagram-gen-btn:hover{opacity:.85;}
+.diagram-gen-btn:disabled{opacity:.35;cursor:not-allowed;}
+.diagram-rate-info{font-size:10px;color:#aaa;font-weight:600;margin-left:auto;}
+.diagram-import-btn{
+  padding:8px 12px;border-radius:10px;font-size:10px;font-weight:800;
+  text-transform:uppercase;cursor:pointer;background:var(--select-bg);
+  color:var(--text);border:1px solid var(--border2);transition:.2s;
+}
+.diagram-import-btn:hover{background:var(--border2);}
+
+/* Mermaid diagrams in chat */
+.mermaid-wrap{margin:12px 0;background:var(--select-bg);border-radius:12px;border:1px solid var(--border);padding:16px;overflow:auto;}
+.mermaid-wrap .mermaid{max-width:100%;}
+.mermaid-actions{display:flex;gap:6px;margin-top:8px;}
+.mermaid-action-btn{
+  font-size:10px;font-weight:800;text-transform:uppercase;padding:3px 10px;
+  border-radius:6px;border:1px solid var(--border2);background:none;
+  color:#888;cursor:pointer;transition:.15s;
+}
+.mermaid-action-btn:hover{color:var(--text);background:var(--select-bg);}
+
+/* ── NEWS TOOL INDICATOR ── */
+.news-indicator{
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);
+  border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;
+  color:#2563eb;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;
+}
+.dark-mode .news-indicator{background:rgba(59,130,246,.12);color:#60a5fa;}
+
+/* ── WAIT QUEUE ── */
+#wait-queue-banner{
+  display:none;position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
+  background:var(--accent);color:var(--accent-inv);padding:10px 20px;border-radius:14px;
+  font-size:12px;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.15);
+  gap:10px;align-items:center;
+}
+#wait-queue-banner.show{display:flex;}
+#wait-queue-progress{
+  width:100px;height:4px;background:rgba(255,255,255,.3);border-radius:2px;overflow:hidden;
+}
+#wait-queue-fill{height:100%;background:rgba(255,255,255,.8);border-radius:2px;width:0%;transition:width .3s;}
+
+/* ── LOTTIE UPLOAD ANIM ── */
+#lottie-upload-wrap{
+  position:fixed;bottom:130px;right:24px;width:80px;height:80px;
+  pointer-events:none;display:none;z-index:999;
+}
+#lottie-upload-wrap.show{display:block;}
+
+/* ── FILE PREVIEW IN CHAT (enhanced) ── */
+.chat-file-preview{
+  display:flex;align-items:center;gap:10px;
+  background:var(--select-bg);border:1px solid var(--border2);border-radius:12px;
+  padding:10px 14px;margin-bottom:10px;max-width:320px;cursor:pointer;transition:.15s;
+}
+.chat-file-preview:hover{border-color:var(--text);}
+.chat-file-icon{
+  width:38px;height:38px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;
+}
+.chat-file-info{flex:1;min-width:0;}
+.chat-file-name{font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.chat-file-meta{font-size:10px;color:#aaa;margin-top:2px;}
+
+/* Enhanced attach chip */
+.attach-chip{display:flex;align-items:center;gap:6px;background:var(--select-bg);border:1px solid var(--border2);border-radius:10px;padding:5px 12px;font-size:11px;font-weight:600;position:relative;overflow:hidden;}
+.attach-chip-type{font-size:14px;flex-shrink:0;}
+.attach-chip-img-preview{width:28px;height:28px;border-radius:5px;object-fit:cover;flex-shrink:0;}
+
+/* ── ORAMA STATUS ── */
+.orama-indicator{
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);
+  border-radius:20px;padding:2px 8px;font-size:9px;font-weight:700;
+  color:#16a34a;text-transform:uppercase;letter-spacing:.05em;
+}
+.dark-mode .orama-indicator{background:rgba(34,197,94,.1);color:#4ade80;}
 .plan-card{border:1px solid var(--border2);border-radius:14px;padding:16px;transition:.2s;}
 .plan-card.current{border-color:var(--text);background:var(--select-bg);}
 .plan-card-name{font-size:14px;font-weight:800;margin-bottom:3px;}
@@ -993,13 +1159,9 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
       Rechercher
     </button>
-    <button class="sb-btn" id="sb-btn-coder" onclick="toggleCoderPanel()" style="display:none">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-      Codeur
-    </button>
-    <button class="sb-btn" onclick="openOcrPanel()" id="sb-btn-ocr" style="display:none">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h10M7 12h6M7 16h4"/></svg>
-      Extraction de texte
+    <button class="sb-btn" onclick="toggleToolsPanel()">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+      Outils IA
     </button>
     <button class="sb-btn" onclick="openModal('connectors-modal')">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
@@ -1024,9 +1186,63 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
   </div>
 </div>
 
-<!-- MAIN AREA -->
+<!-- SIDEBAR BACKDROP -->
 <div id="sidebar-backdrop" onclick="toggleSidebar()"></div>
+
+<!-- WAIT QUEUE BANNER -->
+<div id="wait-queue-banner">
+  <span id="wait-queue-text">⏳ Serveurs chargés — file d'attente</span>
+  <div id="wait-queue-progress"><div id="wait-queue-fill"></div></div>
+</div>
+
+<!-- LOTTIE UPLOAD ANIMATION -->
+<div id="lottie-upload-wrap"></div>
+
 <div id="main-area">
+
+<!-- TOOLS SIDE PANEL -->
+<div id="tools-panel">
+  <div class="tools-panel-hdr">
+    <span class="tools-panel-title">Outils IA</span>
+    <button class="float-btn" onclick="toggleToolsPanel()" style="position:static;width:28px;height:28px;">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="tools-list">
+    <div class="tools-section-label">Disponible pour tous</div>
+    <button class="tool-item" onclick="toggleNewsTool();closeToolsPanel()" id="tool-news-btn">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/></svg>
+      <span class="tool-item-label">Actualités IA</span>
+      <span class="tool-item-badge tool-badge-free" id="tool-news-badge">Off</span>
+    </button>
+
+    <div class="tools-section-label" style="margin-top:6px">AI Plus</div>
+    <button class="tool-item" onclick="toggleCoderPanel();closeToolsPanel()" id="tool-coder-btn" style="display:none">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      <span class="tool-item-label">Codeur IA</span>
+      <span class="tool-item-badge tool-badge-plus" id="tool-coder-badge">AI Plus</span>
+    </button>
+    <button class="tool-item" onclick="toggleDiagramPanel();closeToolsPanel()" id="tool-diagram-btn" style="display:none">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="9.5" y="16" width="5" height="5" rx="1"/><path d="M5.5 8v3a2 2 0 002 2h9a2 2 0 002-2V8"/><line x1="12" y1="13" x2="12" y2="16"/></svg>
+      <span class="tool-item-label">Diagrammes</span>
+      <span class="tool-item-badge tool-badge-plus" id="tool-diagram-badge">AI Plus</span>
+    </button>
+
+    <div class="tools-section-label" style="margin-top:6px">AI Premium</div>
+    <button class="tool-item" onclick="openOcrPanel();closeToolsPanel()" id="tool-ocr-btn">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h10M7 12h6M7 16h4"/></svg>
+      <span class="tool-item-label">Extraction texte (OCR)</span>
+      <span class="tool-item-badge tool-badge-premium">Premium</span>
+    </button>
+
+    <div class="tools-section-label" style="margin-top:6px">AI Premium+</div>
+    <button class="tool-item" onclick="toggleTextHelperPanel();closeToolsPanel()" id="tool-texthelper-btn" style="display:none">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h6"/><path d="M18 14l2 2 4-3" stroke-width="2.2"/></svg>
+      <span class="tool-item-label">Aide au texte</span>
+      <span class="tool-item-badge tool-badge-premium-plus" id="tool-th-badge">Premium+</span>
+    </button>
+  </div>
+</div>
 <div id="chat-area">
   <!-- Drag & Drop overlay -->
   <div id="dnd-overlay" style="display:none;position:absolute;inset:0;z-index:200;background:rgba(17,17,17,.55);backdrop-filter:blur(2px);border:3px dashed #fff;border-radius:16px;align-items:center;justify-content:center;pointer-events:none;">
@@ -1072,68 +1288,60 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
             <span class="canvas-active-dot" id="canvas-active-dot"></span>
           </button>
 
-          <!-- Codeur toggle (Pro+) -->
-          <button class="inp-icon-btn" id="btn-coder-toggle" onclick="toggleCoderPanel()" title="Mode Codeur" style="display:none">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-            <span class="coder-active-dot" id="coder-active-dot"></span>
-          </button>
-
-          <!-- Aide au texte toggle (Premium+) -->
-          <button class="inp-icon-btn" id="btn-texthelper" onclick="toggleTextHelperPanel()" title="Aide au texte — Littéraire &amp; Traducteur" style="display:none;position:relative">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h6"/><path d="M18 14l2 2 4-3" stroke-width="2.2"/></svg>
-            <span class="th-active-dot" id="th-active-dot"></span>
-          </button>
-
-          <!-- Bouton + qui déploie les icônes inline -->
+          <!-- Bouton + pour les imports -->
           <button class="inp-icon-btn" id="btn-import-plus" onclick="toggleImportInline(event)" title="Importer" style="display:none">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
           </button>
 
-          <!-- Groupe d'icônes import inline (se déroulent sur la même ligne) -->
+          <!-- Groupe d'icônes import inline -->
           <div class="import-inline-group" id="import-inline-group">
-
             <div class="imp-btn-wrap" id="imp-wrap-office" style="display:none">
               <button class="inp-icon-btn" onclick="openOfficeImport();closeImportInline()" title="Wikimind Office">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
               </button>
               <span class="imp-tooltip">Office</span>
             </div>
-
             <div class="imp-btn-wrap" id="imp-wrap-gdrive" style="display:none">
               <button class="inp-icon-btn" onclick="openGDriveImport();closeImportInline()" title="Google Drive">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 17H2l4-7h12l4 7z"/><path d="M2 17l4-7"/><path d="M15 3L9 17"/><path d="M9 3l6 14"/><path d="M9 3h6"/></svg>
               </button>
               <span class="imp-tooltip">Drive</span>
             </div>
-
             <div class="imp-btn-wrap" id="imp-wrap-file" style="display:none">
               <button class="inp-icon-btn" onclick="triggerFileImport();closeImportInline()" title="Fichiers">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               </button>
               <span class="imp-tooltip">Fichiers</span>
             </div>
-
             <div class="imp-btn-wrap" id="imp-wrap-img" style="display:none">
               <button class="inp-icon-btn" onclick="triggerImageImport();closeImportInline()" title="Image">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
               </button>
               <span class="imp-tooltip">Image</span>
             </div>
-
             <div class="imp-btn-wrap" id="imp-wrap-media" style="display:none">
               <button class="inp-icon-btn" onclick="triggerMediaImport();closeImportInline()" title="Vidéo / Audio">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
               </button>
               <span class="imp-tooltip">Vidéo/Audio</span>
             </div>
-
           </div><!-- end import-inline-group -->
 
           <div class="inp-divider"></div>
 
+          <!-- Outils (codeur, aide texte, diagrammes) -->
+          <button class="inp-icon-btn" id="btn-tools-toggle" onclick="toggleToolsPanel()" title="Outils IA" style="display:none;position:relative">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+          </button>
+
           <!-- Speech to text -->
           <button class="inp-icon-btn" id="btn-stt" onclick="toggleSpeechToText()" title="Dicter un message">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0014 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="9" y1="22" x2="15" y2="22"/></svg>
+          </button>
+
+          <!-- Actualités toggle -->
+          <button class="inp-icon-btn" id="btn-news-toggle" onclick="toggleNewsTool()" title="Mode Actualités">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/></svg>
           </button>
 
           <div id="model-select-wrap">
@@ -1142,9 +1350,15 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
             </select>
           </div>
         </div>
-        <button id="send-btn" onclick="sendMsg()">
-          <svg fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
-        </button>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <!-- Stop generation button -->
+          <button id="stop-btn" onclick="stopGeneration()" title="Arrêter la génération">
+            <svg fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+          </button>
+          <button id="send-btn" onclick="sendMsg()">
+            <svg fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
+          </button>
+        </div>
       </div>
     </div>
     <div id="canvas-mode-bar" style="display:none"></div>
@@ -1194,6 +1408,53 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
   </div>
 </div>
 
+<!-- DIAGRAM PANEL -->
+<div id="diagram-panel">
+  <div class="diagram-hdr">
+    <div class="diagram-hdr-left">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="9.5" y="16" width="5" height="5" rx="1"/><path d="M5.5 8v3a2 2 0 002 2h9a2 2 0 002-2V8"/><line x1="12" y1="13" x2="12" y2="16"/></svg>
+      <span class="diagram-hdr-title">Diagrammes IA</span>
+      <span class="coder-plan-badge" id="diagram-plan-badge" style="background:rgba(59,130,246,.1);color:#2563eb">AI Plus</span>
+      <span class="coder-rate-badge" id="diagram-rate-badge">1/h</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <select class="diagram-type-select" id="diagram-type">
+        <option value="flowchart">Organigramme</option>
+        <option value="sequenceDiagram">Séquence</option>
+        <option value="classDiagram">Classes</option>
+        <option value="gantt">Gantt</option>
+        <option value="mindmap">Mindmap</option>
+        <option value="erDiagram">Entités-Relations</option>
+        <option value="gitGraph">Git Graph</option>
+        <option value="pie">Camembert</option>
+      </select>
+      <button class="cvs-action-btn" onclick="toggleDiagramPanel()" title="Fermer">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="diagram-body">
+    <div class="diagram-prompt-area">
+      <textarea class="diagram-prompt-input" id="diagram-prompt" placeholder="Décrivez votre diagramme… Ex: Système de login avec authentification OAuth, base de données utilisateurs, et API REST" rows="3" onkeydown="if(event.key==='Enter'&&event.ctrlKey){event.preventDefault();runDiagramAI();}"></textarea>
+    </div>
+    <div class="diagram-preview" id="diagram-preview">
+      <div style="text-align:center;color:#aaa;font-size:12px;padding:40px 20px;">
+        <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24" style="margin:0 auto 12px;display:block;opacity:.3"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="9.5" y="16" width="5" height="5" rx="1"/><path d="M5.5 8v3a2 2 0 002 2h9a2 2 0 002-2V8"/><line x1="12" y1="13" x2="12" y2="16"/></svg>
+        Décrivez votre diagramme et cliquez sur Générer
+      </div>
+    </div>
+  </div>
+  <div class="diagram-footer">
+    <button class="diagram-gen-btn" id="diagram-gen-btn" onclick="runDiagramAI()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="margin-right:5px;vertical-align:middle"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      Générer
+    </button>
+    <button class="diagram-import-btn" id="diagram-import-btn" onclick="importDiagramToChat()" style="display:none">→ Chat</button>
+    <button class="diagram-import-btn" id="diagram-dl-btn" onclick="downloadDiagram()" style="display:none">⬇ SVG</button>
+    <span class="diagram-rate-info" id="diagram-rate-info">—</span>
+  </div>
+</div>
+
 <!-- OCR PANEL — Extraction de texte par vision IA -->
 <div id="ocr-panel">
   <div class="ocr-hdr">
@@ -1210,7 +1471,10 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
       <div class="ocr-import-pane">
         <div class="ocr-import-pane-header">
           <span>Images <span class="ocr-count" id="ocr-img-count">0/20</span></span>
-          <button class="ocr-btn secondary" style="padding:3px 9px;font-size:9px" onclick="document.getElementById('ocr-file-input').click()">+ Ajouter</button>
+          <div style="display:flex;gap:4px;">
+            <button class="ocr-btn secondary" style="padding:3px 9px;font-size:9px" onclick="document.getElementById('ocr-file-input').click()">+ Ajouter</button>
+            <button class="ocr-btn secondary" style="padding:3px 9px;font-size:9px" onclick="pasteOcrFromClipboard()" title="Coller depuis le presse-papier">📋</button>
+          </div>
         </div>
         <input type="file" id="ocr-file-input" accept="image/*" multiple style="display:none" onchange="onOcrImagesSelected(event)">
         <div class="ocr-drop-zone" id="ocr-drop-zone" onclick="document.getElementById('ocr-file-input').click()">
@@ -1774,13 +2038,26 @@ window.addEventListener('load', () => {
   syncWritingAnimToggle();
   try { const c=localStorage.getItem('wm_connectors'); if(c) S.connectors=JSON.parse(c); } catch(e){}
   try { const r=localStorage.getItem('wm_pp_ring'); if(r) S.premiumPlusRing=r; } catch(e){}
-  // Restore google tokens from session
   try { S.gmailToken=sessionStorage.getItem('wm_gmail_token')||null; S.gdriveToken=sessionStorage.getItem('wm_gdrive_token')||null; } catch(e){}
   if(S.gmailToken) S.connectors.gmail=true;
   if(S.gdriveToken) S.connectors.gdrive=true;
   setTimeout(()=>{ if(!S.user) openModal('auth-modal'); }, 600);
   renderPlansGrid();
   G('user-input').addEventListener('input',()=>autoResize(G('user-input')));
+  // Init Mermaid
+  if(window.mermaid){
+    window.mermaid.initialize({startOnLoad:false,theme:'neutral',securityLevel:'loose',fontFamily:'Inter,sans-serif'});
+  }
+  // Preload lottie animation container
+  const lottieWrap=G('lottie-upload-wrap');
+  if(lottieWrap && window.lottie){
+    try{
+      window._lottieAnim=window.lottie.loadAnimation({
+        container:lottieWrap,renderer:'svg',loop:true,autoplay:false,
+        path:'https://assets2.lottiefiles.com/packages/lf20_u4yrau84.json'
+      });
+    }catch(e){}
+  }
 });
 
 // ── AUTH ──
@@ -1911,11 +2188,17 @@ function updateUserUI(){
   syncProfilePhotoUI();
   // OCR button in sidebar
   const ocrBtn=G('sb-btn-ocr'); if(ocrBtn) ocrBtn.style.display=S.plan>=4?'flex':'none';
-  // Coder button in sidebar + toggle in input bar
+  // Coder button in sidebar + tools panel
   const coderBtn=G('sb-btn-coder'); if(coderBtn) coderBtn.style.display=S.plan>=3?'flex':'none';
   const coderToggleBtn=G('btn-coder-toggle'); if(coderToggleBtn) coderToggleBtn.style.display=S.plan>=3?'flex':'none';
-  // Text helper button in input bar (Premium+)
+  const toolCoderBtn=G('tool-coder-btn'); if(toolCoderBtn) toolCoderBtn.style.display=S.plan>=3?'flex':'none';
+  // Text helper button (Premium+)
   const thBtn=G('btn-texthelper'); if(thBtn) thBtn.style.display=S.plan>=5?'flex':'none';
+  const toolThBtn=G('tool-texthelper-btn'); if(toolThBtn) toolThBtn.style.display=S.plan>=5?'flex':'none';
+  // Diagram button (AI Plus+)
+  const toolDiagramBtn=G('tool-diagram-btn'); if(toolDiagramBtn) toolDiagramBtn.style.display=S.plan>=2?'flex':'none';
+  // Tools toggle in input bar (AI Plus+)
+  const toolsToggleBtn=G('btn-tools-toggle'); if(toolsToggleBtn) toolsToggleBtn.style.display=S.plan>=2?'flex':'none';
   // Settings account tab sync
   const sau=G('settings-avatar'); if(sau){sau.textContent=(S.user?.displayName||'?').charAt(0).toUpperCase();}
   const sun=G('settings-username'); if(sun) sun.textContent=S.user?.displayName||'Invité';
@@ -1966,7 +2249,13 @@ function renderPlansGrid(){
     {key:'premium-plus',id:5,label:'Wikimind AI Premium+',price:'67€/mois',mt:58,promo:'🔥 OCR illimité + toutes les fonctions'},
   ];
   const rows=[
-    ['Modèle Flash','✓','✓','✓','✓','✓'],
+    // ── Pour tous ──
+    ['Modèle Flash (IA rapide)','✓','✓','✓','✓','✓'],
+    ['Outil Actualités IA','✓','✓','✓','✓','✓'],
+    ['Bouton Stop Génération','✓','✓','✓','✓','✓'],
+    ['Animation upload (Lottie)','✓','✓','✓','✓','✓'],
+    ['Dicter un message (STT)','✓','✓','✓','✓','✓'],
+    // ── AI Plus ──
     ['Modèle Medium','✗','✓','✓','✓','✓'],
     ['Modèle Work','✗','1/h','✓','✓','✓'],
     ['Mode Réflexion','✗','1/h','3/h','Illimité','Illimité'],
@@ -1975,19 +2264,24 @@ function renderPlansGrid(){
     ['Messages / minute','4','10','15','Illimité','Illimité'],
     ['Import Wikimind Office','✗','✓','✓','✓','✓'],
     ['Import Google Drive','✗','✓','✓','✓','✓'],
-    ['Import fichiers (PDF…)','✗','✗','✓','✓','✓'],
-    ['Import images & Vision IA','✗','✗','✗','✓','✓'],
-    ['Analyse vidéo / audio','✗','✗','✗','✓','✓'],
-    ['Extraction texte (OCR Vision)','✗','✗','✗','1/h','Illimité'],
-    ['Mode Codeur','✗','✗','1/j','1/h','Illimité'],
-    ['Aide au texte & Traducteur','✗','✗','✗','✗','✓'],
-    ['Photo de profil personnalisée','✗','✓','✓','✓','✓'],
+    ['Génération Diagrammes (Mermaid)','✗','1/h','2/h','5/h','Illimité'],
+    ['Profil personnalisé','✗','✓','✓','✓','✓'],
     ['Intégration Gmail','✗','✓','✓','✓','✓'],
+    // ── AI Pro ──
+    ['Import fichiers (PDF…)','✗','✗','✓ (≤10p)','✓ (≤50p)','Illimité'],
+    ['Codeur IA','✗','✗','1/j','1/h','Illimité'],
     ['Création Office par l\'IA','✗','✗','✓','✓','✓'],
     ['Mode Appel Wikimind','✗','✗','✓','✓','✓'],
+    // ── AI Premium ──
+    ['Import images & Vision IA','✗','✗','✗','✓','✓'],
+    ['Analyse vidéo / audio','✗','✗','✗','✓','✓'],
+    ['Extraction texte (OCR)','✗','✗','✗','1/h','Illimité'],
+    ['PDF large (Orama vectoriel)','✗','✗','✗','≤50 pages','Illimité'],
     ['Plugins premium','✗','✗','✗','✓','✓'],
-    ['Connecteur Wikimind Office','✗','✓','✓','✓','✓'],
+    // ── AI Premium+ ──
+    ['Aide au texte & Traducteur','✗','✗','✗','✗','✓'],
     ['Anneaux avatar exclusifs','✗','✗','✗','✗','5 styles'],
+    ['Orama illimité (PDF)','✗','✗','✗','✗','✓'],
   ];
   const table=G('plan-compare-table'); if(!table) return;
   const yes='<span class="check-yes">✓</span>';
@@ -2126,6 +2420,16 @@ function renderMsg(msg, doScroll=true){
       notice.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg> Mode Canvas actif';
       wrap.appendChild(notice);
     }
+    if(msg._newsMode){
+      const notice=document.createElement('div'); notice.style.cssText='margin-top:4px';
+      notice.innerHTML='<span class="news-indicator">📰 Actualités IA</span>';
+      wrap.appendChild(notice);
+    }
+    if(msg._oramaMode){
+      const notice=document.createElement('div'); notice.style.cssText='margin-top:4px';
+      notice.innerHTML='<span class="orama-indicator">⚡ Orama</span>';
+      wrap.appendChild(notice);
+    }
     const div=document.createElement('div'); div.className='chat-bubble user'; div.textContent=msg.content; wrap.appendChild(div);
     if(msg.attachmentName){
       const pill=document.createElement('div'); pill.style.cssText='display:flex;align-items:center;gap:5px;font-size:10px;color:#aaa;margin-top:4px;justify-content:flex-end';
@@ -2251,6 +2555,17 @@ function formatMarkdown(text){
   html=html.replace(/WMATHBLOCK(\d+)END/g,(_,idx)=>{const m=ph[+idx];if(!m)return'';const s=m[1];return`<div class="wm-math-display">\\[${s}\\]</div>`;});
   html=html.replace(/WMATHINLINE(\d+)END/g,(_,idx)=>{const m=ph[+idx];if(!m)return'';return`\\(${m[1]}\\)`;});
   if(!window._wmCopyStore) window._wmCopyStore={};
+  // Intercept Mermaid blocks
+  let _mermaidIdx = window._mermaidIdx = (window._mermaidIdx||0);
+  html=html.replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g,(_,code)=>{
+    const raw=code.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').trim();
+    const mid='mermaid_'+(++window._mermaidIdx);
+    const escapedRaw = raw.replace(/'/g,'&#39;').replace(/"/g,'&quot;');
+    setTimeout(()=>{ try{ if(window.mermaid) window.mermaid.init(undefined,'#'+mid); }catch(e){} },100);
+    const cid='wmc'+(+(window._wciCounter=(window._wciCounter||0)+1));
+    window._wmCopyStore[cid]=raw;
+    return `<div class="mermaid-wrap"><div class="mermaid" id="${mid}">${raw}</div><div class="mermaid-actions"><button class="mermaid-action-btn" onclick="copyStoredText('${cid}')">📋 Copier code</button><button class="mermaid-action-btn" onclick="toggleDiagramPanel();setTimeout(()=>{const el=G('diagram-prompt');if(el)el.value='${escapedRaw.substring(0,200)}';},300)">✏️ Éditer</button></div></div>`;
+  });
   html=html.replace(/<pre><code( class="language-([^"]*)")?>([\s\S]*?)<\/code><\/pre>/g,(_,cls,lang,code)=>{
     const raw=code.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
     const cid='wmc'+(+(window._wciCounter=(window._wciCounter||0)+1));
@@ -2301,7 +2616,19 @@ function updateAttachmentPreview(){
   const prev=G('attachment-preview');
   if(!S.attachments.length){prev.classList.remove('has-files');prev.innerHTML='';return;}
   prev.classList.add('has-files');
-  prev.innerHTML=S.attachments.map((a,i)=>`<div class="attach-chip"><span>${a.type==='image'?'🖼️':a.type==='media'?'🎬':'📄'}</span><span>${esc(a.name)}</span><span class="attach-chip-del" onclick="removeAttachment(${i})">✕</span></div>`).join('');
+  prev.innerHTML=S.attachments.map((a,i)=>{
+    const isImage=a.type==='image';
+    const isMedia=a.type==='media';
+    const icon=isMedia?'🎬':isImage?'':'📄';
+    const imgTag=isImage?`<img src="${a.content}" class="attach-chip-img-preview" alt="">`:'';
+    const typeLabel=isImage?'Image':isMedia?'Média':a.name.split('.').pop().toUpperCase()||'Fichier';
+    return `<div class="attach-chip">
+      ${isImage?imgTag:`<span class="attach-chip-type">${icon}</span>`}
+      <span style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.name)}</span>
+      <span style="font-size:9px;color:#aaa;font-weight:700;text-transform:uppercase">${typeLabel}</span>
+      <span class="attach-chip-del" onclick="removeAttachment(${i})">✕</span>
+    </div>`;
+  }).join('');
 }
 function removeAttachment(i){S.attachments.splice(i,1);updateAttachmentPreview();}
 
@@ -2361,9 +2688,11 @@ function importOfficeFile(id){
 // ── FILE / IMAGE IMPORT ──
 function triggerFileImport(){if(S.plan<3){toast('Import fichiers — plan AI Pro requis');openPlansOverlay();return;}G('file-input-docs').click();}
 async function onFileImport(e){
+  showLottieUpload();
   for(const file of Array.from(e.target.files)){
-    try{const content=await readFileContent(file);S.attachments.push({type:'text',name:file.name,content});}catch(err){toast(`Erreur lecture ${file.name}`);}
+    try{const content=await readFileContent(file);S.attachments.push({type:'text',name:file.name,content});}catch(err){toast(`Erreur lecture ${file.name}: ${err.message.substring(0,40)}`);}
   }
+  hideLottieUpload();
   updateAttachmentPreview(); e.target.value='';
 }
 async function readFileContent(file){
@@ -2371,18 +2700,79 @@ async function readFileContent(file){
   if(ext==='pdf'){
     if(typeof pdfjsLib==='undefined') throw new Error('PDF.js non chargé');
     const ab=await file.arrayBuffer(); const pdf=await pdfjsLib.getDocument({data:ab}).promise;
+    const totalPages = pdf.numPages;
+    // Plan-based PDF page limits
+    // Free/Plus: no PDF. Pro: ≤10 pages. Premium: ≤50 pages with Orama. Premium+: unlimited with Orama
+    const planLimits = {1:0, 2:0, 3:10, 4:50, 5:9999};
+    const limit = planLimits[S.plan] ?? 0;
+    if(limit === 0){ throw new Error('Import PDF — plan AI Pro requis minimum'); }
+    const pagesToRead = Math.min(totalPages, limit);
+    if(totalPages > limit){
+      toast(`📄 PDF tronqué à ${limit} pages (votre forfait). ${totalPages} pages au total.`);
+    }
+    // Show Lottie animation
+    showLottieUpload();
     let text='';
-    for(let p=1;p<=Math.min(pdf.numPages,30);p++){const page=await pdf.getPage(p);const tc=await page.getTextContent();text+=tc.items.map(i=>i.str).join(' ')+'\n';}
-    return`[PDF: ${file.name}]\n${text}`;
+    for(let p=1;p<=pagesToRead;p++){
+      const page=await pdf.getPage(p);
+      const tc=await page.getTextContent();
+      text+=tc.items.map(i=>i.str).join(' ')+'\n';
+    }
+    // For Premium (plan 4) and Premium+ (plan 5): use Orama for chunking & indexing
+    if(S.plan >= 4 && totalPages > 5){
+      try{
+        const oramaText = await indexPdfWithOrama(file.name, text);
+        hideLottieUpload();
+        return `[PDF: ${file.name} — ${pagesToRead}/${totalPages} pages — indexé avec Orama]\n${oramaText}`;
+      }catch(oe){ console.warn('Orama index failed:', oe); }
+    }
+    hideLottieUpload();
+    return `[PDF: ${file.name} — ${pagesToRead}/${totalPages} pages]\n${text}`;
   }
-  return new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>res(`[Fichier: ${file.name}]\n${ev.target.result}`);r.onerror=()=>rej(new Error('Lecture impossible'));r.readAsText(file,'UTF-8');});
+  showLottieUpload();
+  const result = await new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>res(`[Fichier: ${file.name}]\n${ev.target.result}`);r.onerror=()=>rej(new Error('Lecture impossible'));r.readAsText(file,'UTF-8');});
+  hideLottieUpload();
+  return result;
+}
+
+// ── ORAMA PDF INDEXING ──
+window._oramaDb = null;
+async function indexPdfWithOrama(filename, text){
+  try{
+    if(!window.orama) return text;
+    const {create, insert, search} = window.orama;
+    // Create fresh DB for this document
+    const db = await create({ schema: { id:'string', content:'string', page:'number' } });
+    // Split into chunks ~500 chars
+    const chunkSize = 500;
+    const chunks = [];
+    for(let i=0;i<text.length;i+=chunkSize){
+      chunks.push({id:'chunk_'+i, content:text.substring(i,i+chunkSize), page:Math.floor(i/(chunkSize*5))+1});
+    }
+    for(const chunk of chunks){ await insert(db, chunk); }
+    window._oramaDb = { db, filename, search };
+    toast(`✓ PDF indexé (${chunks.length} segments Orama)`);
+    // Return first 8000 chars + note about Orama
+    return text.substring(0,8000) + (text.length>8000 ? `\n\n[... ${text.length-8000} caractères supplémentaires indexés par Orama — posez des questions pour interroger le document complet]`:'');
+  }catch(e){ console.warn('Orama:', e); return text; }
+}
+
+async function queryOramaForContext(question){
+  if(!window._oramaDb) return '';
+  try{
+    const {db, search} = window._oramaDb;
+    const results = await search(db, { term: question, limit: 3 });
+    return results.hits.map(h=>h.document.content).join('\n\n');
+  }catch(e){ return ''; }
 }
 function triggerImageImport(){if(S.plan<4){toast('Import images — plan AI Premium requis');openPlansOverlay();return;}G('file-input-images').click();}
 async function onImageImport(e){
+  showLottieUpload();
   for(const file of Array.from(e.target.files)){
     const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>res(ev.target.result);r.onerror=()=>rej();r.readAsDataURL(file);});
     S.attachments.push({type:'image',name:file.name,content:dataUrl});
   }
+  hideLottieUpload();
   updateAttachmentPreview(); e.target.value='';
 }
 
@@ -2707,7 +3097,21 @@ async function sendMsg(overrideText){
   // Détecter intent Gmail — si connecté et intent détecté, on informe
   const gmailIntent=S.connectors.gmail&&S.gmailToken&&detectEmailIntent(displayText);
 
-  const um={role:'user',content:displayText,fullContent,images,attachmentName,_canvasMode:S.canvasMode,ts:now};
+  // Injecter contexte actualités si mode actif
+  let newsContext='';
+  if(S_news.active){
+    toast('📰 Recherche actualités…');
+    newsContext=await fetchNewsContext(displayText).catch(()=>'');
+  }
+
+  // Injecter contexte Orama si document indexé
+  let oramaContext='';
+  if(window._oramaDb){
+    oramaContext=await queryOramaForContext(displayText).catch(()=>'');
+    if(oramaContext) oramaContext='\n\n[CONTEXTE_DOCUMENT_ORAMA — extrait pertinent]\n'+oramaContext+'\n[/CONTEXTE_DOCUMENT_ORAMA]';
+  }
+
+  const um={role:'user',content:displayText,fullContent,images,attachmentName,_canvasMode:S.canvasMode,_newsMode:S_news.active,_oramaMode:!!window._oramaDb,ts:now};
   S.msgs.push(um); renderMsg(um);
   S.attachments=[]; updateAttachmentPreview();
 
@@ -2716,13 +3120,15 @@ async function sendMsg(overrideText){
     renderHistory(); genTitle(displayText).then(t=>{if(S.chats[S.chatId]){S.chats[S.chatId].title=t;renderHistory();persistChat();}});
   }else{S.chats[S.chatId].messages=S.msgs;S.chats[S.chatId].updatedAt=now;}
 
-  S.generating=true; G('send-btn').disabled=true; const tyId=showTyping();
+  S.generating=true; G('send-btn').disabled=true; G('stop-btn')?.classList.add('show'); const tyId=showTyping();
 
   // Construire le fullContent avec instruction Gmail si besoin
   let finalFullContent=fullContent;
   if(gmailIntent){
     finalFullContent+='\n\n[INSTRUCTION_SYSTÈME_WIKIMIND: L\'utilisateur a connecté Gmail. Si cette demande concerne un e-mail, rédige-le et termine ta réponse par un bloc JSON sur une seule ligne comme ceci: GMAIL_DRAFT:{"subject":"Objet","body":"Corps du mail","to":""} — WikiMind créera le brouillon automatiquement dans Gmail.]';
   }
+  if(newsContext) finalFullContent+=newsContext;
+  if(oramaContext) finalFullContent+=oramaContext;
 
   try{
     let aiContent='',steps=null,toolCalls=[];
@@ -2787,7 +3193,7 @@ async function sendMsg(overrideText){
     const err={role:'assistant',content:`**Erreur :** ${ex.message||'Inconnue'}\n\nVérifiez votre connexion.`,ts:Date.now()};
     S.msgs.push(err);renderMsg(err);
   }
-  S.generating=false; G('send-btn').disabled=false;
+  S.generating=false; G('send-btn').disabled=false; G('stop-btn')?.classList.remove('show');
 }
 
 // ── VISION QA (Mistral Pixtral) ──
@@ -2962,7 +3368,6 @@ async function runOcrExtraction(){
           {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}
         );
         if(res.status===403||res.status===400){
-          // 403 = API non activée ou restrictions → fallback Pixtral
           throw new Error('vision_fallback');
         }
         if(!res.ok) throw new Error('Vision API '+res.status);
@@ -2972,22 +3377,35 @@ async function runOcrExtraction(){
         text=annotation?.text||data.responses?.[0]?.textAnnotations?.[0]?.description||'';
       }catch(visionErr){
         if(visionErr.message==='vision_fallback'||visionErr.message.includes('403')||visionErr.message.includes('400')){
-          // Fallback : Pixtral via Mistral
-          const pixRes=await fetch('https://api.mistral.ai/v1/chat/completions',{
-            method:'POST',
-            headers:{'Content-Type':'application/json','Authorization':'Bearer '+MISTRAL_KEY},
-            body:JSON.stringify({
-              model:'pixtral-12b-2409',
-              max_tokens:2000,
-              messages:[{role:'user',content:[
-                {type:'image_url',image_url:{url:'data:'+mimeType+';base64,'+base64}},
-                {type:'text',text:'Extrais et retranscris TOUT le texte visible dans cette image, mot pour mot, en conservant la mise en page. Ne fais aucun commentaire, retourne uniquement le texte extrait.'}
-              ]}]
-            })
-          });
-          if(!pixRes.ok) throw new Error('Pixtral OCR '+pixRes.status);
-          const pixData=await pixRes.json();
-          text=pixData.choices?.[0]?.message?.content||'';
+          // Fallback : Pixtral via Mistral avec retry queue pour 429
+          const doPixtral = async ()=>{
+            const pixRes=await fetch('https://api.mistral.ai/v1/chat/completions',{
+              method:'POST',
+              headers:{'Content-Type':'application/json','Authorization':'Bearer '+MISTRAL_KEY},
+              body:JSON.stringify({
+                model:'pixtral-12b-2409',
+                max_tokens:2000,
+                messages:[{role:'user',content:[
+                  {type:'image_url',image_url:{url:'data:'+mimeType+';base64,'+base64}},
+                  {type:'text',text:'Extrais et retranscris TOUT le texte visible dans cette image, mot pour mot, en conservant la mise en page. Ne fais aucun commentaire, retourne uniquement le texte extrait.'}
+                ]}]
+              })
+            });
+            if(pixRes.status===429) throw new Error('429 — serveurs surchargés');
+            if(!pixRes.ok) throw new Error('Pixtral OCR '+pixRes.status);
+            const pixData=await pixRes.json();
+            return pixData.choices?.[0]?.message?.content||'';
+          };
+          try{
+            text = await doPixtral();
+          }catch(pixErr){
+            if(pixErr.message.includes('429')){
+              toast('⏳ Serveurs OCR chargés — mise en file d\'attente (max 60s)…');
+              text = await waitQueue429(doPixtral, 60000);
+            }else{
+              throw pixErr;
+            }
+          }
         }else{
           throw visionErr;
         }
@@ -3133,10 +3551,94 @@ function buildHistory(latestFullContent){
   return[{role:'system',content:buildSystemPrompt()},...hist];
 }
 
-async function callMistral(messages,modelId,maxTokens=4096){
-  const res=await fetch('https://api.mistral.ai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+MISTRAL_KEY},body:JSON.stringify({model:modelId,messages,max_tokens:maxTokens,temperature:0.7})});
-  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.message||`Mistral API ${res.status}`);}
-  return(await res.json()).choices[0].message.content;
+// ── ABORT CONTROLLER ──
+let _currentAbortController = null;
+
+function stopGeneration(){
+  if(_currentAbortController){
+    _currentAbortController.abort();
+    _currentAbortController = null;
+  }
+  S.generating = false;
+  G('send-btn').disabled = false;
+  G('stop-btn')?.classList.remove('show');
+  // Remove typing indicator
+  document.querySelectorAll('.chat-bubble.model').forEach(el=>{
+    if(el.querySelector('.typing-dots')) el.remove();
+  });
+  toast('⏹️ Génération arrêtée');
+}
+
+// ── WAIT QUEUE ──
+let _queueWaiting = false;
+async function waitQueue429(retryFn, maxWaitMs=60000){
+  _queueWaiting = true;
+  const banner = G('wait-queue-banner');
+  const fill = G('wait-queue-fill');
+  const text = G('wait-queue-text');
+  if(banner) banner.classList.add('show');
+  const start = Date.now();
+  const interval = 1500;
+  let waited = 0;
+  return new Promise((resolve, reject)=>{
+    const tick = async ()=>{
+      waited += interval;
+      const pct = Math.min(100, (waited/maxWaitMs)*100);
+      if(fill) fill.style.width = pct+'%';
+      const sec = Math.ceil((maxWaitMs - waited)/1000);
+      if(text) text.textContent = `⏳ Serveurs chargés — attente ${sec}s…`;
+      if(waited >= maxWaitMs){
+        if(banner) banner.classList.remove('show');
+        _queueWaiting = false;
+        reject(new Error('Serveurs surchargés. Veuillez réessayer dans quelques instants.'));
+        return;
+      }
+      try{
+        const result = await retryFn();
+        if(banner) banner.classList.remove('show');
+        _queueWaiting = false;
+        resolve(result);
+      }catch(e){
+        if(e.message && e.message.includes('429')){
+          setTimeout(tick, interval);
+        }else{
+          if(banner) banner.classList.remove('show');
+          _queueWaiting = false;
+          reject(e);
+        }
+      }
+    };
+    setTimeout(tick, interval);
+  });
+}
+
+async function callMistral(messages, modelId, maxTokens=4096){
+  _currentAbortController = new AbortController();
+  const signal = _currentAbortController.signal;
+  const doFetch = async ()=>{
+    const ctrl = new AbortController();
+    _currentAbortController = ctrl;
+    const res = await fetch('https://api.mistral.ai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+MISTRAL_KEY},
+      body:JSON.stringify({model:modelId,messages,max_tokens:maxTokens,temperature:0.7}),
+      signal: ctrl.signal
+    });
+    if(res.status === 429){
+      throw new Error('429 — serveurs surchargés');
+    }
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.message||`Mistral API ${res.status}`);}
+    return (await res.json()).choices[0].message.content;
+  };
+  try{
+    return await doFetch();
+  }catch(e){
+    if(e.name === 'AbortError') throw new Error('Génération annulée');
+    if(e.message && e.message.includes('429')){
+      return await waitQueue429(doFetch, 60000);
+    }
+    throw e;
+  }
 }
 
 // ── REFLECTION ──
@@ -3475,10 +3977,13 @@ document.addEventListener('keydown',e=>{
     document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));
     closePlansOverlay();
     closeImportInline();
+    closeToolsPanel();
     if(OCR.open) closeOcrPanel();
     if(S.coderOpen) closeCoderPanel();
     if(S.textHelperOpen) closeTextHelperPanel();
-  }  if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();openModal('search-modal');setTimeout(()=>G('search-inp')?.focus(),80);}
+    if(DIAGRAM.open) toggleDiagramPanel();
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();openModal('search-modal');setTimeout(()=>G('search-inp')?.focus(),80);}
   if((e.ctrlKey||e.metaKey)&&e.key==='n'){e.preventDefault();newChat();}
 });
 
@@ -3524,7 +4029,7 @@ async function sendHelpMsg(){
 // ── CODER PANEL (TOGGLE) ──
 function toggleCoderPanel(){
   if(!S.coderOpen){
-    if(S.plan<3){toast('Mode Codeur — plan AI Pro requis');openPlansOverlay();return;}
+    if(S.plan<2){toast('Mode Codeur — plan AI Plus requis');openPlansOverlay();return;}
     S.coderOpen=true;
     S.coderActive=true;
     G('coder-panel').classList.add('open');
@@ -3654,6 +4159,206 @@ function thAutoFillFromChat(text){
   if(ta&&!ta.value.trim()) ta.value=text;
 }
 
+// ── LOTTIE UPLOAD ANIMATION ──
+window._lottieAnim = null;
+function showLottieUpload(){
+  const wrap = G('lottie-upload-wrap');
+  if(!wrap) return;
+  wrap.classList.add('show');
+  if(window.lottie && !window._lottieAnim){
+    try{
+      window._lottieAnim = window.lottie.loadAnimation({
+        container: wrap, renderer: 'svg', loop: true, autoplay: true,
+        path: 'https://assets2.lottiefiles.com/packages/lf20_u4yrau84.json'
+      });
+    }catch(e){ wrap.innerHTML='<div style="font-size:28px;display:inline-block">⬆️</div>'; }
+  } else if(window._lottieAnim){ try{ window._lottieAnim.play(); }catch(e){} }
+}
+function hideLottieUpload(){
+  const wrap = G('lottie-upload-wrap');
+  if(!wrap) return;
+  wrap.classList.remove('show');
+  if(window._lottieAnim) try{ window._lottieAnim.stop(); }catch(e){}
+}
+
+// ── NEWS TOOL ──
+const S_news = { active: false };
+function toggleNewsTool(){
+  S_news.active = !S_news.active;
+  const btn = G('btn-news-toggle');
+  const badge = G('tool-news-badge');
+  if(btn) btn.classList.toggle('active-btn', S_news.active);
+  if(badge){ badge.textContent = S_news.active ? 'On' : 'Off'; badge.style.background = S_news.active ? 'rgba(34,197,94,.15)' : ''; badge.style.color = S_news.active ? '#16a34a' : ''; }
+  toast(S_news.active ? '📰 Mode Actualités activé' : 'Mode Actualités désactivé');
+}
+async function fetchNewsContext(query){
+  try{
+    const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query+' actualité 2025')}&format=json&no_html=1&skip_disambig=1`;
+    const res = await fetch(url, {signal: AbortSignal.timeout(5000)});
+    const data = await res.json();
+    const snippets = [];
+    if(data.AbstractText) snippets.push(data.AbstractText.substring(0,400));
+    (data.RelatedTopics||[]).slice(0,4).forEach(t=>{ if(t.Text) snippets.push(t.Text.substring(0,250)); });
+    return snippets.length ? '\n\n[ACTUALITÉS_TEMPS_RÉEL]\n'+snippets.join('\n—\n')+'\n[/ACTUALITÉS_TEMPS_RÉEL]\n[Note: utilise ces informations actuelles dans ta réponse]' : '';
+  }catch(e){ return ''; }
+}
+
+// ── TOOLS PANEL ──
+function toggleToolsPanel(){
+  const panel = G('tools-panel');
+  if(!panel) return;
+  panel.classList.toggle('open');
+}
+function closeToolsPanel(){
+  G('tools-panel')?.classList.remove('open');
+}
+
+// ── DIAGRAM PANEL ──
+const DIAGRAM = { open: false, lastTs: 0, currentCode: '' };
+function toggleDiagramPanel(){
+  if(!DIAGRAM.open){
+    if(S.plan < 2){ toast('Diagrammes — plan AI Plus requis'); openPlansOverlay(); return; }
+    DIAGRAM.open = true;
+    G('diagram-panel')?.classList.add('open');
+    updateDiagramRateUI();
+  }else{
+    DIAGRAM.open = false;
+    G('diagram-panel')?.classList.remove('open');
+  }
+}
+function updateDiagramRateUI(){
+  const info = G('diagram-rate-info');
+  const badge = G('diagram-plan-badge');
+  const rateBadge = G('diagram-rate-badge');
+  if(!info) return;
+  const planRates = {1:0, 2:1, 3:2, 4:5, 5:9999};
+  const rate = planRates[S.plan]||0;
+  const planNames = {2:'AI Plus',3:'AI Pro',4:'AI Premium',5:'Premium+'};
+  const planColors = {2:'rgba(59,130,246,.1)',3:'rgba(124,58,237,.1)',4:'rgba(217,119,6,.1)',5:'linear-gradient(135deg,rgba(239,68,68,.1),rgba(251,146,60,.1))'};
+  const textColors = {2:'#2563eb',3:'#7c3aed',4:'#d97706',5:'#c2410c'};
+  if(badge){ badge.textContent = planNames[S.plan]||'Free'; badge.style.background = planColors[S.plan]||''; badge.style.color = textColors[S.plan]||'#888'; }
+  if(rate === 9999){ if(info) info.textContent='Illimité'; if(rateBadge) rateBadge.textContent='∞'; return; }
+  if(rate === 0){ if(info) info.textContent='Plan AI Plus requis'; return; }
+  const cooldown = 3600000 / rate;
+  const elapsed = Date.now() - DIAGRAM.lastTs;
+  const remaining = Math.max(0, cooldown - elapsed);
+  if(DIAGRAM.lastTs > 0 && remaining > 0){
+    const min = Math.ceil(remaining/60000);
+    if(info) info.textContent = `${rate}/h · dans ${min}min`;
+  }else{
+    if(info) info.textContent = `${rate} diagramme(s)/heure`;
+  }
+  if(rateBadge) rateBadge.textContent = `${rate}/h`;
+}
+
+async function runDiagramAI(){
+  const prompt = G('diagram-prompt')?.value?.trim();
+  if(!prompt){ toast('Décrivez votre diagramme'); return; }
+  if(S.plan < 2){ toast('Diagrammes — plan AI Plus requis'); openPlansOverlay(); return; }
+  const planRates = {1:0,2:1,3:2,4:5,5:9999};
+  const rate = planRates[S.plan]||0;
+  if(rate===0){ toast('Plan AI Plus requis'); openPlansOverlay(); return; }
+  const now = Date.now(); const cooldown = 3600000/rate;
+  if(rate<9999 && DIAGRAM.lastTs>0 && (now-DIAGRAM.lastTs)<cooldown){
+    const min=Math.ceil((cooldown-(now-DIAGRAM.lastTs))/60000);
+    toast(`Limite diagrammes — dans ${min}min`); return;
+  }
+  DIAGRAM.lastTs = now;
+  const btn = G('diagram-gen-btn');
+  if(btn){ btn.disabled=true; btn.textContent='Génération…'; }
+  const diagramType = G('diagram-type')?.value||'flowchart';
+  const preview = G('diagram-preview');
+  if(preview) preview.innerHTML='<div style="text-align:center;padding:40px;color:#aaa;font-size:24px">⚙️</div>';
+  const typeLabels={flowchart:'un organigramme de flux',sequenceDiagram:'un diagramme de séquence',classDiagram:'un diagramme de classes UML',gantt:'un diagramme de Gantt',mindmap:'une mindmap',erDiagram:'un diagramme entités-relations',gitGraph:'un graphe Git',pie:'un diagramme en camembert'};
+  try{
+    const sys=`Tu es expert Mermaid.js. Génère UNIQUEMENT du code Mermaid valide pour ${typeLabels[diagramType]||diagramType}. RÉPONDS UNIQUEMENT avec le code Mermaid brut, pas de backticks, pas d'explication. Commence par "${diagramType==='flowchart'?'flowchart LR':diagramType}".`;
+    let raw=await callMistral([{role:'system',content:sys},{role:'user',content:prompt}],MISTRAL_MODELS.work.id,2048);
+    let code=raw.replace(/```mermaid/gi,'').replace(/```/g,'').trim();
+    if(diagramType==='flowchart'&&!code.startsWith('graph')&&!code.startsWith('flowchart')) code='flowchart LR\n'+code;
+    else if(!code.startsWith(diagramType)&&!code.startsWith('graph')&&diagramType!=='flowchart') code=diagramType+'\n'+code;
+    DIAGRAM.currentCode=code;
+    renderDiagramPreview(code);
+    G('diagram-import-btn')?.style.setProperty('display','inline-block');
+    G('diagram-dl-btn')?.style.setProperty('display','inline-block');
+    updateDiagramRateUI();
+    toast('✓ Diagramme généré !');
+  }catch(e){
+    if(preview) preview.innerHTML=`<div style="color:#ef4444;font-size:12px;padding:20px">Erreur : ${esc(e.message)}</div>`;
+    toast('Erreur diagramme : '+e.message.substring(0,50));
+  }
+  if(btn){ btn.disabled=false; btn.textContent='✦ Générer'; }
+}
+
+function renderDiagramPreview(code){
+  const preview=G('diagram-preview'); if(!preview) return;
+  const mid='dp'+Date.now();
+  preview.innerHTML='';
+  const el=document.createElement('div');
+  el.className='mermaid'; el.id=mid; el.textContent=code;
+  preview.appendChild(el);
+  if(window.mermaid){
+    try{ window.mermaid.init(undefined,'#'+mid); }
+    catch(e){ preview.innerHTML=`<pre style="font-size:11px;overflow:auto;padding:10px;color:#888">${esc(code)}</pre><div style="color:#ef4444;font-size:11px;padding:8px">${esc(e.message)}</div>`; }
+  }
+}
+
+function importDiagramToChat(){
+  if(!DIAGRAM.currentCode) return;
+  const input=G('user-input');
+  if(input){ input.value='```mermaid\n'+DIAGRAM.currentCode+'\n```'; autoResize(input); toggleDiagramPanel(); input.focus(); toast('Diagramme prêt — appuyez Entrée'); }
+}
+
+function downloadDiagram(){
+  if(!DIAGRAM.currentCode){ toast('Aucun diagramme'); return; }
+  const svg=G('diagram-preview')?.querySelector('svg');
+  if(svg){ const b=new Blob([new XMLSerializer().serializeToString(svg)],{type:'image/svg+xml'}); const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='wikimind-diagram.svg';a.click(); toast('SVG téléchargé'); }
+  else{ const b=new Blob([DIAGRAM.currentCode],{type:'text/plain'}); const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='wikimind-diagram.mmd';a.click(); toast('Code téléchargé'); }
+}
+
+// ── OCR CLIPBOARD PASTE ──
+async function pasteOcrFromClipboard(){
+  try{
+    const items=await navigator.clipboard.read();
+    let found=false;
+    for(const item of items){
+      for(const type of item.types){
+        if(type.startsWith('image/')){
+          const blob=await item.getType(type);
+          const reader=new FileReader();
+          reader.onload=ev=>{
+            if(OCR.images.length>=20){toast('Limite 20 images atteinte');return;}
+            OCR.images.push({name:'clipboard_'+Date.now()+'.png',dataUrl:ev.target.result,text:'',status:'pending'});
+            renderOcrImages(); G('ocr-extract-btn').disabled=false;
+            toast('✓ Image collée depuis le presse-papier');
+          };
+          reader.readAsDataURL(blob); found=true; break;
+        }
+      }
+      if(found) break;
+    }
+    if(!found) toast('Aucune image dans le presse-papier');
+  }catch(e){ toast('Presse-papier inaccessible (autorisez l\'accès)'); }
+}
+
+// Also support Ctrl+V paste in OCR drop zone
+document.addEventListener('paste', e=>{
+  if(!OCR.open) return;
+  const items=Array.from(e.clipboardData?.items||[]);
+  const imgItem=items.find(it=>it.type.startsWith('image/'));
+  if(imgItem){
+    e.preventDefault();
+    const blob=imgItem.getAsFile();
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      if(OCR.images.length>=20){toast('Limite 20 images');return;}
+      OCR.images.push({name:'paste_'+Date.now()+'.png',dataUrl:ev.target.result,text:'',status:'pending'});
+      renderOcrImages(); G('ocr-extract-btn').disabled=false;
+      toast('✓ Image collée (Ctrl+V)');
+    };
+    reader.readAsDataURL(blob);
+  }
+});
+
 function updateCoderRateUI(){
   const badge=G('coder-plan-badge'); const rateBadge=G('coder-rate-badge'); const info=G('coder-rate-info');
   if(!badge) return;
@@ -3663,17 +4368,27 @@ function updateCoderRateUI(){
     if(info) info.textContent='Illimité';
   }else if(S.plan===4){
     badge.textContent='Premium'; badge.style.color='#d97706'; badge.style.background='rgba(217,119,6,.1)';
-    if(rateBadge){rateBadge.textContent='1/h';rateBadge.style.display='inline';}
+    if(rateBadge){rateBadge.textContent='5/h';rateBadge.style.display='inline';}
+    const cooldown=3600000/5;
     const elapsed=Date.now()-S.lastCoderTs;
-    const remaining=Math.max(0,3600000-elapsed);
-    if(info) info.textContent=S.lastCoderTs>0&&remaining>0?`Dispo dans ${Math.ceil(remaining/60000)}min`:'1 génération/heure';
+    const remaining=Math.max(0,cooldown-elapsed);
+    if(info) info.textContent=S.lastCoderTs>0&&remaining>0?`Dispo dans ${Math.ceil(remaining/60000)}min`:'5 générations/heure';
     if(info) info.className=S.lastCoderTs>0&&remaining>0?'coder-rate-info warn':'coder-rate-info';
   }else if(S.plan===3){
     badge.textContent='Pro'; badge.style.color='#7c3aed'; badge.style.background='rgba(124,58,237,.1)';
-    if(rateBadge){rateBadge.textContent='1/j';rateBadge.style.display='inline';}
+    if(rateBadge){rateBadge.textContent='2/h';rateBadge.style.display='inline';}
+    const cooldown=3600000/2;
     const elapsed=Date.now()-S.lastCoderTs;
-    const remaining=Math.max(0,86400000-elapsed);
-    if(info) info.textContent=S.lastCoderTs>0&&remaining>0?`Dispo dans ${Math.ceil(remaining/3600000)}h`:'1 génération/jour';
+    const remaining=Math.max(0,cooldown-elapsed);
+    if(info) info.textContent=S.lastCoderTs>0&&remaining>0?`Dispo dans ${Math.ceil(remaining/60000)}min`:'2 générations/heure';
+    if(info) info.className=S.lastCoderTs>0&&remaining>0?'coder-rate-info warn':'coder-rate-info';
+  }else if(S.plan===2){
+    badge.textContent='AI Plus'; badge.style.color='#2563eb'; badge.style.background='rgba(59,130,246,.1)';
+    if(rateBadge){rateBadge.textContent='1/h';rateBadge.style.display='inline';}
+    const cooldown=3600000;
+    const elapsed=Date.now()-S.lastCoderTs;
+    const remaining=Math.max(0,cooldown-elapsed);
+    if(info) info.textContent=S.lastCoderTs>0&&remaining>0?`Dispo dans ${Math.ceil(remaining/60000)}min`:'1 génération/heure';
     if(info) info.className=S.lastCoderTs>0&&remaining>0?'coder-rate-info warn':'coder-rate-info';
   }
 }
@@ -3793,11 +4508,12 @@ function renderCoderGraph(){
 
 async function runCoderAI(){
   const prompt=G('coder-prompt-input')?.value?.trim(); if(!prompt) return;
-  if(S.plan<3){toast('Mode Codeur — plan AI Pro requis');openPlansOverlay();return;}
+  if(S.plan<2){toast('Mode Codeur — plan AI Plus requis');openPlansOverlay();return;}
   // Rate limit
   const now=Date.now();
-  if(S.plan===3){const limit=86400000;if(S.lastCoderTs>0&&(now-S.lastCoderTs)<limit){const h=Math.ceil((limit-(now-S.lastCoderTs))/3600000);toast(`Codeur — 1/jour sur AI Pro (${h}h)`);return;}}
-  else if(S.plan===4){const limit=3600000;if(S.lastCoderTs>0&&(now-S.lastCoderTs)<limit){const min=Math.ceil((limit-(now-S.lastCoderTs))/60000);toast(`Codeur — 1/heure sur AI Premium (${min}min)`);return;}}
+  if(S.plan===2){const limit=3600000;if(S.lastCoderTs>0&&(now-S.lastCoderTs)<limit){const min=Math.ceil((limit-(now-S.lastCoderTs))/60000);toast(`Codeur — 1/heure sur AI Plus (dans ${min}min)`);return;}}
+  else if(S.plan===3){const limit=3600000/2;if(S.lastCoderTs>0&&(now-S.lastCoderTs)<limit){const min=Math.ceil((limit-(now-S.lastCoderTs))/60000);toast(`Codeur — 2/heure sur AI Pro (dans ${min}min)`);return;}}
+  else if(S.plan===4){const limit=3600000/5;if(S.lastCoderTs>0&&(now-S.lastCoderTs)<limit){const min=Math.ceil((limit-(now-S.lastCoderTs))/60000);toast(`Codeur — 5/heure sur AI Premium (dans ${min}min)`);return;}}
   S.lastCoderTs=now; updateCoderRateUI();
   const runBtn=G('coder-run-btn'); if(runBtn){runBtn.disabled=true;runBtn.textContent='Génération…';}
   G('coder-prompt-input').value='';
