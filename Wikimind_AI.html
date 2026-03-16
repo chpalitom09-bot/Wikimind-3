@@ -4001,8 +4001,9 @@ function syncOcrAIToggle(){
 }
 
 // ── Charger / réutiliser le worker Tesseract ──
+// ── Charger / réutiliser le worker Tesseract ──
 async function _getTessWorker(lang){
-  // Réutiliser le worker si même langue
+  // Réutiliser si même langue déjà chargée
   if(OCR._tessWorker && OCR._tessLang === lang){
     return OCR._tessWorker;
   }
@@ -4010,55 +4011,78 @@ async function _getTessWorker(lang){
   if(OCR._tessWorker){
     try{ await OCR._tessWorker.terminate(); }catch(e){}
     OCR._tessWorker = null;
+    OCR._tessLang   = null;
   }
-  if(OCR._tessLoading) {
-    // Attendre que le chargement en cours finisse
-    await new Promise(r => { const iv = setInterval(()=>{ if(!OCR._tessLoading){clearInterval(iv);r();} },200); });
-    if(OCR._tessWorker) return OCR._tessWorker;
-  }
-  OCR._tessLoading = true;
+
+  const progWrap = G('ocr-progress-bar-wrap');
+  const progFill = G('ocr-progress-fill');
+  const progLbl  = G('ocr-progress-label');
+
+  const setProgress = (pct, label) => {
+    if(progWrap) progWrap.style.display = 'block';
+    if(progFill) progFill.style.width   = pct + '%';
+    if(progLbl)  progLbl.textContent    = label || pct + '%';
+  };
+
+  setProgress(2, 'Chargement Tesseract.js…');
   toast('⏳ Chargement de Tesseract.js…');
 
-  // Tesseract.js v4 via CDN
+  // ── Charger tesseract.js v5 depuis CDN jsDelivr (plus stable que v4 pour le browser) ──
   if(!window.Tesseract){
-    await new Promise((res, rej) => {
+    await new Promise((resolve, reject) => {
       const s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js';
-      s.onload = res; s.onerror = rej;
+      // v5 = API stable, langPath CDN intégré, pas de CORS
+      s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+      s.onload  = resolve;
+      s.onerror = reject;
       document.head.appendChild(s);
+    }).catch(() => {
+      // Fallback v4 si v5 échoue
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://unpkg.com/tesseract.js@4/dist/tesseract.min.js';
+        s.onload  = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
     });
   }
 
+  if(!window.Tesseract) throw new Error('Impossible de charger Tesseract.js');
+
+  setProgress(10, 'Initialisation du moteur OCR…');
+
   try{
+    // ── API Tesseract.js v5 : createWorker(lang, oem, options) ──
+    // langPath: utilise le CDN officiel Tesseract pour les données de langue
     const worker = await Tesseract.createWorker(lang, 1, {
-      workerPath:   'https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/worker.min.js',
-      langPath:     'https://tessdata.projectnaptha.com/4.0.0',
-      corePath:     'https://cdn.jsdelivr.net/npm/tesseract.js-core@4/tesseract-core.wasm.js',
-      logger:       m => {
-        if(m.status === 'recognizing text'){
-          const pct = Math.round((m.progress||0)*100);
-          const fill = G('ocr-progress-fill');
-          const lbl  = G('ocr-progress-label');
-          if(fill) fill.style.width = pct + '%';
-          if(lbl)  lbl.textContent  = pct + '%';
+      logger: m => {
+        // Logguer toutes les phases : chargement, init, reconnaissance
+        const pct = Math.round((m.progress || 0) * 100);
+        if(m.status === 'loading tesseract core'){
+          setProgress(10 + pct * 0.2, `Chargement moteur… ${pct}%`);
+        } else if(m.status === 'initializing tesseract'){
+          setProgress(30 + pct * 0.1, `Initialisation… ${pct}%`);
+        } else if(m.status === 'loading language traineddata'){
+          setProgress(40 + pct * 0.3, `Données de langue (${lang})… ${pct}%`);
+        } else if(m.status === 'initializing api'){
+          setProgress(70 + pct * 0.1, `API prête… ${pct}%`);
+        } else if(m.status === 'recognizing text'){
+          setProgress(80 + pct * 0.2, `Reconnaissance… ${pct}%`);
         }
       },
-      errorHandler: e => console.warn('[Tesseract]', e),
     });
 
-    // Paramètres avancés pour meilleure précision
-    await worker.setParameters({
-      tessedit_pageseg_mode:   Tesseract.PSM.AUTO,   // détection auto de la mise en page
-      preserve_interword_spaces: '1',
-      tessedit_char_whitelist: '', // pas de whitelist = tous caractères acceptés
-    });
-
+    setProgress(82, 'Moteur OCR prêt !');
     OCR._tessWorker = worker;
     OCR._tessLang   = lang;
     toast('✓ Tesseract prêt !');
     return worker;
-  }finally{
-    OCR._tessLoading = false;
+
+  }catch(e){
+    setProgress(0, '');
+    if(progWrap) progWrap.style.display = 'none';
+    throw new Error('Tesseract init échoué : ' + e.message);
   }
 }
 
@@ -4283,106 +4307,129 @@ async function runOcrExtraction(){
   const pending = OCR.images.filter(img => img.status !== 'done');
   if(!pending.length){ toast('Toutes les images sont déjà extraites'); return; }
 
-  // L'amélioration IA est automatique si : plan >= 4 ET aiEnabled = true
+  // IA activée si plan >= 4 ET toggle activé
   const useAI = OCR.aiEnabled && S.plan >= 4;
 
   OCR.lastOcrTs = Date.now();
+
   const extractBtn = G('ocr-extract-btn');
   const importBtn  = G('ocr-import-btn');
-  if(extractBtn){ extractBtn.disabled = true; extractBtn.textContent = '⏳ Extraction…'; }
+  const progWrap   = G('ocr-progress-bar-wrap');
+  const progFill   = G('ocr-progress-fill');
+  const progLbl    = G('ocr-progress-label');
 
-  // Afficher barre de progression
-  const progWrap = G('ocr-progress-bar-wrap');
-  const progFill = G('ocr-progress-fill');
-  const progLbl  = G('ocr-progress-label');
-  if(progWrap) progWrap.style.display = 'block';
-  if(progFill) progFill.style.width = '0%';
+  const setProgress = (pct, label) => {
+    if(progWrap) progWrap.style.display = 'block';
+    if(progFill) progFill.style.width   = Math.min(100, Math.max(0, pct)) + '%';
+    if(progLbl)  progLbl.textContent    = label || Math.round(pct) + '%';
+  };
+
+  if(extractBtn){
+    extractBtn.disabled = true;
+    extractBtn.innerHTML = '⏳ OCR…';
+  }
+
+  setProgress(1, 'Démarrage…');
 
   const lang = G('ocr-lang-select')?.value || 'fra';
-  toast(`⏳ Chargement Tesseract (${lang})…`);
 
+  // ── Charger le worker Tesseract ──
   let worker;
   try{
     worker = await _getTessWorker(lang);
   }catch(loadErr){
-    toast('❌ Tesseract : ' + loadErr.message.substring(0, 80));
-    if(extractBtn){ extractBtn.disabled = false; extractBtn.textContent = 'Extraire'; }
+    const msg = loadErr.message || 'Erreur inconnue';
+    toast('❌ Tesseract : ' + msg.substring(0, 100));
+    console.error('[OCR] Worker load error:', loadErr);
+    if(extractBtn){ extractBtn.disabled = false; extractBtn.innerHTML = `<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="margin-right:4px;vertical-align:middle"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Extraire`; }
     if(progWrap) progWrap.style.display = 'none';
     return;
   }
 
-  let doneCount = 0;
-  let errCount  = 0;
-  const total   = pending.length;
+  const total    = pending.length;
+  let doneCount  = 0;
+  let errCount   = 0;
 
   for(let i = 0; i < OCR.images.length; i++){
     const img = OCR.images[i];
     if(img.status === 'done') continue;
 
+    // Marquer comme en cours
     OCR.images[i].status = 'processing';
+    OCR.images[i].text   = '';
     renderOcrImages();
     renderOcrText();
 
-    // Mise à jour progress global
-    const globalPct = Math.round((doneCount / total) * 100);
-    if(progFill) progFill.style.width = globalPct + '%';
-    if(progLbl)  progLbl.textContent  = `Image ${doneCount+1}/${total}`;
+    const imgNum = doneCount + errCount + 1;
+    setProgress(82 + (imgNum - 1) / total * 15, `Image ${imgNum}/${total} — OCR…`);
 
     try{
-      // 1. Prétraitement de l'image (contraste, upscale)
+      // ── Étape 1 : Prétraitement (upscale + contraste) ──
+      setProgress(82, `Image ${imgNum}/${total} — prétraitement…`);
       const processedDataUrl = await _preprocessImage(img.dataUrl);
 
-      // 2. OCR Tesseract
-      if(progFill) progFill.style.width = '0%'; // reset pour cette image
-      const { data } = await worker.recognize(processedDataUrl);
+      // ── Étape 2 : Reconnaissance Tesseract ──
+      // Le logger dans _getTessWorker met à jour la barre de 80% à 100%
+      setProgress(83, `Image ${imgNum}/${total} — lecture OCR…`);
+      const result = await worker.recognize(processedDataUrl);
+      const data   = result.data;
 
-      const rawText    = data.text || '';
-      const confidence = data.confidence || 0; // 0-100
+      const rawText    = (data.text || '').trim();
+      const confidence = typeof data.confidence === 'number' ? data.confidence : 0;
 
       OCR.images[i].rawText    = rawText;
       OCR.images[i].confidence = confidence;
 
-      // 3. Amélioration IA si activée
+      console.log(`[OCR] Tesseract "${img.name}" — conf:${confidence.toFixed(0)}% — ${rawText.length} caractères`);
+
+      // ── Étape 3 : Amélioration IA (Wikimind Flash) ──
       let finalText = rawText;
-      if(useAI && rawText.trim().length > 10){
-        OCR.images[i].status = 'processing';
-        if(progLbl) progLbl.textContent = `IA améliore image ${doneCount+1}/${total}…`;
-        renderOcrImages();
-        finalText = await _aiImproveOcrText(rawText, lang);
-        OCR.images[i]._aiImproved = (finalText !== rawText);
+      if(useAI && rawText.length > 5){
+        setProgress(90, `Image ${imgNum}/${total} — amélioration IA…`);
+        try{
+          finalText = await _aiImproveOcrText(rawText, lang);
+          OCR.images[i]._aiImproved = finalText.trim() !== rawText;
+          console.log(`[OCR] IA amélioré "${img.name}" — ${finalText.length} car. final`);
+        }catch(aiErr){
+          console.warn('[OCR] IA échouée, texte brut conservé :', aiErr.message);
+          finalText = rawText; // fallback silencieux sur texte brut
+        }
       }
 
-      OCR.images[i].text   = finalText.trim() || '(Aucun texte détecté dans cette image)';
+      OCR.images[i].text   = finalText.trim() || '(Aucun texte détecté)';
       OCR.images[i].status = 'done';
       doneCount++;
 
-      console.log(`[OCR] ✓ "${img.name}" — conf:${confidence.toFixed(0)}% — ${rawText.length} car. brut${useAI?' → IA amélioré':''}`);
-
     }catch(err){
       OCR.images[i].status = 'error';
-      OCR.images[i].text   = 'Erreur : ' + err.message;
+      OCR.images[i].text   = '⚠ Erreur : ' + (err.message || String(err));
       errCount++;
       console.error(`[OCR] ✗ "${img.name}":`, err);
-      toast('❌ ' + err.message.substring(0, 80));
+      toast('❌ OCR erreur : ' + (err.message || '').substring(0, 80));
     }
 
     renderOcrImages();
     renderOcrText();
   }
 
-  // Fin
-  if(progFill) progFill.style.width = '100%';
-  if(progLbl)  progLbl.textContent  = 'Terminé';
-  setTimeout(() => { if(progWrap) progWrap.style.display = 'none'; }, 1500);
+  // ── Fin ──
+  setProgress(100, 'Terminé !');
+  setTimeout(() => {
+    if(progWrap) progWrap.style.display = 'none';
+    if(progFill) progFill.style.width = '0%';
+  }, 2000);
 
-  if(extractBtn){ extractBtn.disabled = false; extractBtn.innerHTML = `<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="margin-right:4px;vertical-align:middle"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Extraire`; }
-  if(importBtn)  importBtn.disabled  = (doneCount === 0);
+  if(extractBtn){
+    extractBtn.disabled = false;
+    extractBtn.innerHTML = `<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="margin-right:4px;vertical-align:middle"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Extraire`;
+  }
+  if(importBtn) importBtn.disabled = (doneCount === 0);
 
-  const aiNote = useAI ? ' · ✦ amélioré par IA' : '';
+  const aiNote = (useAI && doneCount > 0) ? ' · ✦ IA appliquée' : '';
   if(errCount === 0){
     toast(`✓ OCR terminé — ${doneCount} image(s)${aiNote}`);
   }else{
-    toast(`OCR : ${doneCount} OK · ${errCount} erreur(s)${aiNote}`);
+    toast(`OCR : ${doneCount} réussie(s) · ${errCount} erreur(s)${aiNote}`);
   }
   updateOcrRateUI();
 }
