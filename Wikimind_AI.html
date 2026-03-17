@@ -3065,13 +3065,6 @@ function updateUserUI(){
   const coderBtn=G('sb-btn-coder'); if(coderBtn) coderBtn.style.display=S.plan>=2?'flex':'none';
   const coderToggleBtn=G('btn-coder-toggle'); if(coderToggleBtn) coderToggleBtn.style.display=S.plan>=2?'flex':'none';
   const toolCoderBtn=G('tool-coder-btn'); if(toolCoderBtn){ toolCoderBtn.style.display=S.plan>=2?'flex':'none'; }
-  // Update coder badge to reflect plan limits
-  const coderBadge=G('tool-coder-badge');
-  if(coderBadge){ const lb={2:'Plus · 1/h',3:'Pro · 2/h',4:'Premium · 5/h',5:'Illimité'}; coderBadge.textContent=lb[S.plan]||'AI Plus'; }
-  // CV/CL/Oral buttons (AI Plus+)
-  const toolCvBtn=G('tool-cv-btn'); if(toolCvBtn) toolCvBtn.style.display=S.plan>=2?'flex':'none';
-  const toolClBtn=G('tool-cl-btn'); if(toolClBtn) toolClBtn.style.display=S.plan>=2?'flex':'none';
-  const toolOralBtn=G('tool-oral-btn'); if(toolOralBtn) toolOralBtn.style.display=S.plan>=2?'flex':'none';
   // Text helper button (Premium+)
   const thBtn=G('btn-texthelper'); if(thBtn) thBtn.style.display=S.plan>=5?'flex':'none';
   const toolThBtn=G('tool-texthelper-btn'); if(toolThBtn) toolThBtn.style.display=S.plan>=5?'flex':'none';
@@ -6832,17 +6825,33 @@ function _updateUserUIExtras(){
   const cvBtn=G('cv-creator-btn');
   if(cvBtn) cvBtn.style.display=S.plan>=2?'block':'none';
   // CV tool in tools panel (AI Plus+)
-  const toolCvBtn=G('tool-cv-btn');
-  if(toolCvBtn) toolCvBtn.style.display=S.plan>=2?'flex':'none';
+  const toolCvBtn2=G('tool-cv-btn');
+  if(toolCvBtn2) toolCvBtn2.style.display=S.plan>=2?'flex':'none';
   // Cover letter tool (AI Plus+)
-  const toolClBtn=G('tool-cl-btn');
-  if(toolClBtn) toolClBtn.style.display=S.plan>=2?'flex':'none';
+  const toolClBtn2=G('tool-cl-btn');
+  if(toolClBtn2) toolClBtn2.style.display=S.plan>=2?'flex':'none';
   // Oral de Bac tool (AI Plus+)
-  const toolOralBtn=G('tool-oral-btn');
-  if(toolOralBtn) toolOralBtn.style.display=S.plan>=2?'flex':'none';
+  const toolOralBtn2=G('tool-oral-btn');
+  if(toolOralBtn2) toolOralBtn2.style.display=S.plan>=2?'flex':'none';
   // OCR tool (Pro+, plan 3)
   const toolOcrBtn=G('tool-ocr-btn');
   if(toolOcrBtn) toolOcrBtn.style.display=S.plan>=3?'flex':'none';
+  // ── New tools visibility ──
+  const imggenBtn=G('tool-imggen-btn'); if(imggenBtn) imggenBtn.style.display=S.plan>=3?'flex':'none';
+  const reviewBtn=G('tool-codereview-btn'); if(reviewBtn) reviewBtn.style.display=S.plan>=2?'flex':'none';
+  const mindmapBtn=G('tool-mindmap-btn'); if(mindmapBtn) mindmapBtn.style.display=S.plan>=2?'flex':'none';
+  // Update new tool badges
+  const imgBadge=G('tool-imggen-badge');
+  if(imgBadge){const lbl={3:'Pro · 1/h',4:'Premium · 5/h',5:'Illimité'};imgBadge.textContent=lbl[S.plan]||'Pro+';}
+  const reviewBadge=G('tool-codereview-badge');
+  if(reviewBadge){const lbl={2:'Plus · 3/h',3:'Pro · 10/h',4:'Premium · 30/h',5:'Illimité'};reviewBadge.textContent=lbl[S.plan]||'Plus+';}
+  const mapBadge=G('tool-mindmap-badge');
+  if(mapBadge){const lbl={2:'Plus · 2/h',3:'Pro · 6/h',4:'Premium · 15/h',5:'Illimité'};mapBadge.textContent=lbl[S.plan]||'Plus+';}
+  // Coder badge
+  const coderBadge2=G('tool-coder-badge');
+  if(coderBadge2){const lbl={2:'Plus · 1/h',3:'Pro · 2/h',4:'Premium · 5/h',5:'Illimité'};coderBadge2.textContent=lbl[S.plan]||'AI Plus';}
+  // Render folder sidebar
+  try{ renderFolderSidebar(); }catch(e){}
   // Sync OCR AI toggle state
   syncOcrAIToggle();
   // Sync improve AI toggle
@@ -7579,13 +7588,15 @@ function renderMindMap(data, container){
   const branchLabelW=110;
   const leafW=95;
 
-  function drawNode(label, x, y, color, fontSize=11, bold=false){
+  function drawNode(label, x, y, color, fontSize, bold){
+    fontSize=fontSize||11; bold=bold||false;
     const maxChars=12;
-    const short=label.length>maxChars?label.substring(0,maxChars-1)+'…':label;
+    const short=label.length>maxChars?label.substring(0,maxChars-1)+'\u2026':label;
     const r=bold?nodeRadius:22;
+    const textY=y+(fontSize/3);
     svgNodes+=`<g>
       <circle cx="${x}" cy="${y}" r="${r}" fill="${color}" opacity="${bold?1:0.85}"/>
-      <text x="${x}" y="${y+${fontSize/3}}" text-anchor="middle" font-size="${fontSize}" font-weight="${bold?800:600}" fill="#fff" font-family="Inter,sans-serif">${esc(short)}</text>
+      <text x="${x}" y="${textY}" text-anchor="middle" font-size="${fontSize}" font-weight="${bold?800:600}" fill="#fff" font-family="Inter,sans-serif">${esc(short)}</text>
     </g>`;
   }
   function drawEdge(x1,y1,x2,y2,color){
@@ -7663,27 +7674,7 @@ function importMindMapToChat(){
   toast('Mind Map importée dans le chat');
 }
 
-// ════════════════════════════════════════════════════
-// ── UPDATE updateUserUI for new tools visibility ──
-// ════════════════════════════════════════════════════
-const _origUpdateUserUI=updateUserUI;
-updateUserUI=function(){
-  _origUpdateUserUI();
-  // New tools visibility
-  const imggenBtn=G('tool-imggen-btn'); if(imggenBtn) imggenBtn.style.display=S.plan>=3?'flex':'none';
-  const reviewBtn=G('tool-codereview-btn'); if(reviewBtn) reviewBtn.style.display=S.plan>=2?'flex':'none';
-  const mindmapBtn=G('tool-mindmap-btn'); if(mindmapBtn) mindmapBtn.style.display=S.plan>=2?'flex':'none';
-  // Update tool badges
-  const imgBadge=G('tool-imggen-badge');
-  if(imgBadge){ const labels={3:'Pro · 1/h',4:'Premium · 5/h',5:'Illimité'}; imgBadge.textContent=labels[S.plan]||'Pro+';}
-  const reviewBadge=G('tool-codereview-badge');
-  if(reviewBadge){ const labels={2:'Plus · 3/h',3:'Pro · 10/h',4:'Premium · 30/h',5:'Illimité'}; reviewBadge.textContent=labels[S.plan]||'Plus+';}
-  const mapBadge=G('tool-mindmap-badge');
-  if(mapBadge){ const labels={2:'Plus · 2/h',3:'Pro · 6/h',4:'Premium · 15/h',5:'Illimité'}; mapBadge.textContent=labels[S.plan]||'Plus+';}
-  // Render folder sidebar
-  renderFolderSidebar();
-};
-
+// New tools visibility is handled via _updateUserUIExtras (already called at end of updateUserUI)
 
 console.log('%cWikiMind AI','color:#111;font-family:Inter,sans-serif;font-size:20px;font-weight:900;font-style:italic');
 </script>
