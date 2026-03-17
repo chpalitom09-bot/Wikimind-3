@@ -3544,12 +3544,18 @@ async function continueGeneration(msgIdx){
   S.generating=true; G('send-btn').disabled=true;
   const tyId=showTyping();
   try{
-    // Build history up to this point
+    // Build history up to this point — clean messages only
     const histMsgs=S.msgs.slice(0,msgIdx+1);
     const sysPrompt=buildSystemPrompt();
-    const hist=histMsgs.slice(-12).map(m=>({role:m.role,content:m.fullContent||m.content}));
-    const continuePrompt='Continue EXACTEMENT là où tu t\'es arrêté dans ta dernière réponse. Ne répète pas ce qui a déjà été dit. Continue directement sans introduction.';
-    const messages=[{role:'system',content:sysPrompt},...hist,{role:'user',content:continuePrompt}];
+    const cleanHist=histMsgs.slice(-12).map(m=>({
+      role:m.role,
+      content:String(m.fullContent||m.content||'').trim()
+    })).filter(m=>['user','assistant'].includes(m.role)&&m.content);
+    const messages=cleanMsgsForAPI([
+      {role:'system',content:sysPrompt},
+      ...cleanHist,
+      {role:'user',content:'Continue EXACTEMENT là où tu t\'es arrêté dans ta dernière réponse. Ne répète rien de ce qui a déjà été dit. Continue directement, sans introduction.'}
+    ]);
     const continuation=await callMistral(messages,MISTRAL_MODELS[S.model]?.id||MISTRAL_MODELS.flash.id,2048);
     rmTyping(tyId);
     // Fusionner avec le contenu existant
@@ -4989,11 +4995,15 @@ TU ES EN MODE CANVAS ACTIF. Règles STRICTES :
 Format : {"chatReply":"...","canvasContent":"...","createOffice":null}`;
 
   try{
-    const raw=await callMistral([
+    const histClean=S.msgs.slice(-10).map(m=>({
+      role:m.role,
+      content:String(m.fullContent||m.content||'').trim()
+    })).filter(m=>['user','assistant'].includes(m.role)&&m.content);
+    const raw=await callMistral(cleanMsgsForAPI([
       {role:'system',content:sys},
-      ...S.msgs.slice(-10).map(m=>({role:m.role,content:m.fullContent||m.content})),
+      ...histClean,
       {role:'user',content:fullContent}
-    ],MISTRAL_MODELS[S.model]?.id||MISTRAL_MODELS.flash.id,4096);
+    ]),MISTRAL_MODELS[S.model]?.id||MISTRAL_MODELS.flash.id,4096);
     const clean=raw.replace(/```json|```/g,'').trim();
     const parsed=JSON.parse(clean);
     return{chatReply:parsed.chatReply||parsed.chat_reply||'',canvasContent:parsed.canvasContent||parsed.canvas_content||'',createOffice:parsed.createOffice||null,toolCalls:[]};
@@ -5018,60 +5028,89 @@ function estimateChars(msgs){
   return msgs.reduce((acc,m)=>acc+(m.fullContent||m.content||'').length,0);
 }
 
+// Nettoie un tableau de messages pour l'API Mistral : uniquement {role, content} valides
+function cleanMsgsForAPI(msgs){
+  const cleaned=[];
+  for(const m of msgs){
+    const role=m.role;
+    // Mistral accepte uniquement : system, user, assistant
+    if(!['system','user','assistant'].includes(role)) continue;
+    const content=String(m.fullContent||m.content||'').trim();
+    if(!content) continue; // sauter les messages vides
+    cleaned.push({role,content});
+  }
+  // S'assurer que la conversation alterne correctement (pas deux user/assistant à la suite)
+  // et ne commence pas par un message assistant
+  const result=[];
+  for(const m of cleaned){
+    if(m.role==='system'){result.push(m);continue;}
+    const last=result[result.length-1];
+    if(last&&last.role===m.role&&m.role!=='system'){
+      // Fusionner les doublons consécutifs
+      last.content+='\n'+m.content;
+    }else{
+      result.push(m);
+    }
+  }
+  return result;
+}
+
 async function buildHistoryWithContextManagement(latestFullContent){
   const sysPrompt=buildSystemPrompt();
   const limit=CTX_CHAR_LIMITS[S.plan]||16000;
-  // Prendre les 40 derniers messages max
-  let hist=[...S.msgs].slice(-40);
-  // Remplacer le dernier message user par le fullContent
-  hist=hist.map((m,idx,arr)=>{
-    if(m.role==='user'&&idx===arr.length-1&&latestFullContent) return{...m,content:latestFullContent,fullContent:latestFullContent};
-    return{role:m.role,content:m.fullContent||m.content};
-  });
 
-  // Si on dépasse la limite, résumer les vieux messages
-  const sysLen=sysPrompt.length;
-  let totalChars=sysLen+estimateChars(hist);
+  // Construire l'historique propre (role + content seulement)
+  let rawHist=[...S.msgs].slice(-40);
 
-  if(totalChars>limit&&hist.length>8){
-    // Garder les 6 derniers messages + résumer le reste
-    const recent=hist.slice(-6);
-    const old=hist.slice(0,-6);
-    const oldChars=estimateChars(old);
+  // Remplacer le contenu du dernier message user par le fullContent courant
+  const cleanHist=rawHist.map((m,idx,arr)=>{
+    const content=m.role==='user'&&idx===arr.length-1&&latestFullContent
+      ? latestFullContent
+      : (m.fullContent||m.content||'');
+    return{role:m.role,content:String(content).trim()};
+  }).filter(m=>['user','assistant'].includes(m.role)&&m.content);
 
-    // Vérifier cache
+  // Calcul de taille totale
+  const totalChars=sysPrompt.length+cleanHist.reduce((s,m)=>s+m.content.length,0);
+
+  if(totalChars>limit&&cleanHist.length>8){
+    // Garder les 6 derniers, résumer le reste
+    const recent=cleanHist.slice(-6);
+    const old=cleanHist.slice(0,-6);
     const cacheKey=old.length+'_'+(old[old.length-1]?.content||'').substring(0,30);
     let summaryMsg='';
     if(_ctxSummaryCache&&_ctxSummaryCache.key===cacheKey){
       summaryMsg=_ctxSummaryCache.summary;
     }else{
-      // Résumer les anciens messages
       try{
-        const oldText=old.map(m=>`${m.role==='user'?'👤':'🤖'}: ${(m.content||'').substring(0,1000)}`).join('\n');
+        const oldText=old.map(m=>`${m.role==='user'?'👤':'🤖'}: ${m.content.substring(0,800)}`).join('\n');
         summaryMsg=await callMistral([
-          {role:'system',content:'Tu es un assistant qui résume des conversations. Fais un résumé concis et factuel de l\'échange suivant en 3-5 phrases, en gardant les informations clés, le contexte et les décisions importantes.'},
-          {role:'user',content:`Résume cette conversation :\n\n${oldText}`}
-        ],'mistral-small-latest',400);
+          {role:'system',content:'Résume cette conversation en 3-5 phrases concises, en gardant les informations et décisions clés. Réponds uniquement avec le résumé.'},
+          {role:'user',content:oldText}
+        ],'mistral-small-latest',300);
         _ctxSummaryCache={key:cacheKey,summary:summaryMsg};
       }catch(e){
-        // Si échec, juste tronquer
-        summaryMsg='[Résumé du début de conversation non disponible]';
+        summaryMsg='[Début de conversation résumé non disponible]';
       }
     }
-
-    const summaryEntry={role:'system',content:`[RÉSUMÉ DES ÉCHANGES PRÉCÉDENTS]\n${summaryMsg}\n[FIN DU RÉSUMÉ]`};
-    return[{role:'system',content:sysPrompt},summaryEntry,...recent];
+    return cleanMsgsForAPI([
+      {role:'system',content:sysPrompt},
+      {role:'system',content:`[RÉSUMÉ DES ÉCHANGES PRÉCÉDENTS]\n${summaryMsg}`},
+      ...recent
+    ]);
   }
 
-  return[{role:'system',content:sysPrompt},...hist];
+  return cleanMsgsForAPI([{role:'system',content:sysPrompt},...cleanHist]);
 }
 
 function buildHistory(latestFullContent){
-  const hist=S.msgs.slice(-20).map((m,idx,arr)=>{
-    if(m.role==='user'&&idx===arr.length-1&&latestFullContent) return{role:'user',content:latestFullContent};
-    return{role:m.role,content:m.fullContent||m.content};
-  });
-  return[{role:'system',content:buildSystemPrompt()},...hist];
+  const rawHist=S.msgs.slice(-20).map((m,idx,arr)=>{
+    const content=m.role==='user'&&idx===arr.length-1&&latestFullContent
+      ? latestFullContent
+      : (m.fullContent||m.content||'');
+    return{role:m.role,content:String(content).trim()};
+  }).filter(m=>['user','assistant'].includes(m.role)&&m.content);
+  return cleanMsgsForAPI([{role:'system',content:buildSystemPrompt()},...rawHist]);
 }
 
 // ── ABORT CONTROLLER ──
@@ -5137,6 +5176,32 @@ async function waitQueue429(retryFn, maxWaitMs=60000){
 
 async function callMistral(messages, modelId, maxTokens=4096, useToolsKey=false){
   const apiKey = useToolsKey ? MISTRAL_TOOLS_KEY : MISTRAL_KEY;
+
+  // ── Sanitize messages before sending ──
+  // Mistral only accepts [{role:'system'|'user'|'assistant', content: string}]
+  const safeMessages = [];
+  for(const m of (messages||[])){
+    if(!m||!m.role) continue;
+    const role = String(m.role);
+    if(!['system','user','assistant'].includes(role)) continue;
+    const content = String(m.content||m.fullContent||'').trim();
+    if(!content) continue;
+    safeMessages.push({role, content});
+  }
+  // Merge consecutive same-role non-system messages
+  const merged = [];
+  for(const m of safeMessages){
+    if(m.role==='system'){ merged.push({...m}); continue; }
+    const last = merged[merged.length-1];
+    if(last && last.role === m.role && m.role !== 'system'){
+      last.content += '\n' + m.content;
+    } else {
+      merged.push({...m});
+    }
+  }
+  // Must have at least one message
+  if(!merged.length) throw new Error('Aucun message à envoyer');
+
   _currentAbortController = new AbortController();
   const doFetch = async ()=>{
     const ctrl = new AbortController();
@@ -5144,12 +5209,20 @@ async function callMistral(messages, modelId, maxTokens=4096, useToolsKey=false)
     const res = await fetch('https://api.mistral.ai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-      body:JSON.stringify({model:modelId,messages,max_tokens:maxTokens,temperature:0.7}),
+      body:JSON.stringify({model:modelId, messages:merged, max_tokens:maxTokens, temperature:0.7}),
       signal: ctrl.signal
     });
     if(res.status === 429){ throw new Error('429 — serveurs surchargés'); }
-    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.message||`Mistral API ${res.status}`);}
-    return (await res.json()).choices[0].message.content;
+    if(!res.ok){
+      let errMsg = `Mistral API ${res.status}`;
+      try{
+        const errBody = await res.json();
+        errMsg = errBody?.message || errBody?.detail || errMsg;
+      }catch(_){}
+      throw new Error(errMsg);
+    }
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || '';
   };
   try{
     return await doFetch();
