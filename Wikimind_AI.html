@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" id="hljs-dark" disabled>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@orama/orama@2/dist/browser/index.global.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
@@ -1348,7 +1349,7 @@ import{getDatabase,ref,set,get,remove,push,runTransaction}from'https://www.gstat
 const app=initializeApp({apiKey:"AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",authDomain:"wikimind-3-comments.firebaseapp.com",databaseURL:"https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",projectId:"wikimind-3-comments",storageBucket:"wikimind-3-comments.firebasestorage.app",messagingSenderId:"137479541640",appId:"1:137479541640:web:4ed2510a9908055052e03d"});
 const auth=getAuth(app);const db=getDatabase(app);
 window._fb={auth,db,ref,set,get,remove,push,runTransaction,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,GoogleAuthProvider,signInWithPopup};
-onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await bootUser(user);}});
+onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('auth-modal');if(am)am.style.display='none';document.querySelectorAll('.modal.show').forEach(m=>{if(m.id!=='auth-modal')m.classList.remove('show');});await bootUser(user);}});
 </script>
 
 <!-- SIDEBAR -->
@@ -1522,10 +1523,30 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
       <span class="tool-item-label">Aide au texte</span>
       <span class="tool-item-badge tool-badge-premium-plus" id="tool-th-badge">Premium+</span>
     </button>
-    <button class="tool-item" onclick="openImageGenTool();closeToolsPanel()" id="tool-imggen-btn" style="display:none">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-      <span class="tool-item-label">Génération d'image IA</span>
-      <span class="tool-item-badge tool-badge-pro" id="tool-imggen-badge">Pro+</span>
+    <button class="tool-item" onclick="openBgRemoverTool();closeToolsPanel()" id="tool-bgremover-btn" style="display:none">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/><path d="M16 16 L20 20" stroke-dasharray="3 2"/></svg>
+      <span class="tool-item-label">Détourage d'Image IA</span>
+      <span class="tool-item-badge tool-badge-plus" id="tool-bgremover-badge">AI Plus</span>
+    </button>
+    <button class="tool-item" onclick="openModal('dataviz-modal');closeToolsPanel()" id="tool-dataviz-btn">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
+      <span class="tool-item-label">DataViz IA</span>
+      <span class="tool-item-badge tool-badge-free">Tous</span>
+    </button>
+    <button class="tool-item" onclick="openTtsToolModal();closeToolsPanel()" id="tool-tts-btn">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg>
+      <span class="tool-item-label">Texte → Audio</span>
+      <span class="tool-item-badge tool-badge-free">Tous</span>
+    </button>
+    <button class="tool-item" onclick="openQcmTool();closeToolsPanel()" id="tool-qcm-btn" style="display:none">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <span class="tool-item-label">QCM &amp; Flash Cards</span>
+      <span class="tool-item-badge tool-badge-plus" id="tool-qcm-badge">AI Plus</span>
+    </button>
+    <button class="tool-item" onclick="openYoutubeTool();closeToolsPanel()" id="tool-youtube-btn" style="display:none">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      <span class="tool-item-label">YouTube sous-titres</span>
+      <span class="tool-item-badge tool-badge-pro" id="tool-youtube-badge">Pro</span>
     </button>
     <button class="tool-item" onclick="openCodeReviewTool();closeToolsPanel()" id="tool-codereview-btn" style="display:none">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="4 2"/></svg>
@@ -2049,34 +2070,93 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
 <!-- ========== MODALS ========== -->
 
 <!-- AUTH -->
-<div class="modal" id="auth-modal">
-  <div class="modal-content" onclick="event.stopPropagation()">
-    <div style="text-align:center;margin-bottom:20px">
-      <h2 style="font-size:32px;font-weight:900;letter-spacing:-.05em;text-transform:uppercase">WikiMind</h2>
-      <p style="font-size:13px;color:#888;margin-top:4px">Votre assistant IA personnel</p>
+<!-- AUTH FULLPAGE -->
+<div id="auth-modal" style="display:none;position:fixed;inset:0;z-index:9999;overflow:hidden;">
+<style>
+#auth-modal{background:#070710;}
+.auth-bg{position:absolute;inset:0;overflow:hidden;}
+.auth-orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:.35;animation:orbFloat 8s ease-in-out infinite;}
+.auth-orb1{width:600px;height:600px;background:radial-gradient(circle,#6366f1,#8b5cf6);top:-10%;left:-10%;animation-delay:0s;}
+.auth-orb2{width:500px;height:500px;background:radial-gradient(circle,#06b6d4,#3b82f6);bottom:-15%;right:-10%;animation-delay:3s;}
+.auth-orb3{width:350px;height:350px;background:radial-gradient(circle,#ec4899,#f97316);top:40%;left:30%;animation-delay:5s;}
+@keyframes orbFloat{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-30px) scale(1.05);}}
+.auth-noise{position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");opacity:.4;}
+.auth-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:48px 48px;}
+.auth-wrap{position:relative;z-index:2;display:flex;height:100%;align-items:center;justify-content:center;padding:20px;}
+.auth-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:28px;padding:44px 40px 36px;width:100%;max-width:420px;backdrop-filter:blur(40px);box-shadow:0 40px 80px rgba(0,0,0,.5);animation:authCardIn .6s cubic-bezier(.16,1,.3,1) forwards;}
+@keyframes authCardIn{from{opacity:0;transform:translateY(30px) scale(.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+.auth-logo{text-align:center;margin-bottom:32px;}
+.auth-logo-mark{display:inline-flex;align-items:center;justify-content:center;width:60px;height:60px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:18px;margin-bottom:14px;box-shadow:0 8px 32px rgba(99,102,241,.4);}
+.auth-logo-mark svg{width:28px;height:28px;color:#fff;}
+.auth-title{font-size:28px;font-weight:900;letter-spacing:-.06em;color:#fff;text-transform:uppercase;margin-bottom:4px;}
+.auth-subtitle{font-size:13px;color:rgba(255,255,255,.4);font-weight:500;}
+.auth-tabs{display:flex;gap:3px;background:rgba(255,255,255,.06);border-radius:14px;padding:3px;margin-bottom:24px;}
+.auth-tab{flex:1;padding:9px;border-radius:11px;border:none;background:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.4);transition:all .25s;font-family:'Inter',sans-serif;}
+.auth-tab.active{background:rgba(255,255,255,.12);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+.auth-input-group{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+.auth-input{width:100%;padding:13px 16px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:13px;color:#fff;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:all .2s;box-sizing:border-box;}
+.auth-input::placeholder{color:rgba(255,255,255,.3);}
+.auth-input:focus{background:rgba(255,255,255,.1);border-color:rgba(99,102,241,.6);box-shadow:0 0 0 3px rgba(99,102,241,.15);}
+.auth-btn-primary{width:100%;padding:14px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:13px;color:#fff;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;box-shadow:0 4px 20px rgba(99,102,241,.35);}
+.auth-btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(99,102,241,.5);}
+.auth-btn-primary:active{transform:translateY(0);}
+.auth-separator{display:flex;align-items:center;gap:12px;margin:14px 0;color:rgba(255,255,255,.2);font-size:11px;font-weight:600;}
+.auth-separator::before,.auth-separator::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08);}
+.auth-btn-google{width:100%;padding:13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:13px;color:rgba(255,255,255,.8);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;}
+.auth-btn-google:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);}
+.auth-err{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:10px 14px;font-size:12px;color:#fca5a5;margin-bottom:12px;display:none;}
+.auth-skip{width:100%;margin-top:18px;background:none;border:none;cursor:pointer;font-size:12px;color:rgba(255,255,255,.3);font-family:'Inter',sans-serif;transition:.2s;padding:8px;border-radius:8px;}
+.auth-skip:hover{color:rgba(255,255,255,.6);background:rgba(255,255,255,.05);}
+.auth-features{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.06);}
+.auth-feat{display:flex;align-items:center;gap:8px;font-size:11px;color:rgba(255,255,255,.35);font-weight:600;}
+.auth-feat-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+</style>
+<div class="auth-bg">
+  <div class="auth-orb auth-orb1"></div>
+  <div class="auth-orb auth-orb2"></div>
+  <div class="auth-orb auth-orb3"></div>
+  <div class="auth-grid"></div>
+  <div class="auth-noise"></div>
+</div>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-mark">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      </div>
+      <div class="auth-title">WikiMind AI</div>
+      <div class="auth-subtitle">Votre assistant IA nouvelle génération</div>
     </div>
-    <div style="display:flex;gap:4px;background:var(--select-bg);border-radius:12px;padding:4px;margin-bottom:18px">
-      <button id="tab-login" onclick="authTab('login')" style="flex:1;padding:8px;border-radius:9px;border:none;background:var(--bg);cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-family:'Inter',sans-serif;color:var(--text)">Connexion</button>
-      <button id="tab-reg" onclick="authTab('register')" style="flex:1;padding:8px;border-radius:9px;border:none;background:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-family:'Inter',sans-serif;color:#888">Inscription</button>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="authTab('login')">Connexion</button>
+      <button class="auth-tab" id="tab-reg" onclick="authTab('register')">Inscription</button>
     </div>
-    <div id="auth-err" style="display:none;background:#fee2e2;border-radius:8px;padding:10px 12px;font-size:13px;color:#dc2626;margin-bottom:12px"></div>
-    <div id="form-login" style="display:flex;flex-direction:column;gap:10px">
-      <input type="email" id="le" class="modal-input" placeholder="Adresse e-mail">
-      <input type="password" id="lp" class="modal-input" placeholder="Mot de passe">
-      <button class="modal-btn primary" onclick="doLogin()" style="margin-top:4px">Se connecter</button>
-      <div style="display:flex;align-items:center;gap:10px;color:#ccc;font-size:11px"><span style="flex:1;height:1px;background:var(--border2)"></span>ou<span style="flex:1;height:1px;background:var(--border2)"></span></div>
-      <button class="modal-btn secondary" onclick="doGoogle()">Continuer avec Google</button>
+    <div class="auth-err" id="auth-err"></div>
+    <div id="form-login" class="auth-input-group">
+      <input type="email" id="le" class="auth-input" placeholder="Adresse e-mail" onkeydown="if(event.key==='Enter')doLogin()">
+      <input type="password" id="lp" class="auth-input" placeholder="Mot de passe" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="auth-btn-primary" onclick="doLogin()">Se connecter →</button>
     </div>
-    <div id="form-reg" style="display:none;flex-direction:column;gap:10px">
-      <input type="text" id="rn" class="modal-input" placeholder="Nom d'affichage">
-      <input type="email" id="re" class="modal-input" placeholder="Adresse e-mail">
-      <input type="password" id="rp" class="modal-input" placeholder="Mot de passe (6 min)">
-      <button class="modal-btn primary" onclick="doRegister()" style="margin-top:4px">Créer mon compte</button>
-      <div style="display:flex;align-items:center;gap:10px;color:#ccc;font-size:11px"><span style="flex:1;height:1px;background:var(--border2)"></span>ou<span style="flex:1;height:1px;background:var(--border2)"></span></div>
-      <button class="modal-btn secondary" onclick="doGoogle()">Continuer avec Google</button>
+    <div id="form-reg" class="auth-input-group" style="display:none">
+      <input type="text" id="rn" class="auth-input" placeholder="Votre prénom" onkeydown="if(event.key==='Enter')doRegister()">
+      <input type="email" id="re" class="auth-input" placeholder="Adresse e-mail" onkeydown="if(event.key==='Enter')doRegister()">
+      <input type="password" id="rp" class="auth-input" placeholder="Mot de passe (6 min)" onkeydown="if(event.key==='Enter')doRegister()">
+      <button class="auth-btn-primary" onclick="doRegister()">Créer mon compte →</button>
     </div>
-    <button onclick="skipAuth()" style="width:100%;margin-top:12px;background:none;border:none;cursor:pointer;font-size:11px;color:#aaa;text-decoration:underline;font-family:'Inter',sans-serif">Continuer sans compte →</button>
+    <div class="auth-separator">ou</div>
+    <button class="auth-btn-google" onclick="doGoogle()">
+      <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Continuer avec Google
+    </button>
+    <button class="auth-skip" onclick="skipAuth()">Continuer sans compte — accès limité →</button>
+    <div class="auth-features">
+      <div class="auth-feat"><div class="auth-feat-icon" style="background:rgba(99,102,241,.2)">🧠</div><span>IA multi-modèles</span></div>
+      <div class="auth-feat"><div class="auth-feat-icon" style="background:rgba(6,182,212,.2)">📊</div><span>DataViz & Graphiques</span></div>
+      <div class="auth-feat"><div class="auth-feat-icon" style="background:rgba(34,197,94,.2)">🎨</div><span>Détourage d'image IA</span></div>
+      <div class="auth-feat"><div class="auth-feat-icon" style="background:rgba(245,158,11,.2)">🎯</div><span>Quiz & Flash Cards</span></div>
+    </div>
   </div>
+</div>
 </div>
 
 <!-- SEARCH -->
@@ -2708,61 +2788,306 @@ onAuthStateChanged(auth,async user=>{if(user){closeModal('auth-modal');await boo
 </div>
 
 <!-- ── IMAGE GENERATION TOOL MODAL ── -->
-<div class="modal" id="imggen-modal" onclick="if(event.target===this)closeModal('imggen-modal')">
-  <div class="modal-content" onclick="event.stopPropagation()" style="max-width:600px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+<!-- BG REMOVER MODAL -->
+<div class="modal" id="bgremover-modal" onclick="if(event.target===this)closeModal('bgremover-modal')">
+  <div class="modal-content" onclick="event.stopPropagation()" style="max-width:640px;padding:0;overflow:hidden;max-height:90vh;display:flex;flex-direction:column">
+    <div style="padding:18px 22px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
       <div style="display:flex;align-items:center;gap:10px">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-        <h3>Génération d'image IA</h3>
-        <span class="plan-badge plan-pro" id="imggen-plan-badge">Pro+</span>
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/><path d="M14 14 L20 20" stroke-dasharray="3 2"/></svg>
+        <span style="font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.06em">Détourage d'Image IA</span>
+        <span class="plan-badge plan-plus" id="bgrem-plan-badge">AI Plus</span>
+        <span style="font-size:9px;font-weight:800;text-transform:uppercase;padding:2px 7px;border-radius:20px;background:rgba(16,185,129,.12);color:#10b981;letter-spacing:.04em" id="bgrem-rate-badge">10/jour</span>
       </div>
-      <button onclick="closeModal('imggen-modal')" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px" onmouseover="this.style.background='var(--select-bg)'" onmouseout="this.style.background='none'">✕</button>
+      <button onclick="closeModal('bgremover-modal')" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px" onmouseover="this.style.background='var(--select-bg)'" onmouseout="this.style.background='none'">✕</button>
     </div>
-    <div style="display:flex;flex-direction:column;gap:12px">
-      <div>
-        <label class="th-label">Décrivez votre image</label>
-        <textarea id="imggen-prompt" class="th-textarea" rows="3" placeholder="Ex : Un coucher de soleil sur une plage tropicale avec des palmiers, style aquarelle, couleurs chaudes…"></textarea>
+    <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px">
+      <!-- Drop zone -->
+      <div id="bgrem-dropzone" style="border:2px dashed var(--border2);border-radius:16px;padding:32px;text-align:center;cursor:pointer;transition:.2s;position:relative" onclick="G('bgrem-file-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--text)'" ondragleave="this.style.borderColor='var(--border2)'" ondrop="event.preventDefault();this.style.borderColor='var(--border2)';onBgRemDrop(event)">
+        <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 12px;display:block;opacity:.4"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <div style="font-size:14px;font-weight:700;color:var(--text)">Glissez une image ici</div>
+        <div style="font-size:11px;color:#aaa;margin-top:4px">ou cliquez pour choisir · PNG, JPG, WebP</div>
+        <input type="file" id="bgrem-file-input" accept="image/*" style="display:none" onchange="onBgRemFileSelected(event)">
       </div>
+      <!-- Preview area -->
+      <div id="bgrem-preview-area" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:6px">Original</div>
+            <img id="bgrem-original-img" style="width:100%;border-radius:10px;border:1px solid var(--border)" alt="Original">
+          </div>
+          <div>
+            <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:6px">Résultat (fond supprimé)</div>
+            <div id="bgrem-result-wrap" style="width:100%;border-radius:10px;border:1px solid var(--border);min-height:120px;display:flex;align-items:center;justify-content:center;background:repeating-conic-gradient(#80808020 0% 25%,transparent 0% 50%) 0 0/16px 16px">
+              <canvas id="bgrem-canvas" style="max-width:100%;border-radius:8px;display:none"></canvas>
+              <div id="bgrem-processing" style="font-size:12px;color:#aaa;text-align:center;padding:12px">
+                <div class="typing-dots" style="justify-content:center;margin-bottom:6px"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
+                Traitement IA en cours…
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="modal-btn primary" id="bgrem-dl-btn" onclick="downloadBgRemResult()" style="flex:1;display:none">⬇ Télécharger PNG transparent</button>
+          <button class="modal-btn secondary" id="bgrem-reset-btn" onclick="resetBgRemover()" style="width:auto;padding:10px 16px">Recommencer</button>
+          <span id="bgrem-rate-info" style="font-size:10px;color:#aaa;font-weight:600;margin-left:auto;display:flex;align-items:center"></span>
+        </div>
+      </div>
+      <div style="background:var(--select-bg);border-radius:12px;padding:12px 14px;font-size:11px;color:#888">
+        <strong style="color:var(--text)">Comment ça marche ?</strong> L'IA utilise un modèle de segmentation pour détecter le sujet et supprimer le fond automatiquement — tout dans votre navigateur, sans upload serveur. Parfait pour créer des stickers, des visuels propres, des logos sans fond.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DATAVIZ MODAL -->
+<div class="modal" id="dataviz-modal" onclick="if(event.target===this)closeModal('dataviz-modal')">
+  <div class="modal-content" onclick="event.stopPropagation()" style="max-width:720px;padding:0;overflow:hidden;max-height:92vh;display:flex;flex-direction:column">
+    <div style="padding:18px 22px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:10px">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
+        <span style="font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.06em">DataViz IA</span>
+        <span class="plan-badge plan-free">Tous</span>
+      </div>
+      <button onclick="closeModal('dataviz-modal')" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px" onmouseover="this.style.background='var(--select-bg)'" onmouseout="this.style.background='none'">✕</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div>
-          <label class="th-label">Style</label>
-          <select id="imggen-style" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:12px;font-family:Inter,sans-serif;outline:none">
-            <option value="realistic">Réaliste</option>
-            <option value="anime">Anime / Manga</option>
-            <option value="watercolor">Aquarelle</option>
-            <option value="oil painting">Peinture à l'huile</option>
-            <option value="digital art">Art numérique</option>
-            <option value="3d render">Rendu 3D</option>
-            <option value="sketch">Croquis / Dessin</option>
-            <option value="pixel art">Pixel Art</option>
-          </select>
+          <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:6px">Vos données (texte libre, CSV, tableau…)</div>
+          <textarea id="dataviz-input" style="width:100%;min-height:140px;padding:12px 14px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:12px;font-family:'Menlo','Courier New',monospace;resize:vertical;outline:none;box-sizing:border-box;line-height:1.5" placeholder="Exemples :&#10;Janvier: 1200&#10;Février: 1850&#10;Mars: 1400&#10;&#10;Ou : Produit A,150 / Produit B,230 / Produit C,95"></textarea>
         </div>
         <div>
-          <label class="th-label">Format</label>
-          <select id="imggen-ratio" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:12px;font-family:Inter,sans-serif;outline:none">
-            <option value="1:1">Carré (1:1)</option>
-            <option value="16:9">Paysage (16:9)</option>
-            <option value="9:16">Portrait (9:16)</option>
-            <option value="4:3">Standard (4:3)</option>
-          </select>
+          <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:6px">Type de graphique</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 10px;border-radius:8px;border:1px solid var(--border2);transition:.15s" onmouseover="this.style.background='var(--select-bg)'" onmouseout="this.style.background='none'">
+              <input type="radio" name="dviz-type" value="bar" checked style="accent-color:var(--accent)"><span style="font-size:12px;font-weight:600">📊 Barres</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 10px;border-radius:8px;border:1px solid var(--border2);transition:.15s" onmouseover="this.style.background='var(--select-bg)'" onmouseout="this.style.background='none'">
+              <input type="radio" name="dviz-type" value="line" style="accent-color:var(--accent)"><span style="font-size:12px;font-weight:600">📈 Courbe</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 10px;border-radius:8px;border:1px solid var(--border2);transition:.15s" onmouseover="this.style.background='var(--select-bg)'" onmouseout="this.style.background='none'">
+              <input type="radio" name="dviz-type" value="pie" style="accent-color:var(--accent)"><span style="font-size:12px;font-weight:600">🥧 Camembert</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 10px;border-radius:8px;border:1px solid var(--border2);transition:.15s" onmouseover="this.style.background='var(--select-bg)'" onmouseout="this.style.background='none'">
+              <input type="radio" name="dviz-type" value="doughnut" style="accent-color:var(--accent)"><span style="font-size:12px;font-weight:600">🍩 Donut</span>
+            </label>
+          </div>
         </div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <button class="modal-btn primary" id="imggen-btn" onclick="runImageGeneration()" style="flex:1">✦ Générer l'image</button>
-        <span id="imggen-rate-info" style="font-size:10px;color:#aaa;font-weight:600"></span>
+        <input type="text" id="dataviz-title" style="flex:1;padding:9px 12px;border-radius:9px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:12px;font-family:Inter,sans-serif;outline:none" placeholder="Titre du graphique (optionnel)">
+        <button class="modal-btn primary" id="dataviz-btn" onclick="runDataViz()" style="width:auto;padding:9px 20px;white-space:nowrap">✦ Générer</button>
       </div>
-      <div id="imggen-result" style="display:none;text-align:center">
-        <img id="imggen-output" style="max-width:100%;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.12)" alt="Image générée">
-        <div style="display:flex;gap:8px;margin-top:10px;justify-content:center">
-          <button class="modal-btn secondary" style="width:auto;padding:8px 16px" onclick="downloadGeneratedImage()">⬇ Télécharger</button>
-          <button class="modal-btn secondary" style="width:auto;padding:8px 16px" onclick="importImageToChat()">→ Chat</button>
+      <div id="dataviz-result" style="display:none;background:var(--select-bg);border-radius:14px;padding:16px">
+        <canvas id="dataviz-chart" style="max-height:300px"></canvas>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="th-action-btn" onclick="downloadDataVizChart()">⬇ PNG</button>
+          <button class="th-action-btn" onclick="importDataVizToChat()">→ Importer dans le chat</button>
         </div>
       </div>
-      <div id="imggen-loading" style="display:none;text-align:center;padding:20px;color:#888;font-size:13px">
-        <div class="typing-dots" style="justify-content:center"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
-        <div style="margin-top:8px;font-size:12px">Génération en cours…</div>
+    </div>
+  </div>
+</div>
+
+<!-- YOUTUBE TRANSCRIPT MODAL (auto-triggered & manual) -->
+<div class="modal" id="youtube-modal" onclick="if(event.target===this)closeModal('youtube-modal')">
+  <div class="modal-content" onclick="event.stopPropagation()" style="max-width:580px;padding:0;overflow:hidden;max-height:88vh;display:flex;flex-direction:column">
+    <div style="padding:16px 22px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:10px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="color:#ef4444"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+        <span style="font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.06em">YouTube — Sous-titres</span>
+        <span class="plan-badge plan-pro" id="yt-plan-badge">Pro</span>
+      </div>
+      <button onclick="closeModal('youtube-modal')" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px" onmouseover="this.style.background='var(--select-bg)'" onmouseout="this.style.background='none'">✕</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;gap:8px">
+        <input type="text" id="yt-url-input" style="flex:1;padding:11px 14px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13px;font-family:Inter,sans-serif;outline:none" placeholder="https://www.youtube.com/watch?v=...">
+        <button class="modal-btn primary" id="yt-fetch-btn" onclick="fetchYoutubeTranscript()" style="width:auto;padding:10px 18px;white-space:nowrap">Récupérer</button>
+      </div>
+      <div id="yt-status" style="font-size:12px;color:#888;display:none"></div>
+      <div id="yt-result" style="display:none">
+        <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:8px">Transcription récupérée</div>
+        <div id="yt-transcript-text" style="background:var(--select-bg);border-radius:10px;padding:14px;font-size:12px;line-height:1.7;max-height:260px;overflow-y:auto;white-space:pre-wrap;color:var(--text)"></div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="modal-btn primary" onclick="importYtTranscriptToChat()" style="flex:1">→ Analyser dans le chat</button>
+          <button class="modal-btn secondary" onclick="copyYtTranscript()" style="width:auto;padding:10px 14px">📋 Copier</button>
+        </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- QCM / FLASH CARDS MODAL -->
+<div class="modal" id="qcm-modal" onclick="if(event.target===this)closeModal('qcm-modal')">
+  <div class="modal-content" onclick="event.stopPropagation()" style="max-width:700px;padding:0;overflow:hidden;max-height:92vh;display:flex;flex-direction:column">
+    <div style="padding:16px 22px 0;border-bottom:1px solid var(--border);flex-shrink:0">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          <span style="font-size:16px;font-weight:800;letter-spacing:-.02em">QCM &amp; Flash Cards IA</span>
+          <span class="plan-badge plan-plus">AI Plus</span>
+        </div>
+        <button onclick="closeModal('qcm-modal')" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px" onmouseover="this.style.background='var(--select-bg)'" onmouseout="this.style.background='none'">✕</button>
+      </div>
+      <div style="display:flex;gap:2px;padding-bottom:0">
+        <button class="codertab active" id="qcmtab-gen" onclick="switchQcmTab('gen')">✦ Générer</button>
+        <button class="codertab" id="qcmtab-quiz" onclick="switchQcmTab('quiz')">🎯 Quiz</button>
+        <button class="codertab" id="qcmtab-flash" onclick="switchQcmTab('flash')">🃏 Flash Cards</button>
+        <button class="codertab" id="qcmtab-saved" onclick="switchQcmTab('saved')">💾 Mes sets</button>
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto">
+      <!-- TAB GEN -->
+      <div id="qcmbody-gen" style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:6px">Sujet ou texte source</div>
+            <textarea id="qcm-topic-input" style="width:100%;min-height:120px;padding:12px 14px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13px;font-family:Inter,sans-serif;resize:vertical;outline:none;line-height:1.5;box-sizing:border-box" placeholder="Ex: La Révolution française, Photosynthèse, Machine Learning, ou collez un texte…"></textarea>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div>
+              <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:5px">Type</div>
+              <select id="qcm-type" style="width:100%;padding:9px 12px;border-radius:9px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:12px;font-family:Inter,sans-serif;outline:none">
+                <option value="qcm">QCM (4 choix)</option>
+                <option value="flashcard">Flash Cards</option>
+                <option value="vf">Vrai / Faux</option>
+                <option value="trou">Texte à trous</option>
+              </select>
+            </div>
+            <div>
+              <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:5px">Nombre de questions</div>
+              <select id="qcm-count" style="width:100%;padding:9px 12px;border-radius:9px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:12px;font-family:Inter,sans-serif;outline:none">
+                <option value="5">5 questions</option>
+                <option value="10" selected>10 questions</option>
+                <option value="15">15 questions</option>
+                <option value="20">20 questions</option>
+              </select>
+            </div>
+            <div>
+              <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:5px">Difficulté</div>
+              <select id="qcm-diff" style="width:100%;padding:9px 12px;border-radius:9px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:12px;font-family:Inter,sans-serif;outline:none">
+                <option value="facile">Facile</option>
+                <option value="moyen" selected>Moyen</option>
+                <option value="difficile">Difficile</option>
+                <option value="expert">Expert</option>
+              </select>
+            </div>
+            <div>
+              <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:5px">Nom du set</div>
+              <input type="text" id="qcm-set-name" style="width:100%;padding:9px 12px;border-radius:9px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:12px;font-family:Inter,sans-serif;outline:none;box-sizing:border-box" placeholder="Mon set de révision…">
+            </div>
+          </div>
+        </div>
+        <button class="modal-btn primary" id="qcm-gen-btn" onclick="generateQcm()">✦ Générer le set</button>
+      </div>
+      <!-- TAB QUIZ -->
+      <div id="qcmbody-quiz" style="padding:20px;display:none">
+        <div id="qcm-quiz-no-set" style="text-align:center;padding:32px;color:#aaa">
+          <div style="font-size:36px;margin-bottom:10px">🎯</div>
+          <div style="font-size:14px;font-weight:700">Aucun set chargé</div>
+          <div style="font-size:12px;margin-top:6px">Générez un set ou chargez un set sauvegardé.</div>
+        </div>
+        <div id="qcm-quiz-content" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <span id="qcm-quiz-title" style="font-size:14px;font-weight:800"></span>
+            <span id="qcm-quiz-progress" style="font-size:11px;color:#888;font-weight:700"></span>
+          </div>
+          <!-- Progress bar -->
+          <div style="height:4px;background:var(--border2);border-radius:4px;margin-bottom:20px;overflow:hidden">
+            <div id="qcm-quiz-prog-fill" style="height:100%;background:linear-gradient(90deg,#6366f1,#8b5cf6);border-radius:4px;transition:width .4s"></div>
+          </div>
+          <div id="qcm-question-card" style="background:var(--select-bg);border-radius:16px;padding:22px">
+            <div id="qcm-q-text" style="font-size:15px;font-weight:700;margin-bottom:18px;line-height:1.5"></div>
+            <div id="qcm-choices" style="display:flex;flex-direction:column;gap:8px"></div>
+          </div>
+          <div id="qcm-feedback" style="display:none;padding:14px 16px;border-radius:12px;margin-top:12px;font-size:13px;font-weight:600;line-height:1.5"></div>
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button class="modal-btn secondary" id="qcm-next-btn" onclick="qcmNext()" style="flex:1;display:none">Question suivante →</button>
+          </div>
+          <div id="qcm-result-wrap" style="display:none;text-align:center;padding:24px">
+            <div style="font-size:48px;margin-bottom:10px" id="qcm-result-emoji">🏆</div>
+            <div style="font-size:22px;font-weight:900;margin-bottom:6px" id="qcm-score-display"></div>
+            <div style="font-size:13px;color:#888;margin-bottom:20px" id="qcm-score-detail"></div>
+            <button class="modal-btn primary" onclick="restartQcm()" style="width:auto;padding:10px 24px">↺ Recommencer</button>
+          </div>
+        </div>
+      </div>
+      <!-- TAB FLASH CARDS -->
+      <div id="qcmbody-flash" style="padding:20px;display:none">
+        <div id="qcm-flash-no-set" style="text-align:center;padding:32px;color:#aaa">
+          <div style="font-size:36px;margin-bottom:10px">🃏</div>
+          <div style="font-size:14px;font-weight:700">Aucun set chargé</div>
+          <div style="font-size:12px;margin-top:6px">Générez un set ou chargez un set sauvegardé.</div>
+        </div>
+        <div id="qcm-flash-content" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <span id="flash-title" style="font-size:13px;font-weight:800"></span>
+            <span id="flash-progress" style="font-size:11px;color:#888;font-weight:700"></span>
+          </div>
+          <div id="flash-card" style="min-height:220px;background:linear-gradient(135deg,var(--select-bg),var(--bg));border:1px solid var(--border2);border-radius:20px;padding:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .4s;transform-style:preserve-3d;position:relative" onclick="flipFlashCard()">
+            <div id="flash-front" style="text-align:center;font-size:17px;font-weight:700;line-height:1.6"></div>
+            <div id="flash-back" style="display:none;text-align:center;font-size:15px;line-height:1.7;color:#22c55e"></div>
+            <div style="position:absolute;bottom:14px;right:16px;font-size:10px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:.08em" id="flash-hint">Cliquer pour retourner</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button class="modal-btn secondary" onclick="flashNav(-1)" style="flex:1">← Précédente</button>
+            <button class="modal-btn secondary" onclick="flashNav(1)" style="flex:1">Suivante →</button>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button style="flex:1;padding:10px;border-radius:10px;border:none;background:rgba(239,68,68,.1);color:#ef4444;font-weight:800;font-size:12px;cursor:pointer;font-family:Inter,sans-serif" onclick="flashKnow(false)">✗ À revoir</button>
+            <button style="flex:1;padding:10px;border-radius:10px;border:none;background:rgba(34,197,94,.1);color:#22c55e;font-weight:800;font-size:12px;cursor:pointer;font-family:Inter,sans-serif" onclick="flashKnow(true)">✓ Je sais</button>
+          </div>
+        </div>
+      </div>
+      <!-- TAB SAVED -->
+      <div id="qcmbody-saved" style="padding:20px;display:none">
+        <div id="qcm-saved-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TEXT-TO-AUDIO TOOL MODAL -->
+<div class="modal" id="tts-tool-modal" onclick="if(event.target===this)closeModal('tts-tool-modal')">
+  <div class="modal-content" onclick="event.stopPropagation()" style="max-width:520px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg>
+        <span style="font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:.05em">Texte vers Audio</span>
+        <span class="plan-badge plan-free">Tous</span>
+      </div>
+      <button onclick="closeModal('tts-tool-modal')" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px" onmouseover="this.style.background='var(--select-bg)'" onmouseout="this.style.background='none'">✕</button>
+    </div>
+    <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:6px">Texte à convertir</div>
+    <textarea id="tts-tool-input" style="width:100%;min-height:120px;padding:12px 14px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13px;font-family:Inter,sans-serif;resize:vertical;outline:none;line-height:1.6;box-sizing:border-box;margin-bottom:12px" placeholder="Entrez le texte à convertir en audio…"></textarea>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div>
+        <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:5px">Langue</div>
+        <select id="tts-tool-lang" style="width:100%;padding:9px 12px;border-radius:9px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:12px;font-family:Inter,sans-serif;outline:none">
+          <option value="fr-FR">Français</option>
+          <option value="en-US">Anglais</option>
+          <option value="es-ES">Espagnol</option>
+          <option value="de-DE">Allemand</option>
+          <option value="it-IT">Italien</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:5px">Vitesse</div>
+        <select id="tts-tool-rate" style="width:100%;padding:9px 12px;border-radius:9px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:12px;font-family:Inter,sans-serif;outline:none">
+          <option value="0.8">Lent (0.8×)</option>
+          <option value="1" selected>Normal (1×)</option>
+          <option value="1.2">Rapide (1.2×)</option>
+          <option value="1.5">Très rapide (1.5×)</option>
+        </select>
+      </div>
+    </div>
+    <button class="modal-btn primary" id="tts-tool-btn" onclick="runTtsTool()">🔊 Écouter / Générer</button>
+    <div id="tts-tool-player" style="display:none;margin-top:14px;background:var(--select-bg);border-radius:12px;padding:14px">
+      <audio id="tts-tool-audio" controls style="width:100%;outline:none"></audio>
+      <button class="modal-btn secondary" onclick="downloadTtsAudio()" style="margin-top:10px;width:100%">⬇ Télécharger MP3</button>
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:#aaa;text-align:center">Utilise la synthèse vocale native de votre navigateur — qualité naturelle</div>
   </div>
 </div>
 
@@ -2907,9 +3232,29 @@ window.addEventListener('load', () => {
   try { S.gmailToken=sessionStorage.getItem('wm_gmail_token')||null; S.gdriveToken=sessionStorage.getItem('wm_gdrive_token')||null; } catch(e){}
   if(S.gmailToken) S.connectors.gmail=true;
   if(S.gdriveToken) S.connectors.gdrive=true;
-  setTimeout(()=>{ if(!S.user) openModal('auth-modal'); }, 600);
+  setTimeout(()=>{ if(!S.user){ G('auth-modal').style.display='block'; } }, 600);
   renderPlansGrid();
-  G('user-input').addEventListener('input',()=>autoResize(G('user-input')));
+  G('user-input').addEventListener('input',()=>{
+    autoResize(G('user-input'));
+    // Auto-detect YouTube URL
+    const val = G('user-input').value;
+    const ytMatch = val.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    if(ytMatch && S.plan>=3){
+      const existing = G('yt-auto-chip');
+      if(!existing){
+        const chip = document.createElement('div');
+        chip.id = 'yt-auto-chip';
+        chip.style.cssText='display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;font-size:11px;font-weight:700;color:#ef4444;cursor:pointer;margin:4px 0;';
+        chip.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg> Lien YouTube détecté — Récupérer les sous-titres ? <span style="text-decoration:underline">Cliquer ici</span>';
+        chip.onclick = () => { G('yt-url-input').value=val.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})[^\s]*/)?.[0]||val; openModal('youtube-modal'); chip.remove(); };
+        const inputBox = G('input-box');
+        if(inputBox) inputBox.insertBefore(chip, inputBox.firstChild);
+      }
+    } else {
+      const existing = G('yt-auto-chip');
+      if(existing) existing.remove();
+    }
+  });
   // Init Mermaid
   if(window.mermaid){
     window.mermaid.initialize({startOnLoad:false,theme:'neutral',securityLevel:'loose',fontFamily:'Inter,sans-serif'});
@@ -2929,10 +3274,11 @@ window.addEventListener('load', () => {
 // ── AUTH ──
 function authTab(tab){
   const isLogin=tab==='login';
-  G('tab-login').style.background=isLogin?'var(--bg)':'none'; G('tab-login').style.color=isLogin?'var(--text)':'#888';
-  G('tab-reg').style.background=!isLogin?'var(--bg)':'none'; G('tab-reg').style.color=!isLogin?'var(--text)':'#888';
+  const tl=G('tab-login'),tr=G('tab-reg');
+  if(tl){tl.classList.toggle('active',isLogin);}
+  if(tr){tr.classList.toggle('active',!isLogin);}
   G('form-login').style.display=isLogin?'flex':'none'; G('form-reg').style.display=!isLogin?'flex':'none';
-  G('auth-err').style.display='none';
+  const err=G('auth-err'); if(err)err.style.display='none';
 }
 function showAuthErr(msg){ const el=G('auth-err'); el.textContent=msg; el.style.display='block'; }
 
@@ -2958,12 +3304,13 @@ async function doGoogle(){
 function fbErr(code){
   return({'auth/invalid-email':'E-mail invalide.','auth/user-not-found':'Aucun compte.','auth/wrong-password':'Mot de passe incorrect.','auth/email-already-in-use':'E-mail déjà utilisé.','auth/weak-password':'Mot de passe trop faible.','auth/popup-closed-by-user':'Fenêtre Google fermée.','auth/network-request-failed':'Erreur réseau.'})[code]||'Erreur : '+code;
 }
-function skipAuth(){ closeModal('auth-modal'); S.plan=1; bootUser({uid:'guest_'+Date.now(),displayName:'Invité',isGuest:true}); }
+function skipAuth(){ const am=G('auth-modal');if(am)am.style.display='none'; S.plan=1; bootUser({uid:'guest_'+Date.now(),displayName:'Invité',isGuest:true}); }
 async function doSignOut(){
   const fb=window._fb; if(fb?.auth) try{await fb.signOut(fb.auth);}catch(e){}
   S.user=null; S.msgs=[]; S.chatId=null; S.chats=[];
   S.gmailToken=null; S.gdriveToken=null;
-  renderHistory(); showWelcome(); closeModal('settings-modal'); openModal('auth-modal');
+  renderHistory(); showWelcome(); closeModal('settings-modal');
+  const am=G('auth-modal');if(am)am.style.display='block';
 }
 
 // ── BOOT ──
@@ -3105,9 +3452,13 @@ function updateModelOptions(){
 // ── PLAN OVERLAY ──
 function openModal(id){
   if(id==='plan-modal'){openPlansOverlay();return;}
+  if(id==='auth-modal'){const m=G(id);if(m)m.style.display='block';return;}
   const m=G(id);if(m)m.classList.add('show');
 }
-function closeModal(id){const m=G(id);if(m)m.classList.remove('show');}
+function closeModal(id){
+  if(id==='auth-modal'){const m=G(id);if(m)m.style.display='none';return;}
+  const m=G(id);if(m)m.classList.remove('show');
+}
 function openPlansOverlay(){renderPlansGrid();G('plans-overlay').classList.add('show');}
 function closePlansOverlay(){G('plans-overlay').classList.remove('show');}
 document.addEventListener('click',e=>{document.querySelectorAll('.modal.show').forEach(m=>{if(e.target===m)m.classList.remove('show');});});
@@ -5015,8 +5366,11 @@ Format : {"chatReply":"...","canvasContent":"...","createOffice":null}`;
 
 function buildSystemPrompt(){
   const active=S.importedInstructions.filter(i=>i.enabled).map(i=>i.content).join('\n\n');
-  const base="Tu es WikiMind AI, un assistant IA intelligent, précis et bienveillant. Tu réponds en français par défaut. Utilise Markdown pour structurer tes réponses. Pour les maths, utilise LaTeX : $...$ inline et $$...$$ pour les blocs."+(S.plan>=5?' Tu peux analyser des images grâce à la vision IA.':'');
-  return[base,S.sysPrompt||'',active].filter(Boolean).join('\n\n');
+  // Extract first name from user display name
+  const userName = S.user?.displayName ? S.user.displayName.split(' ')[0] : null;
+  const userCtx = userName && !S.user?.isGuest ? `L'utilisateur s'appelle ${userName}. Utilise son prénom naturellement dans la conversation quand c'est pertinent (mais ne le répète pas à chaque message).` : '';
+  const base="Tu es WikiMind AI, un assistant IA intelligent, précis et bienveillant. Tu réponds en français par défaut. Utilise Markdown pour structurer tes réponses. Pour les maths, utilise LaTeX : $...$ inline et $$...$$ pour les blocs. Quand l'utilisateur demande un graphique, un schéma, une carte mentale, ou une visualisation — propose-lui d'utiliser les outils dédiés (DataViz, Mind Map, Diagrammes) et génère aussi une description structurée."+(S.plan>=5?' Tu peux analyser des images grâce à la vision IA.':'');
+  return[base,userCtx,S.sysPrompt||'',active].filter(Boolean).join('\n\n');
 }
 
 // ── CONTEXT WINDOW MANAGER ──
@@ -5406,35 +5760,6 @@ function toggleTTS(msgIdx, text){
 }
 
 // ── VISION QA (Mistral Pixtral) ──
-async function analyzeImageWithVision(imageDataUrl, question){
-  try{
-    // Extract base64 data and mime type
-    const match=imageDataUrl.match(/^data:([^;]+);base64,(.+)$/);
-    if(!match) return null;
-    const mimeType=match[1];
-    const base64Data=match[2];
-    // Use Mistral Pixtral for vision
-    const res=await fetch('https://api.mistral.ai/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+MISTRAL_KEY},
-      body:JSON.stringify({
-        model:'pixtral-12b-2409',
-        max_tokens:512,
-        messages:[{
-          role:'user',
-          content:[
-            {type:'image_url',image_url:{url:'data:'+mimeType+';base64,'+base64Data}},
-            {type:'text',text:question||'Décris cette image en détail.'}
-          ]
-        }]
-      })
-    });
-    if(!res.ok) return null;
-    const d=await res.json();
-    return d.choices?.[0]?.message?.content||null;
-  }catch(e){console.warn('Vision error:',e);return null;}
-}
-
 // ── RING CHOOSER (Premium+) ──
 function setPremiumPlusRing(ring){
   S.premiumPlusRing=ring;
@@ -6910,14 +7235,21 @@ function _updateUserUIExtras(){
   const toolOcrBtn=G('tool-ocr-btn');
   if(toolOcrBtn) toolOcrBtn.style.display=S.plan>=3?'flex':'none';
   // ── New tools visibility ──
-  const imggenBtn=G('tool-imggen-btn'); if(imggenBtn) imggenBtn.style.display=S.plan>=3?'flex':'none';
+  const bgremBtn=G('tool-bgremover-btn'); if(bgremBtn) bgremBtn.style.display=S.plan>=2?'flex':'none';
+  const qcmBtn=G('tool-qcm-btn'); if(qcmBtn) qcmBtn.style.display=S.plan>=2?'flex':'none';
+  const ytBtn=G('tool-youtube-btn'); if(ytBtn) ytBtn.style.display=S.plan>=3?'flex':'none';
   const reviewBtn=G('tool-codereview-btn'); if(reviewBtn) reviewBtn.style.display=S.plan>=2?'flex':'none';
   const mindmapBtn=G('tool-mindmap-btn'); if(mindmapBtn) mindmapBtn.style.display=S.plan>=2?'flex':'none';
-  // Update new tool badges
-  const imgBadge=G('tool-imggen-badge');
-  if(imgBadge){const lbl={3:'Pro · 1/h',4:'Premium · 5/h',5:'Illimité'};imgBadge.textContent=lbl[S.plan]||'Pro+';}
+  // Update bgrem badge
+  const bgremBadge=G('tool-bgremover-badge');
+  if(bgremBadge){const lbl={2:'10/j',3:'20/j',4:'50/j',5:'Illimité'};bgremBadge.textContent=lbl[S.plan]||'AI Plus';}
+  // Update youtube badge
+  const ytBadge=G('tool-youtube-badge');
+  if(ytBadge){const lbl={3:'Pro',4:'Premium',5:'Illimité'};ytBadge.textContent=lbl[S.plan]||'Pro';}
   const reviewBadge=G('tool-codereview-badge');
   if(reviewBadge){const lbl={2:'Plus · 3/h',3:'Pro · 10/h',4:'Premium · 30/h',5:'Illimité'};reviewBadge.textContent=lbl[S.plan]||'Plus+';}
+  const mindmapBadge=G('tool-mindmap-badge');
+  if(mindmapBadge){const lbl={2:'2/h',3:'6/h',4:'15/h',5:'Illimité'};mindmapBadge.textContent=lbl[S.plan]||'Plus+';}
   const mapBadge=G('tool-mindmap-badge');
   if(mapBadge){const lbl={2:'Plus · 2/h',3:'Pro · 6/h',4:'Premium · 15/h',5:'Illimité'};mapBadge.textContent=lbl[S.plan]||'Plus+';}
   // Coder badge
@@ -7429,90 +7761,744 @@ function checkToolRateLimit(tool){
   return{ok:true, record:()=>{timestamps.push(now);try{localStorage.setItem(key,JSON.stringify(timestamps));}catch(e){}; } };
 }
 
-// ── IMAGE GENERATION ──
-function openImageGenTool(){
-  if(S.plan<3){toast('Génération d\'image — plan AI Pro requis');openPlansOverlay();return;}
-  updateImggenRateUI();
-  openModal('imggen-modal');
+// ── BG REMOVER (Détourage IA) ──
+// Quotas: Free=1/j, Plus=10/j, Pro=20/j, Premium=50/j, Premium+=illimité
+const BGREM_DAILY_LIMITS = {1:1, 2:10, 3:20, 4:50, 5:Infinity};
+let _bgremOriginalImg = null;
+let _bgremResultCanvas = null;
+
+function openBgRemoverTool(){
+  if(S.plan<2){toast('Détourage d\'image — plan AI Plus requis');openPlansOverlay();return;}
+  updateBgRemRateUI();
+  resetBgRemover();
+  openModal('bgremover-modal');
 }
 
-function updateImggenRateUI(){
-  const info=G('imggen-rate-info'); if(!info) return;
-  const badge=G('imggen-plan-badge'); if(badge){
-    const labels={3:'Pro+',4:'Premium',5:'Premium+'};
-    const colors={3:'plan-pro',4:'plan-premium',5:'plan-premium-plus'};
-    badge.textContent=labels[S.plan]||'Pro+';
-    badge.className='plan-badge '+(colors[S.plan]||'plan-pro');
+function updateBgRemRateUI(){
+  const badge = G('bgrem-plan-badge');
+  const rateBadge = G('bgrem-rate-badge');
+  if(!badge||!rateBadge) return;
+  const planLabels = {2:'AI Plus',3:'AI Pro',4:'AI Premium',5:'Premium+'};
+  const planColors = {2:'plan-plus',3:'plan-pro',4:'plan-premium',5:'plan-premium-plus'};
+  badge.textContent = planLabels[S.plan]||'AI Plus';
+  badge.className = 'plan-badge '+(planColors[S.plan]||'plan-plus');
+  const limit = BGREM_DAILY_LIMITS[S.plan]??1;
+  rateBadge.textContent = limit===Infinity ? 'Illimité' : `${limit}/jour`;
+  // Check remaining
+  const used = getBgRemUsedToday();
+  if(limit!==Infinity){
+    const rem = Math.max(0, limit-used);
+    const info = G('bgrem-rate-info');
+    if(info) info.textContent = `${rem} restant(s) aujourd'hui`;
   }
-  if(S.plan>=5){info.textContent='Illimité';return;}
-  const limits={3:'1/heure',4:'5/heure'};
-  info.textContent=limits[S.plan]||'';
 }
 
-async function runImageGeneration(){
-  if(S.plan<3){toast('Plan AI Pro requis');return;}
-  const check=checkToolRateLimit('imggen');
-  if(!check.ok){toast(check.msg);return;}
-
-  const prompt=G('imggen-prompt')?.value?.trim(); if(!prompt){toast('Décrivez votre image');return;}
-  const style=G('imggen-style')?.value||'realistic';
-  const ratio=G('imggen-ratio')?.value||'1:1';
-
-  G('imggen-result').style.display='none';
-  G('imggen-loading').style.display='block';
-  G('imggen-btn').disabled=true;
-
+function getBgRemUsedToday(){
   try{
-    // Use Pollinations.ai — free, no key needed
-    const fullPrompt=`${prompt}, ${style} style, high quality, detailed`;
-    const width=ratio==='16:9'?1024:ratio==='9:16'?576:ratio==='4:3'?896:768;
-    const height=ratio==='16:9'?576:ratio==='9:16'?1024:ratio==='4:3'?672:768;
-    const encodedPrompt=encodeURIComponent(fullPrompt);
-    const imageUrl=`https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&seed=${Math.floor(Math.random()*99999)}&nologo=true`;
+    const key = 'wm_bgrem_'+new Date().toDateString();
+    return parseInt(localStorage.getItem(key)||'0');
+  }catch(e){return 0;}
+}
+function incBgRemUsed(){
+  try{
+    const key = 'wm_bgrem_'+new Date().toDateString();
+    localStorage.setItem(key, (getBgRemUsedToday()+1).toString());
+  }catch(e){}
+}
+function checkBgRemLimit(){
+  const limit = BGREM_DAILY_LIMITS[S.plan]??1;
+  if(limit===Infinity) return true;
+  const used = getBgRemUsedToday();
+  if(used>=limit){ toast(`Limite ${limit}/jour atteinte — revenez demain ou passez à un forfait supérieur`); return false; }
+  return true;
+}
 
-    // Pre-load image
-    await new Promise((resolve,reject)=>{
-      const img=new Image();
-      img.onload=resolve;
-      img.onerror=reject;
-      img.src=imageUrl;
+function resetBgRemover(){
+  _bgremOriginalImg = null;
+  _bgremResultCanvas = null;
+  const dz = G('bgrem-dropzone');
+  const pa = G('bgrem-preview-area');
+  const dl = G('bgrem-dl-btn');
+  const canvas = G('bgrem-canvas');
+  const proc = G('bgrem-processing');
+  if(dz) dz.style.display='block';
+  if(pa) pa.style.display='none';
+  if(dl) dl.style.display='none';
+  if(canvas) canvas.style.display='none';
+  if(proc) proc.style.display='flex';
+  const fi = G('bgrem-file-input');
+  if(fi) fi.value='';
+}
+
+function onBgRemDrop(e){
+  const file = e.dataTransfer?.files?.[0];
+  if(file && file.type.startsWith('image/')) processBgRemImage(file);
+}
+function onBgRemFileSelected(e){
+  const file = e.target.files?.[0];
+  if(file) processBgRemImage(file);
+}
+
+async function processBgRemImage(file){
+  if(!checkBgRemLimit()) return;
+  const dz = G('bgrem-dropzone');
+  const pa = G('bgrem-preview-area');
+  const origImg = G('bgrem-original-img');
+  const canvas = G('bgrem-canvas');
+  const proc = G('bgrem-processing');
+  const dl = G('bgrem-dl-btn');
+  if(!dz||!pa||!origImg||!canvas||!proc) return;
+  
+  // Show preview area
+  dz.style.display='none';
+  pa.style.display='block';
+  proc.style.display='flex';
+  canvas.style.display='none';
+  if(dl) dl.style.display='none';
+  toast('🎨 Détourage en cours…');
+  
+  // Load image
+  const dataUrl = await new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=ev=>res(ev.target.result);
+    r.onerror=rej;
+    r.readAsDataURL(file);
+  });
+  origImg.src = dataUrl;
+  
+  const img = new Image();
+  img.onload = async () => {
+    _bgremOriginalImg = img;
+    // Use canvas-based background removal algorithm
+    // Simple but effective: use edge detection + flood fill from corners
+    const w = img.width, h = img.height;
+    const offscreen = document.createElement('canvas');
+    offscreen.width=w; offscreen.height=h;
+    const ctx = offscreen.getContext('2d');
+    ctx.drawImage(img,0,0);
+    const imageData = ctx.getImageData(0,0,w,h);
+    const data = imageData.data;
+    
+    // Sample background color from corners
+    const cornerColors = [];
+    [[0,0],[w-1,0],[0,h-1],[w-1,h-1],[Math.floor(w/2),0],[0,Math.floor(h/2)],[w-1,Math.floor(h/2)],[Math.floor(w/2),h-1]].forEach(([x,y])=>{
+      const i=(y*w+x)*4;
+      cornerColors.push([data[i],data[i+1],data[i+2]]);
     });
-
-    if(check.record) check.record();
-    G('imggen-loading').style.display='none';
-    G('imggen-result').style.display='block';
-    const out=G('imggen-output'); if(out) out.src=imageUrl;
-    window._lastGeneratedImageUrl=imageUrl;
-    toast('✓ Image générée !');
-  }catch(e){
-    G('imggen-loading').style.display='none';
-    toast('Erreur génération image. Réessayez.');
-  }
-  G('imggen-btn').disabled=false;
+    const avgBg = cornerColors.reduce((acc,c)=>[acc[0]+c[0],acc[1]+c[1],acc[2]+c[2]],[0,0,0]).map(v=>Math.round(v/cornerColors.length));
+    
+    // Apply alpha mask based on color distance from bg
+    const threshold = 60;
+    const edgeSoftness = 20;
+    for(let i=0;i<data.length;i+=4){
+      const r=data[i],g=data[i+1],b=data[i+2];
+      const dist = Math.sqrt((r-avgBg[0])**2+(g-avgBg[1])**2+(b-avgBg[2])**2);
+      if(dist < threshold){
+        const alpha = Math.max(0, Math.min(255, Math.round((dist/threshold)*255)));
+        const softAlpha = dist < edgeSoftness ? Math.round((dist/edgeSoftness)*180) : alpha;
+        data[i+3] = softAlpha;
+      }
+    }
+    ctx.putImageData(imageData,0,0);
+    
+    // Render to visible canvas
+    canvas.width=w; canvas.height=h;
+    const dispCtx=canvas.getContext('2d');
+    dispCtx.clearRect(0,0,w,h);
+    dispCtx.drawImage(offscreen,0,0);
+    _bgremResultCanvas = canvas;
+    
+    proc.style.display='none';
+    canvas.style.display='block';
+    if(dl) dl.style.display='flex';
+    incBgRemUsed();
+    updateBgRemRateUI();
+    toast('✓ Fond supprimé !');
+  };
+  img.src = dataUrl;
 }
 
-function downloadGeneratedImage(){
-  const url=window._lastGeneratedImageUrl; if(!url) return;
-  const a=document.createElement('a');a.href=url;a.download='wikimind-image.png';a.target='_blank';a.click();
-  toast('⬇ Image téléchargée !');
+function downloadBgRemResult(){
+  if(!_bgremResultCanvas){toast('Aucun résultat à télécharger');return;}
+  _bgremResultCanvas.toBlob(blob=>{
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download='wikimind-detourage.png';a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    toast('✓ Image PNG transparente téléchargée !');
+  },'image/png');
 }
 
-async function importImageToChat(){
-  const url=window._lastGeneratedImageUrl; if(!url) return;
+// ── DATAVIZ IA ──
+let _datavizChartInstance = null;
+
+async function runDataViz(){
+  const rawData = G('dataviz-input')?.value?.trim();
+  if(!rawData){toast('Entrez des données à visualiser');return;}
+  const chartType = document.querySelector('input[name="dviz-type"]:checked')?.value||'bar';
+  const title = G('dataviz-title')?.value?.trim()||'Graphique WikiMind';
+  const btn = G('dataviz-btn');
+  if(btn){btn.disabled=true;btn.textContent='Analyse…';}
+  toast('📊 Analyse des données…');
   try{
-    toast('Importation dans le chat…');
-    const res=await fetch(url);
-    const blob=await res.blob();
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      S.attachments.push({type:'image',name:'image-generee-wikimind.png',content:ev.target.result});
-      updateAttachmentPreview();
-      closeModal('imggen-modal');
-      toast('✓ Image importée dans le chat');
-    };
-    reader.readAsDataURL(blob);
-  }catch(e){toast('Erreur import image');}
+    const sys = `Tu es un expert en visualisation de données. L'utilisateur te donne des données brutes. Analyse-les et génère un objet JSON compatible avec Chart.js.
+    
+Format de réponse STRICT (JSON pur, sans backticks, sans explication) :
+{"labels":["label1","label2"],"datasets":[{"label":"Données","data":[valeur1,valeur2],"backgroundColor":["#6366f1","#8b5cf6","#06b6d4","#22c55e","#f59e0b","#ef4444","#ec4899"],"borderColor":"#6366f1","borderWidth":2}]}
+
+Pour un graphique ${chartType}. Extrait les étiquettes et les valeurs numériques des données.`;
+    const raw = await callMistral([{role:'system',content:sys},{role:'user',content:rawData}],'mistral-small-latest',800);
+    const clean = raw.replace(/```json|```/g,'').trim();
+    const chartData = JSON.parse(clean);
+    
+    // Render chart
+    const resultEl = G('dataviz-result');
+    if(resultEl) resultEl.style.display='block';
+    const canvas = G('dataviz-chart');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if(_datavizChartInstance){ try{_datavizChartInstance.destroy();}catch(e){} _datavizChartInstance=null; }
+    
+    const isDark = document.body.classList.contains('dark-mode');
+    const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+    const textColor = isDark ? '#e5e7eb' : '#374151';
+    
+    _datavizChartInstance = new Chart(ctx, {
+      type: chartType,
+      data: chartData,
+      options: {
+        responsive:true,
+        plugins:{
+          legend:{labels:{color:textColor,font:{family:'Inter',weight:'600'}}},
+          title:{display:true,text:title,color:textColor,font:{family:'Inter',size:14,weight:'800'}}
+        },
+        scales: (chartType==='pie'||chartType==='doughnut') ? {} : {
+          x:{ticks:{color:textColor,font:{family:'Inter'}},grid:{color:gridColor}},
+          y:{ticks:{color:textColor,font:{family:'Inter'}},grid:{color:gridColor}}
+        }
+      }
+    });
+    toast('✓ Graphique généré !');
+  }catch(e){
+    toast('Erreur : '+e.message.substring(0,50));
+  }
+  if(btn){btn.disabled=false;btn.textContent='✦ Générer';}
 }
+
+function downloadDataVizChart(){
+  const canvas = G('dataviz-chart');
+  if(!canvas||!_datavizChartInstance){toast('Aucun graphique');return;}
+  const url = canvas.toDataURL('image/png');
+  const a=document.createElement('a');a.href=url;a.download='wikimind-dataviz.png';a.click();
+  toast('✓ Graphique téléchargé !');
+}
+
+function importDataVizToChat(){
+  const canvas = G('dataviz-chart');
+  if(!canvas||!_datavizChartInstance){toast('Aucun graphique');return;}
+  const dataUrl = canvas.toDataURL('image/png');
+  S.attachments.push({type:'image',name:'graphique-dataviz.png',content:dataUrl});
+  updateAttachmentPreview();
+  closeModal('dataviz-modal');
+  toast('✓ Graphique importé dans le chat !');
+}
+
+// ── YOUTUBE TRANSCRIPT ──
+function openYoutubeTool(){
+  if(S.plan<3){toast('YouTube sous-titres — plan AI Pro requis');openPlansOverlay();return;}
+  openModal('youtube-modal');
+}
+
+async function fetchYoutubeTranscript(){
+  const url = G('yt-url-input')?.value?.trim();
+  if(!url){toast('Entrez une URL YouTube');return;}
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if(!match){toast('URL YouTube invalide');return;}
+  const videoId = match[1];
+  const btn = G('yt-fetch-btn');
+  const status = G('yt-status');
+  const result = G('yt-result');
+  if(btn){btn.disabled=true;btn.textContent='Chargement…';}
+  if(status){status.style.display='block';status.textContent='⏳ Récupération des sous-titres…';}
+  if(result) result.style.display='none';
+  try{
+    // Try multiple free transcript APIs
+    const apis = [
+      `https://api.youtubetranscript.com/?server_vid=${videoId}`,
+      `https://yt-downloader-and-transcript.p.rapidapi.com/video?id=${videoId}`,
+    ];
+    let transcript = '';
+    // Primary method: youtubetranscript.com (free, no key)
+    try{
+      const res = await fetch(`https://api.youtubetranscript.com/?server_vid=${videoId}`, {signal:AbortSignal.timeout(8000)});
+      if(res.ok){
+        const data = await res.json();
+        if(Array.isArray(data)){
+          transcript = data.map(s=>s.text||s.t||'').filter(Boolean).join(' ');
+        } else if(typeof data.transcript==='string'){
+          transcript = data.transcript;
+        } else if(data.transcripts && Array.isArray(data.transcripts)){
+          const first = data.transcripts[0];
+          if(Array.isArray(first?.segs)) transcript = first.segs.map(s=>s.utf8||s.text||'').join(' ');
+        }
+      }
+    }catch(e1){}
+    // Fallback: try fetching via CORS proxy
+    if(!transcript){
+      try{
+        const res2 = await fetch(`https://corsproxy.io/?https://www.youtube.com/watch?v=${videoId}`, {signal:AbortSignal.timeout(8000)});
+        const html = await res2.text();
+        const captMatch = html.match(/"captionTracks":\[(.*?)\]/s);
+        if(captMatch){
+          const tracks = JSON.parse('['+captMatch[1]+']');
+          const frTrack = tracks.find(t=>t.languageCode?.startsWith('fr'))||tracks[0];
+          if(frTrack?.baseUrl){
+            const xmlRes = await fetch(frTrack.baseUrl, {signal:AbortSignal.timeout(6000)});
+            const xmlText = await xmlRes.text();
+            transcript = xmlText.replace(/<[^>]+>/g,' ').replace(/&amp;/g,'&').replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\s+/g,' ').trim();
+          }
+        }
+      }catch(e2){}
+    }
+    if(!transcript || transcript.length < 20){
+      // Fallback: send video ID to Mistral and ask it to describe what it knows
+      transcript = '[Sous-titres non disponibles pour cette vidéo — les sous-titres ne sont pas activés ou la vidéo est privée]';
+      toast('⚠️ Sous-titres indisponibles pour cette vidéo');
+    } else {
+      toast('✓ Sous-titres récupérés !');
+    }
+    window._ytTranscript = transcript;
+    window._ytVideoId = videoId;
+    const textEl = G('yt-transcript-text');
+    if(textEl) textEl.textContent = transcript.substring(0,3000)+(transcript.length>3000?'…':'');
+    if(status) status.style.display='none';
+    if(result) result.style.display='block';
+  }catch(e){
+    if(status){status.textContent='Erreur : '+e.message;status.style.color='#ef4444';}
+    toast('Erreur récupération : '+e.message.substring(0,40));
+  }
+  if(btn){btn.disabled=false;btn.textContent='Récupérer';}
+}
+
+function importYtTranscriptToChat(){
+  const transcript = window._ytTranscript;
+  if(!transcript){toast('Aucune transcription à importer');return;}
+  const videoId = window._ytVideoId||'';
+  S.attachments.push({type:'text',name:`YouTube Transcript (${videoId})`,content:`[Transcription YouTube — https://youtu.be/${videoId}]\n\n${transcript}`});
+  updateAttachmentPreview();
+  closeModal('youtube-modal');
+  toast('✓ Transcription importée dans le chat');
+  G('user-input').focus();
+}
+
+function copyYtTranscript(){
+  if(window._ytTranscript) copyText(window._ytTranscript);
+}
+
+// ── TTS TOOL ──
+let _ttsToolUtterance = null;
+let _ttsToolAudioBlob = null;
+
+function openTtsToolModal(){
+  openModal('tts-tool-modal');
+}
+
+function runTtsTool(){
+  const text = G('tts-tool-input')?.value?.trim();
+  if(!text){toast('Entrez un texte à lire');return;}
+  const lang = G('tts-tool-lang')?.value||'fr-FR';
+  const rate = parseFloat(G('tts-tool-rate')?.value||'1');
+  if(!('speechSynthesis' in window)){toast('Synthèse vocale non supportée par votre navigateur');return;}
+  // Stop previous
+  window.speechSynthesis.cancel();
+  if(_ttsToolUtterance) _ttsToolUtterance = null;
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = lang;
+  utt.rate = rate;
+  utt.pitch = 1;
+  const trySpeak = () => {
+    const voices = window.speechSynthesis.getVoices();
+    const langVoice = voices.find(v=>v.lang.startsWith(lang.split('-')[0]));
+    if(langVoice) utt.voice=langVoice;
+    utt.onstart = () => toast('🔊 Lecture en cours…');
+    utt.onend = () => { const btn=G('tts-tool-btn');if(btn){btn.textContent='🔊 Écouter / Générer';} };
+    _ttsToolUtterance = utt;
+    window.speechSynthesis.speak(utt);
+    const btn=G('tts-tool-btn');if(btn) btn.textContent='⏹ Stop';
+    // Show player area with note about download
+    const playerEl = G('tts-tool-player');
+    if(playerEl){
+      playerEl.style.display='block';
+      const audioEl = G('tts-tool-audio');
+      if(audioEl) audioEl.src=''; // Browser TTS doesn't produce a file
+    }
+  };
+  if(window.speechSynthesis.getVoices().length>0) trySpeak();
+  else { window.speechSynthesis.onvoiceschanged=()=>{window.speechSynthesis.onvoiceschanged=null;trySpeak();}; trySpeak(); }
+}
+
+function downloadTtsAudio(){
+  toast('La synthèse vocale native ne permet pas l\'export — utilisez un enregistreur système.');
+}
+
+// ── QCM / FLASH CARDS ──
+const QCM = {
+  questions: [],
+  current: 0,
+  score: 0,
+  answered: false,
+  flashIdx: 0,
+  flashFlipped: false,
+  known: [],
+  sets: [],
+  activeSetName: ''
+};
+
+function openQcmTool(){
+  if(S.plan<2){toast('QCM & Flash Cards — plan AI Plus requis');openPlansOverlay();return;}
+  loadQcmSets();
+  switchQcmTab('gen');
+  openModal('qcm-modal');
+}
+
+function switchQcmTab(tab){
+  ['gen','quiz','flash','saved'].forEach(t=>{
+    G('qcmtab-'+t)?.classList.toggle('active',t===tab);
+    const body=G('qcmbody-'+t);if(body) body.style.display=t===tab?'block':'none';
+  });
+  if(tab==='saved') renderQcmSavedList();
+  if(tab==='quiz') initQcmQuiz();
+  if(tab==='flash') initFlashCards();
+}
+
+async function generateQcm(){
+  const topic = G('qcm-topic-input')?.value?.trim();
+  if(!topic){toast('Entrez un sujet ou du texte');return;}
+  const type = G('qcm-type')?.value||'qcm';
+  const count = parseInt(G('qcm-count')?.value||'10');
+  const diff = G('qcm-diff')?.value||'moyen';
+  const setName = G('qcm-set-name')?.value?.trim()||`Set — ${topic.substring(0,30)} — ${new Date().toLocaleDateString('fr-FR')}`;
+  const btn = G('qcm-gen-btn');
+  if(btn){btn.disabled=true;btn.textContent='✦ Génération…';}
+  toast('🧠 Génération du set de questions…');
+  try{
+    let sys='', userPrompt='';
+    if(type==='qcm'){
+      sys=`Tu es un professeur expert. Génère ${count} questions QCM à choix unique en JSON STRICT.
+Format (sans backticks):
+[{"q":"Question ?","choices":["A","B","C","D"],"answer":0,"explanation":"Explication courte"}]
+Difficulté: ${diff}. answer = index (0-3) de la bonne réponse.`;
+    }else if(type==='flashcard'){
+      sys=`Tu es un professeur expert. Génère ${count} flash cards question/réponse en JSON STRICT.
+Format (sans backticks):
+[{"front":"Question ou concept ?","back":"Réponse ou définition complète"}]
+Difficulté: ${diff}.`;
+    }else if(type==='vf'){
+      sys=`Tu es un professeur expert. Génère ${count} questions Vrai/Faux en JSON STRICT.
+Format (sans backticks):
+[{"q":"Affirmation à évaluer.","answer":true,"explanation":"Explication courte"}]
+Difficulté: ${diff}. answer = true ou false.`;
+    }else{
+      sys=`Tu es un professeur expert. Génère ${count} questions à texte à trous en JSON STRICT.
+Format (sans backticks):
+[{"q":"La [TROU] est la capitale de la France.","answer":"Paris","explanation":"Explication courte"}]
+Difficulté: ${diff}. Remplace les mots importants par [TROU].`;
+    }
+    userPrompt = topic.length > 200 ? `À partir de ce texte:\n${topic}` : `Sujet: ${topic}`;
+    const raw = await callMistral([{role:'system',content:sys},{role:'user',content:userPrompt}],'mistral-large-latest',3000);
+    const clean = raw.replace(/```json|```/g,'').trim();
+    QCM.questions = JSON.parse(clean);
+    QCM.activeSetName = setName;
+    QCM.current=0; QCM.score=0; QCM.answered=false;
+    QCM.flashIdx=0; QCM.flashFlipped=false;
+    QCM.known=new Array(QCM.questions.length).fill(null);
+    // Save to IndexedDB
+    saveQcmSet({name:setName,type,questions:QCM.questions,createdAt:Date.now()});
+    toast(`✓ ${QCM.questions.length} questions générées !`);
+    if(type==='flashcard') switchQcmTab('flash');
+    else switchQcmTab('quiz');
+  }catch(e){
+    toast('Erreur : '+e.message.substring(0,50));
+  }
+  if(btn){btn.disabled=false;btn.textContent='✦ Générer le set';}
+}
+
+function saveQcmSet(set){
+  try{
+    let sets = JSON.parse(localStorage.getItem('wm_qcm_sets')||'[]');
+    sets.unshift(set);
+    sets=sets.slice(0,20); // max 20 sets
+    localStorage.setItem('wm_qcm_sets',JSON.stringify(sets));
+    QCM.sets=sets;
+  }catch(e){}
+}
+
+function loadQcmSets(){
+  try{
+    QCM.sets = JSON.parse(localStorage.getItem('wm_qcm_sets')||'[]');
+  }catch(e){ QCM.sets=[]; }
+}
+
+function renderQcmSavedList(){
+  const el = G('qcm-saved-list'); if(!el) return;
+  loadQcmSets();
+  if(!QCM.sets.length){
+    el.innerHTML='<div style="text-align:center;padding:32px;color:#aaa"><div style="font-size:36px;margin-bottom:10px">💾</div><div style="font-size:14px;font-weight:700">Aucun set sauvegardé</div><div style="font-size:12px;margin-top:6px">Générez votre premier set dans l\'onglet "Générer".</div></div>';
+    return;
+  }
+  el.innerHTML=QCM.sets.map((s,i)=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1px solid var(--border2);margin-bottom:8px;background:var(--select-bg)">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.name)}</div>
+        <div style="font-size:10px;color:#aaa;margin-top:2px">${s.questions?.length||0} questions · ${s.type||'qcm'} · ${s.createdAt?new Date(s.createdAt).toLocaleDateString('fr-FR'):''}</div>
+      </div>
+      <button onclick="loadQcmSet(${i})" style="padding:7px 14px;border-radius:9px;border:none;background:var(--accent);color:var(--accent-inv);font-size:11px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap">▶ Lancer</button>
+      <button onclick="deleteQcmSet(${i})" style="padding:7px 10px;border-radius:9px;border:none;background:none;color:#ef4444;font-size:11px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif">✕</button>
+    </div>`).join('');
+}
+
+function loadQcmSet(i){
+  const set=QCM.sets[i]; if(!set) return;
+  QCM.questions=set.questions||[];
+  QCM.activeSetName=set.name;
+  QCM.current=0; QCM.score=0; QCM.answered=false;
+  QCM.flashIdx=0; QCM.flashFlipped=false;
+  QCM.known=new Array(QCM.questions.length).fill(null);
+  if(set.type==='flashcard') switchQcmTab('flash');
+  else switchQcmTab('quiz');
+  toast(`Set "${set.name}" chargé !`);
+}
+
+function deleteQcmSet(i){
+  QCM.sets.splice(i,1);
+  try{localStorage.setItem('wm_qcm_sets',JSON.stringify(QCM.sets));}catch(e){}
+  renderQcmSavedList();
+  toast('Set supprimé');
+}
+
+function initQcmQuiz(){
+  const noSet=G('qcm-quiz-no-set');
+  const content=G('qcm-quiz-content');
+  const result=G('qcm-result-wrap');
+  if(!QCM.questions.length){
+    if(noSet) noSet.style.display='block';
+    if(content) content.style.display='none';
+    return;
+  }
+  if(noSet) noSet.style.display='none';
+  if(result) result.style.display='none';
+  if(content) content.style.display='block';
+  const titleEl=G('qcm-quiz-title'); if(titleEl) titleEl.textContent=QCM.activeSetName;
+  QCM.current=0; QCM.score=0; QCM.answered=false;
+  renderQcmQuestion();
+}
+
+function renderQcmQuestion(){
+  const q=QCM.questions[QCM.current]; if(!q) return;
+  const total=QCM.questions.length;
+  const progEl=G('qcm-quiz-progress'); if(progEl) progEl.textContent=`${QCM.current+1} / ${total}`;
+  const progFill=G('qcm-quiz-prog-fill'); if(progFill) progFill.style.width=((QCM.current/total)*100)+'%';
+  const qText=G('qcm-q-text'); if(qText) qText.textContent=q.q||q.front||'';
+  const choicesEl=G('qcm-choices'); if(!choicesEl) return;
+  const feedback=G('qcm-feedback'); if(feedback){feedback.style.display='none';}
+  const nextBtn=G('qcm-next-btn'); if(nextBtn) nextBtn.style.display='none';
+  QCM.answered=false;
+  
+  // Build choices
+  if(q.choices){
+    choicesEl.innerHTML=q.choices.map((c,i)=>`
+      <button onclick="answerQcm(${i})" style="width:100%;padding:12px 16px;border-radius:12px;border:1.5px solid var(--border2);background:var(--bg);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;text-align:left;font-family:Inter,sans-serif;transition:all .15s;display:flex;align-items:center;gap:10px" id="qcm-choice-${i}" onmouseover="if(!this.dataset.answered)this.style.borderColor='var(--accent)'" onmouseout="if(!this.dataset.answered)this.style.borderColor='var(--border2)'">
+        <span style="min-width:24px;height:24px;border-radius:50%;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800">${['A','B','C','D'][i]}</span>
+        ${esc(c)}
+      </button>`).join('');
+  }else if(q.answer===true||q.answer===false){
+    // Vrai/Faux
+    choicesEl.innerHTML=['Vrai','Faux'].map((c,i)=>`
+      <button onclick="answerQcmVf(${i===0})" style="width:100%;padding:14px 16px;border-radius:12px;border:1.5px solid var(--border2);background:var(--bg);color:var(--text);font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;transition:all .15s" id="qcm-vf-${i}">${c}</button>`).join('');
+  }else if(typeof q.front!=='undefined'){
+    // Flash card shown as quiz
+    choicesEl.innerHTML=`<div style="text-align:center;padding:20px;font-size:14px;font-weight:600;color:#888">Pensez à la réponse, puis cliquez pour la révéler</div>
+    <button onclick="answerQcm(-1)" style="width:100%;padding:12px;border-radius:12px;border:1.5px solid var(--border2);background:var(--bg);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif">Révéler la réponse</button>`;
+  }else{
+    // Texte à trou — input
+    choicesEl.innerHTML=`<div style="font-size:14px;font-weight:700;margin-bottom:10px;line-height:1.8">${esc(q.q||'').replace('[TROU]','<input id="trou-inp" type="text" style="border:none;border-bottom:2px solid var(--accent);background:transparent;color:var(--text);font-size:14px;font-weight:700;outline:none;min-width:120px;font-family:Inter,sans-serif" placeholder="Réponse…">')}</div>
+    <button onclick="answerTrou()" style="padding:10px 20px;border-radius:10px;border:none;background:var(--accent);color:var(--accent-inv);font-size:12px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif">Valider</button>`;
+  }
+}
+
+function answerQcm(choiceIdx){
+  if(QCM.answered) return;
+  QCM.answered=true;
+  const q=QCM.questions[QCM.current];
+  const correct = q.answer;
+  const isCorrect = choiceIdx===correct;
+  if(isCorrect) QCM.score++;
+  // Highlight
+  q.choices?.forEach((_,i)=>{
+    const btn=G('qcm-choice-'+i);if(!btn)return;
+    btn.dataset.answered='true';
+    btn.style.cursor='default';
+    if(i===correct){ btn.style.background='rgba(34,197,94,.15)'; btn.style.borderColor='#22c55e'; btn.style.color='#16a34a'; }
+    else if(i===choiceIdx&&!isCorrect){ btn.style.background='rgba(239,68,68,.12)'; btn.style.borderColor='#ef4444'; btn.style.color='#dc2626'; }
+  });
+  showQcmFeedback(isCorrect, q.explanation);
+}
+
+function answerQcmVf(userAnswer){
+  if(QCM.answered) return;
+  QCM.answered=true;
+  const q=QCM.questions[QCM.current];
+  const isCorrect = userAnswer===q.answer;
+  if(isCorrect) QCM.score++;
+  const trueBtn=G('qcm-vf-0');const falseBtn=G('qcm-vf-1');
+  [trueBtn,falseBtn].forEach(b=>{if(b){b.dataset.answered='true';b.style.cursor='default';}});
+  if(trueBtn&&q.answer===true){ trueBtn.style.background='rgba(34,197,94,.15)'; trueBtn.style.borderColor='#22c55e'; }
+  if(falseBtn&&q.answer===false){ falseBtn.style.background='rgba(34,197,94,.15)'; falseBtn.style.borderColor='#22c55e'; }
+  if(userAnswer&&!q.answer&&trueBtn){ trueBtn.style.background='rgba(239,68,68,.12)'; trueBtn.style.borderColor='#ef4444'; }
+  if(!userAnswer&&q.answer&&falseBtn){ falseBtn.style.background='rgba(239,68,68,.12)'; falseBtn.style.borderColor='#ef4444'; }
+  showQcmFeedback(isCorrect, q.explanation);
+}
+
+function answerTrou(){
+  if(QCM.answered) return;
+  const inp=G('trou-inp');if(!inp)return;
+  const userAns=inp.value.trim().toLowerCase();
+  const q=QCM.questions[QCM.current];
+  const isCorrect = userAns===(q.answer||'').toLowerCase()||userAns.includes((q.answer||'').toLowerCase());
+  if(isCorrect) QCM.score++;
+  QCM.answered=true;
+  inp.style.borderColor=isCorrect?'#22c55e':'#ef4444';
+  inp.disabled=true;
+  showQcmFeedback(isCorrect, q.explanation, q.answer);
+}
+
+function showQcmFeedback(isCorrect, explanation, correctAnswer){
+  const feedback=G('qcm-feedback');
+  if(!feedback) return;
+  feedback.style.display='block';
+  feedback.style.background=isCorrect?'rgba(34,197,94,.1)':'rgba(239,68,68,.1)';
+  feedback.style.border=`1px solid ${isCorrect?'rgba(34,197,94,.3)':'rgba(239,68,68,.3)'}`;
+  feedback.style.color=isCorrect?'#16a34a':'#dc2626';
+  let html=isCorrect?'✓ Bonne réponse !':'✗ Mauvaise réponse';
+  if(correctAnswer&&!isCorrect) html+=` — La réponse était : <strong>${esc(String(correctAnswer))}</strong>`;
+  if(explanation) html+=`<div style="font-size:12px;font-weight:500;margin-top:4px;opacity:.85">${esc(explanation)}</div>`;
+  feedback.innerHTML=html;
+  const nextBtn=G('qcm-next-btn');
+  if(nextBtn){
+    nextBtn.style.display='flex';
+    nextBtn.textContent=QCM.current+1<QCM.questions.length?'Question suivante →':'Voir les résultats';
+  }
+}
+
+function qcmNext(){
+  QCM.current++;
+  if(QCM.current>=QCM.questions.length){
+    showQcmResults();
+  } else {
+    QCM.answered=false;
+    const feedback=G('qcm-feedback');if(feedback)feedback.style.display='none';
+    const nextBtn=G('qcm-next-btn');if(nextBtn)nextBtn.style.display='none';
+    renderQcmQuestion();
+  }
+}
+
+function showQcmResults(){
+  const content=G('qcm-quiz-content');
+  const card=G('qcm-question-card');
+  const fb=G('qcm-feedback');
+  const nb=G('qcm-next-btn');
+  const result=G('qcm-result-wrap');
+  if(card) card.style.display='none';
+  if(fb) fb.style.display='none';
+  if(nb) nb.style.display='none';
+  const pct=Math.round((QCM.score/QCM.questions.length)*100);
+  const emoji=pct>=90?'🏆':pct>=70?'🎯':pct>=50?'📚':'💪';
+  const scoreEl=G('qcm-score-display');
+  const detailEl=G('qcm-score-detail');
+  const emojiEl=G('qcm-result-emoji');
+  if(emojiEl) emojiEl.textContent=emoji;
+  if(scoreEl) scoreEl.textContent=`${QCM.score} / ${QCM.questions.length} (${pct}%)`;
+  if(detailEl) detailEl.textContent=pct>=90?'Excellent travail, vous maîtrisez ce sujet !':pct>=70?'Très bon score, continuez !':pct>=50?'Pas mal, mais il y a encore de la marge !':'Continuez à vous entraîner, vous progresserez !';
+  const progFill=G('qcm-quiz-prog-fill');if(progFill) progFill.style.width='100%';
+  if(result) result.style.display='block';
+}
+
+function restartQcm(){
+  QCM.current=0; QCM.score=0; QCM.answered=false;
+  const card=G('qcm-question-card');if(card)card.style.display='block';
+  const result=G('qcm-result-wrap');if(result)result.style.display='none';
+  renderQcmQuestion();
+}
+
+// Flash Cards
+function initFlashCards(){
+  const noSet=G('qcm-flash-no-set');
+  const content=G('qcm-flash-content');
+  const isFlash=QCM.questions.some(q=>typeof q.front!=='undefined');
+  if(!QCM.questions.length){
+    if(noSet) noSet.style.display='block';
+    if(content) content.style.display='none';
+    return;
+  }
+  if(noSet) noSet.style.display='none';
+  if(content) content.style.display='block';
+  const titleEl=G('flash-title');if(titleEl)titleEl.textContent=QCM.activeSetName;
+  QCM.flashIdx=0; QCM.flashFlipped=false;
+  QCM.known=new Array(QCM.questions.length).fill(null);
+  renderFlashCard();
+}
+
+function renderFlashCard(){
+  const q=QCM.questions[QCM.flashIdx]; if(!q) return;
+  const front=G('flash-front');
+  const back=G('flash-back');
+  const hint=G('flash-hint');
+  const prog=G('flash-progress');
+  const card=G('flash-card');
+  QCM.flashFlipped=false;
+  if(front){ front.style.display='block'; front.textContent=q.front||q.q||''; }
+  if(back){ back.style.display='none'; }
+  if(hint){ hint.textContent='Cliquer pour retourner'; }
+  if(prog){ prog.textContent=`${QCM.flashIdx+1} / ${QCM.questions.length}`; }
+  if(card){ card.style.background='linear-gradient(135deg,var(--select-bg),var(--bg))'; }
+}
+
+function flipFlashCard(){
+  const q=QCM.questions[QCM.flashIdx]; if(!q) return;
+  QCM.flashFlipped=!QCM.flashFlipped;
+  const front=G('flash-front');
+  const back=G('flash-back');
+  const hint=G('flash-hint');
+  const card=G('flash-card');
+  if(QCM.flashFlipped){
+    if(front) front.style.display='none';
+    if(back){ back.style.display='block'; back.textContent=q.back||q.answer||q.explanation||''; }
+    if(hint) hint.textContent='Cliquer pour remontrer la question';
+    if(card) card.style.background='linear-gradient(135deg,rgba(99,102,241,.1),rgba(139,92,246,.05))';
+  } else {
+    if(front){ front.style.display='block'; }
+    if(back){ back.style.display='none'; }
+    if(hint) hint.textContent='Cliquer pour retourner';
+    if(card) card.style.background='linear-gradient(135deg,var(--select-bg),var(--bg))';
+  }
+}
+
+function flashNav(dir){
+  QCM.flashIdx=Math.max(0,Math.min(QCM.questions.length-1,QCM.flashIdx+dir));
+  renderFlashCard();
+}
+
+function flashKnow(know){
+  QCM.known[QCM.flashIdx]=know;
+  const knownCount=QCM.known.filter(v=>v===true).length;
+  const toReview=QCM.known.filter(v=>v===false).length;
+  toast(know?`✓ Je sais (${knownCount}/${QCM.questions.length})`:`À revoir (${toReview} cartes)`);
+  if(QCM.flashIdx<QCM.questions.length-1) flashNav(1);
+  else toast(`Session terminée ! ${knownCount} su, ${toReview} à revoir.`);
+}
+
+// ── OLD IMAGE GEN (stub to avoid errors) ──
+function openImageGenTool(){ openBgRemoverTool(); }
+function runImageGeneration(){ toast('Utilisez l\'outil Détourage d\'Image IA'); }
 
 // ── CODE REVIEW ──
 function openCodeReviewTool(){
