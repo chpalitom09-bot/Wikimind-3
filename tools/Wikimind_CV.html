@@ -1140,8 +1140,15 @@ window._fb={auth,db,ref,get,set,push,remove,runTransaction,
   GoogleAuthProvider:()=>GAP
 };
 onAuthStateChanged(auth,user=>{
-  if(user){ bootUser(user); }
-  else{ setTimeout(()=>{ if(!window._S?.user){ G('auth-modal').style.display='block'; }},800); }
+  window._authResolved = true;
+  if(user){
+    G('auth-modal').style.display='none';
+    bootUser(user);
+  } else {
+    if(!window._S?.user){
+      G('auth-modal').style.display='block';
+    }
+  }
 });
 </script>
 
@@ -1189,8 +1196,14 @@ window.addEventListener('load', () => {
   renderTemplatesGallery();
   renderWelcomePreview();
   renderPlanCards();
-  // Show auth after delay if no firebase user
-  setTimeout(()=>{ if(!_S.user){ G('auth-modal').style.display='block'; }}, 700);
+  // Attendre Firebase onAuthStateChanged (peut prendre jusqu'à 3s pour restaurer la session)
+  // On n'affiche le modal que si Firebase confirme qu'il n'y a pas de session active
+  window._authResolved = false;
+  setTimeout(()=>{
+    if(!_S.user && !window._authResolved){
+      G('auth-modal').style.display='block';
+    }
+  }, 3000);
 });
 
 // ── AUTH ──
