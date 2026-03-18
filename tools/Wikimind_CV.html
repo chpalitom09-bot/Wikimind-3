@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WikiMind CV - Éditeur Pro IA</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Georgia&family=Roboto+Mono&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+:root {
+  --bg: #ffffff; --text: #111111; --sidebar: #fcfcfc;
+  --border: #f0f0f0; --border2: #e5e7eb;
+  --input-bg: #ffffff; --select-bg: #f3f4f6; 
+  --card-hover: #f9fafb; --accent: #111111; --accent-inv: #ffffff;
+}
+.dark-mode {
+  --bg: #0f0f0f; --text: #eeeeee; --sidebar: #161616;
+  --border: #252525; --border2: #2d2d2d;
+  --input-bg: #1a1a1a; --select-bg: #2a2a2a; 
+  --card-hover: #1f1f1f; --accent: #ffffff; --accent-inv: #111111;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; transition: background .3s, color .3s; }
+a { text-decoration: none; color: inherit; }
+
+/* SCROLLBARS */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+/* SIDEBAR */
+#sidebar { width: 280px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 50; flex-shrink: 0; transition: margin .3s; }
+.sb-header { padding: 24px 20px 16px; border-bottom: 1px solid var(--border); }
+.sb-logo { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+.sb-logo h1 { font-size: 18px; font-weight: 900; letter-spacing: -.04em; text-transform: uppercase; font-style: italic; }
+.sb-nav { padding: 16px 12px; display: flex; flex-direction: column; gap: 8px; }
+.sb-btn { width: 100%; padding: 10px 14px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 10px; transition: .2s; border: none; background: none; color: var(--text); }
+.sb-btn:hover { background: var(--select-bg); }
+.sb-btn.primary { background: var(--accent); color: var(--accent-inv); }
+.sb-btn.primary:hover { opacity: .85; }
+.sb-section { padding: 16px 12px 4px; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .15em; color: #999; }
+
+#cv-list { flex: 1; overflow-y: auto; padding: 0 10px 10px; }
+.cv-item { display: flex; align-items: center; padding: 10px; border-radius: 10px; cursor: pointer; font-size: 12px; color: #888; gap: 8px; transition: .2s; border: 1px solid transparent; }
+.cv-item:hover { background: var(--border); color: var(--text); }
+.cv-item.active { background: var(--select-bg); color: var(--text); border-color: var(--border2); }
+.cv-item-title { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cv-item-date { font-size: 9px; opacity: .7; }
+.cv-item-del { opacity: 0; color: #ef4444; font-size: 14px; padding: 2px 6px; border-radius: 4px; cursor: pointer; transition: .2s; }
+.cv-item:hover .cv-item-del { opacity: 1; }
+.cv-item-del:hover { background: rgba(239,68,68,.1); }
+
+/* TOP BAR AVATAR (Same as WikiMind AI) */
+#plan-chip { position: absolute; top: 20px; right: 24px; z-index: 50; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.plan-badge { font-size: 9px; font-weight: 800; text-transform: uppercase; padding: 2px 8px; border-radius: 20px; letter-spacing: .04em; }
+.plan-free { background: #f3f4f6; color: #6b7280; }
+.plan-plus { background: #dbeafe; color: #1d4ed8; }
+.plan-pro { background: #ede9fe; color: #7c3aed; }
+.plan-premium { background: #fef3c7; color: #d97706; }
+.plan-premium-plus { background: linear-gradient(135deg,#fee2e2,#fef3c7); color: #c2410c; }
+.dark-mode .plan-free { background: #27272a; color: #a1a1aa; }
+.dark-mode .plan-plus { background: #1e3a5f; color: #60a5fa; }
+.dark-mode .plan-pro { background: #3b1f5e; color: #c084fc; }
+.dark-mode .plan-premium { background: #44330f; color: #fbbf24; }
+.dark-mode .plan-premium-plus { background: linear-gradient(135deg,#44110f,#44330f); color: #fb923c; }
+
+.plan-chip-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: var(--text); overflow: visible; flex-shrink: 0; position: relative; }
+.plan-chip-avatar img { width: 32px; height: 32px; object-fit: cover; border-radius: 50%; position: relative; z-index: 2; }
+.plan-chip-avatar > span { position: relative; z-index: 2; }
+.plan-chip-avatar::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; z-index: 0; }
+.plan-chip-avatar::before { content: ''; position: absolute; inset: 2px; border-radius: 50%; z-index: 1; background: var(--bg); }
+.ring-free::after { background: conic-gradient(#9ca3af,#d1d5db,#9ca3af); }
+.ring-plus::after { background: conic-gradient(#111,#555,#111,#555,#111); animation: ringRotate 4s linear infinite; }
+.dark-mode .ring-plus::after { background: conic-gradient(#fff,#aaa,#fff,#aaa,#fff); animation: ringRotate 4s linear infinite; }
+.ring-pro::after { background: conic-gradient(#22c55e,#4ade80,#16a34a,#86efac,#22c55e); animation: ringRotate 3s linear infinite; }
+.ring-premium::after { background: conic-gradient(#f59e0b,#fcd34d,#d97706,#fef08a,#f59e0b); animation: ringRotate 2.5s linear infinite; }
+.ring-premium-plus::after { background: conic-gradient(#ef4444,#f97316,#eab308,#f97316,#ef4444); animation: ringRotateFire 1.8s linear infinite; }
+@keyframes ringRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes ringRotateFire { 0% { transform: rotate(0deg); filter: brightness(1); } 50% { transform: rotate(180deg); filter: brightness(1.3); } 100% { transform: rotate(360deg); filter: brightness(1); } }
+
+/* EDITOR & PREVIEW LAYOUT */
+#main-area { flex: 1; display: flex; overflow: hidden; background: var(--bg); position: relative; }
+#editor-pane { width: 45%; min-width: 400px; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--bg); overflow-y: auto; padding-top: 80px; }
+#preview-pane { flex: 1; background: var(--select-bg); display: flex; flex-direction: column; overflow: hidden; position: relative; }
+
+/* EDITOR UI */
+.editor-section { padding: 24px; border-bottom: 1px solid var(--border); }
+.editor-title { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+.field-group { margin-bottom: 16px; }
+.field-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: #888; margin-bottom: 6px; display: block; }
+.cv-input, .cv-textarea { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border2); background: var(--input-bg); color: var(--text); font-size: 13px; font-family: 'Inter', sans-serif; outline: none; transition: border .2s; }
+.cv-input:focus, .cv-textarea:focus { border-color: var(--accent); }
+.cv-textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+
+.ai-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; background: linear-gradient(135deg, #8b5cf6, #3b82f6); color: #fff; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: .2s; letter-spacing: .05em; }
+.ai-btn:hover { opacity: .85; transform: scale(1.02); }
+.ai-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+.action-btn { background: var(--select-bg); border: 1px solid var(--border2); color: var(--text); font-size: 11px; font-weight: 700; padding: 8px 14px; border-radius: 8px; cursor: pointer; transition: .2s; }
+.action-btn:hover { border-color: var(--text); }
+
+/* DYNAMIC LISTS (Exp, Edu) */
+.list-item-card { background: var(--card-hover); border: 1px solid var(--border2); border-radius: 12px; padding: 16px; margin-bottom: 12px; position: relative; }
+.list-item-card .del-btn { position: absolute; top: 12px; right: 12px; color: #ef4444; cursor: pointer; font-size: 14px; font-weight: 800; background: none; border: none; }
+
+/* PREVIEW UI */
+.preview-toolbar { padding: 16px 24px; background: var(--bg); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; z-index: 10; }
+.tpl-selector { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; flex: 1; }
+.tpl-btn { flex-shrink: 0; padding: 8px 16px; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; cursor: pointer; border: 2px solid transparent; background: var(--select-bg); color: #888; transition: .2s; }
+.tpl-btn.active { border-color: var(--text); color: var(--text); background: var(--bg); }
+
+#cv-render-wrapper { flex: 1; overflow: auto; padding: 40px; display: flex; justify-content: center; align-items: flex-start; }
+#cv-document { width: 794px; min-height: 1123px; background: #fff; box-shadow: 0 10px 40px rgba(0,0,0,.15); position: relative; overflow: hidden; transform-origin: top center; }
+
+/* TOAST */
+#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--accent); color: var(--accent-inv); padding: 12px 24px; border-radius: 12px; font-size: 13px; font-weight: 700; z-index: 9999; opacity: 0; transition: .3s; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,.2); }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- FIREBASE IMPORT (Identique WikiMind AI) -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getDatabase, ref, get } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+
+const app = initializeApp({
+  apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+  authDomain: "wikimind-3-comments.firebaseapp.com",
+  databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "wikimind-3-comments",
+  storageBucket: "wikimind-3-comments.firebasestorage.app",
+  messagingSenderId: "137479541640",
+  appId: "1:137479541640:web:4ed2510a9908055052e03d"
+});
+const auth = getAuth(app);
+const db = getDatabase(app);
+window._fb = { auth, db, ref, get };
+
+onAuthStateChanged(auth, async user => {
+  if(user){
+    window.S.user = user;
+    try {
+      const snap = await get(ref(db, `users/${user.uid}`));
+      if(snap.exists()){
+        const d = snap.val();
+        window.S.plan = d.FORFAIT ?? d.plan ?? 2;
+        if(d.photoURL) window.S.user.photoURL = d.photoURL;
+      }
+    } catch(e){}
+  }
+  updateAuthUI();
+});
+</script>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div class="sb-header">
+    <div class="sb-logo" onclick="window.location.href='Wikimind_AI.html'" title="Retour à WikiMind AI">
+      <h1>WikiMind <span style="font-style:normal;font-size:14px;opacity:.5">CV</span></h1>
+    </div>
+  </div>
+  <div class="sb-nav">
+    <button class="sb-btn primary" onclick="createNewCV()">
+      <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="16" height="16"><path d="M12 5v14M5 12h14"/></svg>
+      Nouveau CV
+    </button>
+    <button class="sb-btn" onclick="window.location.href='Wikimind_AI.html'">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      Retour à l'IA
+    </button>
+  </div>
+  <div class="sb-section">Mes CV Sauvegardés</div>
+  <div id="cv-list"></div>
+</div>
+
+<!-- MAIN -->
+<div id="main-area">
+
+  <!-- PLAN CHIP -->
+  <div id="plan-chip" onclick="window.location.href='Wikimind_AI.html'">
+    <div class="plan-chip-avatar ring-free" id="tb-avatar"><span id="tb-avatar-initials">?</span></div>
+    <span class="plan-badge plan-free" id="tb-badge">Free</span>
+  </div>
+
+  <!-- EDITOR PANE -->
+  <div id="editor-pane">
+    <div style="padding: 0 24px 16px;">
+      <h2 style="font-size: 24px; font-weight: 900; letter-spacing: -.03em; margin-bottom: 8px;">Éditeur de CV</h2>
+      <p style="font-size: 12px; color: #888;">Modifiez les champs, le rendu se met à jour en temps réel.</p>
+    </div>
+
+    <!-- Actions globales IA -->
+    <div style="padding: 0 24px 24px; display: flex; gap: 10px;">
+      <button class="ai-btn" style="flex:1; justify-content: center; font-size: 11px; padding: 10px;" onclick="optimizeFullCV()" id="btn-opt-all">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 5.5 1 7.5-6.5-4-6.5 4 1-7.5L1 9l6-1z"/></svg>
+        Optimiser tout le CV avec l'IA
+      </button>
+    </div>
+
+    <div class="editor-section">
+      <div class="editor-title">1. Informations Personnelles</div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="field-group">
+          <label class="field-label">Prénom & Nom</label>
+          <input type="text" class="cv-input" id="inp-name" oninput="updateData('name', this.value)">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Titre / Poste Visé</label>
+          <input type="text" class="cv-input" id="inp-title" oninput="updateData('title', this.value)">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Email</label>
+          <input type="email" class="cv-input" id="inp-email" oninput="updateData('email', this.value)">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Téléphone</label>
+          <input type="text" class="cv-input" id="inp-phone" oninput="updateData('phone', this.value)">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Ville / Pays</label>
+          <input type="text" class="cv-input" id="inp-location" oninput="updateData('location', this.value)">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Lien (LinkedIn, Portfolio)</label>
+          <input type="text" class="cv-input" id="inp-link" oninput="updateData('link', this.value)">
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Photo (URL de l'image ou Base64)</label>
+        <div style="display:flex; gap: 8px;">
+          <input type="file" id="inp-photo-file" accept="image/*" style="display:none" onchange="uploadPhoto(event)">
+          <button class="action-btn" onclick="document.getElementById('inp-photo-file').click()" style="flex:1">Téléverser une photo</button>
+          <button class="action-btn" onclick="updateData('photo', ''); renderApp()" style="color:#ef4444">Supprimer</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="editor-section">
+      <div class="editor-title">
+        <span>2. Profil / Résumé</span>
+        <button class="ai-btn" onclick="generateSummary()" id="btn-gen-sum">✨ Rédiger par IA</button>
+      </div>
+      <textarea class="cv-textarea" id="inp-summary" placeholder="Présentez-vous en 2-3 phrases impactantes..." oninput="updateData('summary', this.value)"></textarea>
+    </div>
+
+    <div class="editor-section">
+      <div class="editor-title">
+        <span>3. Expériences Professionnelles</span>
+        <button class="action-btn" onclick="addExperience()">+ Ajouter</button>
+      </div>
+      <div id="experiences-list"></div>
+    </div>
+
+    <div class="editor-section">
+      <div class="editor-title">
+        <span>4. Formations</span>
+        <button class="action-btn" onclick="addEducation()">+ Ajouter</button>
+      </div>
+      <div id="education-list"></div>
+    </div>
+
+    <div class="editor-section">
+      <div class="editor-title">5. Compétences & Langues</div>
+      <div class="field-group">
+        <label class="field-label">Compétences (séparées par des virgules)</label>
+        <textarea class="cv-textarea" id="inp-skills" placeholder="React, Node.js, Gestion de projet..." oninput="updateData('skills', this.value)" style="min-height: 50px;"></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Langues (ex: Français (Natif), Anglais (B2))</label>
+        <textarea class="cv-textarea" id="inp-languages" oninput="updateData('languages', this.value)" style="min-height: 50px;"></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Centres d'intérêt</label>
+        <textarea class="cv-textarea" id="inp-interests" oninput="updateData('interests', this.value)" style="min-height: 50px;"></textarea>
+      </div>
+    </div>
+    <div style="padding: 24px; text-align: center; color: #aaa; font-size: 11px;">
+      Sauvegarde automatique locale via IndexedDB.
+    </div>
+  </div>
+
+  <!-- PREVIEW PANE -->
+  <div id="preview-pane">
+    <div class="preview-toolbar">
+      <div class="tpl-selector" id="template-selector">
+        <!-- Rempli en JS -->
+      </div>
+      <button class="sb-btn primary" style="width:auto; white-space:nowrap; padding: 10px 16px; margin-left: 16px;" onclick="exportPDF()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Télécharger PDF
+      </button>
+    </div>
+    <div id="cv-render-wrapper">
+      <!-- Le document A4 -->
+      <div id="cv-document"></div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<!-- ==========================================
+     SCRIPTS & LOGIQUE
+=========================================== -->
+<script>
+// Configuration globale
+const MISTRAL_KEY = '9MVAOadf6ijEPzA0jrLq3DSXeD942Er5';
+
+window.S = {
+  user: null,
+  plan: 1, // 1:Free, 2:Plus, 3:Pro, 4:Premium, 5:Premium+
+};
+
+// État de l'application
+let cvs = []; // Liste de tous les CV
+let currentId = null; // ID du CV en cours d'édition
+
+// Modèle de données d'un CV
+const defaultCV = () => ({
+  id: 'cv_' + Date.now(),
+  updatedAt: Date.now(),
+  template: 'executive',
+  data: {
+    name: '', title: '', email: '', phone: '', location: '', link: '', photo: '',
+    summary: '',
+    experiences: [], // { id, title, company, dates, description }
+    educations: [],  // { id, degree, school, dates, description }
+    skills: '', languages: '', interests: ''
+  }
+});
+
+// INITIALISATION
+window.onload = async () => {
+  if(localStorage.getItem('wm_dark') === '1') document.body.classList.add('dark-mode');
+  await loadCVs();
+  renderTemplateSelector();
+  
+  // Scale preview to fit
+  window.addEventListener('resize', scalePreview);
+  setTimeout(scalePreview, 100);
+};
+
+// ================= AUTH UI =================
+function updateAuthUI() {
+  const u = window.S.user;
+  const nm = u ? (u.displayName || u.email || 'Utilisateur') : 'Invité';
+  G('tb-avatar-initials').textContent = nm.charAt(0).toUpperCase();
+  
+  const PM = {1:['Free','plan-free'], 2:['AI Plus','plan-plus'], 3:['AI Pro','plan-pro'], 4:['AI Premium','plan-premium'], 5:['AI Premium+','plan-premium-plus']};
+  const [pn, pc] = PM[window.S.plan] || PM[1];
+  
+  const badge = G('tb-badge');
+  badge.textContent = pn;
+  badge.className = 'plan-badge ' + pc;
+
+  const ringClass = {1:'ring-free', 2:'ring-plus', 3:'ring-pro', 4:'ring-premium', 5:'ring-premium-plus'}[window.S.plan] || 'ring-free';
+  const avatarEl = G('tb-avatar');
+  avatarEl.className = `plan-chip-avatar ${ringClass}`;
+  
+  if (u && u.photoURL) {
+    avatarEl.innerHTML = `<img src="${u.photoURL}" alt="${esc(nm)}" onerror="this.parentElement.innerHTML='<span>${nm.charAt(0).toUpperCase()}</span>'">`;
+  }
+}
+
+// ================= DONNÉES =================
+async function loadCVs() {
+  try {
+    const data = await localforage.getItem('wikimind_cvs');
+    if (data) cvs = data;
+    if (cvs.length === 0) createNewCV();
+    else loadCV(cvs[0].id);
+    renderSidebarList();
+  } catch(e) { console.error('Load Error', e); }
+}
+
+async function saveCVs() {
+  if(currentId) {
+    const idx = cvs.findIndex(c => c.id === currentId);
+    if(idx >= 0) cvs[idx].updatedAt = Date.now();
+  }
+  try {
+    await localforage.setItem('wikimind_cvs', cvs);
+    renderSidebarList();
+  } catch(e) {}
+}
+
+function createNewCV() {
+  const newCV = defaultCV();
+  cvs.unshift(newCV);
+  loadCV(newCV.id);
+  saveCVs();
+}
+
+function loadCV(id) {
+  currentId = id;
+  renderApp();
+}
+
+function deleteCV(id, e) {
+  e.stopPropagation();
+  if(!confirm('Supprimer ce CV ?')) return;
+  cvs = cvs.filter(c => c.id !== id);
+  if(cvs.length === 0) createNewCV();
+  else if(currentId === id) loadCV(cvs[0].id);
+  else renderSidebarList();
+  saveCVs();
+}
+
+function getCurrentCV() {
+  return cvs.find(c => c.id === currentId);
+}
+
+function updateData(key, value) {
+  const cv = getCurrentCV();
+  if(!cv) return;
+  cv.data[key] = value;
+  renderPreview();
+  saveCVs();
+}
+
+function uploadPhoto(e) {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    updateData('photo', ev.target.result);
+    renderApp();
+  };
+  reader.readAsDataURL(file);
+}
+
+// ================= LISTES DYNAMIQUES (Exp & Edu) =================
+function addExperience() {
+  const cv = getCurrentCV();
+  cv.data.experiences.push({ id: Date.now(), title: '', company: '', dates: '', description: '' });
+  renderApp(); saveCVs();
+}
+function updateExperience(id, field, value) {
+  const cv = getCurrentCV();
+  const exp = cv.data.experiences.find(e => e.id === id);
+  if(exp) exp[field] = value;
+  renderPreview(); saveCVs();
+}
+function deleteExperience(id) {
+  const cv = getCurrentCV();
+  cv.data.experiences = cv.data.experiences.filter(e => e.id !== id);
+  renderApp(); saveCVs();
+}
+
+function addEducation() {
+  const cv = getCurrentCV();
+  cv.data.educations.push({ id: Date.now(), degree: '', school: '', dates: '', description: '' });
+  renderApp(); saveCVs();
+}
+function updateEducation(id, field, value) {
+  const cv = getCurrentCV();
+  const edu = cv.data.educations.find(e => e.id === id);
+  if(edu) edu[field] = value;
+  renderPreview(); saveCVs();
+}
+function deleteEducation(id) {
+  const cv = getCurrentCV();
+  cv.data.educations = cv.data.educations.filter(e => e.id !== id);
+  renderApp(); saveCVs();
+}
+
+// ================= RENDUS UI =================
+function G(id) { return document.getElementById(id); }
+function esc(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function toast(msg) {
+  const t = G('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function renderSidebarList() {
+  const list = G('cv-list');
+  list.innerHTML = cvs.map(c => `
+    <div class="cv-item ${c.id === currentId ? 'active' : ''}" onclick="loadCV('${c.id}')">
+      <div style="flex:1; min-width:0">
+        <div class="cv-item-title">${esc(c.data.name || 'CV sans nom')}</div>
+        <div class="cv-item-date">${esc(c.data.title || 'Nouveau CV')}</div>
+      </div>
+      <button class="cv-item-del" onclick="deleteCV('${c.id}', event)">✕</button>
+    </div>
+  `).join('');
+}
+
+function renderApp() {
+  const cv = getCurrentCV();
+  if(!cv) return;
+  const d = cv.data;
+  
+  // Update inputs
+  ['name','title','email','phone','location','link','summary','skills','languages','interests'].forEach(key => {
+    const el = G('inp-'+key);
+    if(el) el.value = d[key] || '';
+  });
+
+  // Render Experiences
+  G('experiences-list').innerHTML = d.experiences.map(e => `
+    <div class="list-item-card">
+      <button class="del-btn" onclick="deleteExperience(${e.id})">✕</button>
+      <div style="display:flex; gap:10px; margin-bottom:10px;">
+        <input type="text" class="cv-input" placeholder="Poste (ex: Développeur)" value="${esc(e.title)}" oninput="updateExperience(${e.id}, 'title', this.value)" style="flex:1">
+        <input type="text" class="cv-input" placeholder="Entreprise" value="${esc(e.company)}" oninput="updateExperience(${e.id}, 'company', this.value)" style="flex:1">
+      </div>
+      <div style="margin-bottom:10px;">
+        <input type="text" class="cv-input" placeholder="Dates (ex: 2020 - 2023)" value="${esc(e.dates)}" oninput="updateExperience(${e.id}, 'dates', this.value)">
+      </div>
+      <div style="position:relative">
+        <textarea class="cv-textarea" placeholder="Description de la mission (utilisez des tirets si besoin)" oninput="updateExperience(${e.id}, 'description', this.value)">${esc(e.description)}</textarea>
+        <button class="ai-btn" style="position:absolute; bottom:10px; right:10px; padding:4px 8px; font-size:9px" onclick="optimizeExperience(${e.id})">✨ Optimiser</button>
+      </div>
+    </div>
+  `).join('');
+
+  // Render Education
+  G('education-list').innerHTML = d.educations.map(e => `
+    <div class="list-item-card">
+      <button class="del-btn" onclick="deleteEducation(${e.id})">✕</button>
+      <div style="display:flex; gap:10px; margin-bottom:10px;">
+        <input type="text" class="cv-input" placeholder="Diplôme / Formation" value="${esc(e.degree)}" oninput="updateEducation(${e.id}, 'degree', this.value)" style="flex:1">
+        <input type="text" class="cv-input" placeholder="École / Université" value="${esc(e.school)}" oninput="updateEducation(${e.id}, 'school', this.value)" style="flex:1">
+      </div>
+      <div style="margin-bottom:10px;">
+        <input type="text" class="cv-input" placeholder="Dates (ex: 2018 - 2020)" value="${esc(e.dates)}" oninput="updateEducation(${e.id}, 'dates', this.value)">
+      </div>
+      <textarea class="cv-textarea" placeholder="Détails (optionnel)" oninput="updateEducation(${e.id}, 'description', this.value)">${esc(e.description)}</textarea>
+    </div>
+  `).join('');
+
+  renderPreview();
+  renderTemplateSelector();
+}
+
+function scalePreview() {
+  const wrap = G('cv-render-wrapper');
+  const doc = G('cv-document');
+  if(!wrap || !doc) return;
+  // A4 width = 794px. We calculate scale based on wrapper width.
+  const padding = 40;
+  const availableWidth = wrap.clientWidth - padding * 2;
+  let scale = availableWidth / 794;
+  if(scale > 1) scale = 1; // Ne pas agrandir au-delà de 100%
+  doc.style.transform = `scale(${scale})`;
+}
+
+// ================= TEMPLATES (10 Nouveaux Templates PRO) =================
+// Contrainte absolue : AUCUN MARKDOWN. L'IA formatte les listes via les tableaux de l'objet data.
+
+// Helper pour rendre les descriptions en listes HTML propres
+function renderDesc(desc) {
+  if(!desc) return '';
+  // Convertir les retours ligne ou les tirets en listes
+  const lines = desc.split('\n').filter(l => l.trim().length > 0);
+  if(lines.length === 1 && !lines[0].trim().startsWith('-')) return `<p style="margin-top:6px;font-size:0.9em;line-height:1.5">${esc(lines[0])}</p>`;
+  
+  const items = lines.map(l => `<li style="margin-bottom:4px;line-height:1.5">${esc(l.replace(/^-/,'').trim())}</li>`).join('');
+  return `<ul style="margin-top:6px; padding-left:16px; font-size:0.9em;">${items}</ul>`;
+}
+
+function renderSkills(skillsStr, styleTag) {
+  if(!skillsStr) return '';
+  return skillsStr.split(',').map(s => `<span style="${styleTag}">${esc(s.trim())}</span>`).join('');
+}
+
+const TEMPLATES = {
+  executive: {
+    name: "Executive", icon: "🏛️",
+    render: (d) => `
+    <div style="font-family: Georgia, serif; color: #111; padding: 50px; background: #fff; height: 100%;">
+      <div style="text-align: center; border-bottom: 2px solid #222; padding-bottom: 20px; margin-bottom: 20px;">
+        <h1 style="font-size: 36px; font-weight: 400; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">${esc(d.name)}</h1>
+        <h2 style="font-size: 18px; font-style: italic; color: #555; margin-bottom: 12px;">${esc(d.title)}</h2>
+        <div style="font-size: 12px; color: #444; font-family: 'Inter', sans-serif;">
+          ${[d.email, d.phone, d.location, d.link].filter(Boolean).map(esc).join(' &nbsp;|&nbsp; ')}
+        </div>
+      </div>
+      ${d.summary ? `<div style="margin-bottom: 24px; font-size: 14px; line-height: 1.6; text-align: justify;">${esc(d.summary)}</div>` : ''}
+      
+      ${d.experiences.length ? `
+      <div style="margin-bottom: 24px;">
+        <h3 style="font-size: 16px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-bottom: 16px; font-weight: 700;">Expérience Professionnelle</h3>
+        ${d.experiences.map(e => `
+          <div style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; font-family: 'Inter', sans-serif; margin-bottom: 4px;">
+              <strong style="font-size: 14px;">${esc(e.title)}</strong>
+              <span style="font-size: 12px; color: #666;">${esc(e.dates)}</span>
+            </div>
+            <div style="font-style: italic; font-size: 13px; color: #333;">${esc(e.company)}</div>
+            ${renderDesc(e.description)}
+          </div>
+        `).join('')}
+      </div>` : ''}
+      
+      ${d.educations.length ? `
+      <div style="margin-bottom: 24px;">
+        <h3 style="font-size: 16px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-bottom: 16px; font-weight: 700;">Formation</h3>
+        ${d.educations.map(e => `
+          <div style="margin-bottom: 12px; display: flex; justify-content: space-between; font-family: 'Inter', sans-serif;">
+            <div>
+              <strong style="font-size: 14px; display: block;">${esc(e.degree)}</strong>
+              <span style="font-size: 13px; color: #444;">${esc(e.school)}</span>
+            </div>
+            <div style="font-size: 12px; color: #666;">${esc(e.dates)}</div>
+          </div>
+        `).join('')}
+      </div>` : ''}
+
+      <div style="display: flex; gap: 40px; font-family: 'Inter', sans-serif;">
+        ${d.skills ? `
+        <div style="flex: 1;">
+          <h3 style="font-family: Georgia, serif; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-bottom: 12px; font-weight: 700;">Compétences</h3>
+          <div style="font-size: 13px; line-height: 1.6;">${d.skills.split(',').join('<br>')}</div>
+        </div>` : ''}
+        ${d.languages ? `
+        <div style="flex: 1;">
+          <h3 style="font-family: Georgia, serif; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #ddd; padding-bottom: 4px; margin-bottom: 12px; font-weight: 700;">Langues</h3>
+          <div style="font-size: 13px; line-height: 1.6;">${d.languages.split(',').join('<br>')}</div>
+        </div>` : ''}
+      </div>
+    </div>`
+  },
+
+  tech: {
+    name: "Tech Dark", icon: "💻",
+    render: (d) => `
+    <div style="font-family: 'Roboto Mono', monospace; color: #e2e8f0; background: #0f172a; padding: 40px; height: 100%;">
+      <div style="display: flex; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 20px; margin-bottom: 24px;">
+        ${d.photo ? `<img src="${d.photo}" style="width:100px; height:100px; border-radius: 8px; border: 2px solid #38bdf8; margin-right: 24px; object-fit: cover;">` : ''}
+        <div style="flex:1;">
+          <h1 style="font-size: 32px; font-weight: 700; color: #38bdf8; margin-bottom: 8px;">> ${esc(d.name)}</h1>
+          <h2 style="font-size: 16px; color: #94a3b8; margin-bottom: 12px;">${esc(d.title)}</h2>
+          <div style="font-size: 11px; color: #64748b;">
+            ${[d.email, d.phone, d.location, d.link].filter(Boolean).map(s => `[${esc(s)}]`).join(' ')}
+          </div>
+        </div>
+      </div>
+      
+      ${d.summary ? `<div style="margin-bottom: 24px; font-size: 12px; line-height: 1.6; background: #1e293b; padding: 16px; border-left: 4px solid #38bdf8;">/* ${esc(d.summary)} */</div>` : ''}
+      
+      <div style="display: flex; gap: 24px;">
+        <div style="flex: 2;">
+          ${d.experiences.length ? `
+          <div style="margin-bottom: 24px;">
+            <h3 style="font-size: 14px; color: #38bdf8; margin-bottom: 16px; text-transform: uppercase;">## Expériences</h3>
+            ${d.experiences.map(e => `
+              <div style="margin-bottom: 20px;">
+                <div style="color: #f8fafc; font-weight: 700; font-size: 14px;">${esc(e.title)} <span style="color:#38bdf8">@${esc(e.company)}</span></div>
+                <div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">${esc(e.dates)}</div>
+                <div style="font-size: 12px; color: #cbd5e1;">${renderDesc(e.description)}</div>
+              </div>
+            `).join('')}
+          </div>` : ''}
+        </div>
+        
+        <div style="flex: 1;">
+          ${d.skills ? `
+          <div style="margin-bottom: 24px;">
+            <h3 style="font-size: 14px; color: #38bdf8; margin-bottom: 12px; text-transform: uppercase;">## Stack</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              ${renderSkills(d.skills, 'background:#1e293b; color:#38bdf8; padding:4px 8px; font-size:10px; border-radius:4px;')}
+            </div>
+          </div>` : ''}
+
+          ${d.educations.length ? `
+          <div style="margin-bottom: 24px;">
+            <h3 style="font-size: 14px; color: #38bdf8; margin-bottom: 12px; text-transform: uppercase;">## Éducation</h3>
+            ${d.educations.map(e => `
+              <div style="margin-bottom: 12px; font-size: 11px;">
+                <strong style="color: #e2e8f0;">${esc(e.degree)}</strong><br>
+                <span style="color: #94a3b8;">${esc(e.school)}</span><br>
+                <span style="color: #64748b;">${esc(e.dates)}</span>
+              </div>
+            `).join('')}
+          </div>` : ''}
+        </div>
+      </div>
+    </div>`
+  },
+
+  startup: {
+    name: "Startup", icon: "🚀",
+    render: (d) => `
+    <div style="font-family: 'Inter', sans-serif; background: #fff; color: #1f2937; padding: 0; height: 100%;">
+      <div style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; padding: 40px; display: flex; align-items: center; gap: 24px;">
+        ${d.photo ? `<img src="${d.photo}" style="width:90px; height:90px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,.2); object-fit: cover;">` : ''}
+        <div>
+          <h1 style="font-size: 34px; font-weight: 900; margin-bottom: 4px; letter-spacing: -1px;">${esc(d.name)}</h1>
+          <h2 style="font-size: 18px; font-weight: 500; opacity: 0.9; margin-bottom: 12px;">${esc(d.title)}</h2>
+          <div style="display: flex; gap: 12px; font-size: 12px; font-weight: 500; flex-wrap: wrap;">
+            ${[d.email, d.phone, d.location, d.link].filter(Boolean).map(s => `<span style="background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px;">${esc(s)}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+      
+      <div style="padding: 40px; display: grid; grid-template-columns: 2fr 1fr; gap: 40px;">
+        <div>
+          ${d.summary ? `
+          <div style="margin-bottom: 30px;">
+            <h3 style="font-size: 14px; font-weight: 800; color: #059669; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Profil</h3>
+            <p style="font-size: 13px; line-height: 1.6; color: #4b5563;">${esc(d.summary)}</p>
+          </div>` : ''}
+          
+          ${d.experiences.length ? `
+          <div>
+            <h3 style="font-size: 14px; font-weight: 800; color: #059669; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;">Expériences</h3>
+            ${d.experiences.map(e => `
+              <div style="margin-bottom: 20px; position: relative; padding-left: 16px; border-left: 2px solid #e5e7eb;">
+                <div style="position: absolute; left: -6px; top: 0; width: 10px; height: 10px; border-radius: 50%; background: #10b981;"></div>
+                <div style="font-size: 15px; font-weight: 700; color: #111827;">${esc(e.title)}</div>
+                <div style="font-size: 13px; color: #059669; font-weight: 600; margin-bottom: 4px;">${esc(e.company)} <span style="color:#9ca3af; font-weight:400; font-size:11px; margin-left: 8px;">${esc(e.dates)}</span></div>
+                <div style="font-size: 13px; color: #4b5563;">${renderDesc(e.description)}</div>
+              </div>
+            `).join('')}
+          </div>` : ''}
+        </div>
+        
+        <div>
+          ${d.skills ? `
+          <div style="margin-bottom: 30px;">
+            <h3 style="font-size: 14px; font-weight: 800; color: #059669; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;">Compétences</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              ${renderSkills(d.skills, 'background:#f3f4f6; color:#374151; padding:6px 12px; font-size:11px; font-weight:600; border-radius:20px; border: 1px solid #e5e7eb;')}
+            </div>
+          </div>` : ''}
+
+          ${d.educations.length ? `
+          <div>
+            <h3 style="font-size: 14px; font-weight: 800; color: #059669; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;">Formation</h3>
+            ${d.educations.map(e => `
+              <div style="margin-bottom: 16px; background: #f9fafb; padding: 12px; border-radius: 8px; border: 1px solid #f3f4f6;">
+                <div style="font-weight: 700; font-size: 13px; color: #111827;">${esc(e.degree)}</div>
+                <div style="font-size: 12px; color: #4b5563; margin-top: 2px;">${esc(e.school)}</div>
+                <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">${esc(e.dates)}</div>
+              </div>
+            `).join('')}
+          </div>` : ''}
+        </div>
+      </div>
+    </div>`
+  },
+
+  elegant: {
+    name: "Elegant", icon: "✨",
+    render: (d) => `
+    <div style="font-family: 'Inter', sans-serif; background: #fafafa; color: #333; padding: 50px; height: 100%;">
+      <div style="display: flex; gap: 40px; border-bottom: 2px solid #d4af37; padding-bottom: 30px; margin-bottom: 30px;">
+        ${d.photo ? `<img src="${d.photo}" style="width:120px; height:120px; object-fit: cover; border-radius: 4px;">` : ''}
+        <div style="display: flex; flex-direction: column; justify-content: center;">
+          <h1 style="font-size: 40px; font-weight: 300; letter-spacing: 2px; color: #111; margin-bottom: 8px; font-family: Georgia, serif;">${esc(d.name)}</h1>
+          <h2 style="font-size: 16px; font-weight: 600; color: #d4af37; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 16px;">${esc(d.title)}</h2>
+          <div style="font-size: 11px; color: #666; display: flex; gap: 16px; font-weight: 500;">
+            ${[d.email, d.phone, d.location, d.link].filter(Boolean).map(s => `<span>${esc(s)}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 2.5fr 1fr; gap: 50px;">
+        <div>
+          ${d.summary ? `
+          <div style="margin-bottom: 30px;">
+            <p style="font-size: 14px; line-height: 1.8; color: #555; font-style: italic; font-family: Georgia, serif;">"${esc(d.summary)}"</p>
+          </div>` : ''}
+          
+          ${d.experiences.length ? `
+          <div>
+            <h3 style="font-size: 12px; font-weight: 700; color: #111; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px;">Expériences</h3>
+            ${d.experiences.map(e => `
+              <div style="margin-bottom: 24px;">
+                <div style="font-size: 15px; font-weight: 600; color: #111;">${esc(e.title)}</div>
+                <div style="font-size: 13px; color: #d4af37; font-weight: 500; margin-bottom: 8px;">${esc(e.company)} &nbsp;|&nbsp; <span style="color:#888">${esc(e.dates)}</span></div>
+                <div style="font-size: 13px; line-height: 1.6; color: #444;">${renderDesc(e.description)}</div>
+              </div>
+            `).join('')}
+          </div>` : ''}
+        </div>
+        
+        <div>
+          ${d.skills ? `
+          <div style="margin-bottom: 30px;">
+            <h3 style="font-size: 12px; font-weight: 700; color: #111; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px;">Compétences</h3>
+            <div style="font-size: 13px; color: #555; line-height: 2;">${d.skills.split(',').map(s => `• ${esc(s.trim())}`).join('<br>')}</div>
+          </div>` : ''}
+
+          ${d.educations.length ? `
+          <div style="margin-bottom: 30px;">
+            <h3 style="font-size: 12px; font-weight: 700; color: #111; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px;">Formation</h3>
+            ${d.educations.map(e => `
+              <div style="margin-bottom: 16px;">
+                <div style="font-weight: 600; font-size: 13px; color: #111;">${esc(e.degree)}</div>
+                <div style="font-size: 12px; color: #d4af37;">${esc(e.school)}</div>
+                <div style="font-size: 11px; color: #888; margin-top: 2px;">${esc(e.dates)}</div>
+              </div>
+            `).join('')}
+          </div>` : ''}
+          
+          ${d.languages ? `
+          <div>
+            <h3 style="font-size: 12px; font-weight: 700; color: #111; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px;">Langues</h3>
+            <div style="font-size: 13px; color: #555; line-height: 1.8;">${d.languages.split(',').map(s => esc(s.trim())).join('<br>')}</div>
+          </div>` : ''}
+        </div>
+      </div>
+    </div>`
+  },
+
+  split: {
+    name: "Modern Split", icon: "🌗",
+    render: (d) => `
+    <div style="font-family: 'Inter', sans-serif; background: #fff; color: #333; height: 100%; display: flex;">
+      <div style="width: 260px; background: #1e293b; color: #f8fafc; padding: 40px 24px; display: flex; flex-direction: column;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          ${d.photo ? `<img src="${d.photo}" style="width:140px; height:140px; border-radius: 50%; object-fit: cover; margin: 0 auto 16px; border: 4px solid #334155;">` : ''}
+          <h1 style="font-size: 24px; font-weight: 800; letter-spacing: -1px; margin-bottom: 4px;">${esc(d.name)}</h1>
+          <h2 style="font-size: 13px; color: #cbd5e1; font-weight: 500;">${esc(d.title)}</h2>
+        </div>
+        
+        <div style="margin-bottom: 30px;">
+          <h3 style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; border-bottom: 1px solid #334155; padding-bottom: 4px; margin-bottom: 12px;">Contact</h3>
+          <div style="font-size: 11px; line-height: 2; color: #cbd5e1;">
+            ${[d.email, d.phone, d.location, d.link].filter(Boolean).map(s => `<div>${esc(s)}</div>`).join('')}
+          </div>
+        </div>
+
+        ${d.skills ? `
+        <div style="margin-bottom: 30px;">
+          <h3 style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; border-bottom: 1px solid #334155; padding-bottom: 4px; margin-bottom: 12px;">Compétences</h3>
+          <div style="font-size: 12px; line-height: 1.8; color: #cbd5e1;">${d.skills.split(',').map(s => `<div>• ${esc(s.trim())}</div>`).join('')}</div>
+        </div>` : ''}
+        
+        ${d.languages ? `
+        <div>
+          <h3 style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; border-bottom: 1px solid #334155; padding-bottom: 4px; margin-bottom: 12px;">Langues</h3>
+          <div style="font-size: 12px; line-height: 1.8; color: #cbd5e1;">${d.languages.split(',').map(s => `<div>${esc(s.trim())}</div>`).join('')}</div>
+        </div>` : ''}
+      </div>
+
+      <div style="flex: 1; padding: 40px; background: #fff;">
+        ${d.summary ? `
+        <div style="margin-bottom: 30px;">
+          <h3 style="font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;"><span style="width:24px; height:2px; background:#1e293b;"></span> Profil</h3>
+          <p style="font-size: 13px; line-height: 1.6; color: #475569;">${esc(d.summary)}</p>
+        </div>` : ''}
+
+        ${d.experiences.length ? `
+        <div style="margin-bottom: 30px;">
+          <h3 style="font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;"><span style="width:24px; height:2px; background:#1e293b;"></span> Expériences</h3>
+          ${d.experiences.map(e => `
+            <div style="margin-bottom: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+                <div style="font-size: 15px; font-weight: 700; color: #1e293b;">${esc(e.title)}</div>
+                <div style="font-size: 12px; font-weight: 600; color: #3b82f6; background: #eff6ff; padding: 2px 8px; border-radius: 4px;">${esc(e.dates)}</div>
+              </div>
+              <div style="font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px;">${esc(e.company)}</div>
+              <div style="font-size: 13px; color: #475569;">${renderDesc(e.description)}</div>
+            </div>
+          `).join('')}
+        </div>` : ''}
+
+        ${d.educations.length ? `
+        <div>
+          <h3 style="font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;"><span style="width:24px; height:2px; background:#1e293b;"></span> Formation</h3>
+          ${d.educations.map(e => `
+            <div style="margin-bottom: 16px;">
+              <div style="font-size: 14px; font-weight: 700; color: #1e293b;">${esc(e.degree)}</div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 4px;">
+                <span style="color: #64748b;">${esc(e.school)}</span>
+                <span style="color: #94a3b8; font-weight: 500;">${esc(e.dates)}</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>` : ''}
+      </div>
+    </div>`
+  }
+};
+
+function renderTemplateSelector() {
+  const container = G('template-selector');
+  const cv = getCurrentCV();
+  const currentTpl = cv ? cv.template : 'executive';
+
+  container.innerHTML = Object.entries(TEMPLATES).map(([key, tpl]) => `
+    <div class="tpl-btn ${key === currentTpl ? 'active' : ''}" onclick="changeTemplate('${key}')">
+      ${tpl.icon} ${tpl.name}
+    </div>
+  `).join('');
+}
+
+function changeTemplate(key) {
+  if(!TEMPLATES[key]) return;
+  const cv = getCurrentCV();
+  if(cv) {
+    cv.template = key;
+    renderTemplateSelector();
+    renderPreview();
+    saveCVs();
+  }
+}
+
+function renderPreview() {
+  const cv = getCurrentCV();
+  const doc = G('cv-document');
+  if(!cv || !doc) return;
+  
+  const tplFunc = TEMPLATES[cv.template].render;
+  doc.innerHTML = tplFunc(cv.data);
+}
+
+// ================= PDF EXPORT =================
+async function exportPDF() {
+  const doc = G('cv-document');
+  if(!doc) return;
+  
+  // Clone the element to apply specific printing scales without affecting UI
+  const printDoc = doc.cloneNode(true);
+  printDoc.style.transform = 'scale(1)';
+  printDoc.style.width = '794px';
+  printDoc.style.minHeight = '1123px';
+  printDoc.style.position = 'absolute';
+  printDoc.style.top = '-9999px';
+  document.body.appendChild(printDoc);
+
+  const opt = {
+    margin: 0,
+    filename: `CV_${getCurrentCV()?.data.name || 'WikiMind'}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  toast('⏳ Génération du PDF en cours...');
+  try {
+    await html2pdf().set(opt).from(printDoc).save();
+    toast('✅ PDF généré avec succès !');
+  } catch(e) {
+    toast('❌ Erreur lors de la génération PDF');
+    console.error(e);
+  } finally {
+    document.body.removeChild(printDoc);
+  }
+}
+
+// ================= AI INTEGRATION (Mistral) =================
+async function callMistral(systemPrompt, userPrompt) {
+  const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + MISTRAL_KEY
+    },
+    body: JSON.stringify({
+      model: 'mistral-large-latest',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      response_format: { type: "json_object" }
+    })
+  });
+  
+  if(!res.ok) throw new Error('API Error');
+  const data = await res.json();
+  return JSON.parse(data.choices[0].message.content);
+}
+
+async function optimizeFullCV() {
+  if (window.S.plan < 2) {
+    toast('⚠️ L\'optimisation IA nécessite un plan AI Plus ou supérieur.');
+    return;
+  }
+  const cv = getCurrentCV();
+  if(!cv) return;
+  
+  const btn = G('btn-opt-all');
+  const ogText = btn.innerHTML;
+  btn.innerHTML = '⏳ Optimisation en cours...';
+  btn.disabled = true;
+
+  const sys = `Tu es un expert en recrutement de haut niveau. 
+Ton rôle est d'améliorer, reformuler et professionnaliser les données d'un CV.
+Règles:
+1. Utilise des verbes d'action forts.
+2. Corrige les fautes d'orthographe.
+3. Rends le résumé (summary) percutant (2-3 phrases).
+4. Améliore les descriptions d'expériences sous forme de liste à puces claires (utilise des tirets '- ').
+5. NE METS JAMAIS de markdown HTML (pas de **gras**).
+6. Tu dois retourner STRICTEMENT un objet JSON avec la même structure exacte que l'entrée.`;
+
+  try {
+    const rawData = JSON.stringify({
+      summary: cv.data.summary,
+      experiences: cv.data.experiences,
+      skills: cv.data.skills
+    });
+
+    const result = await callMistral(sys, `Voici les données actuelles du CV:\n${rawData}\nAméliore le résumé, les expériences et formate mieux les compétences.`);
+    
+    if(result.summary) updateData('summary', result.summary);
+    if(result.skills) updateData('skills', result.skills);
+    if(result.experiences && Array.isArray(result.experiences)) {
+      cv.data.experiences = result.experiences;
+      renderApp();
+      saveCVs();
+    }
+    toast('✨ CV optimisé avec succès !');
+  } catch(e) {
+    console.error(e);
+    toast('❌ Erreur lors de l\'optimisation IA.');
+  } finally {
+    btn.innerHTML = ogText;
+    btn.disabled = false;
+  }
+}
+
+async function optimizeExperience(expId) {
+  if (window.S.plan < 2) { toast('⚠️ Plan AI Plus requis.'); return; }
+  const cv = getCurrentCV();
+  const exp = cv.data.experiences.find(e => e.id === expId);
+  if(!exp || !exp.description) { toast('Description vide.'); return; }
+
+  toast('⏳ Optimisation de l\'expérience...');
+  const sys = `Tu es coach en recrutement. Améliore cette description d'expérience professionnelle. Rends-la percutante avec des verbes d'action. Formate le résultat avec des tirets "- " au début de chaque point. Pas de markdown gras/italique. Renvoie un objet JSON : {"description": "texte amélioré"}`;
+  
+  try {
+    const res = await callMistral(sys, `Expérience à améliorer:\n${exp.description}`);
+    if(res.description) {
+      updateExperience(expId, 'description', res.description);
+      renderApp();
+      toast('✨ Expérience mise à jour');
+    }
+  } catch(e) { toast('❌ Erreur IA'); }
+}
+
+async function generateSummary() {
+  if (window.S.plan < 2) { toast('⚠️ Plan AI Plus requis.'); return; }
+  const cv = getCurrentCV();
+  const btn = G('btn-gen-sum');
+  btn.disabled = true; btn.textContent = "⏳...";
+
+  const sys = `Écris un résumé de CV très professionnel et accrocheur (3 phrases max). Base-toi sur les infos fournies. Renvoie un JSON: {"summary": "texte"}`;
+  const prompt = `Nom: ${cv.data.name}, Titre: ${cv.data.title}, Compétences: ${cv.data.skills}`;
+
+  try {
+    const res = await callMistral(sys, prompt);
+    if(res.summary) {
+      updateData('summary', res.summary);
+      G('inp-summary').value = res.summary;
+      toast('✨ Résumé généré');
+    }
+  } catch(e) { toast('❌ Erreur IA'); }
+  finally { btn.disabled = false; btn.textContent = "✨ Rédiger par IA"; }
+}
+
+</script>
+</body>
+</html>
