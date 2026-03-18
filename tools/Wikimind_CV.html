@@ -2050,20 +2050,30 @@ function renderTemplatesGallery(){
   const filtered=_tovFilter==='Tous'?TEMPLATES:TEMPLATES.filter(t=>t.cat===_tovFilter);
   grid.innerHTML=filtered.map(t=>{
     const locked = !canUseTemplate(t);
-    return `<div class="template-card ${_S.currentCV?.template===t.id?'selected':''} ${locked?'tpl-locked':''}" onclick="${locked?'showTemplateLocked()':'selectTemplate(''+t.id+'')'}" style="${locked?'opacity:.55;cursor:not-allowed;':''}">
-      <div class="template-preview" style="position:relative">
-        <div class="template-preview-inner">${buildCVHTML(t.id, demoData(), t.colors[0], true)}</div>
-        ${locked?`<div style="position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;"><span style="font-size:28px">🔒</span></div>`:''}
-      </div>
-      <div class="template-info">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <div class="template-name">${t.name}</div>
-          <span class="template-badge ${t.planReq>=5?'tbadge-pp':t.planReq===1?'tbadge-free':'tbadge-plus'}">${t.planReq>=5?'Premium+':t.planReq===1?'Gratuit':'Plus'}</span>
-        </div>
-        <div class="template-cat">${t.cat}</div>
-      </div>
-      ${locked?`<button class="template-select-btn" style="background:#888;cursor:not-allowed" disabled>🔒 Premium+ uniquement</button>`:`<button class="template-select-btn" onclick="event.stopPropagation();selectTemplate('${t.id}',true)">Utiliser ce modèle</button>`}
-    </div>`;
+    const clickHandler = locked ? 'showTemplateLocked()' : 'selectTemplate(\'' + t.id + '\')';
+    const badgeClass = t.planReq>=5 ? 'tbadge-pp' : t.planReq===1 ? 'tbadge-free' : 'tbadge-plus';
+    const badgeLabel = t.planReq>=5 ? 'Premium+' : t.planReq===1 ? 'Gratuit' : 'Plus';
+    const lockOverlay = locked ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;"><span style=\"font-size:28px\">🔒</span></div>' : '';
+    const selectBtn = locked
+      ? '<button class=\"template-select-btn\" style=\"background:#888;cursor:not-allowed\" disabled>🔒 Premium+ uniquement</button>'
+      : '<button class=\"template-select-btn\" onclick=\"event.stopPropagation();selectTemplate(\'' + t.id + '\',true)\">Utiliser ce modèle</button>';
+    const isSelected = _S.currentCV?.template===t.id ? 'selected' : '';
+    const lockedClass = locked ? 'tpl-locked' : '';
+    const lockedStyle = locked ? 'opacity:.55;cursor:not-allowed;' : '';
+    return '<div class="template-card ' + isSelected + ' ' + lockedClass + '" onclick="' + clickHandler + '" style="' + lockedStyle + '">'
+      + '<div class="template-preview" style="position:relative">'
+      + '<div class="template-preview-inner">' + buildCVHTML(t.id, demoData(), t.colors[0], true) + '</div>'
+      + lockOverlay
+      + '</div>'
+      + '<div class="template-info">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between">'
+      + '<div class="template-name">' + t.name + '</div>'
+      + '<span class="template-badge ' + badgeClass + '">' + badgeLabel + '</span>'
+      + '</div>'
+      + '<div class="template-cat">' + t.cat + '</div>'
+      + '</div>'
+      + selectBtn
+      + '</div>';
   }).join('');
 }
 
@@ -2843,26 +2853,10 @@ async function aiCreateTemplate(){
   const sp = G('sp-ai-template'); if(sp) sp.style.display='inline-block';
   toast('🎨 Génération de votre template IA en cours…');
   try{
-    const result = await callMistral(
-      `Tu es expert en design de CV et en CSS/HTML. L'utilisateur veut un template CV avec ce style: "${prompt}".
-Génère un objet JSON avec exactement ces champs:
-{
-  "name": "Nom créatif du template (max 12 chars)",
-  "cat": "Catégorie (Modern|Minimaliste|Créatif|Luxe|Tech|Classique)",
-  "desc": "Description courte du style",
-  "primaryColor": "#hexcode (couleur principale)",
-  "bgColor": "#hexcode (couleur fond, blanc ou sombre)",
-  "accentColor": "#hexcode (couleur accent)",
-  "textColor": "#hexcode (couleur texte principal)",
-  "headerStyle": "left-bar|top-band|centered|split|minimal",
-  "fontStyle": "modern|serif|mono|rounded",
-  "darkMode": true ou false
-}
-Réponds UNIQUEMENT avec le JSON valide, sans backticks.`,
-      'sp-ai-template'
-    );
+    const aiPrompt = 'Tu es expert en design de CV et en CSS/HTML. L\'utilisateur veut un template CV avec ce style: "' + prompt + '". Génère un objet JSON avec exactement ces champs: {"name":"Nom créatif du template (max 12 chars)","cat":"Catégorie (Moderne|Minimaliste|Créatif|Luxe|Tech|Classique)","desc":"Description courte du style","primaryColor":"#hexcode couleur principale","bgColor":"#hexcode fond blanc ou sombre","accentColor":"#hexcode accent","textColor":"#hexcode texte","headerStyle":"left-bar ou top-band ou centered","fontStyle":"modern ou serif ou mono","darkMode":true} Réponds UNIQUEMENT avec le JSON valide, sans markdown.';
+    const result = await callMistral(aiPrompt, 'sp-ai-template');
     let parsed;
-    try{ parsed = JSON.parse(result.replace(/\`\`\`json|\`\`\`/g,'').trim()); }
+    try{ parsed = JSON.parse(result.replace(/```json|```/g,'').trim()); }
     catch(e){ toast('❌ Réponse IA invalide. Réessayez.'); if(sp) sp.style.display='none'; return; }
 
     // Build AI template from parsed data
