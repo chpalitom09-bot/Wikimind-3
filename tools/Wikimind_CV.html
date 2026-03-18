@@ -208,7 +208,7 @@ a{text-decoration:none;color:inherit;}
 #cv-preview-frame{
   width:794px;min-height:1122px;background:#fff;
   box-shadow:0 8px 48px rgba(0,0,0,.18);position:relative;
-  overflow:hidden;
+  overflow:hidden;border-radius:2px;
 }
 
 /* ── TEMPLATES GALLERY ── */
@@ -682,6 +682,44 @@ a{text-decoration:none;color:inherit;}
 .t10-lang-lvl{font-size:10px;color:#8b5cf6;font-weight:700;}
 .t10-contact-item-l{font-size:11px;color:#7c6da8;margin-bottom:6px;}
 
+
+/* ── LEFT PANEL ── */
+#left-panel{width:240px;min-width:240px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.lp-header{padding:14px 14px 10px;border-bottom:1px solid var(--border);}
+.lp-new-btn{width:100%;padding:9px 12px;border-radius:10px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;background:var(--accent);color:var(--accent-inv);border:none;display:flex;align-items:center;justify-content:center;gap:7px;transition:.2s;font-family:'Inter',sans-serif;}
+.lp-new-btn:hover{opacity:.85;}
+.lp-list{flex:1;overflow-y:auto;padding:6px 8px;}
+.cv-list-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:9px;cursor:pointer;transition:.2s;border:1.5px solid transparent;position:relative;}
+.cv-list-item:hover{background:var(--select-bg);}
+.cv-list-item.active{background:var(--select-bg);border-color:var(--border2);}
+.cv-list-thumb{width:30px;height:40px;border-radius:4px;background:var(--border);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#aaa;}
+.cv-list-info{flex:1;min-width:0;}
+.cv-list-name{font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cv-list-meta{font-size:10px;color:#999;margin-top:1px;}
+.cv-list-del{opacity:0;color:#ccc;cursor:pointer;font-size:13px;transition:.2s;background:none;border:none;flex-shrink:0;padding:2px 4px;border-radius:4px;}
+.cv-list-item:hover .cv-list-del{opacity:1;}
+.cv-list-del:hover{color:#ef4444;background:rgba(239,68,68,.08);}
+
+/* Premium badge on templates */
+.tpl-premium-lock{position:absolute;top:8px;right:8px;background:linear-gradient(135deg,#ef4444,#f97316);color:#fff;font-size:9px;font-weight:800;text-transform:uppercase;padding:3px 7px;border-radius:20px;letter-spacing:.04em;}
+.tpl-vip-only{position:absolute;top:8px;left:8px;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;font-size:9px;font-weight:800;text-transform:uppercase;padding:3px 7px;border-radius:20px;letter-spacing:.04em;}
+
+/* AI template preview */
+#ai-tpl-preview-inner .cv-root{transform-origin:top left;}
+
+/* Photo thumbnails in saved list */
+.photo-saved-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid var(--border2);cursor:pointer;transition:.2s;}
+.photo-saved-item:hover{background:var(--select-bg);border-color:var(--text);}
+.photo-saved-thumb{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.photo-saved-name{font-size:11px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.photo-saved-del{font-size:12px;color:#ccc;cursor:pointer;background:none;border:none;transition:.2s;padding:2px 4px;border-radius:4px;}
+.photo-saved-del:hover{color:#ef4444;}
+
+/* Profile features list */
+.pm-feature{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);padding:6px 10px;border-radius:8px;background:var(--select-bg);}
+.pm-feature-icon{font-size:14px;flex-shrink:0;}
+.pm-feature-locked{opacity:.4;}
+
 /* Dark toggle */
 .toggle-bg{width:38px;height:20px;background:#ddd;border-radius:20px;position:relative;cursor:pointer;transition:.3s;flex-shrink:0;}
 .toggle-dot{width:14px;height:14px;background:white;border-radius:50%;position:absolute;top:3px;left:3px;transition:.3s;}
@@ -717,7 +755,7 @@ a{text-decoration:none;color:inherit;}
     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="display:inline;vertical-align:-1px;margin-right:4px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     PDF
   </button>
-  <div id="plan-chip" onclick="openPlansOverlay()">
+  <div id="plan-chip" onclick="openProfileModal()">
     <div class="plan-chip-avatar ring-free" id="tb-avatar"><span id="tb-av-text">?</span></div>
     <span class="plan-badge plan-free" id="tb-badge">Free</span>
   </div>
@@ -725,6 +763,28 @@ a{text-decoration:none;color:inherit;}
 
 <!-- ── APP ── -->
 <div id="app">
+
+
+  <!-- LEFT PANEL — CV List -->
+  <div id="left-panel">
+    <div class="lp-header">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <h2 style="margin:0">Mes CV</h2>
+        <span id="cv-count-badge" style="font-size:10px;color:#aaa;font-weight:700"></span>
+      </div>
+      <button class="lp-new-btn" onclick="createNewCV()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nouveau CV
+      </button>
+    </div>
+    <div class="lp-list" id="cv-list-panel"></div>
+    <div style="padding:12px 14px;border-top:1px solid var(--border);flex-shrink:0">
+      <button class="lp-new-btn" onclick="openProfileModal()" style="background:var(--select-bg);color:var(--text);border:1px solid var(--border2);">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Mon profil
+      </button>
+    </div>
+  </div>
 
   <!-- Welcome screen -->
   <div id="welcome-screen">
@@ -791,6 +851,7 @@ a{text-decoration:none;color:inherit;}
           <button class="ftab" id="ftab-education" onclick="switchFormTab('education')">Formation</button>
           <button class="ftab" id="ftab-skills" onclick="switchFormTab('skills')">Compétences</button>
           <button class="ftab" id="ftab-extra" onclick="switchFormTab('extra')">Extras</button>
+          <button class="ftab" id="ftab-photo" onclick="openPhotoModal()">📸 Photo</button>
         </div>
 
         <!-- TAB: INFOS -->
@@ -1052,16 +1113,128 @@ a{text-decoration:none;color:inherit;}
   </div>
 </div>
 
-<!-- Plans overlay -->
-<div id="plans-overlay" style="display:none;position:fixed;inset:0;z-index:200;background:var(--bg);overflow-y:auto;flex-direction:column;">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 28px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:10;">
-    <h2 style="font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:-.04em;">Forfaits Wikimind</h2>
-    <button onclick="G('plans-overlay').style.display='none'" style="width:36px;height:36px;border-radius:50%;background:var(--select-bg);border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
+<!-- PROFILE MODAL -->
+<div class="modal" id="profile-modal" onclick="if(event.target===this)closeModal('profile-modal')">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:440px;padding:0;overflow:hidden">
+    <!-- Header gradient -->
+    <div id="profile-modal-header" style="padding:28px 28px 20px;background:linear-gradient(135deg,#6366f1,#8b5cf6);position:relative">
+      <button onclick="closeModal('profile-modal')" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,.15);border:none;cursor:pointer;color:#fff;width:28px;height:28px;border-radius:50%;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>
+      <div style="display:flex;align-items:center;gap:14px">
+        <div id="pm-avatar" style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;overflow:hidden;flex-shrink:0"></div>
+        <div>
+          <div id="pm-name" style="font-size:16px;font-weight:800;color:#fff"></div>
+          <div id="pm-email" style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px"></div>
+          <span id="pm-badge" class="plan-badge plan-free" style="margin-top:6px;display:inline-block">Free</span>
+        </div>
+      </div>
+    </div>
+    <div style="padding:20px 24px">
+      <!-- CV count -->
+      <div style="background:var(--select-bg);border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:13px;font-weight:600">CV sauvegardés</span>
+        <span id="pm-cv-count" style="font-size:18px;font-weight:900">0</span>
+      </div>
+      <!-- Features list -->
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#aaa;margin-bottom:8px">Fonctionnalités disponibles</div>
+      <div id="pm-features" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px"></div>
+      <!-- Actions -->
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="modal-btn secondary" onclick="closeModal('profile-modal');showTemplates()">🎨 Galerie de modèles</button>
+        <button class="modal-btn secondary" id="pm-ai-template-btn" onclick="closeModal('profile-modal');openAITemplateModal()" style="display:none">✨ Générer un template IA</button>
+        <button class="modal-btn secondary" onclick="doSignOut()">🚪 Se déconnecter</button>
+      </div>
+    </div>
   </div>
-  <div style="padding:28px;max-width:700px;margin:0 auto;width:100%">
-    <p style="color:#888;font-size:13px;margin-bottom:20px">Wikimind CV utilise les mêmes forfaits que Wikimind AI. Connectez-vous depuis l'app AI pour gérer votre abonnement.</p>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" id="plan-cards-cv"></div>
-    <p style="font-size:11px;color:#aaa;text-align:center;margin-top:20px">Paiement et gestion via Wikimind AI → Forfaits</p>
+</div>
+
+<!-- VIP WELCOME POPUP -->
+<div class="modal" id="vip-popup" onclick="if(event.target===this)closeModal('vip-popup')">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:480px;padding:0;overflow:hidden;text-align:center">
+    <div style="background:linear-gradient(135deg,#ef4444,#f97316,#eab308);padding:32px 28px 24px">
+      <div style="font-size:48px;margin-bottom:8px">👑</div>
+      <div style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-.03em">Bienvenue, Clément !</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.8);margin-top:6px">Accès VIP Développeur</div>
+    </div>
+    <div style="padding:24px 28px">
+      <p style="font-size:13px;color:var(--text);line-height:1.7;margin-bottom:16px">
+        🎉 <strong>Bot le développeur</strong> vous a accordé un accès <strong>illimité à toutes les fonctionnalités</strong> en remerciement pour avoir donné l'idée de la création de cette application. Profitez-en bien !
+      </p>
+      <div style="background:var(--select-bg);border-radius:12px;padding:14px 16px;margin-bottom:16px;text-align:left">
+        <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#f97316;margin-bottom:8px">✦ Vos avantages exclusifs</div>
+        <div style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text)">
+          <div>🎨 <strong>25 templates</strong> — dont les 5 Premium+ exclusifs</div>
+          <div>⚡ <strong>IA illimitée</strong> — génération, optimisation, amélioration</div>
+          <div>✨ <strong>Générateur de templates IA</strong> — créez vos propres designs</div>
+          <div>📂 <strong>CV illimités</strong> — sauvegardés dans le cloud</div>
+          <div>🖼️ <strong>Import photos</strong> — photo de profil sur vos CV</div>
+          <div>🌗 <strong>Mode sombre / clair</strong> — thème personnalisé</div>
+          <div>📄 <strong>Export PDF HD</strong> — illimité</div>
+        </div>
+      </div>
+      <button class="modal-btn primary" onclick="closeModal('vip-popup')" style="background:linear-gradient(135deg,#ef4444,#f97316)">
+        🚀 Commencer à créer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- AI TEMPLATE GENERATOR MODAL (Premium+ / VIP) -->
+<div class="modal" id="ai-template-modal" onclick="if(event.target===this)closeModal('ai-template-modal')">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:560px">
+    <h3 style="background:linear-gradient(90deg,#8b5cf6,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent">✨ Générateur de Template IA</h3>
+    <p style="font-size:12px;color:#888;margin-bottom:16px">Décrivez le style de CV que vous souhaitez, l'IA va le créer sur mesure.</p>
+    <div id="ai-template-quota" style="font-size:11px;color:#aaa;text-align:right;margin-bottom:8px"></div>
+    <div class="form-field">
+      <label class="form-label">Décrivez votre template idéal</label>
+      <textarea class="modal-input" id="ai-tpl-prompt" rows="4" placeholder="Ex: Un CV moderne avec une sidebar violette foncée, des icônes rondes, une typographie DM Sans, style tech startup avec un fond sombre sur la gauche et blanc sur la droite…" style="resize:vertical"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <button class="ai-btn" onclick="setAITplPrompt('Moderne tech startup, sidebar sombre violette, accents néon')">💜 Tech Néon</button>
+      <button class="ai-btn" onclick="setAITplPrompt('Élégant luxe, fond crème, typographie serif, touches dorées')">✨ Luxe Doré</button>
+      <button class="ai-btn" onclick="setAITplPrompt('Minimaliste scandinave, beaucoup d'espace blanc, typographie fine')">🌿 Scandinave</button>
+      <button class="ai-btn" onclick="setAITplPrompt('Créatif design, couleurs vives, layout asymétrique, typographie bold')">🎨 Créatif</button>
+    </div>
+    <div class="modal-btn-row">
+      <button class="modal-btn primary" id="btn-gen-template" onclick="generateAITemplate()" style="background:linear-gradient(135deg,#8b5cf6,#6366f1)">
+        <span id="sp-tpl-wrap" style="display:inline-flex;align-items:center;gap:6px">
+          <span class="ai-spinner" id="sp-tpl" style="display:none;width:12px;height:12px;border-color:rgba(255,255,255,.3);border-top-color:#fff"></span>
+          ✨ Générer le template
+        </span>
+      </button>
+      <button class="modal-btn secondary" style="width:auto;padding:12px 20px" onclick="closeModal('ai-template-modal')">Annuler</button>
+    </div>
+    <div id="ai-tpl-result" style="display:none;margin-top:16px;border:1px solid var(--border2);border-radius:12px;overflow:hidden">
+      <div style="padding:10px 14px;background:var(--select-bg);display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;color:#8b5cf6">Template généré</span>
+        <button class="ai-btn" onclick="applyAITemplate()">Appliquer à mon CV</button>
+      </div>
+      <div id="ai-tpl-preview" style="height:300px;overflow:hidden;position:relative">
+        <div id="ai-tpl-preview-inner" style="width:200%;height:200%;transform:scale(.5);transform-origin:top left"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PHOTO IMPORT MODAL -->
+<div class="modal" id="photo-modal" onclick="if(event.target===this)closeModal('photo-modal')">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:400px">
+    <h3>Photo de profil</h3>
+    <div id="photo-preview-wrap" style="text-align:center;margin-bottom:16px">
+      <div id="photo-current" style="width:100px;height:100px;border-radius:50%;background:var(--select-bg);margin:0 auto 12px;border:2px dashed var(--border2);display:flex;align-items:center;justify-content:center;font-size:32px;overflow:hidden"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <label style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:10px;border:1px dashed var(--border2);cursor:pointer;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;transition:.2s" onmouseover="this.style.background='var(--select-bg)'" onmouseout="this.style.background='none'">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Importer depuis mon appareil
+        <input type="file" id="photo-file-input" accept="image/*" onchange="onPhotoSelected(event)" style="display:none">
+      </label>
+      <div id="photo-saved-list" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-btn-row" style="margin-top:16px">
+      <button class="modal-btn primary" onclick="applyPhoto()">Appliquer</button>
+      <button class="modal-btn secondary" style="width:auto;padding:12px 16px" onclick="removePhoto()">Supprimer</button>
+      <button class="modal-btn secondary" style="width:auto;padding:12px 16px" onclick="closeModal('photo-modal')">Annuler</button>
+    </div>
   </div>
 </div>
 
@@ -1159,6 +1332,14 @@ onAuthStateChanged(auth,user=>{
 const MISTRAL_KEY = 'p4WvRh9MV9TKHHpHOQpfT9EpGVIqe0V0';
 const MISTRAL_MODEL = 'mistral-large-latest';
 
+// ── VIP UID — accès illimité à tout ──
+const VIP_UID = '2eFbdhXGCWPirY36DGoSngMFBW03';
+function isVIP(){ return _S.user?.uid === VIP_UID; }
+function canUseAI(){ return isVIP() || _S.plan >= 2; }
+function canUsePremiumTemplates(){ return isVIP() || _S.plan >= 5; }
+function canGenerateAITemplate(){ return isVIP() || _S.plan >= 5; }
+function aiTemplateQuota(){ if(isVIP()) return Infinity; if(_S.plan>=5) return Infinity; if(_S.plan>=4) return 2; return 0; }
+
 // ── STATE ──
 const G = id => document.getElementById(id);
 const _S = window._S = {
@@ -1171,6 +1352,7 @@ const _S = window._S = {
 
 // ── TEMPLATES DEFINITION ──
 const TEMPLATES = [
+  // ── FREE (plan 1+) ──
   { id:'t1', name:'Aurora', cat:'Moderne', planReq:1, desc:'Design split moderne avec sidebar foncée', colors:['#6366f1','#8b5cf6','#06b6d4','#22c55e','#f59e0b','#ef4444'] },
   { id:'t2', name:'Obsidian', cat:'Minimaliste', planReq:1, desc:'Ultra clean typographie forte', colors:['#111111','#374151','#1e40af','#065f46','#7c2d12'] },
   { id:'t3', name:'Coral', cat:'Créatif', planReq:1, desc:'Header coloré dynamique et expressif', colors:['#f97316','#ef4444','#ec4899','#8b5cf6','#06b6d4'] },
@@ -1181,8 +1363,25 @@ const TEMPLATES = [
   { id:'t8', name:'Rose', cat:'Créatif', planReq:1, desc:'Design & arts créatifs, impact visuel', colors:['#be185d','#9333ea','#db2777','#c026d3'] },
   { id:'t9', name:'Timber', cat:'Classique', planReq:1, desc:'Élégance intemporelle, serif raffiné', colors:['#d4a574','#92400e','#b45309','#78350f'] },
   { id:'t10', name:'Ultraviolet', cat:'Tech', planReq:1, desc:'Startup tech, sombre et premium', colors:['#8b5cf6','#6366f1','#7c3aed','#a855f7'] },
+  // ── NOUVEAUX FREE (plan 1+) ──
+  { id:'t11', name:'Nordic', cat:'Minimaliste', planReq:1, desc:'Scandinave épuré, beaucoup d'air', colors:['#1e293b','#334155','#0f172a'] },
+  { id:'t12', name:'Sunset', cat:'Créatif', planReq:1, desc:'Dégradé coucher de soleil, chaleureux', colors:['#f97316','#ec4899','#8b5cf6'] },
+  { id:'t13', name:'Metro', cat:'Corporate', planReq:1, desc:'Lignes nettes, look magazine pro', colors:['#dc2626','#1e293b','#2563eb','#059669'] },
+  { id:'t14', name:'Paper', cat:'Classique', planReq:1, desc:'Papier blanc texturé, calme et lisible', colors:['#78716c','#57534e','#44403c'] },
+  { id:'t15', name:'Teal', cat:'Moderne', planReq:1, desc:'Bleu-vert moderne, médical/scientifique', colors:['#0d9488','#0891b2','#0284c7'] },
+  { id:'t16', name:'Carbon', cat:'Tech', planReq:1, desc:'Dark carbone, style développeur senior', colors:['#22c55e','#10b981','#a3e635'] },
+  { id:'t17', name:'Ivory', cat:'Luxe', planReq:1, desc:'Ivoire délicat, raffiné sans excès', colors:['#b45309','#92400e','#d97706'] },
+  { id:'t18', name:'Cobalt', cat:'Finance', planReq:1, desc:'Bleu cobalt institutionnel solide', colors:['#1d4ed8','#1e40af','#2563eb'] },
+  { id:'t19', name:'Sage', cat:'Exécutif', planReq:1, desc:'Vert sauge apaisant, leadership doux', colors:['#4d7c0f','#365314','#3f6212'] },
+  { id:'t20', name:'Crimson', cat:'Créatif', planReq:1, desc:'Rouge audacieux, créatif impactant', colors:['#dc2626','#b91c1c','#9f1239'] },
+  // ── PREMIUM+ EXCLUSIFS (plan 5 only) ──
+  { id:'tp1', name:'Holographic', cat:'Premium+', planReq:5, desc:'Holographique irisé, ultra premium', colors:['#8b5cf6','#06b6d4','#10b981'] },
+  { id:'tp2', name:'Obsidian Gold', cat:'Premium+', planReq:5, desc:'Noir absolu et or, ultra luxe', colors:['#f59e0b','#d97706','#b45309'] },
+  { id:'tp3', name:'Matrix', cat:'Premium+', planReq:5, desc:'Terminal hacker, style code vert', colors:['#22c55e','#16a34a','#15803d'] },
+  { id:'tp4', name:'Blueprint', cat:'Premium+', planReq:5, desc:'Plans d'architecte, bleu technique', colors:['#3b82f6','#1d4ed8','#1e40af'] },
+  { id:'tp5', name:'Velvet', cat:'Premium+', planReq:5, desc:'Velours bordeaux, prestige absolu', colors:['#9f1239','#881337','#be123c'] },
 ];
-const CATS = ['Tous', 'Moderne', 'Minimaliste', 'Créatif', 'Exécutif', 'Corporate', 'Luxe', 'Finance', 'Classique', 'Tech'];
+const CATS = ['Tous', 'Moderne', 'Minimaliste', 'Créatif', 'Exécutif', 'Corporate', 'Luxe', 'Finance', 'Classique', 'Tech', 'Premium+'];
 const ACCENT_COLORS = ['#6366f1','#8b5cf6','#3b82f6','#06b6d4','#10b981','#22c55e','#f59e0b','#f97316','#ef4444','#ec4899','#be185d','#111111'];
 
 // ── DARK MODE ──
@@ -1245,6 +1444,16 @@ function skipAuth(){
   bootUser({uid:'guest_'+Date.now(), displayName:'Invité', isGuest:true});
 }
 
+async function doSignOut(){
+  const fb=window._fb; if(fb?.auth) try{await fb.signOut(fb.auth);}catch(e){}
+  _S.user=null; _S.cvList={};
+  closeModal('profile-modal');
+  renderCVListPanel();
+  showWelcome();
+  G('auth-modal').style.display='block';
+  toast('Déconnecté');
+}
+
 async function bootUser(user){
   _S.user = user;
   G('auth-modal').style.display='none';
@@ -1253,6 +1462,12 @@ async function bootUser(user){
   }
   updateUserUI();
   await loadCVList();
+  renderCVListPanel();
+  // VIP welcome popup
+  if(isVIP() && !sessionStorage.getItem('wm_vip_shown')){
+    sessionStorage.setItem('wm_vip_shown','1');
+    setTimeout(()=>openModal('vip-popup'), 800);
+  }
 }
 
 async function loadProfile(uid){
@@ -1272,17 +1487,22 @@ async function loadProfile(uid){
 function updateUserUI(){
   const u=_S.user; if(!u) return;
   const nm=u.displayName||u.email||'Invité';
+  const vip=isVIP();
   const PM={1:['Free','plan-free'],2:['AI Plus','plan-plus'],3:['AI Pro','plan-pro'],4:['AI Premium','plan-premium'],5:['AI Premium+','plan-premium-plus']};
-  const[pn,pc]=PM[_S.plan]||PM[1];
-  const tb=G('tb-badge'); if(tb){tb.textContent=pn;tb.className='plan-badge '+pc;}
-  const ringClass={1:'ring-free',2:'ring-plus',3:'ring-pro',4:'ring-premium',5:_S.premiumPlusRing||'ring-premium-plus'}[_S.plan]||'ring-free';
+  const planLabel = vip ? 'VIP 👑' : (PM[_S.plan]||PM[1])[0];
+  const planClass = vip ? 'plan-premium-plus' : (PM[_S.plan]||PM[1])[1];
+  const tb=G('tb-badge'); if(tb){tb.textContent=planLabel;tb.className='plan-badge '+planClass;}
+  const ringClass = vip
+    ? (_S.premiumPlusRing||'ring-premium-plus')
+    : ({1:'ring-free',2:'ring-plus',3:'ring-pro',4:'ring-premium',5:_S.premiumPlusRing||'ring-premium-plus'}[_S.plan]||'ring-free');
   const av=G('tb-avatar');
   if(av){
     av.className=`plan-chip-avatar ${ringClass}`;
-    if(u.photoURL) av.innerHTML=`<img src="${u.photoURL}" alt="${nm.charAt(0)}" onerror="this.parentElement.innerHTML='<span>${nm.charAt(0).toUpperCase()}</span>'">`;
-    else{ const t=G('tb-av-text'); if(t) t.textContent=nm.charAt(0).toUpperCase(); av.innerHTML=`<span>${nm.charAt(0).toUpperCase()}</span>`; }
+    const photoURL=_S.currentCV?.data?.photoURL||null;
+    if(photoURL) av.innerHTML=`<img src="${photoURL}" style="width:28px;height:28px;object-fit:cover;border-radius:50%;position:relative;z-index:2" onerror="this.parentElement.innerHTML='<span style=\"position:relative;z-index:2\">${nm.charAt(0).toUpperCase()}</span>'">`;
+    else av.innerHTML=`<span style="position:relative;z-index:2">${nm.charAt(0).toUpperCase()}</span>`;
   }
-  renderPlanCards();
+  renderCVListPanel();
 }
 
 // ── CV LIST (IndexedDB via localforage) ──
@@ -1295,6 +1515,84 @@ async function loadCVList(){
 
 async function saveCVList(){
   try{ await localforage.setItem('wm_cv_list', _S.cvList); }catch(e){}
+}
+
+function renderCVListPanel(){
+  const list=G('cv-list-panel'); if(!list) return;
+  const cvs=Object.values(_S.cvList).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  const badge=G('cv-count-badge'); if(badge) badge.textContent=cvs.length+' CV';
+  if(!cvs.length){
+    list.innerHTML='<div style="font-size:12px;color:#aaa;padding:12px 4px;text-align:center">Aucun CV.<br>Créez-en un !</div>';
+    return;
+  }
+  const tplName=id=>(TEMPLATES.find(t=>t.id===id)?.name)||id;
+  list.innerHTML=cvs.map(cv=>`
+    <div class="cv-list-item ${_S.activeCVId===cv.id?'active':''}" onclick="openCV('${cv.id}')">
+      <div class="cv-list-thumb" style="background:${cv.color||'#6366f1'}22;color:${cv.color||'#6366f1'}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <div class="cv-list-info">
+        <div class="cv-list-name">${esc(cv.name||'Sans titre')}</div>
+        <div class="cv-list-meta">${tplName(cv.template)} · ${timeAgo(cv.updatedAt)}</div>
+      </div>
+      <button class="cv-list-del" onclick="event.stopPropagation();deleteCVFromList('${cv.id}')" title="Supprimer">✕</button>
+    </div>`).join('');
+}
+
+function timeAgo(ts){
+  if(!ts) return '';
+  const d=Math.floor((Date.now()-ts)/1000);
+  if(d<60) return 'À l'instant';
+  if(d<3600) return Math.floor(d/60)+'min';
+  if(d<86400) return Math.floor(d/3600)+'h';
+  return Math.floor(d/86400)+'j';
+}
+
+function deleteCVFromList(id){
+  if(!confirm('Supprimer ce CV ?')) return;
+  delete _S.cvList[id];
+  saveCVList();
+  if(_S.activeCVId===id) showWelcome();
+  renderCVListPanel();
+  toast('🗑 CV supprimé');
+}
+
+function openProfileModal(){
+  const u=_S.user; if(!u) return;
+  const vip=isVIP();
+  const nm=u.displayName||u.email||'?';
+  const av=G('pm-avatar'); if(av) av.textContent=nm.charAt(0).toUpperCase();
+  const pn=G('pm-name'); if(pn) pn.textContent=nm;
+  const pe=G('pm-email'); if(pe) pe.textContent=u.email||'';
+  const pb=G('pm-badge');
+  if(pb){ pb.textContent=vip?'VIP 👑':(({1:'Free',2:'AI Plus',3:'AI Pro',4:'AI Premium',5:'AI Premium+'})[_S.plan]||'Free'); pb.className='plan-badge '+(vip?'plan-premium-plus':(({1:'plan-free',2:'plan-plus',3:'plan-pro',4:'plan-premium',5:'plan-premium-plus'})[_S.plan]||'plan-free')); }
+  // gradient based on plan
+  const hdr=G('profile-modal-header');
+  if(hdr){
+    if(vip||_S.plan>=5) hdr.style.background='linear-gradient(135deg,#ef4444,#f97316,#eab308)';
+    else if(_S.plan>=4) hdr.style.background='linear-gradient(135deg,#d97706,#f59e0b)';
+    else if(_S.plan>=3) hdr.style.background='linear-gradient(135deg,#22c55e,#10b981)';
+    else if(_S.plan>=2) hdr.style.background='linear-gradient(135deg,#6366f1,#8b5cf6)';
+    else hdr.style.background='linear-gradient(135deg,#374151,#6b7280)';
+  }
+  const cc=G('pm-cv-count'); if(cc) cc.textContent=Object.keys(_S.cvList).length;
+  // features
+  const feats=G('pm-features'); if(feats){
+    const f=(icon,label,ok)=>`<div class="pm-feature ${ok?'':'pm-feature-locked'}"><span class="pm-feature-icon">${icon}</span><span>${label}</span>${ok?'<span style="margin-left:auto;font-size:10px;color:#22c55e;font-weight:800">✓</span>':'<span style="margin-left:auto;font-size:10px;color:#aaa;font-weight:800">🔒</span>'}</div>`;
+    const p=_S.plan; const v=vip||p>=5;
+    feats.innerHTML=[
+      f('🎨','25 templates disponibles',true),
+      f('⚡','IA illimitée',v||p>=2),
+      f('✨','Générateur template IA',v||p>=5),
+      f('📸','Photo de profil sur CV',v||p>=2),
+      f('🌗','Mode sombre',true),
+      f('📄','Export PDF',true),
+      f('☁️','CV multi-comptes',v||p>=2),
+      f('👑','Templates Premium+ exclusifs',v||p>=5),
+    ].join('');
+  }
+  const aib=G('pm-ai-template-btn'); if(aib) aib.style.display=canGenerateAITemplate()?'block':'none';
+  openModal('profile-modal');
 }
 
 // ── WELCOME / NAVIGATION ──
@@ -1315,12 +1613,10 @@ function loadExistingCVs(){
 }
 
 function goToAI(){
-  window.open('../Wikimind_AI.html','_blank');
+  window.open('Wikimind_AI.html','_blank');
 }
 
-function openPlansOverlay(){
-  G('plans-overlay').style.display='flex';
-}
+function openPlansOverlay(){ openProfileModal(); }
 
 // ── CREATE / OPEN CV ──
 function createNewCV(){
@@ -1596,6 +1892,10 @@ function renderTemplatesGallery(){
 function setTovFilter(cat){
   _tovFilter=cat;
   renderTemplatesGallery();
+}
+
+function showPremiumLock(){
+  toast('🔒 Modèle réservé aux comptes Premium+ — Passez au forfait supérieur via Wikimind AI');
 }
 
 function selectTemplate(id, close=false){
@@ -1986,6 +2286,67 @@ function buildCVHTML(templateId, data, color, isPreview){
         </div>
       </div></div>`;
 
+
+    // ── T11: NORDIC — Scandinavian Minimal ──
+    case 't11': return `
+      <div class="cv-root">
+      <style>.t11{font-family:'Inter',sans-serif;background:#fff;padding:52px 56px;min-height:1122px;color:#1e293b}.t11-name{font-size:38px;font-weight:900;letter-spacing:-.05em;color:#${c.replace('#','')};line-height:1}.t11-title{font-size:13px;color:#64748b;font-weight:400;margin-top:8px;letter-spacing:.04em}.t11-rule{height:1px;background:#e2e8f0;margin:20px 0}.t11-contact{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:32px}.t11-ci{font-size:11px;color:#94a3b8}.t11-grid{display:grid;grid-template-columns:1fr 180px;gap:48px}.t11-st{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.18em;color:${c};margin-bottom:14px}.t11-summary{font-size:12.5px;color:#334155;line-height:1.85;margin-bottom:28px}.t11-exp{margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #f1f5f9}.t11-exp:last-child{border-bottom:none}.t11-role{font-size:13px;font-weight:800;color:#0f172a}.t11-co{font-size:12px;color:${c};font-weight:500;margin-top:2px}.t11-date{font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em}.t11-desc{font-size:11.5px;color:#475569;line-height:1.7;margin-top:5px}.t11-skill{display:flex;justify-content:space-between;font-size:11.5px;color:#1e293b;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #f1f5f9}.t11-skill:last-child{border-bottom:none}.t11-slvl{font-size:9px;font-weight:800;color:${c};text-transform:uppercase}.t11-lang{display:flex;justify-content:space-between;font-size:11.5px;color:#334155;margin-bottom:6px}.t11-llvl{font-size:10px;color:#94a3b8}.t11-edu{margin-bottom:12px}.t11-edeg{font-size:12px;font-weight:700;color:#0f172a}.t11-esc{font-size:11px;color:#64748b}.t11-edate{font-size:10px;color:#94a3b8}</style>
+      <div class="t11">
+        <div class="t11-name">${esc(fullName)}</div>
+        <div class="t11-title">${esc(d.title)}</div>
+        <div class="t11-rule"></div>
+        <div class="t11-contact">${contactItems.map(([v])=>`<span class="t11-ci">${esc(v)}</span>`).join('')}</div>
+        ${d.summary?`<div class="t11-summary">${esc(d.summary)}</div>`:''}
+        <div class="t11-grid">
+          <div>
+            ${d.experiences?.length?`<div class="t11-st">Expérience</div>${d.experiences.map(e=>`<div class="t11-exp"><div style="display:flex;justify-content:space-between"><div class="t11-role">${esc(e.role)}</div><div class="t11-date">${esc(e.from)}–${esc(e.to)}</div></div><div class="t11-co">${esc(e.company)}</div>${e.desc?`<div class="t11-desc">${esc(e.desc)}</div>`:''}</div>`).join('')}`:''}
+            ${d.education?.length?`<div class="t11-st" style="margin-top:20px">Formation</div>${d.education.map(e=>`<div class="t11-edu"><div class="t11-edeg">${esc(e.degree)}</div><div class="t11-esc">${esc(e.school)}</div><div class="t11-edate">${esc(e.from)}${e.to?'–'+e.to:''}</div></div>`).join('')}`:''}
+          </div>
+          <div>
+            ${d.skills?.length?`<div class="t11-st">Compétences</div>${d.skills.map(s=>`<div class="t11-skill"><span>${esc(s.name)}</span><span class="t11-slvl">${esc(s.level)}</span></div>`).join('')}`:''}
+            ${d.languages?.length?`<div class="t11-st" style="margin-top:16px">Langues</div>${d.languages.map(l=>`<div class="t11-lang"><span>${esc(l.name)}</span><span class="t11-llvl">${esc(l.level)}</span></div>`).join('')}`:''}
+          </div>
+        </div>
+      </div></div>`;
+
+    // ── T12: SUNSET — Warm Gradient ──
+    case 't12': return `
+      <div class="cv-root">
+      <style>.t12-header{background:linear-gradient(135deg,${c},${adjustColor(c,-30)},${adjustColor(c,-60)});padding:44px 44px 32px;}.t12-name{font-size:34px;font-weight:900;color:#fff;letter-spacing:-.04em;}.t12-title{font-size:12px;color:rgba(255,255,255,.75);text-transform:uppercase;letter-spacing:.1em;margin-top:5px}.t12-contact{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}.t12-ci{font-size:11px;color:rgba(255,255,255,.8);background:rgba(255,255,255,.15);padding:3px 8px;border-radius:12px}.t12-body{padding:32px 44px;display:grid;grid-template-columns:1fr 200px;gap:36px}.t12-st{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.15em;color:${c};margin-bottom:12px;display:flex;align-items:center;gap:8px}.t12-st::after{content:'';flex:1;height:1px;background:${c}33}.t12-summary{font-size:12.5px;color:#334155;line-height:1.8;margin-bottom:24px}.t12-exp{margin-bottom:16px}.t12-role{font-size:13px;font-weight:800;color:#1e293b}.t12-co{font-size:12px;color:${c};font-weight:600;margin-top:2px}.t12-date{font-size:10px;color:#94a3b8;text-transform:uppercase}.t12-desc{font-size:11.5px;color:#475569;line-height:1.7;margin-top:5px}.t12-skill{display:flex;justify-content:space-between;font-size:11.5px;color:#1e293b;margin-bottom:7px}.t12-slvl{font-size:9px;font-weight:800;color:${c};text-transform:uppercase}.t12-lang{display:flex;justify-content:space-between;font-size:11.5px;color:#334155;margin-bottom:6px}.t12-llvl{font-size:10px;color:${c};font-weight:700}</style>
+      <div class="cv-root" style="background:#fff;min-height:1122px">
+        <div class="t12-header">
+          <div class="t12-name">${esc(fullName)}</div>
+          <div class="t12-title">${esc(d.title)}</div>
+          <div class="t12-contact">${contactItems.map(([v])=>`<span class="t12-ci">${esc(v)}</span>`).join('')}</div>
+        </div>
+        <div class="t12-body">
+          <div>
+            ${d.summary?`<div class="t12-summary">${esc(d.summary)}</div>`:''}
+            ${d.experiences?.length?`<div class="t12-st">Expériences</div>${d.experiences.map(e=>`<div class="t12-exp"><div style="display:flex;justify-content:space-between"><div class="t12-role">${esc(e.role)}</div><div class="t12-date">${esc(e.from)}–${esc(e.to)}</div></div><div class="t12-co">${esc(e.company)}</div>${e.desc?`<div class="t12-desc">${esc(e.desc)}</div>`:''}</div>`).join('')}`:''}
+            ${d.education?.length?`<div class="t12-st" style="margin-top:20px">Formation</div>${d.education.map(e=>`<div style="margin-bottom:10px"><div style="font-size:12px;font-weight:700;color:#1e293b">${esc(e.degree)}</div><div style="font-size:11px;color:#64748b">${esc(e.school)}</div><div style="font-size:10px;color:#94a3b8">${esc(e.from)}${e.to?'–'+e.to:''}</div></div>`).join('')}`:''}
+          </div>
+          <div>
+            ${d.skills?.length?`<div class="t12-st">Compétences</div>${d.skills.map(s=>`<div class="t12-skill"><span>${esc(s.name)}</span><span class="t12-slvl">${esc(s.level)}</span></div>`).join('')}`:''}
+            ${d.languages?.length?`<div class="t12-st" style="margin-top:16px">Langues</div>${d.languages.map(l=>`<div class="t12-lang"><span>${esc(l.name)}</span><span class="t12-llvl">${esc(l.level)}</span></div>`).join('')}`:''}
+          </div>
+        </div>
+      </div></div>`;
+
+    // ── T13-T20 & TP1-TP5: reuse adapted builds ──
+    case 't13':case 't14':case 't15':case 't16':case 't17':case 't18':case 't19':case 't20':
+    case 'tp1':case 'tp2':case 'tp3':case 'tp4':case 'tp5':{
+      // Adaptive renderer for new templates using t1-t10 base styles with color overrides
+      const baseTpl={'t13':'t2','t14':'t9','t15':'t5','t16':'t10','t17':'t9','t18':'t7','t19':'t4','t20':'t3','tp1':'t1','tp2':'t6','tp3':'t10','tp4':'t7','tp5':'t8'}[templateId]||'t1';
+      const tplColors={'t13':'#dc2626','t14':'#78716c','t15':'#0d9488','t16':'#22c55e','t17':'#b45309','t18':'#1d4ed8','t19':'#4d7c0f','t20':'#dc2626','tp1':'#8b5cf6','tp2':'#f59e0b','tp3':'#22c55e','tp4':'#3b82f6','tp5':'#9f1239'};
+      const tplNames={'t13':'Metro','t14':'Paper','t15':'Teal','t16':'Carbon','t17':'Ivory','t18':'Cobalt','t19':'Sage','t20':'Crimson','tp1':'Holographic','tp2':'Obsidian Gold','tp3':'Matrix','tp4':'Blueprint','tp5':'Velvet'};
+      const overrideColor=tplColors[templateId]||c;
+      // Special dark bg for carbon/matrix/ultraviolet variants
+      const isDark=['t16','tp3'].includes(templateId);
+      const baseHTML=buildCVHTML(baseTpl, data, overrideColor, isPreview);
+      // Wrap with name badge
+      return baseHTML.replace('</div>','') + `<div style="position:absolute;bottom:8px;right:10px;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:${isDark?'#555':'#ddd'};pointer-events:none">${tplNames[templateId]}</div></div>`;
+    }
+
     default: return `<div style="padding:40px;font-family:Inter,sans-serif;text-align:center;color:#aaa">Modèle non trouvé.</div>`;
   }
 }
@@ -2007,6 +2368,148 @@ async function saveCV(){
   _S.cvList[_S.currentCV.id]=JSON.parse(JSON.stringify(_S.currentCV));
   await saveCVList();
   toast('✅ CV sauvegardé !');
+}
+
+// ── PHOTO IMPORT ──
+function openPhotoModal(){
+  loadSavedPhotos();
+  const cur=_S.currentCV?.data?.photoURL;
+  const prev=G('photo-current');
+  if(prev){ prev.innerHTML=cur?`<img src="${cur}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:  '📷'; }
+  openModal('photo-modal');
+}
+
+async function onPhotoSelected(e){
+  const file=e.target.files?.[0]; if(!file) return;
+  if(file.size>3*1024*1024){ toast('Image trop lourde (max 3Mo)'); return; }
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    const b64=ev.target.result;
+    const prev=G('photo-current'); if(prev) prev.innerHTML=`<img src="${b64}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    // Save to IndexedDB photos store
+    const saved=await localforage.getItem('wm_cv_photos')||[];
+    const entry={id:'photo_'+Date.now(),name:file.name,data:b64,ts:Date.now()};
+    saved.unshift(entry);
+    if(saved.length>20) saved.splice(20); // keep max 20
+    await localforage.setItem('wm_cv_photos',saved);
+    _S._pendingPhoto=b64;
+    loadSavedPhotos();
+    toast('📸 Photo chargée — cliquez Appliquer');
+  };
+  reader.readAsDataURL(file);
+}
+
+async function loadSavedPhotos(){
+  const list=G('photo-saved-list'); if(!list) return;
+  const saved=await localforage.getItem('wm_cv_photos')||[];
+  if(!saved.length){ list.innerHTML='<div style="font-size:11px;color:#aaa;text-align:center;padding:8px">Aucune photo sauvegardée</div>'; return; }
+  list.innerHTML='<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#aaa;letter-spacing:.08em;margin-bottom:6px">Photos sauvegardées</div>'+saved.map((p,i)=>`
+    <div class="photo-saved-item" onclick="selectSavedPhoto('${p.data}')">
+      <img src="${p.data}" class="photo-saved-thumb" alt="${esc(p.name)}">
+      <span class="photo-saved-name">${esc(p.name)}</span>
+      <button class="photo-saved-del" onclick="event.stopPropagation();deleteSavedPhoto(${i})">✕</button>
+    </div>`).join('');
+}
+
+function selectSavedPhoto(data){
+  _S._pendingPhoto=data;
+  const prev=G('photo-current'); if(prev) prev.innerHTML=`<img src="${data}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+}
+
+async function deleteSavedPhoto(i){
+  const saved=await localforage.getItem('wm_cv_photos')||[];
+  saved.splice(i,1);
+  await localforage.setItem('wm_cv_photos',saved);
+  loadSavedPhotos();
+}
+
+function applyPhoto(){
+  if(!_S.currentCV){ toast('Ouvrez un CV d'abord.'); return; }
+  if(!_S._pendingPhoto){ toast('Sélectionnez d'abord une photo.'); return; }
+  _S.currentCV.data.photoURL=_S._pendingPhoto;
+  _S._pendingPhoto=null;
+  updatePreview();
+  closeModal('photo-modal');
+  toast('✅ Photo appliquée !');
+}
+
+function removePhoto(){
+  if(!_S.currentCV) return;
+  _S.currentCV.data.photoURL=null;
+  _S._pendingPhoto=null;
+  updatePreview();
+  closeModal('photo-modal');
+  toast('🗑 Photo supprimée');
+}
+
+// ── AI TEMPLATE GENERATOR ──
+let _aiGeneratedTemplateHTML=null;
+
+function openAITemplateModal(){
+  if(!canGenerateAITemplate()){ toast('🔒 Générateur IA réservé aux Premium+'); return; }
+  const q=G('ai-template-quota');
+  if(q){
+    if(isVIP()||_S.plan>=5) q.textContent='Illimité ✦';
+    else if(_S.plan>=4) q.textContent=`Quota: ${aiTemplateQuota()} générations`;
+    else q.textContent='Non disponible';
+  }
+  G('ai-tpl-result').style.display='none';
+  openModal('ai-template-modal');
+}
+
+function setAITplPrompt(text){ const el=G('ai-tpl-prompt'); if(el) el.value=text; }
+
+async function generateAITemplate(){
+  const prompt=G('ai-tpl-prompt')?.value?.trim();
+  if(!prompt){ toast('Décrivez le template souhaité.'); return; }
+  const sp=G('sp-tpl'); if(sp) sp.style.display='inline-block';
+  const btn=G('btn-gen-template'); if(btn) btn.disabled=true;
+
+  const systemPrompt=`Tu es un expert en création de CV HTML. Tu dois générer le HTML complet d'un template de CV personnalisé basé sur la description donnée. 
+RÈGLES STRICTES:
+- Génère UNIQUEMENT le HTML d'un div.cv-root (794px de large, min-height 1122px)
+- Utilise des styles inline ou une balise <style> interne
+- Structure: infos personnelles, résumé, expériences, formation, compétences, langues
+- Utilise ces variables de données JS dans des placeholders {{FIRSTNAME}}, {{LASTNAME}}, {{TITLE}}, {{SUMMARY}}, {{EMAIL}}, {{PHONE}}, {{LOCATION}}
+- Style créatif selon la description, typographie Inter/system-ui
+- PAS de JavaScript dans le HTML généré
+- Commence directement par <div class="cv-root"> sans commentaires`;
+
+  const userPrompt=`Génère un template de CV HTML avec ce style: "${prompt}". 
+Utilise ces données exemple: Firstname=Marie, Lastname=Dupont, Title=Directrice Produit, Summary=Professionnelle passionnée avec 8 ans d'expérience.
+Réponds UNIQUEMENT avec le HTML commençant par <div class="cv-root">`;
+
+  try{
+    const resp=await fetch('https://api.mistral.ai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+MISTRAL_KEY},
+      body:JSON.stringify({
+        model:MISTRAL_MODEL, max_tokens:3000, temperature:0.8,
+        messages:[{role:'system',content:systemPrompt},{role:'user',content:userPrompt}]
+      })
+    });
+    const data=await resp.json();
+    let generatedHTML=data.choices?.[0]?.message?.content?.trim()||'';
+    // Clean up
+    generatedHTML=generatedHTML.replace(/```html|```/g,'').trim();
+    if(!generatedHTML.includes('cv-root')){ toast('Génération échouée, réessayez.'); return; }
+    _aiGeneratedTemplateHTML=generatedHTML;
+    const preview=G('ai-tpl-preview-inner');
+    if(preview) preview.innerHTML=generatedHTML;
+    G('ai-tpl-result').style.display='block';
+    toast('✨ Template généré ! Vérifiez l'aperçu.');
+  }catch(e){ toast('Erreur IA: '+e.message); }
+  finally{ if(sp) sp.style.display='none'; if(btn) btn.disabled=false; }
+}
+
+function applyAITemplate(){
+  if(!_aiGeneratedTemplateHTML){ toast('Générez d'abord un template.'); return; }
+  if(!_S.currentCV){ toast('Ouvrez un CV d'abord.'); return; }
+  _S.currentCV.template='ai_custom';
+  _S.currentCV.aiTemplateHTML=_aiGeneratedTemplateHTML;
+  updatePreview();
+  closeModal('ai-template-modal');
+  toast('✅ Template IA appliqué à votre CV !');
 }
 
 // ── EXPORT PDF ──
@@ -2211,7 +2714,7 @@ window.addEventListener('load', ()=>{
 });
 
 // Expose functions globally for inline event handlers
-window.createNewCV=createNewCV; window.showWelcome=showWelcome; window.openPlansOverlay=openPlansOverlay;
+window.createNewCV=createNewCV; window.showWelcome=showWelcome; window.openPlansOverlay=openPlansOverlay; window.openProfileModal=openProfileModal; window.openPhotoModal=openPhotoModal; window.onPhotoSelected=onPhotoSelected; window.loadSavedPhotos=loadSavedPhotos; window.selectSavedPhoto=selectSavedPhoto; window.deleteSavedPhoto=deleteSavedPhoto; window.applyPhoto=applyPhoto; window.removePhoto=removePhoto; window.openAITemplateModal=openAITemplateModal; window.setAITplPrompt=setAITplPrompt; window.generateAITemplate=generateAITemplate; window.applyAITemplate=applyAITemplate; window.deleteCVFromList=deleteCVFromList; window.doSignOut=doSignOut; window.showPremiumLock=showPremiumLock;
 window.showTemplates=showTemplates; window.closeTemplates=closeTemplates; window.selectTemplate=selectTemplate;
 window.selectAndCreateFromTemplate=selectAndCreateFromTemplate; window.setTovFilter=setTovFilter;
 window.goToAI=goToAI; window.toggleNewMode=toggleNewMode; window.loadExistingCVs=loadExistingCVs;
