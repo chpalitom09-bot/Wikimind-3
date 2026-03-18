@@ -307,7 +307,7 @@ a{text-decoration:none;color:inherit;}
 /* ── WELCOME SCREEN ── */
 #welcome-screen{
   flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:40px;text-align:center;
+  padding:40px;text-align:center;overflow-y:auto;
 }
 #welcome-screen h1{font-size:clamp(32px,6vw,64px);font-weight:900;letter-spacing:-.06em;text-transform:uppercase;margin-bottom:12px;}
 #welcome-screen p{color:#9ca3af;font-size:15px;max-width:480px;margin-bottom:32px;}
@@ -684,7 +684,7 @@ a{text-decoration:none;color:inherit;}
 
 
 /* ── LEFT PANEL ── */
-#left-panel{width:240px;min-width:240px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+#left-panel{width:240px;min-width:240px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;transition:width .3s;}
 .lp-header{padding:14px 14px 10px;border-bottom:1px solid var(--border);}
 .lp-new-btn{width:100%;padding:9px 12px;border-radius:10px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;background:var(--accent);color:var(--accent-inv);border:none;display:flex;align-items:center;justify-content:center;gap:7px;transition:.2s;font-family:'Inter',sans-serif;}
 .lp-new-btn:hover{opacity:.85;}
@@ -786,6 +786,7 @@ a{text-decoration:none;color:inherit;}
     </div>
   </div>
 
+  <div id="main-content" style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
   <!-- Welcome screen -->
   <div id="welcome-screen">
     <div style="font-size:48px;margin-bottom:12px">📄</div>
@@ -1028,6 +1029,8 @@ a{text-decoration:none;color:inherit;}
     <div class="tov-filters" id="tov-filters"></div>
     <div class="templates-grid" id="templates-grid"></div>
   </div>
+  </div><!-- end main-content -->
+
 </div>
 
 <!-- ── MODALS ── -->
@@ -1364,7 +1367,7 @@ const TEMPLATES = [
   { id:'t9', name:'Timber', cat:'Classique', planReq:1, desc:'Élégance intemporelle, serif raffiné', colors:['#d4a574','#92400e','#b45309','#78350f'] },
   { id:'t10', name:'Ultraviolet', cat:'Tech', planReq:1, desc:'Startup tech, sombre et premium', colors:['#8b5cf6','#6366f1','#7c3aed','#a855f7'] },
   // ── NOUVEAUX FREE (plan 1+) ──
-  { id:'t11', name:'Nordic', cat:'Minimaliste', planReq:1, desc:'Scandinave épuré, beaucoup d'air', colors:['#1e293b','#334155','#0f172a'] },
+  { id:'t11', name:'Nordic', cat:'Minimaliste', planReq:1, desc:'Scandinave épuré, beaucoup d\'air', colors:['#1e293b','#334155','#0f172a'] },
   { id:'t12', name:'Sunset', cat:'Créatif', planReq:1, desc:'Dégradé coucher de soleil, chaleureux', colors:['#f97316','#ec4899','#8b5cf6'] },
   { id:'t13', name:'Metro', cat:'Corporate', planReq:1, desc:'Lignes nettes, look magazine pro', colors:['#dc2626','#1e293b','#2563eb','#059669'] },
   { id:'t14', name:'Paper', cat:'Classique', planReq:1, desc:'Papier blanc texturé, calme et lisible', colors:['#78716c','#57534e','#44403c'] },
@@ -1378,7 +1381,7 @@ const TEMPLATES = [
   { id:'tp1', name:'Holographic', cat:'Premium+', planReq:5, desc:'Holographique irisé, ultra premium', colors:['#8b5cf6','#06b6d4','#10b981'] },
   { id:'tp2', name:'Obsidian Gold', cat:'Premium+', planReq:5, desc:'Noir absolu et or, ultra luxe', colors:['#f59e0b','#d97706','#b45309'] },
   { id:'tp3', name:'Matrix', cat:'Premium+', planReq:5, desc:'Terminal hacker, style code vert', colors:['#22c55e','#16a34a','#15803d'] },
-  { id:'tp4', name:'Blueprint', cat:'Premium+', planReq:5, desc:'Plans d'architecte, bleu technique', colors:['#3b82f6','#1d4ed8','#1e40af'] },
+  { id:'tp4', name:'Blueprint', cat:'Premium+', planReq:5, desc:'Plans d\'architecte, bleu technique', colors:['#3b82f6','#1d4ed8','#1e40af'] },
   { id:'tp5', name:'Velvet', cat:'Premium+', planReq:5, desc:'Velours bordeaux, prestige absolu', colors:['#9f1239','#881337','#be123c'] },
 ];
 const CATS = ['Tous', 'Moderne', 'Minimaliste', 'Créatif', 'Exécutif', 'Corporate', 'Luxe', 'Finance', 'Classique', 'Tech', 'Premium+'];
@@ -1542,7 +1545,7 @@ function renderCVListPanel(){
 function timeAgo(ts){
   if(!ts) return '';
   const d=Math.floor((Date.now()-ts)/1000);
-  if(d<60) return 'À l'instant';
+  if(d<60) return "À l'instant";
   if(d<3600) return Math.floor(d/60)+'min';
   if(d<86400) return Math.floor(d/3600)+'h';
   return Math.floor(d/86400)+'j';
@@ -1960,10 +1963,22 @@ function demoData(){
 function updatePreview(){
   if(!_S.currentCV) return;
   getFormData();
-  const html=buildCVHTML(_S.currentCV.template, _S.currentCV.data, _S.currentCV.color, false);
+  let cvHTML;
+  if(_S.currentCV.template==='ai_custom' && _S.currentCV.aiTemplateHTML){
+    const d=_S.currentCV.data;
+    cvHTML=_S.currentCV.aiTemplateHTML
+      .replace(/{{FIRSTNAME}}/g, esc(d.firstname||'Prénom'))
+      .replace(/{{LASTNAME}}/g, esc(d.lastname||'Nom'))
+      .replace(/{{TITLE}}/g, esc(d.title||'Titre'))
+      .replace(/{{SUMMARY}}/g, esc(d.summary||''))
+      .replace(/{{EMAIL}}/g, esc(d.email||''))
+      .replace(/{{PHONE}}/g, esc(d.phone||''))
+      .replace(/{{LOCATION}}/g, esc([d.city,d.country].filter(Boolean).join(', ')));
+  } else {
+    cvHTML=buildCVHTML(_S.currentCV.template, _S.currentCV.data, _S.currentCV.color, false);
+  }
   const frame=G('cv-preview-frame');
-  if(frame) frame.innerHTML=html;
-  // Apply zoom
+  if(frame) frame.innerHTML=cvHTML;
   const wrapper=G('cv-preview-wrapper');
   if(wrapper) wrapper.style.transform=`scale(${_S.zoom/100})`;
 }
@@ -2290,7 +2305,7 @@ function buildCVHTML(templateId, data, color, isPreview){
     // ── T11: NORDIC — Scandinavian Minimal ──
     case 't11': return `
       <div class="cv-root">
-      <style>.t11{font-family:'Inter',sans-serif;background:#fff;padding:52px 56px;min-height:1122px;color:#1e293b}.t11-name{font-size:38px;font-weight:900;letter-spacing:-.05em;color:#${c.replace('#','')};line-height:1}.t11-title{font-size:13px;color:#64748b;font-weight:400;margin-top:8px;letter-spacing:.04em}.t11-rule{height:1px;background:#e2e8f0;margin:20px 0}.t11-contact{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:32px}.t11-ci{font-size:11px;color:#94a3b8}.t11-grid{display:grid;grid-template-columns:1fr 180px;gap:48px}.t11-st{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.18em;color:${c};margin-bottom:14px}.t11-summary{font-size:12.5px;color:#334155;line-height:1.85;margin-bottom:28px}.t11-exp{margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #f1f5f9}.t11-exp:last-child{border-bottom:none}.t11-role{font-size:13px;font-weight:800;color:#0f172a}.t11-co{font-size:12px;color:${c};font-weight:500;margin-top:2px}.t11-date{font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em}.t11-desc{font-size:11.5px;color:#475569;line-height:1.7;margin-top:5px}.t11-skill{display:flex;justify-content:space-between;font-size:11.5px;color:#1e293b;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #f1f5f9}.t11-skill:last-child{border-bottom:none}.t11-slvl{font-size:9px;font-weight:800;color:${c};text-transform:uppercase}.t11-lang{display:flex;justify-content:space-between;font-size:11.5px;color:#334155;margin-bottom:6px}.t11-llvl{font-size:10px;color:#94a3b8}.t11-edu{margin-bottom:12px}.t11-edeg{font-size:12px;font-weight:700;color:#0f172a}.t11-esc{font-size:11px;color:#64748b}.t11-edate{font-size:10px;color:#94a3b8}</style>
+      <style>.t11{font-family:'Inter',sans-serif;background:#fff;padding:52px 56px;min-height:1122px;color:#1e293b}.t11-name{font-size:38px;font-weight:900;letter-spacing:-.05em;color:${c};line-height:1}.t11-title{font-size:13px;color:#64748b;font-weight:400;margin-top:8px;letter-spacing:.04em}.t11-rule{height:1px;background:#e2e8f0;margin:20px 0}.t11-contact{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:32px}.t11-ci{font-size:11px;color:#94a3b8}.t11-grid{display:grid;grid-template-columns:1fr 180px;gap:48px}.t11-st{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.18em;color:${c};margin-bottom:14px}.t11-summary{font-size:12.5px;color:#334155;line-height:1.85;margin-bottom:28px}.t11-exp{margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #f1f5f9}.t11-exp:last-child{border-bottom:none}.t11-role{font-size:13px;font-weight:800;color:#0f172a}.t11-co{font-size:12px;color:${c};font-weight:500;margin-top:2px}.t11-date{font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em}.t11-desc{font-size:11.5px;color:#475569;line-height:1.7;margin-top:5px}.t11-skill{display:flex;justify-content:space-between;font-size:11.5px;color:#1e293b;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #f1f5f9}.t11-skill:last-child{border-bottom:none}.t11-slvl{font-size:9px;font-weight:800;color:${c};text-transform:uppercase}.t11-lang{display:flex;justify-content:space-between;font-size:11.5px;color:#334155;margin-bottom:6px}.t11-llvl{font-size:10px;color:#94a3b8}.t11-edu{margin-bottom:12px}.t11-edeg{font-size:12px;font-weight:700;color:#0f172a}.t11-esc{font-size:11px;color:#64748b}.t11-edate{font-size:10px;color:#94a3b8}</style>
       <div class="t11">
         <div class="t11-name">${esc(fullName)}</div>
         <div class="t11-title">${esc(d.title)}</div>
@@ -2424,8 +2439,8 @@ async function deleteSavedPhoto(i){
 }
 
 function applyPhoto(){
-  if(!_S.currentCV){ toast('Ouvrez un CV d'abord.'); return; }
-  if(!_S._pendingPhoto){ toast('Sélectionnez d'abord une photo.'); return; }
+  if(!_S.currentCV){ toast('Ouvrez un CV d\'abord.'); return; }
+  if(!_S._pendingPhoto){ toast('Sélectionnez d\'abord une photo.'); return; }
   _S.currentCV.data.photoURL=_S._pendingPhoto;
   _S._pendingPhoto=null;
   updatePreview();
@@ -2503,8 +2518,8 @@ Réponds UNIQUEMENT avec le HTML commençant par <div class="cv-root">`;
 }
 
 function applyAITemplate(){
-  if(!_aiGeneratedTemplateHTML){ toast('Générez d'abord un template.'); return; }
-  if(!_S.currentCV){ toast('Ouvrez un CV d'abord.'); return; }
+  if(!_aiGeneratedTemplateHTML){ toast('Générez d\'abord un template.'); return; }
+  if(!_S.currentCV){ toast('Ouvrez un CV d\'abord.'); return; }
   _S.currentCV.template='ai_custom';
   _S.currentCV.aiTemplateHTML=_aiGeneratedTemplateHTML;
   updatePreview();
