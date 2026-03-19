@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wikimind ImpressAI — Diaporamas IA Professionnels</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a28;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #f0f0ff;
+  --text-dim: rgba(240,240,255,0.5);
+  --accent: #7c3aed;
+  --accent2: #a855f7;
+  --glow: rgba(124,58,237,0.3);
+  --slide-bg: #1e1e2e;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.4); border-radius: 4px; }
+
+/* ── TOP BAR ── */
+#topbar {
+  height: 52px; display: flex; align-items: center; gap: 8px;
+  padding: 0 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  background: var(--surface); position: relative; z-index: 20;
+}
+.tb-logo { display: flex; align-items: center; gap: 8px; cursor: pointer; text-decoration: none; color: var(--text); }
+.tb-logo-icon { width: 28px; height: 28px; background: linear-gradient(135deg,#7c3aed,#a855f7); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.tb-logo-name { font-size: 14px; font-weight: 900; letter-spacing: -.03em; }
+.tb-logo-name span { color: var(--accent2); }
+.tb-sep { flex: 1; }
+.tb-btn {
+  display: flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 8px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  cursor: pointer; border: 1px solid var(--border2); background: none; color: var(--text-dim);
+  transition: .15s; font-family: 'Inter', sans-serif; white-space: nowrap;
+}
+.tb-btn:hover { background: var(--surface2); color: var(--text); }
+.tb-btn.primary { background: var(--accent); color: #fff; border-color: transparent; }
+.tb-btn.primary:hover { background: var(--accent2); }
+.tb-btn svg { width: 13px; height: 13px; }
+
+/* ── LAYOUT ── */
+#workspace { display: flex; flex: 1; overflow: hidden; }
+
+/* ── LEFT: Slides filmstrip ── */
+#filmstrip {
+  width: 200px; min-width: 200px; border-right: 1px solid var(--border);
+  background: var(--surface); overflow-y: auto; display: flex; flex-direction: column;
+  padding: 10px 8px; gap: 8px;
+}
+.slide-thumb {
+  border-radius: 8px; border: 2px solid var(--border); cursor: pointer;
+  transition: .15s; position: relative; overflow: hidden; flex-shrink: 0;
+  aspect-ratio: 16/9; background: var(--slide-bg);
+}
+.slide-thumb:hover { border-color: rgba(124,58,237,0.4); }
+.slide-thumb.active { border-color: var(--accent); box-shadow: 0 0 12px var(--glow); }
+.slide-thumb-inner { width: 100%; height: 100%; pointer-events: none; overflow: hidden; }
+.thumb-num {
+  position: absolute; bottom: 4px; left: 6px; font-size: 9px; font-weight: 700;
+  color: rgba(255,255,255,0.4); background: rgba(0,0,0,0.4); padding: 1px 5px; border-radius: 4px;
+}
+.thumb-del {
+  position: absolute; top: 4px; right: 4px; width: 18px; height: 18px; border-radius: 4px;
+  background: rgba(239,68,68,0.7); color: #fff; border: none; font-size: 9px; cursor: pointer;
+  display: none; align-items: center; justify-content: center;
+}
+.slide-thumb:hover .thumb-del { display: flex; }
+#add-slide-btn {
+  width: 100%; padding: 8px; border-radius: 8px; border: 1px dashed rgba(124,58,237,0.4);
+  background: none; color: var(--accent2); font-size: 11px; font-weight: 700; cursor: pointer;
+  transition: .15s; font-family: 'Inter', sans-serif;
+}
+#add-slide-btn:hover { background: rgba(124,58,237,0.1); }
+
+/* ── CENTER: Slide editor ── */
+#editor-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+#slide-toolbar {
+  height: 44px; display: flex; align-items: center; gap: 6px; padding: 0 14px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--surface);
+  overflow-x: auto;
+}
+.st-btn {
+  display: flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 7px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  cursor: pointer; border: 1px solid var(--border2); background: none; color: var(--text-dim);
+  transition: .15s; white-space: nowrap; font-family: 'Inter', sans-serif;
+}
+.st-btn:hover { background: var(--surface2); color: var(--text); }
+.st-sep { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; margin: 0 2px; }
+#slide-canvas-wrap {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 24px; overflow: auto; background: #050508;
+}
+#slide-canvas {
+  width: 900px; max-width: 100%; aspect-ratio: 16/9; position: relative;
+  border-radius: 12px; overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+  background: var(--slide-bg); cursor: default;
+  flex-shrink: 0;
+}
+
+/* ── Slide themes ── */
+.theme-dark { background: linear-gradient(135deg, #0f0f1a 0%, #1a1020 100%); }
+.theme-violet { background: linear-gradient(135deg, #1e0a3c 0%, #2d1260 100%); }
+.theme-ocean { background: linear-gradient(135deg, #0c1a2e 0%, #0a2447 100%); }
+.theme-forest { background: linear-gradient(135deg, #0a1f0a 0%, #0d2b1a 100%); }
+.theme-sunset { background: linear-gradient(135deg, #1a0a0a 0%, #2d1515 100%); }
+.theme-light { background: linear-gradient(135deg, #f8f9ff 0%, #eef0ff 100%); }
+.theme-minimal { background: #ffffff; }
+
+/* ── Slide content elements ── */
+.slide-element {
+  position: absolute; cursor: move; user-select: none;
+  border: 2px solid transparent; border-radius: 4px; transition: border-color .15s;
+}
+.slide-element:hover { border-color: rgba(124,58,237,0.5); }
+.slide-element.selected { border-color: var(--accent); }
+.slide-element.selected::after {
+  content: ''; position: absolute; inset: -6px; border: 2px dashed rgba(124,58,237,0.4);
+  border-radius: 8px; pointer-events: none;
+}
+.el-text { padding: 6px 8px; line-height: 1.4; }
+.el-title { font-family: 'DM Serif Display', serif; font-size: clamp(20px,4vw,52px); font-weight: 400; }
+.el-subtitle { font-size: clamp(12px,2vw,22px); font-weight: 300; opacity: .8; }
+.el-body { font-size: clamp(10px,1.5vw,16px); line-height: 1.7; }
+.el-accent { display: inline-block; background: var(--accent); color: #fff; padding: 4px 14px; border-radius: 20px; font-size: clamp(8px,1.2vw,13px); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.el-image { overflow: hidden; border-radius: 8px; }
+.el-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.el-shape { border-radius: 8px; }
+.el-chart-container { border-radius: 8px; overflow: hidden; padding: 8px; background: rgba(255,255,255,0.04); }
+.el-resize { position: absolute; bottom: -5px; right: -5px; width: 12px; height: 12px; background: var(--accent); border-radius: 3px; cursor: se-resize; }
+
+/* ── Slide animations ── */
+@keyframes slideIn { from { opacity:0; transform: translateX(-40px); } to { opacity:1; transform: translateX(0); } }
+@keyframes fadeInUp { from { opacity:0; transform: translateY(30px); } to { opacity:1; transform: translateY(0); } }
+@keyframes zoomIn { from { opacity:0; transform: scale(0.8); } to { opacity:1; transform: scale(1); } }
+@keyframes flipIn { from { opacity:0; transform: rotateY(-90deg); } to { opacity:1; transform: rotateY(0); } }
+
+/* ── RIGHT: Properties panel ── */
+#props-panel {
+  width: 240px; min-width: 240px; border-left: 1px solid var(--border);
+  background: var(--surface); overflow-y: auto; display: flex; flex-direction: column;
+  padding: 12px; gap: 12px;
+}
+.pp-section-title { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: rgba(255,255,255,0.3); margin-bottom: 6px; }
+.pp-row { display: flex; flex-direction: column; gap: 4px; }
+.pp-label { font-size: 10px; font-weight: 600; color: var(--text-dim); }
+.pp-input {
+  width: 100%; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border2);
+  background: var(--surface2); color: var(--text); font-size: 12px; font-family: 'Inter', sans-serif;
+  outline: none;
+}
+.pp-input:focus { border-color: var(--accent); }
+select.pp-input { cursor: pointer; }
+textarea.pp-input { resize: vertical; line-height: 1.5; min-height: 60px; }
+.pp-color-row { display: flex; gap: 4px; flex-wrap: wrap; }
+.pp-color { width: 22px; height: 22px; border-radius: 6px; cursor: pointer; border: 2px solid transparent; transition: .12s; }
+.pp-color.active { border-color: #fff; transform: scale(1.15); }
+.pp-actions { display: flex; flex-direction: column; gap: 6px; }
+.pp-btn {
+  width: 100%; padding: 8px; border-radius: 8px; font-size: 10px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .06em; cursor: pointer; border: none;
+  transition: .15s; font-family: 'Inter', sans-serif;
+}
+.pp-btn.primary { background: var(--accent); color: #fff; }
+.pp-btn.primary:hover { background: var(--accent2); }
+.pp-btn.secondary { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border2); }
+.pp-btn.secondary:hover { color: var(--text); background: var(--border2); }
+.pp-divider { height: 1px; background: var(--border); margin: 2px 0; }
+
+/* ── AI PANEL (modal) ── */
+#ai-modal {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200;
+  align-items: center; justify-content: center; backdrop-filter: blur(8px);
+}
+#ai-modal.open { display: flex; }
+#ai-panel {
+  width: min(700px, 95vw); background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 20px; padding: 28px; display: flex; flex-direction: column; gap: 16px;
+  box-shadow: 0 40px 120px rgba(0,0,0,0.8);
+}
+.ai-panel-title { font-size: 20px; font-weight: 900; letter-spacing: -.03em; }
+.ai-panel-title span { color: var(--accent2); }
+.ai-prompt-wrap { display: flex; flex-direction: column; gap: 8px; }
+#ai-prompt {
+  width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border2);
+  background: var(--surface2); color: var(--text); font-size: 13px; font-family: 'Inter', sans-serif;
+  outline: none; resize: none; min-height: 80px; line-height: 1.6;
+}
+#ai-prompt:focus { border-color: var(--accent); }
+.ai-options { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.ai-opt-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim); }
+.ai-select {
+  padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border2); background: var(--surface2);
+  color: var(--text); font-size: 11px; font-family: 'Inter', sans-serif; outline: none; cursor: pointer;
+}
+.ai-themes { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.ai-theme-btn {
+  padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 700;
+  cursor: pointer; border: 1px solid var(--border2); background: var(--surface2); color: var(--text-dim);
+  transition: .12s; font-family: 'Inter', sans-serif;
+}
+.ai-theme-btn.active, .ai-theme-btn:hover { border-color: var(--accent); color: var(--accent2); background: rgba(124,58,237,0.1); }
+.ai-generate-row { display: flex; gap: 8px; justify-content: flex-end; }
+#ai-progress { font-size: 12px; color: var(--accent2); display: none; align-items: center; gap: 8px; }
+.ai-spinner { width: 14px; height: 14px; border: 2px solid rgba(168,85,247,0.3); border-top-color: var(--accent2); border-radius: 50%; animation: spin .6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── IMAGE SEARCH (modal) ── */
+#img-modal {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 300;
+  align-items: center; justify-content: center; backdrop-filter: blur(8px);
+}
+#img-modal.open { display: flex; }
+#img-panel {
+  width: min(800px,95vw); max-height: 85vh; background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 14px;
+  box-shadow: 0 40px 120px rgba(0,0,0,0.8); overflow: hidden;
+}
+#img-search-row { display: flex; gap: 8px; }
+#img-search-input {
+  flex: 1; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border2);
+  background: var(--surface2); color: var(--text); font-size: 13px; font-family: 'Inter', sans-serif; outline: none;
+}
+#img-search-input:focus { border-color: var(--accent); }
+#img-results { display: grid; grid-template-columns: repeat(auto-fill,minmax(160px,1fr)); gap: 10px; overflow-y: auto; flex: 1; }
+.img-result {
+  aspect-ratio: 4/3; border-radius: 10px; overflow: hidden; cursor: pointer;
+  border: 2px solid transparent; transition: .15s;
+}
+.img-result:hover { border-color: var(--accent); transform: scale(1.02); }
+.img-result img { width: 100%; height: 100%; object-fit: cover; }
+#img-loading { text-align: center; padding: 40px; color: var(--text-dim); font-size: 13px; }
+
+/* ── PRESENTATION MODE ── */
+#present-overlay {
+  display: none; position: fixed; inset: 0; background: #000; z-index: 500;
+  flex-direction: column; align-items: center; justify-content: center;
+}
+#present-overlay.active { display: flex; }
+#present-slide { width: 100vw; height: 100vh; position: relative; overflow: hidden; }
+#present-controls {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 12px; align-items: center;
+  background: rgba(0,0,0,0.8); padding: 10px 20px; border-radius: 40px;
+  backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);
+}
+.pc-btn {
+  width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(255,255,255,0.1);
+  color: #fff; font-size: 16px; cursor: pointer; transition: .15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.pc-btn:hover { background: rgba(255,255,255,0.2); }
+#pc-counter { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.6); min-width: 60px; text-align: center; }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--accent); color: #fff; padding: 10px 22px; border-radius: 12px;
+  font-size: 12px; font-weight: 700; z-index: 9999; opacity: 0; transition: .25s; pointer-events: none;
+  box-shadow: 0 8px 24px var(--glow);
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── Responsive ── */
+@media(max-width:768px){ #filmstrip{display:none;} #props-panel{display:none;} }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <a class="tb-logo" href="https://chpalitom09-bot.github.io/Wikimind-3/index.html">
+    <div class="tb-logo-icon">✨</div>
+    <span class="tb-logo-name">Wikimind <span>ImpressAI</span></span>
+  </a>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" onclick="openAIModal()">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 110 20A10 10 0 0112 2zm0 0v4m0 16v-4m10-6h-4M6 12H2m15.07-7.07l-2.83 2.83M8.76 15.24l-2.83 2.83M18.36 18.36l-2.83-2.83M8.07 8.07L5.64 5.64"/></svg>
+    Générer avec IA
+  </button>
+  <button class="tb-btn" onclick="openImgModal()">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    Images Wiki
+  </button>
+  <button class="tb-btn" onclick="startPresentation()">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    Présenter
+  </button>
+  <button class="tb-btn" onclick="exportHTML()">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Exporter
+  </button>
+  <button class="tb-btn primary" onclick="addSlide()">+ Slide</button>
+</div>
+
+<!-- WORKSPACE -->
+<div id="workspace">
+
+  <!-- FILMSTRIP -->
+  <div id="filmstrip">
+    <div id="slides-list"></div>
+    <button id="add-slide-btn" onclick="addSlide()">+ Nouvelle slide</button>
+  </div>
+
+  <!-- EDITOR -->
+  <div id="editor-area">
+    <div id="slide-toolbar">
+      <button class="st-btn" onclick="addTextElement('title')">T Titre</button>
+      <button class="st-btn" onclick="addTextElement('subtitle')">Sous-titre</button>
+      <button class="st-btn" onclick="addTextElement('body')">Texte</button>
+      <button class="st-btn" onclick="addTextElement('accent')">Badge</button>
+      <div class="st-sep"></div>
+      <button class="st-btn" onclick="addShape('rect')">▭ Rectangle</button>
+      <button class="st-btn" onclick="addShape('circle')">● Cercle</button>
+      <div class="st-sep"></div>
+      <button class="st-btn" onclick="openImgModal()">🖼 Image</button>
+      <button class="st-btn" onclick="addChartElement()">📊 Graphique</button>
+      <div class="st-sep"></div>
+      <button class="st-btn" onclick="deleteSelected()">✕ Suppr.</button>
+      <button class="st-btn" onclick="duplicateSlide()">⎘ Dupliquer</button>
+    </div>
+    <div id="slide-canvas-wrap">
+      <div id="slide-canvas" class="theme-dark"></div>
+    </div>
+  </div>
+
+  <!-- PROPERTIES PANEL -->
+  <div id="props-panel">
+    <div>
+      <div class="pp-section-title">Slide</div>
+      <div class="pp-actions">
+        <div class="pp-row">
+          <label class="pp-label">Thème</label>
+          <select class="pp-input" id="pp-theme" onchange="applyTheme(this.value)">
+            <option value="theme-dark">🌑 Dark</option>
+            <option value="theme-violet">🔮 Violet</option>
+            <option value="theme-ocean">🌊 Ocean</option>
+            <option value="theme-forest">🌿 Forest</option>
+            <option value="theme-sunset">🌅 Sunset</option>
+            <option value="theme-light">☀️ Light</option>
+            <option value="theme-minimal">⬜ Minimal</option>
+          </select>
+        </div>
+        <div class="pp-row">
+          <label class="pp-label">Animation d'entrée</label>
+          <select class="pp-input" id="pp-anim" onchange="setSlideAnimation(this.value)">
+            <option value="none">Aucune</option>
+            <option value="slideIn">→ Glissement</option>
+            <option value="fadeInUp">↑ Montée</option>
+            <option value="zoomIn">⊕ Zoom</option>
+            <option value="flipIn">↻ Flip</option>
+          </select>
+        </div>
+        <div class="pp-row">
+          <label class="pp-label">Couleur de fond</label>
+          <input type="color" class="pp-input" id="pp-bgcolor" style="height:36px;padding:2px 6px;cursor:pointer" oninput="setSlideBgColor(this.value)">
+        </div>
+      </div>
+    </div>
+
+    <div class="pp-divider"></div>
+
+    <div id="element-props" style="display:none">
+      <div class="pp-section-title">Élément sélectionné</div>
+      <div class="pp-actions">
+        <div class="pp-row">
+          <label class="pp-label">Contenu / Texte</label>
+          <textarea class="pp-input" id="pp-content" oninput="updateSelectedContent(this.value)" rows="3"></textarea>
+        </div>
+        <div class="pp-row">
+          <label class="pp-label">Couleur texte</label>
+          <div class="pp-color-row" id="pp-colors">
+            <div class="pp-color active" style="background:#ffffff" data-color="#ffffff" onclick="setElementColor(this)"></div>
+            <div class="pp-color" style="background:#a855f7" data-color="#a855f7" onclick="setElementColor(this)"></div>
+            <div class="pp-color" style="background:#60a5fa" data-color="#60a5fa" onclick="setElementColor(this)"></div>
+            <div class="pp-color" style="background:#34d399" data-color="#34d399" onclick="setElementColor(this)"></div>
+            <div class="pp-color" style="background:#fbbf24" data-color="#fbbf24" onclick="setElementColor(this)"></div>
+            <div class="pp-color" style="background:#f87171" data-color="#f87171" onclick="setElementColor(this)"></div>
+            <div class="pp-color" style="background:#111111" data-color="#111111" onclick="setElementColor(this)"></div>
+          </div>
+        </div>
+        <div class="pp-row">
+          <label class="pp-label">Taille police</label>
+          <input type="range" id="pp-fontsize" min="10" max="100" value="32" oninput="setFontSize(this.value)" class="pp-input" style="padding:0;height:28px">
+        </div>
+        <button class="pp-btn secondary" onclick="deleteSelected()">🗑 Supprimer</button>
+      </div>
+    </div>
+
+    <div class="pp-divider"></div>
+
+    <div>
+      <div class="pp-section-title">Actions</div>
+      <div class="pp-actions">
+        <button class="pp-btn secondary" onclick="addSlide()">+ Nouvelle slide</button>
+        <button class="pp-btn secondary" onclick="duplicateSlide()">⎘ Dupliquer slide</button>
+        <button class="pp-btn primary" onclick="startPresentation()">▶ Présenter</button>
+        <button class="pp-btn secondary" onclick="exportHTML()">⬇ Exporter HTML</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI MODAL -->
+<div id="ai-modal">
+  <div id="ai-panel">
+    <div class="ai-panel-title">Générer avec <span>Wikimind IA</span></div>
+    <p style="font-size:13px;color:var(--text-dim);line-height:1.6">Décrivez votre présentation — l'IA créera toutes les slides avec contenu, layout et graphiques.</p>
+    <div class="ai-prompt-wrap">
+      <textarea id="ai-prompt" placeholder="Ex: Présentation sur le changement climatique pour un lycée, 8 slides, données scientifiques, solutions pratiques..."></textarea>
+    </div>
+    <div class="ai-options">
+      <span class="ai-opt-label">Slides :</span>
+      <select class="ai-select" id="ai-nslides">
+        <option value="4">4</option><option value="6">6</option>
+        <option value="8" selected>8</option><option value="10">10</option>
+        <option value="12">12</option>
+      </select>
+      <span class="ai-opt-label">Langue :</span>
+      <select class="ai-select" id="ai-lang">
+        <option value="français" selected>🇫🇷 Français</option>
+        <option value="anglais">🇬🇧 Anglais</option>
+        <option value="espagnol">🇪🇸 Espagnol</option>
+      </select>
+    </div>
+    <div>
+      <div class="ai-opt-label" style="margin-bottom:8px">Thème visuel :</div>
+      <div class="ai-themes" id="ai-themes">
+        <button class="ai-theme-btn active" data-theme="theme-dark" onclick="selectAITheme(this)">🌑 Dark</button>
+        <button class="ai-theme-btn" data-theme="theme-violet" onclick="selectAITheme(this)">🔮 Violet</button>
+        <button class="ai-theme-btn" data-theme="theme-ocean" onclick="selectAITheme(this)">🌊 Ocean</button>
+        <button class="ai-theme-btn" data-theme="theme-forest" onclick="selectAITheme(this)">🌿 Forest</button>
+        <button class="ai-theme-btn" data-theme="theme-sunset" onclick="selectAITheme(this)">🌅 Sunset</button>
+        <button class="ai-theme-btn" data-theme="theme-light" onclick="selectAITheme(this)">☀️ Light</button>
+      </div>
+    </div>
+    <div class="ai-generate-row">
+      <div id="ai-progress"><div class="ai-spinner"></div> <span id="ai-progress-text">Génération en cours…</span></div>
+      <button class="tb-btn" onclick="closeAIModal()">Annuler</button>
+      <button class="tb-btn primary" id="ai-gen-btn" onclick="generateWithAI()">✦ Générer</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMAGE SEARCH MODAL -->
+<div id="img-modal">
+  <div id="img-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:16px;font-weight:900">🖼 Images Wikimedia Commons</div>
+      <button class="tb-btn" onclick="closeImgModal()">✕ Fermer</button>
+    </div>
+    <div id="img-search-row">
+      <input type="text" id="img-search-input" placeholder="Rechercher une image (ex: Paris, forêt, science…)" onkeydown="if(event.key==='Enter')searchImages()">
+      <button class="tb-btn primary" onclick="searchImages()">Rechercher</button>
+    </div>
+    <div id="img-results">
+      <div id="img-loading" style="display:none">🔍 Recherche en cours…</div>
+    </div>
+    <p style="font-size:10px;color:var(--text-dim)">Images libres de droits via Wikimedia Commons. Cliquez pour insérer dans la slide active.</p>
+  </div>
+</div>
+
+<!-- PRESENTATION OVERLAY -->
+<div id="present-overlay">
+  <div id="present-slide"></div>
+  <div id="present-controls">
+    <button class="pc-btn" onclick="prevSlide()">◀</button>
+    <span id="pc-counter">1 / 1</span>
+    <button class="pc-btn" onclick="nextSlide()">▶</button>
+    <button class="pc-btn" onclick="stopPresentation()" style="background:rgba(239,68,68,0.3)">✕</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const MISTRAL_KEY = 'SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9';
+
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+let slides = [];          // Array of slide data objects
+let currentSlideIndex = 0;
+let selectedElement  = null;
+let dragState        = null;
+let aiTheme          = 'theme-dark';
+let presentIndex     = 0;
+
+/* ══════════════════════════════════════════
+   SLIDE DATA STRUCTURE
+  {
+    id: String,
+    theme: String (css class),
+    bgColor: String|null,
+    animation: String,
+    elements: [{
+      id, type('text'|'image'|'shape'|'chart'),
+      x, y, w, h, content, color, fontSize, src,
+      chartData: {type, labels, values}
+    }]
+  }
+══════════════════════════════════════════ */
+
+function newSlideData(theme) {
+  return {
+    id: 'sl_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+    theme: theme || 'theme-dark',
+    bgColor: null,
+    animation: 'fadeInUp',
+    elements: []
+  };
+}
+
+function newElementData(type, x, y, w, h, extra={}) {
+  return {
+    id: 'el_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+    type, x, y, w, h,
+    content: extra.content || '',
+    color: extra.color || '#ffffff',
+    fontSize: extra.fontSize || 28,
+    src: extra.src || null,
+    chartData: extra.chartData || null,
+    subtype: extra.subtype || null,
+  };
+}
+
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
+function init() {
+  // Create default presentation
+  const s1 = newSlideData('theme-dark');
+  s1.elements = [
+    newElementData('text', 8, 20, 84, 25, {content:'Bienvenue sur\nWikimind ImpressAI', color:'#ffffff', fontSize:52, subtype:'title'}),
+    newElementData('text', 8, 52, 70, 12, {content:'Créez des présentations professionnelles avec l\'IA', color:'rgba(255,255,255,0.65)', fontSize:18, subtype:'subtitle'}),
+    newElementData('text', 8, 70, 30, 8, {content:'IA Mistral · Images Wiki · Export HTML', color:'#a855f7', fontSize:12, subtype:'accent'}),
+  ];
+  const s2 = newSlideData('theme-violet');
+  s2.elements = [
+    newElementData('text', 5, 10, 90, 20, {content:'Commencez par cliquer\n"Générer avec IA"', color:'#ffffff', fontSize:40, subtype:'title'}),
+    newElementData('text', 5, 38, 90, 15, {content:'Décrivez votre sujet et l\'IA génère toute la présentation automatiquement avec textes, layouts et graphiques.', color:'rgba(255,255,255,0.7)', fontSize:15, subtype:'body'}),
+  ];
+  slides = [s1, s2];
+  currentSlideIndex = 0;
+  renderAll();
+}
+
+/* ══════════════════════════════════════════
+   RENDER
+══════════════════════════════════════════ */
+function renderAll() {
+  renderFilmstrip();
+  renderCurrentSlide();
+}
+
+function renderFilmstrip() {
+  const list = document.getElementById('slides-list');
+  list.innerHTML = '';
+  slides.forEach((slide, i) => {
+    const div = document.createElement('div');
+    div.className = 'slide-thumb' + (i === currentSlideIndex ? ' active' : '');
+    div.innerHTML = `
+      <div class="slide-thumb-inner" style="transform:scale(0.18);transform-origin:top left;width:556%;height:556%;">
+        ${buildSlideHTML(slide, 'thumb')}
+      </div>
+      <div class="thumb-num">${i + 1}</div>
+      <button class="thumb-del" onclick="event.stopPropagation();deleteSlide(${i})">✕</button>
+    `;
+    div.onclick = () => { currentSlideIndex = i; selectedElement = null; renderAll(); };
+    list.appendChild(div);
+  });
+}
+
+function renderCurrentSlide() {
+  const canvas = document.getElementById('slide-canvas');
+  const slide  = slides[currentSlideIndex];
+  if (!slide) return;
+
+  // Theme + bg
+  canvas.className = 'theme-dark'; // reset
+  canvas.className = slide.theme || 'theme-dark';
+  if (slide.bgColor) canvas.style.background = slide.bgColor;
+  else canvas.style.removeProperty('background');
+
+  // Clear & render elements
+  canvas.innerHTML = '';
+  slide.elements.forEach(el => {
+    const dom = createElementDOM(el);
+    canvas.appendChild(dom);
+    if (el.type === 'chart' && el.chartData) {
+      setTimeout(() => renderChartEl(el.id, el.chartData), 50);
+    }
+  });
+
+  // Update props panel
+  document.getElementById('pp-theme').value = slide.theme || 'theme-dark';
+  document.getElementById('pp-anim').value  = slide.animation || 'none';
+  if (slide.bgColor) document.getElementById('pp-bgcolor').value = slide.bgColor;
+}
+
+function buildSlideHTML(slide, mode) {
+  let html = `<div style="width:900px;height:506px;position:relative;overflow:hidden;" class="${slide.theme}${slide.bgColor?';background:'+slide.bgColor:''}">`;
+  slide.elements.forEach(el => {
+    const left   = (el.x / 100 * 900).toFixed(0);
+    const top    = (el.y / 100 * 506).toFixed(0);
+    const width  = (el.w / 100 * 900).toFixed(0);
+    const height = (el.h / 100 * 506).toFixed(0);
+    if (el.type === 'text') {
+      const fs = el.subtype === 'title' ? Math.max(el.fontSize||28, 28) : (el.fontSize || 14);
+      html += `<div style="position:absolute;left:${left}px;top:${top}px;width:${width}px;height:${height}px;color:${el.color||'#fff'};font-size:${fs}px;padding:6px 8px;line-height:1.3;word-wrap:break-word;overflow:hidden;${el.subtype==='title'?'font-family:DM Serif Display,serif;':''}${el.subtype==='accent'?'background:#7c3aed;border-radius:20px;font-size:12px;font-weight:700;text-transform:uppercase;display:inline-flex;align-items:center;':''}white-space:pre-line">${htmlEsc(el.content||'')}</div>`;
+    } else if (el.type === 'image' && el.src) {
+      html += `<div style="position:absolute;left:${left}px;top:${top}px;width:${width}px;height:${height}px;border-radius:8px;overflow:hidden"><img src="${el.src}" style="width:100%;height:100%;object-fit:cover" crossorigin="anonymous" onerror="this.style.display='none'"></div>`;
+    } else if (el.type === 'shape') {
+      const br = el.subtype === 'circle' ? '50%' : '8px';
+      html += `<div style="position:absolute;left:${left}px;top:${top}px;width:${width}px;height:${height}px;background:${el.color||'rgba(124,58,237,0.4)'};border-radius:${br}"></div>`;
+    } else if (el.type === 'chart') {
+      html += `<div style="position:absolute;left:${left}px;top:${top}px;width:${width}px;height:${height}px;background:rgba(255,255,255,0.05);border-radius:8px;overflow:hidden"><canvas id="tc_${el.id}" style="width:100%;height:100%"></canvas></div>`;
+    }
+  });
+  html += '</div>';
+  return html;
+}
+
+function createElementDOM(el) {
+  const canvas = document.getElementById('slide-canvas');
+  const cw     = canvas.offsetWidth  || 900;
+  const ch     = canvas.offsetHeight || 506;
+
+  const div = document.createElement('div');
+  div.className   = 'slide-element';
+  div.id          = 'dom_' + el.id;
+  div.style.left  = (el.x / 100 * cw) + 'px';
+  div.style.top   = (el.y / 100 * ch) + 'px';
+  div.style.width = (el.w / 100 * cw) + 'px';
+  div.style.height= (el.h / 100 * ch) + 'px';
+
+  if (el.type === 'text') {
+    div.className += ' el-text';
+    if (el.subtype === 'title')    div.className += ' el-title';
+    else if (el.subtype === 'subtitle') div.className += ' el-subtitle';
+    else if (el.subtype === 'body')div.className += ' el-body';
+    else if (el.subtype === 'accent') div.className += ' el-accent';
+    div.style.color    = el.color || '#ffffff';
+    div.style.fontSize = (el.fontSize || 28) + 'px';
+    div.style.whiteSpace = 'pre-line';
+    div.innerHTML = htmlEsc(el.content || (el.subtype === 'title' ? 'Titre' : 'Texte'));
+  } else if (el.type === 'image') {
+    div.className += ' el-image';
+    if (el.src) div.innerHTML = `<img src="${el.src}" style="width:100%;height:100%;object-fit:cover" crossorigin="anonymous">`;
+    else div.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(124,58,237,0.15);border:2px dashed rgba(124,58,237,0.4);border-radius:8px;color:rgba(255,255,255,0.4);font-size:12px">🖼 Image</div>';
+  } else if (el.type === 'shape') {
+    div.className += ' el-shape';
+    div.style.background = el.color || 'rgba(124,58,237,0.4)';
+    if (el.subtype === 'circle') div.style.borderRadius = '50%';
+  } else if (el.type === 'chart') {
+    div.className += ' el-chart-container';
+    div.innerHTML  = `<canvas id="cc_${el.id}" style="width:100%;height:100%"></canvas>`;
+  }
+
+  // Resize handle
+  const resizeHandle = document.createElement('div');
+  resizeHandle.className = 'el-resize';
+  div.appendChild(resizeHandle);
+  resizeHandle.addEventListener('mousedown', startResize.bind(null, el, div));
+
+  div.addEventListener('mousedown', e => { if (e.target !== resizeHandle) startDrag(e, el, div); });
+  div.addEventListener('click',     e => { e.stopPropagation(); selectElement(el, div); });
+
+  return div;
+}
+
+function selectElement(el, dom) {
+  // Deselect all
+  document.querySelectorAll('.slide-element').forEach(d => d.classList.remove('selected'));
+  selectedElement = el;
+  dom.classList.add('selected');
+
+  // Show element props
+  document.getElementById('element-props').style.display = 'block';
+  document.getElementById('pp-content').value = el.content || '';
+  const fsInput = document.getElementById('pp-fontsize');
+  fsInput.value = el.fontSize || 28;
+
+  // Highlight active color
+  document.querySelectorAll('#pp-colors .pp-color').forEach(c => {
+    c.classList.toggle('active', c.dataset.color === el.color);
+  });
+}
+
+document.getElementById('slide-canvas').addEventListener('click', e => {
+  if (e.target === document.getElementById('slide-canvas')) {
+    selectedElement = null;
+    document.querySelectorAll('.slide-element').forEach(d => d.classList.remove('selected'));
+    document.getElementById('element-props').style.display = 'none';
+  }
+});
+
+/* ══════════════════════════════════════════
+   DRAG
+══════════════════════════════════════════ */
+function startDrag(e, el, dom) {
+  e.preventDefault();
+  selectElement(el, dom);
+  const canvas = document.getElementById('slide-canvas');
+  const cw     = canvas.offsetWidth;
+  const ch     = canvas.offsetHeight;
+  const startX = e.clientX;
+  const startY = e.clientY;
+  const origX  = el.x;
+  const origY  = el.y;
+
+  function onMove(me) {
+    const dx = (me.clientX - startX) / cw * 100;
+    const dy = (me.clientY - startY) / ch * 100;
+    el.x = Math.max(0, Math.min(100 - el.w, origX + dx));
+    el.y = Math.max(0, Math.min(100 - el.h, origY + dy));
+    dom.style.left = (el.x / 100 * cw) + 'px';
+    dom.style.top  = (el.y / 100 * ch) + 'px';
+  }
+  function onUp() {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+function startResize(el, dom, e) {
+  e.preventDefault(); e.stopPropagation();
+  const canvas = document.getElementById('slide-canvas');
+  const cw = canvas.offsetWidth, ch = canvas.offsetHeight;
+  const startX = e.clientX, startY = e.clientY;
+  const origW = el.w, origH = el.h;
+
+  function onMove(me) {
+    const dw = (me.clientX - startX) / cw * 100;
+    const dh = (me.clientY - startY) / ch * 100;
+    el.w = Math.max(5, origW + dw);
+    el.h = Math.max(3, origH + dh);
+    dom.style.width  = (el.w / 100 * cw) + 'px';
+    dom.style.height = (el.h / 100 * ch) + 'px';
+  }
+  function onUp() {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+/* ══════════════════════════════════════════
+   ADD ELEMENTS
+══════════════════════════════════════════ */
+function addTextElement(subtype) {
+  const defaults = {
+    title:    {x:5, y:15, w:90, h:22, content:'Nouveau Titre',   color:'#ffffff', fontSize:48},
+    subtitle: {x:5, y:42, w:80, h:14, content:'Sous-titre',      color:'rgba(255,255,255,0.7)', fontSize:20},
+    body:     {x:5, y:30, w:90, h:30, content:'Contenu texte…',  color:'rgba(255,255,255,0.8)', fontSize:14},
+    accent:   {x:5, y:75, w:35, h:10, content:'Badge',           color:'#ffffff', fontSize:12},
+  };
+  const d  = defaults[subtype] || defaults.body;
+  const el = newElementData('text', d.x, d.y, d.w, d.h, {...d, subtype});
+  slides[currentSlideIndex].elements.push(el);
+  renderCurrentSlide();
+  const dom = document.getElementById('dom_' + el.id);
+  if (dom) selectElement(el, dom);
+}
+
+function addShape(subtype) {
+  const el = newElementData('shape', 10, 10, 30, 20, {
+    color: 'rgba(124,58,237,0.4)', subtype
+  });
+  slides[currentSlideIndex].elements.push(el);
+  renderCurrentSlide();
+}
+
+function addChartElement() {
+  const el = newElementData('chart', 10, 30, 50, 55, {
+    chartData: {
+      type: 'bar',
+      labels: ['Jan','Fév','Mar','Avr','Mai'],
+      values: [40, 65, 52, 78, 61]
+    }
+  });
+  slides[currentSlideIndex].elements.push(el);
+  renderCurrentSlide();
+  setTimeout(() => renderChartEl(el.id, el.chartData), 100);
+  toast('📊 Graphique ajouté — double-cliquez pour éditer');
+}
+
+function renderChartEl(elId, chartData) {
+  const canvasId = 'cc_' + elId;
+  const canvas   = document.getElementById(canvasId);
+  if (!canvas || !chartData) return;
+  // Destroy if exists
+  const old = Chart.getChart(canvas);
+  if (old) old.destroy();
+  new Chart(canvas, {
+    type: chartData.type || 'bar',
+    data: {
+      labels: chartData.labels,
+      datasets: [{
+        data: chartData.values,
+        backgroundColor: ['#7c3aed','#a855f7','#60a5fa','#34d399','#fbbf24','#f87171'],
+        borderRadius: 4,
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {legend:{display:false}, title:{display:chartData.title?true:false, text:chartData.title||'', color:'#fff', font:{family:'Inter',size:12}}},
+      scales: chartData.type==='pie'||chartData.type==='doughnut' ? {} : {
+        x:{ticks:{color:'rgba(255,255,255,0.6)',font:{size:9}},grid:{color:'rgba(255,255,255,0.05)'}},
+        y:{ticks:{color:'rgba(255,255,255,0.6)',font:{size:9}},grid:{color:'rgba(255,255,255,0.05)'}}
+      }
+    }
+  });
+}
+
+/* ══════════════════════════════════════════
+   ELEMENT EDITING
+══════════════════════════════════════════ */
+function updateSelectedContent(val) {
+  if (!selectedElement) return;
+  selectedElement.content = val;
+  const dom = document.getElementById('dom_' + selectedElement.id);
+  if (dom && selectedElement.type === 'text') dom.innerHTML = htmlEsc(val) + '<div class="el-resize"></div>';
+}
+
+function setElementColor(btn) {
+  if (!selectedElement || selectedElement.type !== 'text') return;
+  document.querySelectorAll('#pp-colors .pp-color').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  selectedElement.color = btn.dataset.color;
+  const dom = document.getElementById('dom_' + selectedElement.id);
+  if (dom) dom.style.color = btn.dataset.color;
+}
+
+function setFontSize(val) {
+  if (!selectedElement || selectedElement.type !== 'text') return;
+  selectedElement.fontSize = parseInt(val);
+  const dom = document.getElementById('dom_' + selectedElement.id);
+  if (dom) dom.style.fontSize = val + 'px';
+}
+
+function deleteSelected() {
+  if (!selectedElement) return;
+  const slide = slides[currentSlideIndex];
+  slide.elements = slide.elements.filter(e => e.id !== selectedElement.id);
+  selectedElement = null;
+  document.getElementById('element-props').style.display = 'none';
+  renderCurrentSlide();
+}
+
+/* ══════════════════════════════════════════
+   SLIDE MANAGEMENT
+══════════════════════════════════════════ */
+function addSlide() {
+  const slide = newSlideData(aiTheme || 'theme-dark');
+  slides.splice(currentSlideIndex + 1, 0, slide);
+  currentSlideIndex++;
+  selectedElement = null;
+  renderAll();
+}
+
+function deleteSlide(i) {
+  if (slides.length <= 1) { toast('Au moins une slide requise'); return; }
+  slides.splice(i, 1);
+  if (currentSlideIndex >= slides.length) currentSlideIndex = slides.length - 1;
+  renderAll();
+}
+
+function duplicateSlide() {
+  const clone = JSON.parse(JSON.stringify(slides[currentSlideIndex]));
+  clone.id = 'sl_' + Date.now();
+  clone.elements = clone.elements.map(e => ({...e, id:'el_'+Date.now()+'_'+Math.random().toString(36).slice(2)}));
+  slides.splice(currentSlideIndex + 1, 0, clone);
+  currentSlideIndex++;
+  renderAll();
+  toast('Slide dupliquée');
+}
+
+function applyTheme(theme) {
+  slides[currentSlideIndex].theme = theme;
+  renderCurrentSlide();
+  renderFilmstrip();
+}
+
+function setSlideAnimation(anim) {
+  slides[currentSlideIndex].animation = anim;
+}
+
+function setSlideBgColor(color) {
+  slides[currentSlideIndex].bgColor = color;
+  renderCurrentSlide();
+  renderFilmstrip();
+}
+
+/* ══════════════════════════════════════════
+   AI GENERATION
+══════════════════════════════════════════ */
+function openAIModal() { document.getElementById('ai-modal').classList.add('open'); }
+function closeAIModal(){ document.getElementById('ai-modal').classList.remove('open'); }
+
+function selectAITheme(btn) {
+  document.querySelectorAll('.ai-theme-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  aiTheme = btn.dataset.theme;
+}
+
+async function generateWithAI() {
+  const prompt  = document.getElementById('ai-prompt').value.trim();
+  if (!prompt) { toast('Entrez une description'); return; }
+
+  const nSlides = parseInt(document.getElementById('ai-nslides').value);
+  const lang    = document.getElementById('ai-lang').value;
+
+  const genBtn  = document.getElementById('ai-gen-btn');
+  const progress= document.getElementById('ai-progress');
+  genBtn.disabled = true;
+  progress.style.display = 'flex';
+  document.getElementById('ai-progress-text').textContent = 'Génération des slides…';
+
+  try {
+    const systemPrompt = `Tu es un expert en création de présentations. Génère exactement ${nSlides} slides en ${lang} pour le sujet suivant.
+Réponds UNIQUEMENT avec un JSON valide, sans aucun markdown, ni backticks, ni texte autour. Format STRICT:
+{
+  "title": "Titre de la présentation",
+  "slides": [
+    {
+      "slideTitle": "Titre de la slide",
+      "subtitle": "Sous-titre optionnel",
+      "body": "Contenu principal\n- Point 1\n- Point 2\n- Point 3",
+      "badge": "Badge optionnel",
+      "hasChart": false,
+      "chartType": "bar",
+      "chartTitle": "Titre graphique",
+      "chartLabels": ["A","B","C"],
+      "chartValues": [10,20,30],
+      "layout": "title-content"
+    }
+  ]
+}
+Layouts possibles: "title-only", "title-content", "two-column", "quote", "chart-focus", "image-text".
+Si hasChart est true, fournis des données numériques réalistes et pertinentes.
+Génère exactement ${nSlides} slides variées avec du contenu riche et professionnel.`;
+
+    const response = await callMistral([
+      {role:'system', content: systemPrompt},
+      {role:'user',   content: prompt}
+    ], 2500);
+
+    let data;
+    try {
+      const clean = response.replace(/```json?|```/g,'').trim();
+      const jsonStart = clean.indexOf('{');
+      const jsonEnd   = clean.lastIndexOf('}');
+      data = JSON.parse(clean.substring(jsonStart, jsonEnd + 1));
+    } catch(e) {
+      throw new Error('Réponse IA invalide, réessayez');
+    }
+
+    // Build slides from data
+    slides = data.slides.map((sd, i) => {
+      const s = newSlideData(aiTheme);
+      s.animation = ['slideIn','fadeInUp','zoomIn','flipIn'][i % 4];
+      buildSlideFromAIData(s, sd, i);
+      return s;
+    });
+
+    currentSlideIndex = 0;
+    selectedElement   = null;
+    closeAIModal();
+    renderAll();
+    toast(`✓ ${slides.length} slides générées !`);
+  } catch(e) {
+    toast('Erreur IA: ' + e.message);
+  } finally {
+    genBtn.disabled = false;
+    progress.style.display = 'none';
+  }
+}
+
+function buildSlideFromAIData(slide, data, index) {
+  const layout = data.layout || 'title-content';
+  const isLight = slide.theme === 'theme-light' || slide.theme === 'theme-minimal';
+  const textColor = isLight ? '#111111' : '#ffffff';
+  const dimColor  = isLight ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.65)';
+
+  // Decorative shape background
+  if (!isLight) {
+    const shapeEl = newElementData('shape', -10, -20, 60, 80, {
+      color: 'rgba(124,58,237,0.08)', subtype: 'circle'
+    });
+    slide.elements.push(shapeEl);
+  }
+
+  if (layout === 'title-only' || layout === 'quote') {
+    slide.elements.push(newElementData('text', 5, 25, 90, 30, {
+      content: data.slideTitle, color: textColor, fontSize: 52, subtype: 'title'
+    }));
+    if (data.subtitle) slide.elements.push(newElementData('text', 5, 60, 80, 12, {
+      content: data.subtitle, color: dimColor, fontSize: 20, subtype: 'subtitle'
+    }));
+  } else if (layout === 'chart-focus' && data.hasChart) {
+    slide.elements.push(newElementData('text', 3, 3, 70, 12, {
+      content: data.slideTitle, color: textColor, fontSize: 24, subtype: 'subtitle'
+    }));
+    slide.elements.push(newElementData('chart', 3, 18, 94, 72, {
+      chartData: {type: data.chartType||'bar', title: data.chartTitle, labels: data.chartLabels||[], values: data.chartValues||[]}
+    }));
+  } else if (layout === 'two-column') {
+    slide.elements.push(newElementData('text', 3, 5, 94, 14, {
+      content: data.slideTitle, color: textColor, fontSize: 30, subtype: 'title'
+    }));
+    const col1 = (data.body || '').split('\n').slice(0, Math.ceil((data.body||'').split('\n').length/2)).join('\n');
+    const col2 = (data.body || '').split('\n').slice(Math.ceil((data.body||'').split('\n').length/2)).join('\n');
+    slide.elements.push(newElementData('text', 3, 24, 45, 65, {
+      content: col1, color: dimColor, fontSize: 14, subtype: 'body'
+    }));
+    slide.elements.push(newElementData('text', 51, 24, 46, 65, {
+      content: col2, color: dimColor, fontSize: 14, subtype: 'body'
+    }));
+    if (data.hasChart) {
+      slide.elements[slide.elements.length - 1] = newElementData('chart', 52, 24, 45, 65, {
+        chartData: {type: data.chartType||'bar', title: data.chartTitle, labels: data.chartLabels||[], values: data.chartValues||[]}
+      });
+    }
+  } else {
+    // Default: title-content
+    slide.elements.push(newElementData('text', 5, 7, 90, 18, {
+      content: data.slideTitle, color: textColor, fontSize: 38, subtype: 'title'
+    }));
+    if (data.subtitle) slide.elements.push(newElementData('text', 5, 27, 80, 10, {
+      content: data.subtitle, color: '#a855f7', fontSize: 14, subtype: 'subtitle'
+    }));
+    const bodyTop = data.subtitle ? 40 : 30;
+    const bodyH   = data.badge    ? 45 : 55;
+    if (data.body) slide.elements.push(newElementData('text', 5, bodyTop, data.hasChart ? 48 : 90, bodyH, {
+      content: data.body, color: dimColor, fontSize: 14, subtype: 'body'
+    }));
+    if (data.hasChart) slide.elements.push(newElementData('chart', 53, 22, 44, 65, {
+      chartData: {type: data.chartType||'bar', title: data.chartTitle, labels: data.chartLabels||[], values: data.chartValues||[]}
+    }));
+    if (data.badge) slide.elements.push(newElementData('text', 5, 88, 40, 8, {
+      content: data.badge, color: '#ffffff', fontSize: 11, subtype: 'accent'
+    }));
+  }
+
+  // Slide number
+  slide.elements.push(newElementData('text', 88, 92, 10, 6, {
+    content: String(index + 1), color: 'rgba(255,255,255,0.25)', fontSize: 12, subtype: 'body'
+  }));
+}
+
+/* ══════════════════════════════════════════
+   IMAGE SEARCH — Wikimedia Commons
+══════════════════════════════════════════ */
+function openImgModal()  { document.getElementById('img-modal').classList.add('open'); }
+function closeImgModal() { document.getElementById('img-modal').classList.remove('open'); }
+
+async function searchImages() {
+  const query  = document.getElementById('img-search-input').value.trim();
+  if (!query) return;
+  const results = document.getElementById('img-results');
+  const loading = document.getElementById('img-loading');
+  loading.style.display = 'block';
+  results.innerHTML = '';
+  results.appendChild(loading);
+
+  try {
+    const url = `https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srnamespace=6&srlimit=24&srprop=snippet&format=json&origin=*`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const pages = data.query?.search || [];
+
+    if (pages.length === 0) { loading.textContent = 'Aucun résultat.'; return; }
+    loading.style.display = 'none';
+
+    for (const page of pages.slice(0, 20)) {
+      const fname  = encodeURIComponent(page.title.replace('File:', ''));
+      const thumb  = `https://commons.wikimedia.org/w/index.php?title=Special:FilePath&file=${fname}&width=300`;
+      const full   = `https://commons.wikimedia.org/w/index.php?title=Special:FilePath&file=${fname}&width=1200`;
+
+      const div = document.createElement('div');
+      div.className = 'img-result';
+      div.innerHTML = `<img src="${thumb}" loading="lazy" onerror="this.parentElement.style.display='none'" alt="${page.title}">`;
+      div.onclick = () => insertImage(full);
+      results.appendChild(div);
+    }
+  } catch(e) {
+    loading.textContent = 'Erreur de recherche. Vérifiez votre connexion.';
+  }
+}
+
+function insertImage(src) {
+  const el = newElementData('image', 25, 15, 50, 70, {src});
+  slides[currentSlideIndex].elements.push(el);
+  closeImgModal();
+  renderCurrentSlide();
+  renderFilmstrip();
+  toast('✓ Image insérée');
+}
+
+/* ══════════════════════════════════════════
+   PRESENTATION MODE
+══════════════════════════════════════════ */
+function startPresentation() {
+  presentIndex = currentSlideIndex;
+  renderPresentSlide();
+  document.getElementById('present-overlay').classList.add('active');
+  document.addEventListener('keydown', presentKeydown);
+}
+
+function stopPresentation() {
+  document.getElementById('present-overlay').classList.remove('active');
+  document.removeEventListener('keydown', presentKeydown);
+}
+
+function presentKeydown(e) {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextSlide();
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   prevSlide();
+  if (e.key === 'Escape') stopPresentation();
+}
+
+function nextSlide() { if (presentIndex < slides.length - 1) { presentIndex++; renderPresentSlide(); } }
+function prevSlide() { if (presentIndex > 0)                  { presentIndex--; renderPresentSlide(); } }
+
+function renderPresentSlide() {
+  const slide = slides[presentIndex];
+  const pSlide= document.getElementById('present-slide');
+  document.getElementById('pc-counter').textContent = `${presentIndex + 1} / ${slides.length}`;
+
+  pSlide.innerHTML = buildSlideHTML(slide, 'present');
+  pSlide.className = slide.theme;
+  if (slide.bgColor) pSlide.style.background = slide.bgColor;
+
+  // Apply animation
+  const anim = slide.animation || 'fadeInUp';
+  if (anim !== 'none') {
+    pSlide.style.animation = 'none';
+    pSlide.offsetHeight; // reflow
+    pSlide.style.animation = `${anim} 0.5s ease-out forwards`;
+  }
+
+  // Render charts inside present slide
+  slide.elements.forEach(el => {
+    if (el.type === 'chart' && el.chartData) {
+      setTimeout(() => {
+        const c = document.getElementById('tc_' + el.id);
+        if (c) {
+          const old = Chart.getChart(c);
+          if (old) old.destroy();
+          renderChartEl(el.id, el.chartData);
+        }
+      }, 100);
+    }
+  });
+}
+
+/* ══════════════════════════════════════════
+   EXPORT HTML
+══════════════════════════════════════════ */
+function exportHTML() {
+  const title = 'Wikimind ImpressAI';
+  const slidesHtml = slides.map((slide, i) => {
+    return `<div class="slide ${slide.theme}" id="slide-${i}" style="display:${i===0?'flex':'none'};${slide.bgColor?'background:'+slide.bgColor+';':''}">${buildSlideHTML(slide,'export')}</div>`;
+  }).join('\n');
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${title}</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"><\/script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:'Inter',sans-serif;overflow:hidden}
+.slide{width:100vmin;max-width:960px;aspect-ratio:16/9;position:relative;overflow:hidden;border-radius:8px;flex-direction:column}
+.theme-dark{background:linear-gradient(135deg,#0f0f1a,#1a1020)}
+.theme-violet{background:linear-gradient(135deg,#1e0a3c,#2d1260)}
+.theme-ocean{background:linear-gradient(135deg,#0c1a2e,#0a2447)}
+.theme-forest{background:linear-gradient(135deg,#0a1f0a,#0d2b1a)}
+.theme-sunset{background:linear-gradient(135deg,#1a0a0a,#2d1515)}
+.theme-light{background:linear-gradient(135deg,#f8f9ff,#eef0ff)}
+.theme-minimal{background:#fff}
+#controls{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;background:rgba(0,0,0,0.8);padding:10px 20px;border-radius:40px;backdrop-filter:blur(10px)}
+.btn{width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,0.15);color:#fff;font-size:16px;cursor:pointer}
+.btn:hover{background:rgba(255,255,255,0.25)}
+#counter{color:rgba(255,255,255,0.6);font-size:13px;font-weight:700;padding:0 8px;align-self:center}
+@keyframes slideIn{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+@keyframes zoomIn{from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}}
+@keyframes flipIn{from{opacity:0;transform:rotateY(-90deg)}to{opacity:1;transform:rotateY(0)}}
+</style>
+</head>
+<body>
+${slidesHtml}
+<div id="controls">
+  <button class="btn" onclick="go(-1)">◀</button>
+  <span id="counter">1 / ${slides.length}</span>
+  <button class="btn" onclick="go(1)">▶</button>
+</div>
+<script>
+let cur=0;const slides=document.querySelectorAll('.slide');
+const anims=${JSON.stringify(slides.map(s => s.animation || 'fadeInUp'))};
+function go(d){slides[cur].style.display='none';cur=Math.max(0,Math.min(slides.length-1,cur+d));const s=slides[cur];s.style.display='flex';const a=anims[cur]||'fadeInUp';s.style.animation='none';s.offsetHeight;s.style.animation=a+' 0.5s ease-out forwards';document.getElementById('counter').textContent=(cur+1)+' / '+slides.length;}
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowDown')go(1);if(e.key==='ArrowLeft'||e.key==='ArrowUp')go(-1);});
+<\/script>
+</body>
+</html>`;
+
+  const blob = new Blob([html], {type:'text/html'});
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = 'wikimind-presentation.html';
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('✓ Présentation exportée en HTML');
+}
+
+/* ══════════════════════════════════════════
+   MISTRAL API
+══════════════════════════════════════════ */
+async function callMistral(messages, maxTokens=800) {
+  const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','Authorization':'Bearer '+MISTRAL_KEY},
+    body: JSON.stringify({model:'mistral-small-latest', messages, max_tokens: maxTokens, temperature: 0.8})
+  });
+  if (!res.ok) throw new Error('Mistral API ' + res.status);
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
+/* ══════════════════════════════════════════
+   UTILS
+══════════════════════════════════════════ */
+function htmlEsc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toast(msg, duration=3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(window._toastT);
+  window._toastT = setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ── INIT ──
+init();
+</script>
+</body>
+</html>
