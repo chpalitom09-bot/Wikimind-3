@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-29XYBNJ2CB"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-29XYBNJ2CB');</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wikimind BACoral</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff;--text:#111111;--border:#f0f0f0;--border2:#e5e7eb;
+  --input-bg:#ffffff;--select-bg:#f3f4f6;--card-hover:#f9fafb;
+  --accent:#111111;--accent-inv:#ffffff;--sidebar:#fcfcfc;
+}
+.dark{
+  --bg:#0f0f0f;--text:#eeeeee;--border:#252525;--border2:#2d2d2d;
+  --input-bg:#1a1a1a;--select-bg:#2a2a2a;--card-hover:#1f1f1f;
+  --accent:#ffffff;--accent-inv:#111111;--sidebar:#161616;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .3s,color .3s;}
+
+/* HEADER */
+#header{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;padding:0 20px;height:56px;}
+.header-logo{display:flex;align-items:center;gap:8px;cursor:pointer;}
+.header-logo h1{font-size:16px;font-weight:900;letter-spacing:-.04em;text-transform:uppercase;font-style:italic;}
+.header-sep{flex:1;}
+.hbtn{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;cursor:pointer;border:1px solid var(--border2);background:none;color:var(--text);transition:.2s;font-family:'Inter',sans-serif;white-space:nowrap;}
+.hbtn:hover{background:var(--select-bg);}
+.hbtn svg{width:13px;height:13px;}
+
+/* PLAN AVATAR */
+.plan-chip-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;overflow:visible;flex-shrink:0;cursor:pointer;position:relative;}
+.plan-chip-avatar img{width:28px;height:28px;object-fit:cover;border-radius:50%;position:relative;z-index:2;}
+.plan-chip-avatar>span{position:relative;z-index:2;}
+.plan-chip-avatar::after{content:'';position:absolute;inset:-3px;border-radius:50%;z-index:0;}
+.plan-chip-avatar::before{content:'';position:absolute;inset:2px;border-radius:50%;z-index:1;background:var(--bg);}
+.ring-free::after{background:conic-gradient(#9ca3af,#d1d5db,#9ca3af);}
+.ring-plus::after{background:conic-gradient(#111,#555,#111,#555,#111);animation:rr 4s linear infinite;}
+.dark .ring-plus::after{background:conic-gradient(#fff,#aaa,#fff,#aaa,#fff);animation:rr 4s linear infinite;}
+.ring-pro::after{background:conic-gradient(#22c55e,#4ade80,#16a34a,#86efac,#22c55e);animation:rr 3s linear infinite;}
+.ring-premium::after{background:conic-gradient(#f59e0b,#fcd34d,#d97706,#fef08a,#f59e0b);animation:rr 2.5s linear infinite;}
+.ring-premium-plus::after{background:conic-gradient(#ef4444,#f97316,#eab308,#f97316,#ef4444);animation:rrf 1.8s linear infinite;}
+@keyframes rr{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+@keyframes rrf{0%{transform:rotate(0deg);filter:brightness(1);}50%{transform:rotate(180deg);filter:brightness(1.3);}100%{transform:rotate(360deg);filter:brightness(1);}}
+.plan-badge{font-size:8px;font-weight:800;text-transform:uppercase;padding:2px 6px;border-radius:20px;letter-spacing:.04em;}
+.plan-free{background:#f3f4f6;color:#6b7280;}
+.plan-plus{background:#dbeafe;color:#1d4ed8;}
+.plan-pro{background:#ede9fe;color:#7c3aed;}
+.plan-premium{background:#fef3c7;color:#d97706;}
+.plan-premium-plus{background:linear-gradient(135deg,#fee2e2,#fef3c7);color:#c2410c;}
+.dark .plan-free{background:#27272a;color:#a1a1aa;}
+.dark .plan-plus{background:#1e3a5f;color:#60a5fa;}
+.dark .plan-pro{background:#3b1f5e;color:#c084fc;}
+.dark .plan-premium{background:#44330f;color:#fbbf24;}
+.dark .plan-premium-plus{background:linear-gradient(135deg,#44110f,#44330f);color:#fb923c;}
+
+/* TABS */
+.main-tabs{display:flex;align-items:center;gap:2px;padding:0 20px;border-bottom:1px solid var(--border);background:var(--bg);overflow-x:auto;}
+.main-tabs::-webkit-scrollbar{height:3px;}
+.main-tabs::-webkit-scrollbar-thumb{background:var(--border2);}
+.mtab{padding:12px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;cursor:pointer;color:#888;border:none;background:none;font-family:'Inter',sans-serif;white-space:nowrap;border-bottom:2px solid transparent;transition:.15s;}
+.mtab:hover{color:var(--text);}
+.mtab.active{color:var(--text);border-bottom-color:var(--accent);}
+
+/* CONTENT */
+.tab-content{display:none;max-width:1000px;margin:0 auto;padding:28px 20px 60px;}
+.tab-content.active{display:block;}
+
+/* CARDS */
+.card{background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;transition:.2s;}
+.card:hover{border-color:var(--border2);}
+.card-title{font-size:14px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.card-sub{font-size:12px;color:#888;}
+.section-title{font-size:18px;font-weight:900;letter-spacing:-.03em;margin-bottom:6px;}
+.section-sub{font-size:13px;color:#888;margin-bottom:24px;}
+
+/* GRID */
+.spe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px;}
+.spe-card{
+  padding:16px;border-radius:12px;border:1.5px solid var(--border2);cursor:pointer;
+  transition:.2s;text-align:center;
+}
+.spe-card:hover{border-color:var(--accent);background:var(--select-bg);}
+.spe-card.selected{border-color:var(--accent);background:var(--select-bg);}
+.spe-icon{font-size:28px;margin-bottom:6px;}
+.spe-name{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+
+/* ORAL BUILDER */
+.oral-builder{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:700px){.oral-builder{grid-template-columns:1fr;}}
+
+.inp{width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13px;font-family:'Inter',sans-serif;outline:none;transition:border .2s;}
+.inp:focus{border-color:#888;}
+textarea.inp{resize:vertical;min-height:90px;line-height:1.6;}
+select.inp{appearance:none;cursor:pointer;}
+.inp-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:5px;display:block;}
+.action-btn{width:100%;padding:11px;border-radius:10px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;border:none;transition:.2s;font-family:'Inter',sans-serif;}
+.action-btn.primary{background:var(--accent);color:var(--accent-inv);}
+.action-btn.primary:hover{opacity:.85;}
+.action-btn.secondary{background:var(--select-bg);color:var(--text);border:1px solid var(--border2);}
+.action-btn.secondary:hover{background:var(--border2);}
+.action-btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;}
+.btn-row .action-btn{flex:1;min-width:140px;}
+
+/* ORAL OUTPUT */
+#oral-output{display:none;margin-top:20px;}
+.oral-result{background:var(--select-bg);border:1px solid var(--border);border-radius:14px;padding:20px;}
+.oral-result-hdr{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.oral-result-title{font-size:15px;font-weight:800;flex:1;}
+.oral-badge{font-size:9px;font-weight:800;text-transform:uppercase;padding:3px 8px;border-radius:20px;background:var(--bg);color:#888;border:1px solid var(--border2);}
+
+/* PLAN / TIMING */
+.oral-plan-section{margin-bottom:16px;}
+.oral-plan-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#888;margin-bottom:8px;}
+.oral-plan-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.oral-plan-item:last-child{border-bottom:none;}
+.oral-plan-num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--accent-inv);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;}
+.oral-plan-text{flex:1;font-size:13px;line-height:1.6;}
+.oral-plan-time{font-size:10px;font-weight:700;color:#888;flex-shrink:0;}
+
+/* TIMER */
+#timer-section{background:var(--select-bg);border-radius:16px;padding:24px;text-align:center;margin-bottom:20px;}
+#timer-display{font-size:56px;font-weight:900;letter-spacing:-.04em;font-variant-numeric:tabular-nums;}
+.timer-controls{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap;}
+.timer-btn{padding:10px 24px;border-radius:10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;border:none;transition:.2s;font-family:'Inter',sans-serif;}
+.timer-btn.start{background:var(--accent);color:var(--accent-inv);}
+.timer-btn.start:hover{opacity:.85;}
+.timer-btn.pause{background:var(--select-bg);color:var(--text);border:1px solid var(--border2);}
+.timer-btn.reset{background:rgba(239,68,68,.1);color:#ef4444;}
+.timer-phase{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px;}
+.phase-btn{padding:6px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border2);background:none;color:#888;transition:.15s;font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:.05em;}
+.phase-btn:hover{background:var(--border2);}
+.phase-btn.active{background:var(--accent);color:var(--accent-inv);border-color:transparent;}
+
+/* FICHES */
+.fiche-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}
+.fiche-card{border:1.5px solid var(--border2);border-radius:12px;padding:16px;cursor:pointer;transition:.2s;}
+.fiche-card:hover{background:var(--select-bg);border-color:var(--text);}
+.fiche-card-spe{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:4px;}
+.fiche-card-title{font-size:13px;font-weight:700;margin-bottom:6px;}
+.fiche-card-preview{font-size:11px;color:#888;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;}
+.fiche-card-footer{display:flex;align-items:center;gap:6px;margin-top:10px;}
+.fiche-date{font-size:10px;color:#bbb;}
+.fiche-actions{margin-left:auto;display:flex;gap:4px;}
+.fiche-btn{background:none;border:none;cursor:pointer;color:#bbb;font-size:14px;transition:.15s;padding:2px 4px;}
+.fiche-btn:hover{color:var(--text);}
+
+/* NOTES */
+.notes-area{background:var(--select-bg);border-radius:12px;padding:16px;}
+
+/* CHAT ORAL SIM */
+.chat-msg{padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.65;margin-bottom:8px;}
+.chat-msg.jury{background:var(--select-bg);border:1px solid var(--border);}
+.chat-msg.candidat{background:var(--accent);color:var(--accent-inv);margin-left:30px;}
+.chat-msg.feedback{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);color:#166534;font-size:12px;}
+.dark .chat-msg.feedback{background:rgba(34,197,94,.1);color:#4ade80;}
+.chat-input-row{display:flex;gap:8px;margin-top:12px;}
+.chat-input-row input{flex:1;padding:10px 14px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13px;font-family:'Inter',sans-serif;outline:none;}
+.chat-input-row input:focus{border-color:#888;}
+.chat-input-row button{padding:10px 18px;border-radius:10px;background:var(--accent);color:var(--accent-inv);border:none;font-size:11px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.06em;font-family:'Inter',sans-serif;}
+
+/* TOAST */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:var(--accent-inv);padding:10px 20px;border-radius:10px;font-size:12px;font-weight:700;z-index:9999;opacity:0;transition:.25s;pointer-events:none;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* PROGRESS */
+.progress-bar{height:6px;background:var(--border);border-radius:6px;overflow:hidden;margin-top:8px;}
+.progress-fill{height:100%;background:linear-gradient(90deg,#22c55e,#06b6d4);border-radius:6px;transition:width .5s;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);align-items:center;justify-content:center;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:0;width:90%;max-width:600px;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;}
+.modal-hdr{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.modal-title{font-size:15px;font-weight:800;}
+.modal-close{background:none;border:none;cursor:pointer;color:#aaa;font-size:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;transition:.15s;}
+.modal-close:hover{background:var(--select-bg);color:var(--text);}
+.modal-body{padding:20px 22px;overflow-y:auto;flex:1;}
+
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+</style>
+</head>
+<body>
+
+<!-- FIREBASE -->
+<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import{getAuth,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import{getDatabase,ref,get,set,push,remove}from'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+const app=initializeApp({apiKey:"AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",authDomain:"wikimind-3-comments.firebaseapp.com",databaseURL:"https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",projectId:"wikimind-3-comments",storageBucket:"wikimind-3-comments.firebasestorage.app",messagingSenderId:"137479541640",appId:"1:137479541640:web:4ed2510a9908055052e03d"});
+const auth=getAuth(app);const db=getDatabase(app);
+window._fb={auth,db,ref,get,set,push,remove};
+onAuthStateChanged(auth,async user=>{
+  if(user){
+    try{
+      const snap=await get(ref(db,`users/${user.uid}`));
+      const d=snap.exists()?snap.val():{};
+      bootUser({uid:user.uid,displayName:d.name||user.displayName||'Utilisateur',photoURL:d.photoURL||user.photoURL||null,plan:d.FORFAIT??d.plan??2,isGuest:false});
+      loadFiches(user.uid);
+    }catch(e){bootUser({uid:user.uid,displayName:user.displayName||'Utilisateur',photoURL:user.photoURL,plan:2,isGuest:false});}
+  } else {
+    bootUser({uid:'guest',displayName:'Invité',photoURL:null,plan:1,isGuest:true});
+  }
+});
+</script>
+
+<!-- HEADER -->
+<div id="header">
+  <div class="header-logo" onclick="window.location.href='https://chpalitom09-bot.github.io/Wikimind-3/index.html'">
+    <h1>WikiMind <span style="font-style:normal;font-size:11px;font-weight:400;opacity:.5">BACoral</span></h1>
+  </div>
+  <div class="header-sep"></div>
+  <button class="hbtn" onclick="toggleDark()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></button>
+  <a href="https://chpalitom09-bot.github.io/Wikimind-3/index.html" class="hbtn">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Accueil
+  </a>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div class="plan-chip-avatar ring-free" id="user-avatar"><span id="user-initial">?</span></div>
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <span style="font-size:11px;font-weight:700" id="user-name">…</span>
+      <span class="plan-badge plan-free" id="user-plan">Free</span>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="main-tabs">
+  <button class="mtab active" id="mtab-accueil" onclick="switchTab('accueil')">🎓 Accueil</button>
+  <button class="mtab" id="mtab-oral" onclick="switchTab('oral')">🎤 Préparer l'oral</button>
+  <button class="mtab" id="mtab-simulation" onclick="switchTab('simulation')">🎭 Simulation</button>
+  <button class="mtab" id="mtab-timer" onclick="switchTab('timer')">⏱️ Chronomètre</button>
+  <button class="mtab" id="mtab-fiches" onclick="switchTab('fiches')">📚 Mes fiches</button>
+  <button class="mtab" id="mtab-ressources" onclick="switchTab('ressources')">📖 Ressources</button>
+</div>
+
+<!-- ═══ ACCUEIL ═══ -->
+<div class="tab-content active" id="tab-accueil">
+  <div style="text-align:center;padding:32px 0 24px">
+    <div style="font-size:48px;margin-bottom:12px">🎓</div>
+    <h2 style="font-size:clamp(22px,5vw,36px);font-weight:900;letter-spacing:-.04em;margin-bottom:8px">Wikimind BACoral</h2>
+    <p style="font-size:13px;color:#888;max-width:500px;margin:0 auto 28px;line-height:1.7">Préparez votre Grand Oral et vos oraux de spécialité avec l'IA Wikimind. Plan, simulation, fiches, chrono — tout en un.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;max-width:900px;margin:0 auto">
+    <div class="card" style="cursor:pointer;border-left:3px solid var(--accent)" onclick="switchTab('oral')">
+      <div class="card-title">🎤 Préparer l'oral</div>
+      <div class="card-sub">Générez un plan complet, des questions type et des conseils personnalisés pour votre oral.</div>
+    </div>
+    <div class="card" style="cursor:pointer;border-left:3px solid #6366f1" onclick="switchTab('simulation')">
+      <div class="card-title">🎭 Simulation IA</div>
+      <div class="card-sub">Entraînez-vous face à un jury IA qui vous pose des questions et évalue vos réponses.</div>
+    </div>
+    <div class="card" style="cursor:pointer;border-left:3px solid #f59e0b" onclick="switchTab('timer')">
+      <div class="card-title">⏱️ Chronomètre</div>
+      <div class="card-sub">Minutez vos présentations — préparation 20 min, présentation 5 min, questions 10 min.</div>
+    </div>
+    <div class="card" style="cursor:pointer;border-left:3px solid #22c55e" onclick="switchTab('fiches')">
+      <div class="card-title">📚 Mes fiches</div>
+      <div class="card-sub">Créez et gérez vos fiches de révision pour chaque spécialité et chapitre.</div>
+    </div>
+  </div>
+
+  <div style="margin-top:32px;max-width:900px;margin:32px auto 0">
+    <h3 style="font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:14px">Toutes les spécialités du BAC</h3>
+    <div class="spe-grid" id="spe-overview-grid"></div>
+  </div>
+</div>
+
+<!-- ═══ PRÉPARER L'ORAL ═══ -->
+<div class="tab-content" id="tab-oral">
+  <h2 class="section-title">🎤 Préparer votre oral</h2>
+  <p class="section-sub">Sélectionnez votre type d'oral, votre spécialité et votre sujet pour obtenir un plan complet généré par IA.</p>
+
+  <div style="margin-bottom:20px">
+    <span class="inp-label">Type d'oral</span>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="oral-type-btns">
+      <button class="phase-btn active" onclick="selectOralType('grand-oral', this)">Grand Oral</button>
+      <button class="phase-btn" onclick="selectOralType('spe', this)">Oral de spécialité</button>
+      <button class="phase-btn" onclick="selectOralType('francais', this)">Oral de français</button>
+      <button class="phase-btn" onclick="selectOralType('langues', this)">Oral de langues</button>
+    </div>
+  </div>
+
+  <div class="oral-builder">
+    <div>
+      <span class="inp-label">Spécialité principale</span>
+      <select class="inp" id="oral-spe">
+        <option value="">— Choisir une spécialité —</option>
+      </select>
+    </div>
+    <div>
+      <span class="inp-label">Sous-matière / Domaine</span>
+      <input class="inp" type="text" id="oral-domain" placeholder="Ex: Génétique, Révolution française, Calcul intégral…">
+    </div>
+    <div>
+      <span class="inp-label">Votre question / sujet</span>
+      <input class="inp" type="text" id="oral-question" placeholder="Ex: En quoi la vaccination est-elle un enjeu de santé publique ?">
+    </div>
+    <div>
+      <span class="inp-label">Durée de présentation</span>
+      <select class="inp" id="oral-duration">
+        <option value="5">5 minutes (Grand Oral)</option>
+        <option value="10">10 minutes</option>
+        <option value="15">15 minutes</option>
+        <option value="20">20 minutes</option>
+      </select>
+    </div>
+    <div style="grid-column:1/-1">
+      <span class="inp-label">Contexte / Connaissances (optionnel)</span>
+      <textarea class="inp" id="oral-context" placeholder="Entrez vos notes, les points que vous souhaitez aborder, ce que vous avez déjà…"></textarea>
+    </div>
+    <div style="grid-column:1/-1">
+      <div class="btn-row">
+        <button class="action-btn primary" id="gen-plan-btn" onclick="generateOralPlan()">✦ Générer le plan IA</button>
+        <button class="action-btn secondary" onclick="generateQuestions()">❓ Questions type</button>
+        <button class="action-btn secondary" onclick="generateConseils()">💡 Conseils IA</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="oral-output">
+    <div class="oral-result" id="oral-result-box">
+      <div class="oral-result-hdr">
+        <span class="oral-result-title" id="oral-result-title">Plan oral</span>
+        <span class="oral-badge" id="oral-result-badge">Grand Oral</span>
+      </div>
+      <div id="oral-result-content" style="font-size:13px;line-height:1.75;white-space:pre-wrap;color:var(--text)"></div>
+      <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+        <button class="action-btn secondary" style="flex:none;padding:9px 16px" onclick="copyOralResult()">📋 Copier</button>
+        <button class="action-btn secondary" style="flex:none;padding:9px 16px" onclick="saveFiche()">💾 Sauvegarder en fiche</button>
+        <button class="action-btn secondary" style="flex:none;padding:9px 16px" onclick="switchTab('simulation')">🎭 Passer en simulation</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SIMULATION ═══ -->
+<div class="tab-content" id="tab-simulation">
+  <h2 class="section-title">🎭 Simulation de jury IA</h2>
+  <p class="section-sub">Entraînez-vous face à un jury IA qui vous pose des questions difficiles et évalue vos réponses.</p>
+
+  <div class="card" style="margin-bottom:16px" id="sim-setup">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div>
+        <span class="inp-label">Spécialité</span>
+        <select class="inp" id="sim-spe"><option value="">— Choisir —</option></select>
+      </div>
+      <div>
+        <span class="inp-label">Niveau du jury</span>
+        <select class="inp" id="sim-level">
+          <option value="bienveillant">Bienveillant</option>
+          <option value="normal" selected>Normal</option>
+          <option value="exigeant">Exigeant</option>
+          <option value="très exigeant">Très exigeant</option>
+        </select>
+      </div>
+      <div style="grid-column:1/-1">
+        <span class="inp-label">Votre sujet ou question</span>
+        <input class="inp" type="text" id="sim-question" placeholder="Ex: La photosynthèse et ses enjeux environnementaux">
+      </div>
+      <div style="grid-column:1/-1">
+        <button class="action-btn primary" onclick="startSimulation()">▶ Démarrer la simulation</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="sim-chat" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#888">Simulation en cours — <span id="sim-topic-label"></span></span>
+      <button class="hbtn" onclick="endSimulation()">⏹ Terminer</button>
+    </div>
+    <div id="sim-messages" style="display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto;padding-right:4px;margin-bottom:16px"></div>
+    <div class="chat-input-row">
+      <input type="text" id="sim-input" placeholder="Votre réponse…" onkeydown="if(event.key==='Enter')sendSimMessage()">
+      <button onclick="sendSimMessage()">Répondre</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TIMER ═══ -->
+<div class="tab-content" id="tab-timer">
+  <h2 class="section-title" style="text-align:center">⏱️ Chronomètre BAC</h2>
+  <p class="section-sub" style="text-align:center">Entraînez-vous dans les conditions réelles du Grand Oral.</p>
+
+  <div id="timer-section">
+    <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#888;margin-bottom:8px" id="timer-phase-label">PRÉPARATION</div>
+    <div id="timer-display">20:00</div>
+    <div class="progress-bar"><div class="progress-fill" id="timer-progress" style="width:100%"></div></div>
+    <div class="timer-controls">
+      <button class="timer-btn start" id="timer-start" onclick="startTimer()">▶ Démarrer</button>
+      <button class="timer-btn pause" id="timer-pause" onclick="pauseTimer()" style="display:none">⏸ Pause</button>
+      <button class="timer-btn reset" onclick="resetTimer()">↺ Réinitialiser</button>
+    </div>
+    <div class="timer-phase">
+      <button class="phase-btn active" onclick="setPhase('prep',20*60,'PRÉPARATION')">Préparation (20 min)</button>
+      <button class="phase-btn" onclick="setPhase('pres',5*60,'PRÉSENTATION')">Présentation (5 min)</button>
+      <button class="phase-btn" onclick="setPhase('questions',10*60,'QUESTIONS JURY')">Questions (10 min)</button>
+      <button class="phase-btn" onclick="setPhase('custom',0,'PERSONNALISÉ')">Personnalisé</button>
+    </div>
+    <div id="custom-time-wrap" style="display:none;margin-top:12px">
+      <input type="number" id="custom-minutes" class="inp" placeholder="Durée en minutes" style="max-width:180px;margin:0 auto;display:block" onchange="setCustomTimer()">
+    </div>
+  </div>
+
+  <div style="max-width:600px;margin:0 auto">
+    <h3 style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:12px;margin-top:8px">Déroulé standard du Grand Oral</h3>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="oral-plan-item">
+        <div class="oral-plan-num">1</div>
+        <div class="oral-plan-text"><strong>Préparation</strong> — 20 minutes pour préparer votre exposé avec vos notes.</div>
+        <div class="oral-plan-time">20 min</div>
+      </div>
+      <div class="oral-plan-item">
+        <div class="oral-plan-num">2</div>
+        <div class="oral-plan-text"><strong>Présentation</strong> — Exposez votre question et votre démarche sans note.</div>
+        <div class="oral-plan-time">5 min</div>
+      </div>
+      <div class="oral-plan-item">
+        <div class="oral-plan-num">3</div>
+        <div class="oral-plan-text"><strong>Questions du jury</strong> — Échangez avec les examinateurs sur votre sujet.</div>
+        <div class="oral-plan-time">10 min</div>
+      </div>
+      <div class="oral-plan-item">
+        <div class="oral-plan-num">4</div>
+        <div class="oral-plan-text"><strong>Projet d'orientation</strong> — Parlez de votre projet d'études et professionnel.</div>
+        <div class="oral-plan-time">5 min</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:#aaa;margin-top:16px;padding:12px;background:var(--select-bg);border-radius:10px">
+      💡 <strong>Conseil :</strong> Lors de la préparation, rédigez uniquement un plan avec des mots-clés — les notes ne sont pas autorisées pendant la présentation.
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FICHES ═══ -->
+<div class="tab-content" id="tab-fiches">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <div>
+      <h2 class="section-title" style="margin-bottom:4px">📚 Mes fiches</h2>
+      <p style="font-size:13px;color:#888">Sauvegardez vos plans et fiches de révision.</p>
+    </div>
+    <button class="action-btn primary" style="width:auto;padding:10px 18px" onclick="openNewFiche()">+ Nouvelle fiche</button>
+  </div>
+  <div class="fiche-grid" id="fiches-grid">
+    <div style="grid-column:1/-1;text-align:center;padding:48px;color:#bbb;font-size:13px">
+      <div style="font-size:40px;margin-bottom:10px">📚</div>
+      <div style="font-weight:700;margin-bottom:6px">Aucune fiche pour l'instant</div>
+      <div>Créez des plans oraux ou des fiches de révision et sauvegardez-les ici.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ RESSOURCES ═══ -->
+<div class="tab-content" id="tab-ressources">
+  <h2 class="section-title">📖 Ressources par spécialité</h2>
+  <p class="section-sub">Sélectionnez une spécialité pour obtenir des ressources, thèmes clés et sujets fréquents.</p>
+
+  <div style="margin-bottom:20px">
+    <select class="inp" id="res-spe" style="max-width:380px" onchange="loadRessources()">
+      <option value="">— Choisir une spécialité —</option>
+    </select>
+  </div>
+
+  <div id="ressources-output" style="display:none">
+    <div class="card">
+      <div class="card-title" id="res-title">Ressources</div>
+      <div id="res-content" style="font-size:13px;line-height:1.75;margin-top:10px;white-space:pre-wrap"></div>
+    </div>
+  </div>
+</div>
+
+<!-- FICHE MODAL -->
+<div class="modal-overlay" id="fiche-modal">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-hdr">
+      <span class="modal-title" id="fiche-modal-title">Nouvelle fiche</span>
+      <button class="modal-close" onclick="closeFicheModal()">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:12px">
+      <div><span class="inp-label">Titre de la fiche</span><input class="inp" type="text" id="fiche-title" placeholder="Ex: Grand Oral — Photosynthèse"></div>
+      <div><span class="inp-label">Spécialité</span><select class="inp" id="fiche-spe"></select></div>
+      <div><span class="inp-label">Contenu</span><textarea class="inp" id="fiche-content" rows="8" placeholder="Votre plan, notes, résumé…"></textarea></div>
+      <button class="action-btn primary" onclick="saveFicheModal()">💾 Sauvegarder</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const MISTRAL_KEY = 'SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9';
+const G = id => document.getElementById(id);
+
+// ── SPECIALITÉS COMPLÈTES ──
+const SPECIALITES = [
+  {id:'maths', name:'Mathématiques', icon:'🔢', color:'#6366f1'},
+  {id:'physique-chimie', name:'Physique-Chimie', icon:'⚛️', color:'#06b6d4'},
+  {id:'svt', name:'SVT', icon:'🌿', color:'#22c55e'},
+  {id:'nsi', name:'NSI (Numérique & Sc. Informatiques)', icon:'💻', color:'#8b5cf6'},
+  {id:'si', name:'SI (Sciences de l\'Ingénieur)', icon:'⚙️', color:'#f97316'},
+  {id:'ses', name:'SES (Sciences Éco. & Sociales)', icon:'📊', color:'#eab308'},
+  {id:'histoire-geo', name:'Histoire-Géographie', icon:'🌍', color:'#ef4444'},
+  {id:'philosophie', name:'Philosophie', icon:'🤔', color:'#8b5cf6'},
+  {id:'francais', name:'Français', icon:'📝', color:'#ec4899'},
+  {id:'langues', name:'Langues Vivantes', icon:'🌐', color:'#06b6d4'},
+  {id:'hggsp', name:'HGGSP (Histoire, Géo, Géopo, Sciences Po)', icon:'🏛️', color:'#ef4444'},
+  {id:'hlp', name:'HLP (Humanités, Littérature & Philosophie)', icon:'📚', color:'#8b5cf6'},
+  {id:'arts', name:'Arts (Plastiques, Musique, Cinéma…)', icon:'🎨', color:'#f97316'},
+  {id:'eps', name:'EPS (Éducation Physique & Sportive)', icon:'⚽', color:'#22c55e'},
+  {id:'llce', name:'LLCE (Langues, Littératures & Cultures Étrangères)', icon:'🌏', color:'#06b6d4'},
+  {id:'bio-eco', name:'Biologie-Écologie', icon:'🌱', color:'#22c55e'},
+  {id:'stav', name:'STAV (Sciences et Technologies de l\'Agroalimentaire)', icon:'🌾', color:'#84cc16'},
+  {id:'economie-gestion', name:'Économie & Gestion', icon:'💼', color:'#eab308'},
+  {id:'smc', name:'Sciences et Médias & Communication', icon:'📡', color:'#06b6d4'},
+];
+
+let currentUser = null;
+let fiches = [];
+let timerInterval = null;
+let timerSeconds = 20 * 60;
+let timerTotal = 20 * 60;
+let timerRunning = false;
+let selectedOralType = 'grand-oral';
+let simHistory = [];
+let simContext = '';
+
+// ── DARK MODE ──
+function toggleDark(){ document.body.classList.toggle('dark'); localStorage.setItem('wm_dark',document.body.classList.contains('dark')?'1':'0'); }
+if(localStorage.getItem('wm_dark')==='1') document.body.classList.add('dark');
+
+// ── USER BOOT ──
+function bootUser(user){
+  currentUser = user;
+  G('user-initial').textContent = (user.displayName||'?').charAt(0).toUpperCase();
+  G('user-name').textContent = user.displayName||'Invité';
+  const PM = {1:['Free','plan-free'],2:['AI Plus','plan-plus'],3:['AI Pro','plan-pro'],4:['AI Premium','plan-premium'],5:['AI Premium+','plan-premium-plus']};
+  const [pn,pc] = PM[user.plan]||PM[1];
+  G('user-plan').textContent = pn; G('user-plan').className = 'plan-badge '+pc;
+  const rc = {1:'ring-free',2:'ring-plus',3:'ring-pro',4:'ring-premium',5:'ring-premium-plus'}[user.plan]||'ring-free';
+  const av = G('user-avatar'); av.className = 'plan-chip-avatar '+rc;
+  if(user.photoURL) av.innerHTML=`<img src="${user.photoURL}" alt="" onerror="this.parentElement.innerHTML='<span>${(user.displayName||'?').charAt(0).toUpperCase()}</span>'">`;
+  else av.innerHTML=`<span>${(user.displayName||'?').charAt(0).toUpperCase()}</span>`;
+}
+
+// ── INIT SELECTS & GRID ──
+function initSpecialites(){
+  const selects = ['oral-spe','sim-spe','res-spe','fiche-spe'];
+  selects.forEach(id => {
+    const sel = G(id);
+    if(!sel) return;
+    SPECIALITES.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = s.icon+' '+s.name;
+      sel.appendChild(opt);
+    });
+  });
+
+  // Overview grid
+  const grid = G('spe-overview-grid');
+  SPECIALITES.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'spe-card';
+    card.innerHTML = `<div class="spe-icon">${s.icon}</div><div class="spe-name">${s.name}</div>`;
+    card.onclick = () => { switchTab('oral'); G('oral-spe').value = s.id; };
+    grid.appendChild(card);
+  });
+}
+initSpecialites();
+
+// ── TABS ──
+function switchTab(tab){
+  document.querySelectorAll('.mtab').forEach(t=>t.classList.toggle('active',t.id==='mtab-'+tab));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.toggle('active',c.id==='tab-'+tab));
+}
+
+// ── ORAL TYPE ──
+function selectOralType(type, btn){
+  selectedOralType = type;
+  document.querySelectorAll('#oral-type-btns .phase-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ── MISTRAL ──
+async function callMistral(messages, maxTokens=800){
+  const res = await fetch('https://api.mistral.ai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+MISTRAL_KEY},
+    body:JSON.stringify({model:'mistral-small-latest',messages,max_tokens:maxTokens,temperature:0.75})
+  });
+  if(!res.ok) throw new Error('API '+res.status);
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content||'';
+}
+
+// ── GENERATE ORAL PLAN ──
+async function generateOralPlan(){
+  const spe = G('oral-spe').value;
+  const question = G('oral-question').value.trim();
+  const domain = G('oral-domain').value.trim();
+  const duration = G('oral-duration').value;
+  const context = G('oral-context').value.trim();
+
+  if(!spe){ toast('Choisissez une spécialité'); return; }
+  if(!question){ toast('Entrez votre question ou sujet'); return; }
+
+  const btn = G('gen-plan-btn');
+  btn.disabled = true; btn.textContent = '⏳ IA génère…';
+
+  const oralTypeName = {
+    'grand-oral':'Grand Oral (Bac)',
+    'spe':'Oral de spécialité',
+    'francais':'Oral de français (EAF)',
+    'langues':'Oral de langue vivante',
+  }[selectedOralType] || 'Grand Oral';
+
+  const speName = SPECIALITES.find(s=>s.id===spe)?.name || spe;
+
+  try{
+    const result = await callMistral([
+      {role:'system', content:`Tu es un expert en préparation aux oraux du Baccalauréat français. Tu aides les lycéens à structurer leurs oraux de manière claire, rigoureuse et convaincante.`},
+      {role:'user', content:`Prépare un plan détaillé pour un ${oralTypeName} en ${speName}.
+Question/sujet : "${question}"
+${domain?'Domaine : '+domain:''}
+${context?'Contexte/notes de l\'élève : '+context:''}
+Durée : ${duration} minutes
+
+Génère :
+1. **REFORMULATION de la question** (plus précise)
+2. **PLAN EN 3 PARTIES** avec sous-parties, timing indicatif et arguments clés
+3. **INTRODUCTION** (accroche + problématique + annonce du plan)
+4. **TRANSITIONS** entre les parties
+5. **CONCLUSION** (synthèse + ouverture)
+6. **5 QUESTIONS PROBABLES du jury** avec éléments de réponse
+7. **CONSEILS SPÉCIFIQUES** pour cet oral
+
+Réponds de manière structurée, en français, avec des emojis pour la lisibilité.`}
+    ], 1500);
+
+    G('oral-output').style.display = 'block';
+    G('oral-result-title').textContent = question.substring(0,60)+(question.length>60?'…':'');
+    G('oral-result-badge').textContent = oralTypeName;
+    G('oral-result-content').textContent = result;
+    G('oral-output').scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){
+    toast('Erreur: '+e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '✦ Générer le plan IA';
+  }
+}
+
+async function generateQuestions(){
+  const spe = G('oral-spe').value;
+  const question = G('oral-question').value.trim();
+  if(!spe||!question){ toast('Remplissez la spécialité et la question'); return; }
+
+  const btn = document.querySelector('[onclick="generateQuestions()"]');
+  btn.disabled = true; btn.textContent = '⏳…';
+  const speName = SPECIALITES.find(s=>s.id===spe)?.name || spe;
+
+  try{
+    const result = await callMistral([
+      {role:'system',content:'Expert BAC. Génère des questions de jury précises et pertinentes.'},
+      {role:'user',content:`Génère 10 questions difficiles qu'un jury de bac pourrait poser sur ce sujet de ${speName} : "${question}". Pour chaque question, donne une piste de réponse courte. Numérote les questions.`}
+    ], 800);
+
+    G('oral-output').style.display = 'block';
+    G('oral-result-title').textContent = 'Questions type du jury';
+    G('oral-result-badge').textContent = speName;
+    G('oral-result-content').textContent = result;
+    G('oral-output').scrollIntoView({behavior:'smooth'});
+  }catch(e){ toast('Erreur: '+e.message); }
+  finally { btn.disabled=false; btn.textContent='❓ Questions type'; }
+}
+
+async function generateConseils(){
+  const spe = G('oral-spe').value;
+  const oralTypeName = {
+    'grand-oral':'Grand Oral',
+    'spe':'oral de spécialité',
+    'francais':'oral de français EAF',
+    'langues':'oral de langues vivantes',
+  }[selectedOralType] || 'Grand Oral';
+  const speName = spe ? (SPECIALITES.find(s=>s.id===spe)?.name||spe) : 'toutes matières';
+
+  const btn = document.querySelector('[onclick="generateConseils()"]');
+  btn.disabled = true; btn.textContent = '⏳…';
+
+  try{
+    const result = await callMistral([
+      {role:'system',content:'Conseiller expert en préparation aux oraux du bac français.'},
+      {role:'user',content:`Donne 10 conseils pratiques et concrets pour réussir le ${oralTypeName} en ${speName}. Inclus : posture, gestion du stress, structure, vocabulaire, erreurs à éviter. Sois précis et actionnable.`}
+    ], 600);
+
+    G('oral-output').style.display = 'block';
+    G('oral-result-title').textContent = `Conseils — ${oralTypeName}`;
+    G('oral-result-badge').textContent = speName;
+    G('oral-result-content').textContent = result;
+    G('oral-output').scrollIntoView({behavior:'smooth'});
+  }catch(e){ toast('Erreur: '+e.message); }
+  finally { btn.disabled=false; btn.textContent='💡 Conseils IA'; }
+}
+
+function copyOralResult(){
+  const text = G('oral-result-content').textContent;
+  navigator.clipboard.writeText(text).then(()=>toast('✓ Copié !')).catch(()=>toast('Erreur copie'));
+}
+
+// ── SIMULATION ──
+async function startSimulation(){
+  const spe = G('sim-spe').value;
+  const level = G('sim-level').value;
+  const question = G('sim-question').value.trim();
+  if(!spe){ toast('Choisissez une spécialité'); return; }
+
+  const speName = SPECIALITES.find(s=>s.id===spe)?.name || spe;
+  simContext = `Spécialité: ${speName}. Sujet: ${question||'général'}. Niveau jury: ${level}.`;
+  simHistory = [];
+
+  G('sim-setup').style.display = 'none';
+  G('sim-chat').style.display = 'block';
+  G('sim-topic-label').textContent = speName + (question?' — '+question.substring(0,40):'');
+  G('sim-messages').innerHTML = '';
+
+  // Opening question from jury
+  const opener = await callMistral([
+    {role:'system', content:`Tu joues le rôle d'un jury de baccalauréat ${level} en ${speName}. Tu poses des questions précises, pertinentes et ${level==='très exigeant'?'très difficiles':`de niveau ${level}`}. Commence par accueillir le candidat et lui demander de présenter son sujet. Sois formel.`},
+    {role:'user', content:`Commence la simulation pour : ${question||'un sujet au choix en '+speName}`}
+  ], 200);
+
+  simHistory.push({role:'assistant', content:opener});
+  appendSimMessage(opener, 'jury');
+}
+
+function endSimulation(){
+  G('sim-setup').style.display = 'block';
+  G('sim-chat').style.display = 'none';
+  simHistory = [];
+  if(simHistory.length > 0) toast('Simulation terminée');
+}
+
+async function sendSimMessage(){
+  const input = G('sim-input');
+  const msg = input.value.trim();
+  if(!msg) return;
+  input.value = '';
+
+  appendSimMessage(msg, 'candidat');
+  simHistory.push({role:'user', content:msg});
+
+  try{
+    const reply = await callMistral([
+      {role:'system', content:`Tu joues le rôle d'un jury de baccalauréat. Contexte: ${simContext}. Après chaque réponse du candidat: 1) Si la réponse est très courte ou incorrecte, reformule ou challenge. 2) Si correcte, approfondi avec une question de suivi. 3) Après 3 échanges, donne brièvement un feedback constructif (prefix: [FEEDBACK]). Reste formel et exigeant.`},
+      ...simHistory.slice(-8),
+    ], 300);
+
+    simHistory.push({role:'assistant', content:reply});
+
+    if(reply.includes('[FEEDBACK]')){
+      const [main, feedback] = reply.split('[FEEDBACK]');
+      if(main.trim()) appendSimMessage(main.trim(), 'jury');
+      if(feedback.trim()) appendSimMessage('💬 ' + feedback.trim(), 'feedback');
+    } else {
+      appendSimMessage(reply, 'jury');
+    }
+  }catch(e){
+    appendSimMessage('Erreur de connexion IA: '+e.message, 'feedback');
+  }
+}
+
+function appendSimMessage(msg, type){
+  const el = document.createElement('div');
+  el.className = 'chat-msg ' + type;
+  el.innerHTML = esc(msg).replace(/\n/g,'<br>');
+  G('sim-messages').appendChild(el);
+  G('sim-messages').scrollTop = G('sim-messages').scrollHeight;
+}
+
+// ── TIMER ──
+function startTimer(){
+  if(timerRunning) return;
+  timerRunning = true;
+  G('timer-start').style.display = 'none';
+  G('timer-pause').style.display = 'inline-flex';
+  timerInterval = setInterval(tickTimer, 1000);
+}
+
+function pauseTimer(){
+  timerRunning = false;
+  clearInterval(timerInterval);
+  G('timer-start').style.display = 'inline-flex';
+  G('timer-pause').style.display = 'none';
+}
+
+function resetTimer(){
+  pauseTimer();
+  timerSeconds = timerTotal;
+  updateTimerDisplay();
+}
+
+function tickTimer(){
+  if(timerSeconds <= 0){
+    clearInterval(timerInterval);
+    timerRunning = false;
+    G('timer-display').style.color = '#ef4444';
+    toast('⏰ Temps écoulé !');
+    try{ new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAA...').play(); }catch(e){}
+    G('timer-start').style.display = 'inline-flex';
+    G('timer-pause').style.display = 'none';
+    return;
+  }
+  timerSeconds--;
+  updateTimerDisplay();
+}
+
+function updateTimerDisplay(){
+  const m = Math.floor(timerSeconds/60);
+  const s = timerSeconds%60;
+  G('timer-display').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  const pct = (timerSeconds/timerTotal)*100;
+  G('timer-progress').style.width = pct+'%';
+  G('timer-display').style.color = timerSeconds < 30 ? '#ef4444' : timerSeconds < 60 ? '#f97316' : 'var(--text)';
+}
+
+function setPhase(phase, seconds, label){
+  pauseTimer();
+  document.querySelectorAll('.timer-phase .phase-btn').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+  G('custom-time-wrap').style.display = phase==='custom' ? 'block' : 'none';
+  if(phase !== 'custom'){
+    timerTotal = seconds;
+    timerSeconds = seconds;
+    updateTimerDisplay();
+    G('timer-phase-label').textContent = label;
+  }
+}
+
+function setCustomTimer(){
+  const mins = parseInt(G('custom-minutes').value)||5;
+  timerTotal = mins*60;
+  timerSeconds = mins*60;
+  updateTimerDisplay();
+  G('timer-phase-label').textContent = `PERSONNALISÉ — ${mins} MIN`;
+}
+
+// ── FICHES ──
+function loadFiches(uid){
+  const stored = localStorage.getItem('wm_bac_fiches_'+uid);
+  if(stored){ try{ fiches = JSON.parse(stored); }catch(e){} }
+  renderFiches();
+}
+
+function renderFiches(){
+  const grid = G('fiches-grid');
+  if(!fiches.length){
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:48px;color:#bbb;font-size:13px"><div style="font-size:40px;margin-bottom:10px">📚</div><div style="font-weight:700;margin-bottom:6px">Aucune fiche pour l'instant</div><div>Créez des plans oraux ou des fiches de révision et sauvegardez-les ici.</div></div>`;
+    return;
+  }
+  grid.innerHTML = fiches.map((f,i)=>`
+    <div class="fiche-card" onclick="openFiche(${i})">
+      <div class="fiche-card-spe">${getSpeIcon(f.spe)} ${f.spe||'Général'}</div>
+      <div class="fiche-card-title">${esc(f.title||'Sans titre')}</div>
+      <div class="fiche-card-preview">${esc((f.content||'').substring(0,120))}</div>
+      <div class="fiche-card-footer">
+        <span class="fiche-date">${new Date(f.createdAt||Date.now()).toLocaleDateString('fr-FR')}</span>
+        <div class="fiche-actions">
+          <button class="fiche-btn" onclick="event.stopPropagation();editFiche(${i})">✏️</button>
+          <button class="fiche-btn" onclick="event.stopPropagation();deleteFiche(${i})">🗑️</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function getSpeIcon(speId){
+  return SPECIALITES.find(s=>s.id===speId)?.icon || '📝';
+}
+
+function openNewFiche(){
+  G('fiche-modal-title').textContent = 'Nouvelle fiche';
+  G('fiche-title').value = '';
+  G('fiche-content').value = '';
+  G('fiche-spe').value = '';
+  G('fiche-modal').dataset.editIdx = '';
+  G('fiche-modal').classList.add('show');
+}
+
+function openFiche(idx){
+  const f = fiches[idx];
+  G('fiche-modal-title').textContent = f.title||'Fiche';
+  G('fiche-title').value = f.title||'';
+  G('fiche-content').value = f.content||'';
+  G('fiche-spe').value = f.spe||'';
+  G('fiche-modal').dataset.editIdx = idx;
+  G('fiche-modal').classList.add('show');
+}
+
+function editFiche(idx){ openFiche(idx); }
+
+function deleteFiche(idx){
+  if(!confirm('Supprimer cette fiche ?')) return;
+  fiches.splice(idx,1);
+  saveFichesLocal();
+  renderFiches();
+  toast('Fiche supprimée');
+}
+
+function closeFicheModal(){ G('fiche-modal').classList.remove('show'); }
+
+function saveFicheModal(){
+  const title = G('fiche-title').value.trim();
+  const content = G('fiche-content').value.trim();
+  const spe = G('fiche-spe').value;
+  if(!title){ toast('Entrez un titre'); return; }
+
+  const editIdx = G('fiche-modal').dataset.editIdx;
+  const fiche = {title, content, spe, createdAt:Date.now()};
+
+  if(editIdx !== ''){
+    fiches[parseInt(editIdx)] = fiche;
+  } else {
+    fiches.unshift(fiche);
+  }
+  saveFichesLocal();
+  renderFiches();
+  closeFicheModal();
+  toast('✓ Fiche sauvegardée');
+}
+
+function saveFiche(){
+  const content = G('oral-result-content').textContent;
+  const title = G('oral-result-title').textContent;
+  const spe = G('oral-spe').value;
+  if(!content){ toast('Aucun résultat à sauvegarder'); return; }
+  G('fiche-title').value = title;
+  G('fiche-content').value = content;
+  G('fiche-spe').value = spe;
+  G('fiche-modal').dataset.editIdx = '';
+  G('fiche-modal').classList.add('show');
+}
+
+function saveFichesLocal(){
+  const uid = currentUser?.uid || 'guest';
+  localStorage.setItem('wm_bac_fiches_'+uid, JSON.stringify(fiches));
+}
+
+// ── RESSOURCES ──
+async function loadRessources(){
+  const spe = G('res-spe').value;
+  if(!spe) return;
+  const speName = SPECIALITES.find(s=>s.id===spe)?.name || spe;
+
+  G('ressources-output').style.display = 'block';
+  G('res-title').textContent = '⏳ Chargement…';
+  G('res-content').textContent = '';
+
+  try{
+    const result = await callMistral([
+      {role:'system',content:'Expert BAC. Tu fournis des ressources pédagogiques précises pour lycéens.'},
+      {role:'user',content:`Pour la spécialité ${speName} au baccalauréat français, fournis :
+1. Les 10 thèmes/chapitres clés du programme
+2. Les 5 types de sujets d'oral les plus fréquents
+3. Les notions et concepts incontournables à maîtriser
+4. Les liens interdisciplinaires possibles pour le Grand Oral
+5. 3 exemples de bonnes questions de Grand Oral
+Sois précis et pratique, réponds en français.`}
+    ], 800);
+    G('res-title').textContent = `📖 Ressources — ${speName}`;
+    G('res-content').textContent = result;
+  }catch(e){
+    G('res-title').textContent = 'Erreur';
+    G('res-content').textContent = e.message;
+  }
+}
+
+// ── UTILS ──
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function toast(msg){
+  const t=G('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(window._tt); window._tt=setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+// Init timer display
+updateTimerDisplay();
+
+// Close modal on backdrop click
+G('fiche-modal').onclick = function(e){ if(e.target===this) closeFicheModal(); };
+
+// Keyboard
+G('sim-input')?.addEventListener('keydown',e=>{ if(e.key==='Enter') sendSimMessage(); });
+</script>
+</body>
+</html>

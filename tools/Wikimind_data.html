@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-29XYBNJ2CB"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-29XYBNJ2CB');</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wikimind Graphs</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff;--text:#111111;--border:#f0f0f0;--border2:#e5e7eb;
+  --input-bg:#ffffff;--select-bg:#f3f4f6;--card-hover:#f9fafb;
+  --accent:#111111;--accent-inv:#ffffff;--sidebar:#fcfcfc;
+}
+.dark{
+  --bg:#0f0f0f;--text:#eeeeee;--border:#252525;--border2:#2d2d2d;
+  --input-bg:#1a1a1a;--select-bg:#2a2a2a;--card-hover:#1f1f1f;
+  --accent:#ffffff;--accent-inv:#111111;--sidebar:#161616;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;transition:background .3s,color .3s;}
+
+/* HEADER */
+#header{height:56px;display:flex;align-items:center;gap:10px;padding:0 20px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg);}
+.header-logo{display:flex;align-items:center;gap:8px;cursor:pointer;}
+.header-logo h1{font-size:16px;font-weight:900;letter-spacing:-.04em;text-transform:uppercase;font-style:italic;}
+.header-sep{flex:1;}
+.hbtn{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;cursor:pointer;border:1px solid var(--border2);background:none;color:var(--text);transition:.2s;font-family:'Inter',sans-serif;white-space:nowrap;}
+.hbtn:hover{background:var(--select-bg);}
+.hbtn.primary{background:var(--accent);color:var(--accent-inv);border-color:transparent;}
+.hbtn.primary:hover{opacity:.85;}
+.hbtn svg{width:13px;height:13px;}
+
+/* PLAN AVATAR */
+.plan-chip-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;overflow:visible;flex-shrink:0;cursor:pointer;position:relative;}
+.plan-chip-avatar img{width:28px;height:28px;object-fit:cover;border-radius:50%;position:relative;z-index:2;}
+.plan-chip-avatar>span{position:relative;z-index:2;}
+.plan-chip-avatar::after{content:'';position:absolute;inset:-3px;border-radius:50%;z-index:0;}
+.plan-chip-avatar::before{content:'';position:absolute;inset:2px;border-radius:50%;z-index:1;background:var(--bg);}
+.ring-free::after{background:conic-gradient(#9ca3af,#d1d5db,#9ca3af);}
+.ring-plus::after{background:conic-gradient(#111,#555,#111,#555,#111);animation:rr 4s linear infinite;}
+.dark .ring-plus::after{background:conic-gradient(#fff,#aaa,#fff,#aaa,#fff);animation:rr 4s linear infinite;}
+.ring-pro::after{background:conic-gradient(#22c55e,#4ade80,#16a34a,#86efac,#22c55e);animation:rr 3s linear infinite;}
+.ring-premium::after{background:conic-gradient(#f59e0b,#fcd34d,#d97706,#fef08a,#f59e0b);animation:rr 2.5s linear infinite;}
+.ring-premium-plus::after{background:conic-gradient(#ef4444,#f97316,#eab308,#f97316,#ef4444);animation:rrf 1.8s linear infinite;}
+@keyframes rr{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+@keyframes rrf{0%{transform:rotate(0deg);filter:brightness(1);}50%{transform:rotate(180deg);filter:brightness(1.3);}100%{transform:rotate(360deg);filter:brightness(1);}}
+.plan-badge{font-size:8px;font-weight:800;text-transform:uppercase;padding:2px 6px;border-radius:20px;letter-spacing:.04em;}
+.plan-free{background:#f3f4f6;color:#6b7280;}
+.plan-plus{background:#dbeafe;color:#1d4ed8;}
+.plan-pro{background:#ede9fe;color:#7c3aed;}
+.plan-premium{background:#fef3c7;color:#d97706;}
+.plan-premium-plus{background:linear-gradient(135deg,#fee2e2,#fef3c7);color:#c2410c;}
+.dark .plan-free{background:#27272a;color:#a1a1aa;}
+.dark .plan-plus{background:#1e3a5f;color:#60a5fa;}
+.dark .plan-pro{background:#3b1f5e;color:#c084fc;}
+.dark .plan-premium{background:#44330f;color:#fbbf24;}
+.dark .plan-premium-plus{background:linear-gradient(135deg,#44110f,#44330f);color:#fb923c;}
+
+/* LAYOUT */
+#main{display:flex;flex:1;overflow:hidden;}
+
+/* LEFT PANEL */
+#left-panel{width:320px;min-width:320px;border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--sidebar);overflow:hidden;transition:width .3s;}
+#left-panel.collapsed{width:0;min-width:0;overflow:hidden;}
+.lp-section{padding:14px 16px;border-bottom:1px solid var(--border);}
+.lp-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#999;margin-bottom:8px;}
+
+.tool-tabs{display:flex;gap:2px;padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.ttab{padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;color:#888;background:none;border:none;transition:.15s;font-family:'Inter',sans-serif;}
+.ttab:hover{color:var(--text);background:var(--select-bg);}
+.ttab.active{color:var(--text);background:var(--select-bg);}
+
+.tool-body{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
+.tool-body::-webkit-scrollbar{width:4px;}
+.tool-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+
+.inp{width:100%;padding:9px 12px;border-radius:9px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:12.5px;font-family:'Inter',sans-serif;outline:none;transition:border .2s;}
+.inp:focus{border-color:#888;}
+.inp-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#999;margin-bottom:4px;display:block;}
+select.inp{appearance:none;cursor:pointer;}
+textarea.inp{resize:vertical;min-height:80px;line-height:1.5;}
+.action-btn{width:100%;padding:10px;border-radius:10px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;border:none;transition:.2s;font-family:'Inter',sans-serif;}
+.action-btn.primary{background:var(--accent);color:var(--accent-inv);}
+.action-btn.primary:hover{opacity:.85;}
+.action-btn.secondary{background:var(--select-bg);color:var(--text);border:1px solid var(--border2);}
+.action-btn.secondary:hover{background:var(--border2);}
+.action-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+/* RIGHT PANEL — visualization */
+#right-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
+.rp-header{display:flex;align-items:center;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.rp-title{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;flex:1;}
+.rp-actions{display:flex;gap:4px;}
+.rp-btn{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#aaa;transition:.2s;background:none;border:none;}
+.rp-btn:hover{color:var(--text);background:var(--select-bg);}
+.rp-btn svg{width:14px;height:14px;}
+#canvas-area{flex:1;overflow:auto;padding:24px;display:flex;align-items:center;justify-content:center;position:relative;}
+#chart-canvas-wrap{max-width:100%;max-height:100%;width:700px;}
+#diagram-output{width:100%;overflow:auto;}
+#diagram-output svg{max-width:100%;}
+.empty-state{text-align:center;color:#bbb;font-size:13px;max-width:400px;}
+.empty-state .es-icon{font-size:56px;margin-bottom:16px;display:block;}
+.empty-state h3{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;}
+
+/* COLOR PALETTE */
+.color-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+.color-swatch{width:24px;height:24px;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:.15s;}
+.color-swatch.active{border-color:var(--text);transform:scale(1.2);}
+
+/* DATA TABLE PREVIEW */
+#data-preview{font-size:11px;background:var(--select-bg);border-radius:8px;padding:10px;overflow-x:auto;max-height:120px;overflow-y:auto;}
+#data-preview table{border-collapse:collapse;width:100%;}
+#data-preview td,#data-preview th{padding:3px 8px;text-align:left;border-bottom:1px solid var(--border);}
+#data-preview th{font-weight:700;color:#888;}
+
+/* AI CHAT */
+#ai-chat-area{display:flex;flex-direction:column;gap:8px;}
+.ai-msg{padding:10px 12px;border-radius:10px;font-size:12.5px;line-height:1.6;}
+.ai-msg.ai{background:var(--select-bg);}
+.ai-msg.user{background:var(--accent);color:var(--accent-inv);margin-left:20px;}
+#ai-input-row{display:flex;gap:6px;margin-top:4px;}
+#ai-input{flex:1;padding:9px 12px;border-radius:9px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:12.5px;font-family:'Inter',sans-serif;outline:none;}
+#ai-input:focus{border-color:#888;}
+#ai-send-btn{padding:9px 14px;border-radius:9px;background:var(--accent);color:var(--accent-inv);border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;}
+
+/* TOAST */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:var(--accent-inv);padding:10px 20px;border-radius:10px;font-size:12px;font-weight:700;z-index:9999;opacity:0;transition:.25s;pointer-events:none;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* MERMAID DIAGRAM */
+.mermaid-wrap{background:var(--bg);border-radius:12px;padding:20px;width:100%;}
+
+@media(max-width:768px){#left-panel{position:fixed;inset:0 auto 0 0;z-index:200;transform:translateX(-100%);width:300px!important;transition:transform .3s;}#left-panel.mobile-open{transform:translateX(0);}#main-menu-btn{display:flex!important;}}
+</style>
+</head>
+<body>
+
+<!-- FIREBASE -->
+<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import{getAuth,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import{getDatabase,ref,get}from'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+const app=initializeApp({apiKey:"AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",authDomain:"wikimind-3-comments.firebaseapp.com",databaseURL:"https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",projectId:"wikimind-3-comments",storageBucket:"wikimind-3-comments.firebasestorage.app",messagingSenderId:"137479541640",appId:"1:137479541640:web:4ed2510a9908055052e03d"});
+const auth=getAuth(app);const db=getDatabase(app);
+window._fb={auth,db,ref,get};
+onAuthStateChanged(auth,async user=>{
+  if(user){
+    try{
+      const snap=await get(ref(db,`users/${user.uid}`));
+      const d=snap.exists()?snap.val():{};
+      bootUser({uid:user.uid,displayName:d.name||user.displayName||'Utilisateur',photoURL:d.photoURL||user.photoURL||null,plan:d.FORFAIT??d.plan??2,isGuest:false});
+    }catch(e){bootUser({uid:user.uid,displayName:user.displayName||'Utilisateur',photoURL:user.photoURL,plan:2,isGuest:false});}
+  } else {
+    bootUser({uid:'guest',displayName:'Invité',photoURL:null,plan:1,isGuest:true});
+  }
+});
+</script>
+
+<!-- HEADER -->
+<div id="header">
+  <button class="hbtn" id="main-menu-btn" style="display:none" onclick="toggleLeftPanel()">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <div class="header-logo" onclick="window.location.href='https://chpalitom09-bot.github.io/Wikimind-3/index.html'">
+    <h1>WikiMind <span style="font-style:normal;font-size:11px;font-weight:400;opacity:.5">Graphs</span></h1>
+  </div>
+  <div class="header-sep"></div>
+
+  <button class="hbtn" onclick="toggleDark()">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+  </button>
+  <a href="https://chpalitom09-bot.github.io/Wikimind-3/index.html" class="hbtn">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Accueil
+  </a>
+
+  <div style="display:flex;align-items:center;gap:8px">
+    <div class="plan-chip-avatar ring-free" id="user-avatar"><span id="user-initial">?</span></div>
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <span style="font-size:11px;font-weight:700" id="user-name">…</span>
+      <span class="plan-badge plan-free" id="user-plan">Free</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- LEFT PANEL -->
+  <div id="left-panel">
+    <div class="tool-tabs">
+      <button class="ttab active" id="ttab-chart" onclick="switchTab('chart')">Graphiques</button>
+      <button class="ttab" id="ttab-diagram" onclick="switchTab('diagram')">Diagrammes</button>
+      <button class="ttab" id="ttab-ai" onclick="switchTab('ai')">IA</button>
+    </div>
+
+    <!-- CHART TAB -->
+    <div id="tab-chart" class="tool-body">
+      <div>
+        <span class="inp-label">Type de graphique</span>
+        <select class="inp" id="chart-type" onchange="updateChartPreview()">
+          <option value="bar">📊 Barres</option>
+          <option value="horizontalBar">📊 Barres horizontales</option>
+          <option value="line">📈 Ligne</option>
+          <option value="pie">🥧 Camembert</option>
+          <option value="doughnut">🍩 Donut</option>
+          <option value="radar">🕸️ Radar</option>
+          <option value="polarArea">🎯 Aire polaire</option>
+          <option value="scatter">🔵 Nuage de points</option>
+          <option value="bubble">🫧 Bulles</option>
+        </select>
+      </div>
+      <div>
+        <span class="inp-label">Titre du graphique</span>
+        <input class="inp" type="text" id="chart-title" placeholder="Mon graphique" oninput="updateChartPreview()">
+      </div>
+      <div>
+        <span class="inp-label">Données (une ligne = une valeur, format: Libellé,Valeur)</span>
+        <textarea class="inp" id="chart-data" placeholder="Paris,4500&#10;Lyon,1800&#10;Marseille,1600&#10;Bordeaux,900&#10;Toulouse,800" oninput="parseDataAndPreview()" rows="6"></textarea>
+      </div>
+      <div id="data-preview-wrap" style="display:none">
+        <span class="inp-label">Aperçu données</span>
+        <div id="data-preview"></div>
+      </div>
+      <div>
+        <span class="inp-label">Palette de couleurs</span>
+        <div class="color-row" id="palette-row"></div>
+      </div>
+      <div>
+        <span class="inp-label">Options</span>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px">
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer">
+            <input type="checkbox" id="opt-legend" checked onchange="updateChartPreview()"> Afficher la légende
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer">
+            <input type="checkbox" id="opt-grid" checked onchange="updateChartPreview()"> Grille
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer">
+            <input type="checkbox" id="opt-animate" checked onchange="updateChartPreview()"> Animations
+          </label>
+        </div>
+      </div>
+      <div>
+        <span class="inp-label">Importer CSV / JSON</span>
+        <input type="file" id="data-file-input" accept=".csv,.json,.txt" style="display:none" onchange="importDataFile(event)">
+        <button class="action-btn secondary" onclick="document.getElementById('data-file-input').click()">📁 Importer un fichier</button>
+      </div>
+      <button class="action-btn primary" onclick="renderChart()">✦ Générer le graphique</button>
+      <button class="action-btn secondary" onclick="exportChart()">⬇ Exporter PNG</button>
+    </div>
+
+    <!-- DIAGRAM TAB -->
+    <div id="tab-diagram" class="tool-body" style="display:none">
+      <div>
+        <span class="inp-label">Type de diagramme</span>
+        <select class="inp" id="diagram-type">
+          <option value="flowchart LR">Organigramme (gauche→droite)</option>
+          <option value="flowchart TD">Organigramme (haut→bas)</option>
+          <option value="sequenceDiagram">Séquence</option>
+          <option value="classDiagram">Classes UML</option>
+          <option value="gantt">Gantt</option>
+          <option value="mindmap">Mind Map</option>
+          <option value="erDiagram">Entités-Relations</option>
+          <option value="gitGraph">Git Graph</option>
+          <option value="pie">Camembert</option>
+          <option value="xychart-beta">XY Chart</option>
+          <option value="timeline">Timeline</option>
+        </select>
+      </div>
+      <div>
+        <span class="inp-label">Description (en langage naturel)</span>
+        <textarea class="inp" id="diagram-prompt" placeholder="Décrivez votre diagramme en français… Ex: Un système de login avec base de données utilisateurs, authentification JWT, et API REST" rows="5"></textarea>
+      </div>
+      <div>
+        <span class="inp-label">Ou écrivez le code Mermaid directement</span>
+        <textarea class="inp" id="diagram-code" placeholder="graph LR&#10;  A[Début] --> B{Connexion}&#10;  B -->|OK| C[Tableau de bord]&#10;  B -->|Erreur| D[Page d'erreur]" rows="6"></textarea>
+      </div>
+      <button class="action-btn primary" id="diagram-gen-btn" onclick="generateDiagram()">✦ Générer le diagramme</button>
+      <button class="action-btn secondary" onclick="renderManualDiagram()">▶ Prévisualiser le code</button>
+      <button class="action-btn secondary" onclick="exportDiagramSVG()">⬇ Exporter SVG</button>
+    </div>
+
+    <!-- AI TAB -->
+    <div id="tab-ai" class="tool-body" style="display:none">
+      <div style="font-size:12px;color:#888;padding:4px 0 8px">Décrivez ce que vous voulez créer — Wikimind Graphs IA générera automatiquement le graphique ou diagramme.</div>
+      <div id="ai-chat-area">
+        <div class="ai-msg ai">Bonjour ! Je suis Wikimind Graphs IA. Décrivez-moi vos données ou le diagramme que vous souhaitez créer. Par exemple : <em>"Crée un graphique des ventes mensuelles de 2024"</em> ou <em>"Fais un organigramme de mon équipe"</em></div>
+      </div>
+      <div id="ai-input-row">
+        <input type="text" id="ai-input" placeholder="Décrivez votre graphique ou diagramme…" onkeydown="if(event.key==='Enter')sendAIMessage()">
+        <button id="ai-send-btn" onclick="sendAIMessage()">Envoyer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="right-panel">
+    <div class="rp-header">
+      <span class="rp-title" id="rp-title">Wikimind Graphs</span>
+      <div class="rp-actions">
+        <button class="rp-btn" onclick="toggleLeftPanel()" title="Panneau latéral">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        </button>
+        <button class="rp-btn" onclick="exportChart()" id="export-chart-btn" title="Exporter PNG" style="display:none">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+        <button class="rp-btn" onclick="exportDiagramSVG()" id="export-svg-btn" title="Exporter SVG" style="display:none">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+        <button class="rp-btn" onclick="clearCanvas()" title="Effacer">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="canvas-area">
+      <div class="empty-state" id="empty-state">
+        <span class="es-icon">📊</span>
+        <h3>Wikimind Graphs</h3>
+        <p style="font-size:13px;color:#bbb;line-height:1.7">Choisissez un type de graphique ou diagramme dans le panneau gauche, entrez vos données, et cliquez sur <strong>Générer</strong>.</p>
+        <p style="margin-top:16px;font-size:11px;color:#bbb">Chart.js · Mermaid.js · IA Mistral · Export PNG/SVG</p>
+      </div>
+      <div id="chart-canvas-wrap" style="display:none">
+        <canvas id="main-chart"></canvas>
+      </div>
+      <div id="diagram-output" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const MISTRAL_KEY = 'SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9';
+const G = id => document.getElementById(id);
+
+let currentChart = null;
+let currentTab = 'chart';
+let selectedPalette = 0;
+const PALETTES = [
+  ['#111111','#555555','#888888','#aaaaaa','#dddddd'],
+  ['#6366f1','#8b5cf6','#ec4899','#f43f5e','#f97316'],
+  ['#10b981','#06b6d4','#3b82f6','#8b5cf6','#ec4899'],
+  ['#ef4444','#f97316','#eab308','#22c55e','#06b6d4'],
+  ['#1e3a5f','#1d4ed8','#0ea5e9','#06b6d4','#10b981'],
+];
+
+// ── DARK MODE ──
+function toggleDark(){ document.body.classList.toggle('dark'); localStorage.setItem('wm_dark',document.body.classList.contains('dark')?'1':'0'); }
+if(localStorage.getItem('wm_dark')==='1') document.body.classList.add('dark');
+
+// ── USER BOOT ──
+function bootUser(user){
+  G('user-initial').textContent = (user.displayName||'?').charAt(0).toUpperCase();
+  G('user-name').textContent = user.displayName||'Invité';
+  const PM = {1:['Free','plan-free'],2:['AI Plus','plan-plus'],3:['AI Pro','plan-pro'],4:['AI Premium','plan-premium'],5:['AI Premium+','plan-premium-plus']};
+  const [pn,pc] = PM[user.plan]||PM[1];
+  G('user-plan').textContent = pn; G('user-plan').className = 'plan-badge '+pc;
+  const rc = {1:'ring-free',2:'ring-plus',3:'ring-pro',4:'ring-premium',5:'ring-premium-plus'}[user.plan]||'ring-free';
+  const av = G('user-avatar'); av.className = 'plan-chip-avatar '+rc;
+  if(user.photoURL) av.innerHTML=`<img src="${user.photoURL}" alt="" onerror="this.parentElement.innerHTML='<span>${(user.displayName||'?').charAt(0).toUpperCase()}</span>'">`;
+  else av.innerHTML=`<span>${(user.displayName||'?').charAt(0).toUpperCase()}</span>`;
+}
+
+// ── TABS ──
+function switchTab(tab){
+  currentTab = tab;
+  ['chart','diagram','ai'].forEach(t=>{
+    G('ttab-'+t).classList.toggle('active',t===tab);
+    G('tab-'+t).style.display = t===tab?'flex':'none';
+  });
+}
+
+// ── PALETTE ──
+function renderPalettes(){
+  const row = G('palette-row');
+  PALETTES.forEach((p,i)=>{
+    const sw = document.createElement('div');
+    sw.className = 'color-swatch' + (i===0?' active':'');
+    sw.style.background = `linear-gradient(135deg,${p[0]},${p[2]})`;
+    sw.title = `Palette ${i+1}`;
+    sw.onclick = () => {
+      selectedPalette = i;
+      document.querySelectorAll('.color-swatch').forEach((s,j)=>s.classList.toggle('active',j===i));
+      updateChartPreview();
+    };
+    row.appendChild(sw);
+  });
+}
+renderPalettes();
+
+// ── DATA PARSING ──
+function parseChartData(){
+  const raw = G('chart-data').value.trim();
+  if(!raw) return null;
+  const lines = raw.split('\n').filter(l=>l.trim());
+  const labels = []; const values = [];
+  for(const line of lines){
+    const parts = line.split(',');
+    if(parts.length >= 2){
+      labels.push(parts[0].trim());
+      const val = parseFloat(parts.slice(1).join(',').trim());
+      values.push(isNaN(val)?0:val);
+    } else if(parts.length === 1){
+      const v = parseFloat(parts[0].trim());
+      if(!isNaN(v)){ labels.push('Val '+(values.length+1)); values.push(v); }
+    }
+  }
+  return labels.length ? {labels, values} : null;
+}
+
+function parseDataAndPreview(){
+  const data = parseChartData();
+  if(data && data.labels.length > 0){
+    G('data-preview-wrap').style.display = 'block';
+    G('data-preview').innerHTML = `<table><tr>${data.labels.map((l,i)=>`<td><strong>${esc(l)}</strong></td>`).join('')}</tr><tr>${data.values.map(v=>`<td>${v}</td>`).join('')}</tr></table>`;
+  } else {
+    G('data-preview-wrap').style.display = 'none';
+  }
+  updateChartPreview();
+}
+
+// ── CHART RENDER ──
+function updateChartPreview(){ /* Live preview - debounced render */ clearTimeout(window._previewT); window._previewT = setTimeout(renderChart, 500); }
+
+function renderChart(){
+  const data = parseChartData();
+  if(!data){ return; }
+  const type = G('chart-type').value;
+  const title = G('chart-title').value.trim() || 'Graphique';
+  const colors = PALETTES[selectedPalette];
+  const showLegend = G('opt-legend').checked;
+  const showGrid = G('opt-grid').checked;
+  const animate = G('opt-animate').checked;
+
+  showCanvas('chart');
+  G('rp-title').textContent = title;
+  G('export-chart-btn').style.display = 'flex';
+  G('export-svg-btn').style.display = 'none';
+
+  if(currentChart){ currentChart.destroy(); currentChart = null; }
+
+  const ctx = G('main-chart').getContext('2d');
+  const isDark = document.body.classList.contains('dark');
+  const textColor = isDark ? '#eeeeee' : '#111111';
+  const gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)';
+
+  const bgColors = data.labels.map((_,i) => colors[i % colors.length]);
+  const bdColors = bgColors.map(c => c + 'cc');
+
+  let chartType = type === 'horizontalBar' ? 'bar' : type;
+  let indexAxis = type === 'horizontalBar' ? 'y' : 'x';
+
+  const datasets = [{
+    label: title,
+    data: type === 'scatter' ? data.values.map((v,i)=>({x:i+1,y:v})) : data.values,
+    backgroundColor: bgColors,
+    borderColor: bdColors,
+    borderWidth: 2,
+    borderRadius: ['bar','horizontalBar'].includes(type) ? 6 : 0,
+    tension: 0.4,
+    fill: chartType === 'line' ? false : undefined,
+  }];
+
+  currentChart = new Chart(ctx, {
+    type: chartType,
+    data: { labels: data.labels, datasets },
+    options: {
+      indexAxis,
+      responsive: true,
+      animation: animate ? { duration: 800, easing: 'easeInOutQuart' } : false,
+      plugins: {
+        legend: { display: showLegend, labels:{ color:textColor, font:{family:'Inter',size:11} } },
+        title: { display:true, text:title, color:textColor, font:{family:'Inter',size:14,weight:'800'}, padding:{bottom:16} },
+        tooltip: { backgroundColor: isDark?'#1a1a1a':'#fff', titleColor:textColor, bodyColor:textColor, borderColor: isDark?'#333':'#e5e7eb', borderWidth:1 }
+      },
+      scales: chartType==='pie'||chartType==='doughnut'||chartType==='polarArea'||chartType==='radar' ? {} : {
+        x: { grid:{ color: showGrid?gridColor:'transparent', drawBorder:false }, ticks:{color:textColor,font:{family:'Inter',size:11}} },
+        y: { grid:{ color: showGrid?gridColor:'transparent', drawBorder:false }, ticks:{color:textColor,font:{family:'Inter',size:11}} }
+      }
+    }
+  });
+}
+
+function showCanvas(type){
+  G('empty-state').style.display = 'none';
+  if(type === 'chart'){
+    G('chart-canvas-wrap').style.display = 'block';
+    G('diagram-output').style.display = 'none';
+  } else {
+    G('chart-canvas-wrap').style.display = 'none';
+    G('diagram-output').style.display = 'block';
+  }
+}
+
+function clearCanvas(){
+  if(currentChart){ currentChart.destroy(); currentChart = null; }
+  G('empty-state').style.display = 'flex';
+  G('chart-canvas-wrap').style.display = 'none';
+  G('diagram-output').style.display = 'none';
+  G('export-chart-btn').style.display = 'none';
+  G('export-svg-btn').style.display = 'none';
+  G('rp-title').textContent = 'Wikimind Graphs';
+}
+
+// ── EXPORT ──
+function exportChart(){
+  if(!currentChart){ toast('Aucun graphique à exporter'); return; }
+  const canvas = G('main-chart');
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = (G('chart-title').value.trim()||'graphique')+'.png';
+  a.click();
+  toast('✓ Graphique exporté en PNG');
+}
+
+// ── DIAGRAM ──
+async function generateDiagram(){
+  const prompt = G('diagram-prompt').value.trim();
+  const type = G('diagram-type').value;
+  if(!prompt){ toast('Entrez une description'); return; }
+
+  const btn = G('diagram-gen-btn');
+  btn.disabled = true; btn.textContent = '⏳ IA génère…';
+
+  try{
+    const typeExamples = {
+      'flowchart LR':'graph LR\n  A[Début] --> B{Condition}\n  B -->|Oui| C[Résultat 1]\n  B -->|Non| D[Résultat 2]',
+      'flowchart TD':'graph TD\n  A[Début] --> B[Étape 1]\n  B --> C[Fin]',
+      'sequenceDiagram':'sequenceDiagram\n  Utilisateur->>API: Requête\n  API-->>DB: Requête SQL\n  DB-->>API: Résultat\n  API-->>Utilisateur: Réponse',
+      'classDiagram':'classDiagram\n  class Animal {\n    +String nom\n    +crier()\n  }\n  class Chien {\n    +aboyer()\n  }\n  Animal <|-- Chien',
+      'gantt':'gantt\n  title Mon Projet\n  dateFormat YYYY-MM-DD\n  section Phase 1\n  Tâche A :a1, 2024-01-01, 30d',
+      'mindmap':'mindmap\n  root((Sujet))\n    Branche 1\n      Idée 1\n      Idée 2\n    Branche 2\n      Idée 3',
+      'erDiagram':'erDiagram\n  UTILISATEUR ||--o{ COMMANDE : "passe"\n  COMMANDE ||--|{ PRODUIT : "contient"',
+      'gitGraph':'gitGraph\n  commit\n  branch develop\n  checkout develop\n  commit\n  checkout main\n  merge develop',
+      'pie':'pie title Répartition\n  "Catégorie A" : 40\n  "Catégorie B" : 30\n  "Catégorie C" : 30',
+      'xychart-beta':'xychart-beta\n  title "Données"\n  x-axis [jan, fev, mar, avr]\n  y-axis "Valeur" 0 --> 100\n  bar [20, 40, 60, 80]',
+      'timeline':'timeline\n  title Histoire\n  2020 : Événement 1\n  2021 : Événement 2\n  2022 : Événement 3',
+    };
+    const example = typeExamples[type] || typeExamples['flowchart LR'];
+    const code = await callMistral([
+      {role:'system',content:`Tu es un expert Mermaid.js. Génère un diagramme Mermaid valide de type "${type}" basé sur la description de l'utilisateur. Réponds UNIQUEMENT avec le code Mermaid valide, sans backticks, sans explication. Exemple de format:\n${example}`},
+      {role:'user',content:prompt}
+    ], 600);
+    G('diagram-code').value = code.replace(/```mermaid|```/g,'').trim();
+    await renderManualDiagram();
+  }catch(e){
+    toast('Erreur IA: '+e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '✦ Générer le diagramme';
+  }
+}
+
+async function renderManualDiagram(){
+  const code = G('diagram-code').value.trim();
+  if(!code){ toast('Entrez ou générez un code Mermaid'); return; }
+  showCanvas('diagram');
+  G('rp-title').textContent = 'Diagramme';
+  G('export-chart-btn').style.display = 'none';
+  G('export-svg-btn').style.display = 'flex';
+
+  const output = G('diagram-output');
+  output.innerHTML = '<div class="mermaid-wrap"><div id="mermaid-inner" class="mermaid">'+code+'</div></div>';
+  try{
+    await window.mermaid.run({querySelector:'#mermaid-inner'});
+  }catch(e){
+    output.innerHTML = `<div style="color:#ef4444;padding:20px;font-size:12px;background:var(--select-bg);border-radius:10px"><strong>Erreur Mermaid:</strong><br><pre style="white-space:pre-wrap;margin-top:8px;font-size:11px">${esc(e.message)}</pre></div>`;
+    toast('Erreur diagramme: vérifiez le code Mermaid');
+  }
+}
+
+function exportDiagramSVG(){
+  const svgEl = G('diagram-output').querySelector('svg');
+  if(!svgEl){ toast('Aucun diagramme à exporter'); return; }
+  const blob = new Blob([svgEl.outerHTML], {type:'image/svg+xml'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'wikimind-diagram.svg';
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('✓ Diagramme exporté en SVG');
+}
+
+// ── CSV IMPORT ──
+function importDataFile(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    let content = e.target.result;
+    let result = '';
+    if(file.name.endsWith('.json')){
+      try{
+        const json = JSON.parse(content);
+        if(Array.isArray(json)){
+          result = json.map(item=>{
+            if(typeof item === 'object'){
+              const keys = Object.keys(item);
+              return `${item[keys[0]]},${item[keys[1]]||0}`;
+            }
+            return item;
+          }).join('\n');
+        }
+      }catch(e){ toast('JSON invalide'); return; }
+    } else {
+      // CSV/TXT
+      result = content.split('\n').filter(l=>l.trim()).map(l=>{
+        const parts = l.split(',');
+        if(parts.length >= 2) return `${parts[0].trim()},${parts[1].trim()}`;
+        return l.trim();
+      }).join('\n');
+    }
+    G('chart-data').value = result;
+    parseDataAndPreview();
+    toast('✓ Données importées');
+  };
+  reader.readAsText(file);
+}
+
+// ── AI TAB ──
+async function sendAIMessage(){
+  const input = G('ai-input');
+  const msg = input.value.trim();
+  if(!msg) return;
+  input.value = '';
+
+  const chat = G('ai-chat-area');
+  chat.innerHTML += `<div class="ai-msg user">${esc(msg)}</div>`;
+  chat.innerHTML += `<div class="ai-msg ai" id="ai-typing">⏳ Génération en cours…</div>`;
+
+  try{
+    const response = await callMistral([
+      {role:'system',content:`Tu es Wikimind Graphs IA. Tu aides à créer des graphiques et diagrammes. 
+Si l'utilisateur demande un graphique avec des données, réponds avec:
+1. JSON de configuration de données au format: CHART_DATA:{"type":"bar","title":"...","labels":["..."],"values":[...]}
+2. Suivi d'une explication courte en français.
+
+Si l'utilisateur demande un diagramme, réponds avec:
+1. Code Mermaid au format: DIAGRAM_CODE:```\n[code mermaid]\n```
+2. Suivi d'une explication courte.
+
+Sinon, réponds normalement en français.`},
+      {role:'user',content:msg}
+    ], 600);
+
+    const typing = document.getElementById('ai-typing');
+    
+    // Parse special chart data
+    const chartMatch = response.match(/CHART_DATA:(\{[^}]+\})/s);
+    const diagramMatch = response.match(/DIAGRAM_CODE:```[\w]*\n([\s\S]*?)```/);
+
+    if(chartMatch){
+      try{
+        const cd = JSON.parse(chartMatch[1]);
+        // Apply to chart tool
+        G('chart-type').value = cd.type || 'bar';
+        G('chart-title').value = cd.title || msg;
+        G('chart-data').value = cd.labels.map((l,i)=>`${l},${cd.values[i]||0}`).join('\n');
+        switchTab('chart');
+        parseDataAndPreview();
+        setTimeout(renderChart, 200);
+        const cleanResp = response.replace(/CHART_DATA:[^\n]+/,'').trim();
+        if(typing) typing.innerHTML = esc(cleanResp || '✓ Graphique créé ! Consultez l\'onglet Graphiques.') + '<br><em style="font-size:10px;color:#888">Onglet Graphiques mis à jour ↑</em>';
+      }catch(e){ if(typing) typing.textContent = response; }
+    } else if(diagramMatch){
+      G('diagram-code').value = diagramMatch[1].trim();
+      switchTab('diagram');
+      setTimeout(renderManualDiagram, 200);
+      const cleanResp = response.replace(/DIAGRAM_CODE:```[\w]*\n[\s\S]*?```/,'').trim();
+      if(typing) typing.innerHTML = esc(cleanResp || '✓ Diagramme créé ! Consultez l\'onglet Diagrammes.') + '<br><em style="font-size:10px;color:#888">Onglet Diagrammes mis à jour ↑</em>';
+    } else {
+      if(typing) typing.textContent = response;
+    }
+    chat.scrollTop = chat.scrollHeight;
+  }catch(e){
+    const typing = document.getElementById('ai-typing');
+    if(typing) typing.textContent = 'Erreur: '+e.message;
+  }
+}
+
+// ── MISTRAL ──
+async function callMistral(messages, maxTokens=400){
+  const res = await fetch('https://api.mistral.ai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+MISTRAL_KEY},
+    body:JSON.stringify({model:'mistral-small-latest',messages,max_tokens:maxTokens,temperature:0.7})
+  });
+  if(!res.ok) throw new Error('Mistral API '+res.status);
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content||'';
+}
+
+// ── UTILS ──
+function toggleLeftPanel(){ G('left-panel').classList.toggle('collapsed'); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function toast(msg){
+  const t=G('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(window._tt); window._tt=setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// Init Mermaid
+window.mermaid.initialize({startOnLoad:false,theme:document.body.classList.contains('dark')?'dark':'neutral',securityLevel:'loose',fontFamily:'Inter,sans-serif'});
+
+// Keyboard
+G('ai-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendAIMessage();});
+</script>
+</body>
+</html>
