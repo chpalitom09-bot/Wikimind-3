@@ -2310,6 +2310,10 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
         </div>
         <div class="settings-section-label" style="margin-top:16px">Actions</div>
         <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+          <button class="modal-btn secondary" onclick="openChangelogModal();closeModal('settings-modal')" style="display:flex;align-items:center;gap:8px;justify-content:center">
+            🚀 <span>Dernières nouveautés</span>
+            <span style="background:linear-gradient(90deg,#ef4444,#f97316);color:#fff;font-size:8px;font-weight:800;padding:2px 6px;border-radius:20px;text-transform:uppercase;letter-spacing:.04em">NEW</span>
+          </button>
           <button class="modal-btn secondary" onclick="openCvModal();closeModal('settings-modal')" id="cv-creator-btn" style="display:none">🎓 Créateur de CV IA</button>
           <a href="../AI/Wikimind_forfaits.html" class="modal-btn secondary" style="text-align:center;display:block;text-decoration:none">Gérer mes tokens &amp; forfaits</a>
           <button class="modal-btn secondary" onclick="openPlansOverlay();closeModal('settings-modal')">Voir les forfaits</button>
@@ -3225,11 +3229,76 @@ const GMAIL_SCOPES  = 'https://www.googleapis.com/auth/gmail.compose https://www
 const GDRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 
 const MISTRAL_MODELS = {
-  flash:   { id:'mistral-small-latest',  label:'Wikimind Flash'     },
-  medium:  { id:'mistral-medium-latest', label:'Wikimind Medium'    },
-  work:    { id:'mistral-large-latest',  label:'Wikimind Work'      },
-  reflect: { id:'mistral-large-latest',  label:'Wikimind Réflexion' },
+  flash:   { id:'mistral-small-latest',  label:'Wikimind Flash v3.1'     },
+  medium:  { id:'mistral-medium-latest', label:'Wikimind Medium v3.1'    },
+  work:    { id:'mistral-large-latest',  label:'Wikimind Work v3.1'      },
+  reflect: { id:'mistral-large-latest',  label:'Wikimind Réflexion v3.1' },
+  task:    { id:'mistral-large-latest',  label:'Wikimind Task v3.1'      },
 };
+
+// ── WIKIMIND TASK — Système multi-outils ──
+const WIKIMIND_TASK_SYSTEM = `Tu es Wikimind Task v3.1, un assistant IA ultra-puissant propulsé par Mistral AI, conçu pour accomplir des tâches complexes et structurées.
+
+Date du jour : 21 mars 2026.
+
+NOUVEAUTÉS v3.1 (21/03/2026) :
+- Wikimind Task : nouveau modèle multi-outils capable de tout accomplir (voir ci-dessous)
+- Tous les modèles passent en version 3.1 avec accès étendu aux outils
+- Wikimind Task : illimité pour AI Premium+, 1/heure pour AI Premium
+- Limites de messages quotidiens : AI Plus = 1/jour, AI Pro = 2/jour, AI Premium = 1/heure, AI Premium+ = illimité
+- Graphiques, audio, fichiers, lettres de motivation Parcoursup, analyses : tout est géré nativement
+
+TES CAPACITÉS (utilise-les toutes selon le besoin) :
+
+1. LETTRES DE MOTIVATION / PARCOURSUP
+   - Si l'utilisateur te donne une lettre de motivation et des établissements, génère UNE VARIANTE COMPLÈTE par établissement
+   - Structure : [NOM_ÉTABLISSEMENT]\n---\n[LETTRE COMPLÈTE ADAPTÉE]\n---
+   - Adapte le ton, les arguments, les projets en fonction de chaque formation
+   - Réponds TOUJOURS avec toutes les variantes dans un format structuré et lisible
+
+2. GRAPHIQUES & DATAVIZ
+   - Génère du code Chart.js intégré en markdown quand on te demande un graphique
+   - Format : \`\`\`chartjs\n{type:"bar",data:{...},options:{...}}\n\`\`\`
+
+3. GÉNÉRATION AUDIO (TEXT-TO-SPEECH)
+   - Si on te demande de convertir en audio, réponds avec : [TTS_REQUEST:texte à synthétiser]
+   - Le système interceptera cette balise et lancera la synthèse vocale automatiquement
+
+4. CRÉATION DE FICHIERS
+   - Pour un fichier Word/document : [CREATE_DOCX:titre|contenu]
+   - Pour un fichier CSV : [CREATE_CSV:titre|contenu]
+   - Propose toujours de créer le fichier en plus de la réponse texte
+
+5. CODE & DÉVELOPPEMENT
+   - Génère du code complet, fonctionnel et commenté
+   - Utilise des blocs de code avec le bon langage
+   - Propose des tests et explications
+
+6. ANALYSE & RECHERCHE
+   - Structure tes réponses avec des titres clairs (##), des tableaux comparatifs, des listes
+   - Pour les analyses complexes, utilise un plan détaillé
+
+7. TRADUCTIONS & RÉDACTION
+   - Traduis, reformule, améliore, adapte n'importe quel texte
+   - Respecte le registre et le contexte demandé
+
+8. PLANS D'ACTION & ORGANISATION
+   - Génère des plans structurés, des to-do lists, des roadmaps
+   - Utilise des tableaux Markdown pour les comparaisons
+
+RÈGLE D'OR : Ne dis jamais "je ne peux pas faire ça". Adapte, propose une alternative, ou explique comment y arriver avec les outils disponibles. Tu es la version la plus puissante de Wikimind et tu dois le montrer dans chaque réponse.
+
+FORMATAGE : Utilise TOUJOURS du Markdown riche (titres, tableaux, listes, code, blockquotes) pour structurer tes réponses.`;
+
+// Rate limits Wikimind Task (messages par jour pour Plus/Pro, par heure pour Premium)
+const TASK_RATE = {
+  2: { limitMs: 24*3600*1000, max: 1,  label: '1/jour'   }, // AI Plus
+  3: { limitMs: 24*3600*1000, max: 2,  label: '2/jour'   }, // AI Pro
+  4: { limitMs: 3600*1000,    max: 1,  label: '1/heure'  }, // AI Premium
+  5: { limitMs: 60*1000,      max: 10, label: 'Illimité' }, // AI Premium+ (10/min invisible)
+};
+// Stockage timestamps Wikimind Task
+window._wmTaskHistory = [];
 
 const S = {
   user:null, plan:1, model:'flash', chats:{}, chatId:null, msgs:[],
@@ -3468,10 +3537,11 @@ function updateUserUI(){
 function updateModelOptions(){
   const sel=G('model-select'); if(!sel) return;
   const models=[
-    {value:'flash',label:'WIKIMIND FLASH',minPlan:1},
-    {value:'medium',label:'WIKIMIND MEDIUM',minPlan:2},
-    {value:'work',label:'WIKIMIND WORK',minPlan:2},
-    {value:'reflect',label:'WIKIMIND RÉFLEXION',minPlan:2},
+    {value:'flash',label:'WIKIMIND FLASH v3.1',minPlan:1},
+    {value:'medium',label:'WIKIMIND MEDIUM v3.1',minPlan:2},
+    {value:'work',label:'WIKIMIND WORK v3.1',minPlan:2},
+    {value:'reflect',label:'WIKIMIND RÉFLEXION v3.1',minPlan:2},
+    {value:'task',label:'⚡ WIKIMIND TASK v3.1',minPlan:2},
   ];
   sel.innerHTML='';
   models.forEach(m=>{ if(S.plan>=m.minPlan){const opt=document.createElement('option');opt.value=m.value;opt.textContent=m.label;sel.appendChild(opt);} });
@@ -3506,7 +3576,7 @@ function renderPlansGrid(){
   const rows=[
     // ── Pour tous ──
     ['Messages / conversation','5','50','100','200','∞ Illimité'],
-    ['Modèle Flash (IA rapide)','✓','✓','✓','✓','✓'],
+    ['Modèle Flash v3.1 (IA rapide)','✓','✓','✓','✓','✓'],
     ['Outil Actualités IA','✓','✓','✓','✓','✓'],
     ['Bouton Stop / Continuer','✓','✓','✓','✓','✓'],
     ['Branches de conversation','✓','✓','✓','✓','✓'],
@@ -3514,9 +3584,10 @@ function renderPlansGrid(){
     ['Dossiers & Épingles','✓','✓','✓','✓','✓'],
     // ── AI Plus ──
     ['Messages / minute','4/min','10/min','15/min','∞','∞'],
-    ['Modèle Medium','✗','✓','✓','✓','✓'],
-    ['Modèle Work','✗','1/h','✓','✓','∞ Illimité'],
-    ['Mode Réflexion','✗','1/h','3/h','10/h','∞ Illimité'],
+    ['Modèle Medium v3.1','✗','✓','✓','✓','✓'],
+    ['Modèle Work v3.1','✗','1/h','✓','✓','∞ Illimité'],
+    ['⚡ Wikimind Task v3.1','✗','1/jour','2/jour','1/heure','∞ Illimité'],
+    ['Mode Réflexion v3.1','✗','1/h','3/h','10/h','∞ Illimité'],
     ['Canvas IA','✗','✓','Avancé','Premium','Premium+'],
     ['Historique cloud','✗','✓','✓','✓','✓'],
     ['Import Wikimind Office','✗','✓','✓','✓','✓'],
@@ -4639,6 +4710,20 @@ async function sendMsg(overrideText, _prevAssistantMsg=null){
     G('rate-warn').style.display='block'; G('rate-txt').textContent=`Patientez encore ${sec}s.`;
     setTimeout(()=>G('rate-warn').style.display='none',4000); return;
   }
+  // Wikimind Task rate limiting
+  if(S.model==='task'){
+    if(S.plan<2){toast('Wikimind Task — plan AI Plus requis');openPlansOverlay();return;}
+    const taskRate=TASK_RATE[S.plan]||TASK_RATE[2];
+    const windowMs=taskRate.limitMs;
+    window._wmTaskHistory=(window._wmTaskHistory||[]).filter(t=>now-t<windowMs);
+    if(window._wmTaskHistory.length>=taskRate.max){
+      const oldest=window._wmTaskHistory[0];
+      const remaining=Math.ceil((windowMs-(now-oldest))/60000);
+      const unit=taskRate.limitMs>=3600000?(remaining>60?Math.ceil(remaining/60)+'h':remaining+'min'):remaining+'min';
+      toast(`Wikimind Task : ${taskRate.label} sur ce forfait (encore ${unit}) — Passez à Premium+ pour illimité`);
+      return;
+    }
+  }
   // Work model: illimité Premium+, 1/h sinon
   if(S.model==='work'&&S.plan>=2&&S.plan<5){const wg=3600000;if(S.lastWorkMsgTs&&(now-S.lastWorkMsgTs)<wg){const min=Math.ceil((wg-(now-S.lastWorkMsgTs))/60000);toast(`Wikimind Work : 1 message/heure sur ce forfait (${min}min) — Passez à Premium+ pour illimité`);return;}}
   if(S.model==='reflect'){
@@ -4650,9 +4735,11 @@ async function sendMsg(overrideText, _prevAssistantMsg=null){
   }
   if(S.model==='work'&&S.plan<2){toast('Wikimind Work — plan AI Plus requis');openPlansOverlay();return;}
   if(S.model==='medium'&&S.plan<2){toast('Wikimind Medium — plan AI Plus requis');openPlansOverlay();return;}
+  if(S.model==='task'&&S.plan<2){toast('Wikimind Task — plan AI Plus requis');openPlansOverlay();return;}
 
   S.lastMsgTs=now;
   if(S.model==='work') S.lastWorkMsgTs=now;
+  if(S.model==='task'){ window._wmTaskHistory=window._wmTaskHistory||[]; window._wmTaskHistory.push(now); }
   if(S.model==='reflect'){S.lastReflectTs=now;S._reflectHistory.push(now);}
   if(overrideText===undefined){input.value='';autoResize(input);}
 
@@ -4722,6 +4809,59 @@ async function sendMsg(overrideText, _prevAssistantMsg=null){
     let aiContent='',steps=null,toolCalls=[];
 
     if(S.model==='reflect'){const res=await runReflection(finalFullContent);aiContent=res.content;steps=res.steps;}
+    else if(S.model==='task'){
+      // Wikimind Task — appel avec system prompt enrichi + détection d'outils
+      const taskMessages=[
+        {role:'system',content:WIKIMIND_TASK_SYSTEM},
+        ...await buildHistoryWithContextManagement(finalFullContent)
+      ];
+      const raw=await callMistral(taskMessages, MISTRAL_MODELS.task.id);
+      // Détecter TTS request
+      const ttsMatch=raw.match(/\[TTS_REQUEST:([^\]]+)\]/);
+      if(ttsMatch){
+        const ttsText=ttsMatch[1];
+        aiContent=raw.replace(/\[TTS_REQUEST:[^\]]+\]/,'').trim();
+        toolCalls.push('🔊 Synthèse audio générée');
+        // Lancer TTS automatiquement si disponible
+        setTimeout(()=>{
+          if(window.speechSynthesis){
+            const utt=new SpeechSynthesisUtterance(ttsText);
+            utt.lang='fr-FR';
+            window.speechSynthesis.speak(utt);
+            toast('🔊 Audio en cours de lecture…');
+          }
+        },500);
+      } else {
+        aiContent=raw;
+      }
+      // Détecter création fichier
+      const csvMatch=raw.match(/\[CREATE_CSV:([^\|]+)\|([^\]]+)\]/s);
+      if(csvMatch){
+        aiContent=aiContent.replace(/\[CREATE_CSV:[^\]]+\]/s,'').trim();
+        const blob=new Blob([csvMatch[2]],{type:'text/csv;charset=utf-8;'});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');a.href=url;a.download=csvMatch[1]+'.csv';a.click();
+        URL.revokeObjectURL(url);
+        toolCalls.push(`📊 Fichier CSV "${csvMatch[1]}" téléchargé`);
+      }
+      // Détecter création DOCX (simulation via txt)
+      const docxMatch=raw.match(/\[CREATE_DOCX:([^\|]+)\|([^\]]+)\]/s);
+      if(docxMatch){
+        aiContent=aiContent.replace(/\[CREATE_DOCX:[^\]]+\]/s,'').trim();
+        const blob=new Blob([docxMatch[2]],{type:'text/plain;charset=utf-8;'});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');a.href=url;a.download=docxMatch[1]+'.txt';a.click();
+        URL.revokeObjectURL(url);
+        toolCalls.push(`📄 Document "${docxMatch[1]}" téléchargé`);
+      }
+      // Détecter Office intent
+      const officeIntentTask=detectOfficeIntent(displayText);
+      if(officeIntentTask&&S.plan>=3&&S.connectors.office&&!S.user?.isGuest){
+        const created=await createOfficeDocByAI(officeIntentTask.appType,officeIntentTask.title,aiContent);
+        if(created) toolCalls.push(`Fichier "${officeIntentTask.title}" créé dans Wikimind Office`);
+        if(!S.canvasOpen) sendToCanvas(aiContent);
+      }
+    }
     else if(S.canvasMode){
       const result=await runSmartCanvas(finalFullContent,displayText);
       aiContent=result.chatReply; steps=null; toolCalls=result.toolCalls||[];
@@ -5525,8 +5665,10 @@ function buildSystemPrompt(){
   // Extract first name from user display name
   const userName = S.user?.displayName ? S.user.displayName.split(' ')[0] : null;
   const userCtx = userName && !S.user?.isGuest ? `L'utilisateur s'appelle ${userName}. Utilise son prénom naturellement dans la conversation quand c'est pertinent (mais ne le répète pas à chaque message).` : '';
-  const base="Tu es WikiMind AI, un assistant IA intelligent, précis et bienveillant. Tu réponds en français par défaut. Utilise Markdown pour structurer tes réponses. Pour les maths, utilise LaTeX : $...$ inline et $$...$$ pour les blocs. Quand l'utilisateur demande un graphique, un schéma, une carte mentale, ou une visualisation — propose-lui d'utiliser les outils dédiés (DataViz, Mind Map, Diagrammes) et génère aussi une description structurée."+(S.plan>=5?' Tu peux analyser des images grâce à la vision IA.':'');
-  return[base,userCtx,S.sysPrompt||'',active].filter(Boolean).join('\n\n');
+  const base="Tu es WikiMind AI v3.1, un assistant IA intelligent, précis et bienveillant. Tu réponds en français par défaut. Utilise Markdown pour structurer tes réponses. Pour les maths, utilise LaTeX : $...$ inline et $$...$$ pour les blocs. Quand l'utilisateur demande un graphique, un schéma, une carte mentale, ou une visualisation — propose-lui d'utiliser les outils dédiés (DataViz, Mind Map, Diagrammes) et génère aussi une description structurée."+(S.plan>=5?' Tu peux analyser des images grâce à la vision IA.':'');
+  // Changelog v3.1 — injecté pour que tous les modèles soient au courant
+  const changelog=typeof WM_CHANGELOG_CONTEXT!=='undefined'?WM_CHANGELOG_CONTEXT:'';
+  return[base,userCtx,changelog,S.sysPrompt||'',active].filter(Boolean).join('\n\n');
 }
 
 // ── CONTEXT WINDOW MANAGER ──
@@ -5814,8 +5956,22 @@ async function runReflection(question){
 function onModelChange(){
   const key=G('model-select').value;
   if(key==='reflect'&&S.plan<2){toast('Mode Réflexion — plan AI Plus requis');G('model-select').value=S.model;openPlansOverlay();return;}
-  if((key==='medium'||key==='work')&&S.plan<2){toast('Modèle — plan AI Plus requis');G('model-select').value=S.model;openPlansOverlay();return;}
+  if((key==='medium'||key==='work'||key==='task')&&S.plan<2){toast('Modèle — plan AI Plus requis');G('model-select').value=S.model;openPlansOverlay();return;}
   S.model=key;
+  // Visual indicator for Task mode
+  const sel=G('model-select');
+  if(sel){
+    if(key==='task'){
+      sel.style.borderColor='#f97316';
+      sel.style.color='#f97316';
+      sel.style.boxShadow='0 0 0 3px rgba(249,115,22,.15)';
+      toast('⚡ Wikimind Task v3.1 activé — accès à tous les outils');
+    } else {
+      sel.style.borderColor='';
+      sel.style.color='';
+      sel.style.boxShadow='';
+    }
+  }
 }
 
 // ── SPEECH TO TEXT ──
@@ -6096,7 +6252,7 @@ async function sendHelpMsg(){
   typing.className='help-typing'; typing.textContent='WikiMind réfléchit…';
   msgs.appendChild(typing); msgs.scrollTop=msgs.scrollHeight;
   try{
-    const sys='Tu es l\'assistant support de WikiMind AI. Tu aides les utilisateurs avec leurs questions sur WikiMind : forfaits (Free, AI Plus, AI Pro, AI Premium, AI Premium+), fonctionnalités (Canvas, Codeur, OCR, Aide au texte, Réflexion, etc.), problèmes techniques. Réponds en français, de façon concise et bienveillante.';
+    const sys='Tu es l\'assistant support de WikiMind AI. Tu aides les utilisateurs avec leurs questions sur WikiMind : forfaits (Free, AI Plus, AI Pro, AI Premium, AI Premium+), fonctionnalités (Canvas, Codeur, OCR, Aide au texte, Réflexion, etc.), problèmes techniques. Réponds en français, de façon concise et bienveillante.\n\n'+WM_CHANGELOG_CONTEXT;
     const reply=await callMistral([{role:'system',content:sys},...HELP_HISTORY],'mistral-small-latest',400);
     typing.remove();
     HELP_HISTORY.push({role:'assistant',content:reply});
@@ -9969,8 +10125,89 @@ console.log('%cWikiMind AI','color:#111;font-family:Inter,sans-serif;font-size:2
   </div>
 </div>
 
+<!-- CHANGELOG / DERNIÈRES NOUVEAUTÉS MODAL -->
+<div class="modal" id="changelog-modal" onclick="if(event.target===this)closeModal('changelog-modal')">
+  <div class="modal-content" onclick="event.stopPropagation()" style="max-width:560px;padding:0;overflow:hidden">
+    <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px">🚀</span>
+        <div>
+          <div style="font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:-.02em">Dernières nouveautés</div>
+          <div style="font-size:11px;color:#888;margin-top:2px">WikiMind AI — Journal des mises à jour</div>
+        </div>
+      </div>
+      <button onclick="closeModal('changelog-modal')" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px" onmouseover="this.style.background='var(--select-bg)'" onmouseout="this.style.background='none'">✕</button>
+    </div>
+    <div style="padding:20px 24px 24px;overflow-y:auto;max-height:70vh;display:flex;flex-direction:column;gap:20px">
+
+      <!-- Version 3.1 -->
+      <div style="border:1px solid var(--border2);border-radius:16px;overflow:hidden">
+        <div style="background:linear-gradient(135deg,rgba(239,68,68,.08),rgba(251,146,60,.06));padding:14px 18px;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:16px;font-weight:900;letter-spacing:-.02em">WikiMind AI v3.1</span>
+            <span style="background:linear-gradient(90deg,#ef4444,#f97316,#eab308);color:#fff;font-size:9px;font-weight:800;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.06em">NOUVEAU</span>
+          </div>
+          <span style="font-size:11px;color:#aaa;font-weight:700">21 mars 2026</span>
+        </div>
+        <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+
+          <div style="display:flex;gap:12px;padding:12px 14px;background:var(--select-bg);border-radius:12px;border-left:3px solid #ef4444">
+            <span style="font-size:22px;flex-shrink:0">⚡</span>
+            <div>
+              <div style="font-size:13px;font-weight:800;margin-bottom:4px">Wikimind Task — Nouveau modèle tout-en-un</div>
+              <div style="font-size:12px;color:#888;line-height:1.6">Le modèle le plus puissant de WikiMind. Wikimind Task peut tout faire : lettres de motivation Parcoursup adaptées par établissement, graphiques, synthèse audio, création de fichiers, analyses complexes, code... Propulsé par Mistral Large, il dispose d'un accès étendu à tous les outils de la plateforme.</div>
+              <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+                <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(239,68,68,.1);color:#ef4444">AI Plus: 1/jour</span>
+                <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(124,58,237,.1);color:#7c3aed">AI Pro: 2/jour</span>
+                <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(217,119,6,.1);color:#d97706">AI Premium: 1/heure</span>
+                <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(16,185,129,.1);color:#10b981">AI Premium+: Illimité</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;padding:12px 14px;background:var(--select-bg);border-radius:12px;border-left:3px solid #3b82f6">
+            <span style="font-size:22px;flex-shrink:0">🔢</span>
+            <div>
+              <div style="font-size:13px;font-weight:800;margin-bottom:4px">Tous les modèles passent en version 3.1</div>
+              <div style="font-size:12px;color:#888;line-height:1.6">Flash, Medium, Work et Réflexion sont maintenant en v3.1. Chaque modèle bénéficie désormais d'un accès étendu aux outils intégrés : génération de graphiques, synthèse audio inline, création de fichiers et détection automatique du contexte utilisateur.</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;padding:12px 14px;background:var(--select-bg);border-radius:12px;border-left:3px solid #22c55e">
+            <span style="font-size:22px;flex-shrink:0">📬</span>
+            <div>
+              <div style="font-size:13px;font-weight:800;margin-bottom:4px">Lettres de motivation Parcoursup intelligentes</div>
+              <div style="font-size:12px;color:#888;line-height:1.6">Donnez votre lettre de motivation et la liste de vos établissements Parcoursup à Wikimind Task — il génère une variante complète et personnalisée pour chaque formation, en adaptant les arguments, le ton et les projets selon le profil de chaque école.</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;padding:12px 14px;background:var(--select-bg);border-radius:12px;border-left:3px solid #f59e0b">
+            <span style="font-size:22px;flex-shrink:0">📊</span>
+            <div>
+              <div style="font-size:13px;font-weight:800;margin-bottom:4px">Limites de messages quotidiens pour Wikimind Task</div>
+              <div style="font-size:12px;color:#888;line-height:1.6">Les limites sont clairement définies dans le tableau des forfaits. AI Plus = 1 message/jour, AI Pro = 2 messages/jour, AI Premium = 1 message/heure, AI Premium+ = illimité (débit invisible de 10/min).</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <script>
-// Init Gmail compose autocomplete after DOM ready
+function openChangelogModal(){
+  openModal('changelog-modal');
+}
+// Inform all models about v3.1 features for user queries
+const WM_CHANGELOG_CONTEXT = `[WIKIMIND_CHANGELOG — À utiliser si l'utilisateur pose des questions sur les nouveautés]
+Dernières nouveautés WikiMind AI v3.1 (21 mars 2026) :
+1. ⚡ Wikimind Task v3.1 : nouveau modèle tout-en-un propulsé par Mistral Large. Capacités : lettres de motivation Parcoursup adaptées par établissement, graphiques Chart.js, synthèse audio TTS, création de fichiers CSV/DOCX, analyses structurées, code, traductions. Limites : AI Plus=1/jour, AI Pro=2/jour, AI Premium=1/heure, AI Premium+=illimité.
+2. 🔢 Tous les modèles passent en v3.1 (Flash, Medium, Work, Réflexion) avec accès étendu aux outils.
+3. 📬 Wikimind Task : génération de variantes de lettres de motivation Parcoursup personnalisées par établissement.
+4. 📊 Nouveaux quotas : AI Plus=1 msg/jour Task, AI Pro=2/jour Task, AI Premium=1/h Task, AI Premium+=illimité.`;
+</script>
 document.addEventListener('DOMContentLoaded', ()=>{
   const toInput = G('gmail-compose-to');
   if(toInput) setupGmailToAutocomplete(toInput);
