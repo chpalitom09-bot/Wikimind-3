@@ -163,13 +163,46 @@ a{text-decoration:none;color:inherit;}
 .code-lang{position:absolute;top:8px;left:12px;font-size:10px;font-weight:700;text-transform:uppercase;color:#999;letter-spacing:.06em;}
 .copy-code-btn{position:absolute;top:6px;right:8px;background:rgba(0,0,0,.08);color:var(--text);border:none;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;transition:.2s;}
 .copy-code-btn:hover{background:var(--text);color:var(--bg);}
-.msg-actions{display:flex;gap:6px;padding-top:8px;margin-bottom:24px;align-items:center;}
-.action-btn{cursor:pointer;color:#ccc;transition:.2s;display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:none;border:none;position:relative;}
-.action-btn:hover{color:var(--text);background:var(--select-bg);}
+.msg-actions{display:flex;gap:4px;padding-top:8px;margin-bottom:24px;align-items:center;}
+.action-btn{
+  cursor:pointer;color:#bbb;transition:color .15s,background .15s,transform .15s;
+  display:flex;align-items:center;justify-content:center;
+  width:30px;height:30px;border-radius:9px;background:none;border:none;position:relative;
+}
+.action-btn:hover{color:var(--text);background:var(--select-bg);transform:scale(1.12);}
+.action-btn:active{transform:scale(.9);}
 .action-btn.liked{color:#22c55e;}
+.action-btn.liked:hover{color:#16a34a;background:rgba(34,197,94,.1);}
 .action-btn.disliked{color:#ef4444;}
+.action-btn.disliked:hover{color:#dc2626;background:rgba(239,68,68,.1);}
 .action-btn svg{width:14px;height:14px;}
-.action-btn:hover{color:var(--text);}
+/* Copy success flash */
+@keyframes copyFlash{0%{transform:scale(1);}40%{transform:scale(1.3);color:#22c55e;}100%{transform:scale(1);}}
+.action-btn.copy-success{animation:copyFlash .4s cubic-bezier(.4,0,.2,1);}
+/* Like/dislike pop */
+@keyframes likePopAnim{0%{transform:scale(1);}50%{transform:scale(1.4);}100%{transform:scale(1);}}
+.action-btn.pop-anim{animation:likePopAnim .35s cubic-bezier(.4,0,.2,1);}
+/* Regen spin */
+@keyframes regenSpin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+.action-btn.regen-spin svg{animation:regenSpin .6s cubic-bezier(.4,0,.2,1);}
+/* TTS active */
+.action-btn.tts-active{color:#3b82f6;}
+@keyframes ttsWave{0%,100%{transform:scaleY(1);}50%{transform:scaleY(1.4);}}
+.action-btn.tts-active svg{animation:ttsWave .6s ease-in-out infinite;}
+/* Details popup */
+.msg-details-popup{
+  position:absolute;bottom:36px;left:50%;transform:translateX(-50%) translateY(6px);
+  background:var(--bg);border:1px solid var(--border2);border-radius:14px;
+  padding:10px 14px;min-width:220px;max-width:320px;
+  box-shadow:0 8px 32px rgba(0,0,0,.15);z-index:500;
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;
+  font-size:12px;line-height:1.6;
+}
+.msg-details-popup.open{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0);}
+.msg-details-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#888;margin-bottom:6px;}
+.msg-details-item{display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:1px solid var(--border);color:var(--text);}
+.msg-details-item:last-child{border-bottom:none;}
+.msg-details-dot{width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0;}
 .user-msg-wrap{display:flex;flex-direction:column;align-items:flex-end;margin-bottom:4px;}
 .user-msg-actions{display:flex;gap:10px;margin-top:4px;opacity:0;transition:.2s;}
 .user-msg-wrap:hover .user-msg-actions{opacity:1;}
@@ -577,15 +610,72 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 #model-select.model-task{border-color:#f97316 !important;padding-right:20px;}
 @keyframes dotPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.7;transform:scale(1.3);}}
 
-/* App loading splash */
-#app-splash{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;text-align:center;transition:opacity .4s ease;}
-#app-splash.fade-out{opacity:0;pointer-events:none;}
-.splash-title{font-size:48px;font-weight:900;letter-spacing:-.06em;text-transform:uppercase;font-style:italic;margin-bottom:8px;}
-.splash-sub{font-size:12px;color:#aaa;font-weight:500;margin-bottom:20px;}
-.splash-dots{display:flex;gap:7px;justify-content:center;}
-.splash-dot{width:7px;height:7px;border-radius:50%;background:var(--text);opacity:.3;animation:dotBounce 1.3s infinite;}
-.splash-dot:nth-child(2){animation-delay:.18s;}
-.splash-dot:nth-child(3){animation-delay:.36s;}
+/* ── SPLASH SCREEN ANIMATION ── */
+#app-splash{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+  transition:opacity .6s cubic-bezier(.4,0,.2,1),transform .6s cubic-bezier(.4,0,.2,1);
+}
+#app-splash.fade-out{opacity:0;transform:scale(1.04);pointer-events:none;}
+.splash-inner{position:relative;display:flex;flex-direction:column;align-items:center;gap:0;}
+/* Orbiting ring */
+.splash-ring{
+  width:120px;height:120px;border-radius:50%;
+  position:relative;margin-bottom:32px;
+  animation:splashRingSpin 3s linear infinite;
+}
+.splash-ring::before{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  border:2px solid transparent;
+  border-top-color:var(--text);border-right-color:rgba(0,0,0,0);
+  border-bottom-color:var(--text);opacity:.15;
+}
+.splash-ring::after{
+  content:'';position:absolute;inset:8px;border-radius:50%;
+  border:1.5px solid transparent;
+  border-top-color:var(--text);opacity:.08;
+  animation:splashRingSpin 2s linear infinite reverse;
+}
+/* W logo in center */
+.splash-logo{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-size:36px;font-weight:900;letter-spacing:-.06em;font-style:italic;
+  animation:splashLogoPulse 2.4s ease-in-out infinite;
+}
+/* Orbiting dot */
+.splash-orbit-dot{
+  position:absolute;top:50%;left:50%;width:8px;height:8px;border-radius:50%;
+  background:var(--text);margin:-4px 0 0 -4px;
+  animation:splashOrbit 3s linear infinite;
+  transform-origin:0 0;
+}
+.splash-orbit-dot:nth-child(2){
+  animation-delay:-1.5s;opacity:.4;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;
+  animation-duration:2s;
+}
+/* Text */
+.splash-wordmark{
+  font-size:13px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--text);opacity:.9;margin-bottom:6px;
+}
+.splash-tagline{
+  font-size:11px;font-weight:500;color:#aaa;letter-spacing:.05em;
+  animation:splashFade 2s ease-in-out infinite alternate;
+}
+/* Animated progress bar */
+.splash-bar-wrap{width:120px;height:2px;background:var(--border2);border-radius:2px;overflow:hidden;margin-top:20px;}
+.splash-bar{height:100%;background:var(--text);border-radius:2px;width:0%;animation:splashBar 2.5s cubic-bezier(.4,0,.2,1) infinite;}
+
+@keyframes splashRingSpin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+@keyframes splashOrbit{
+  from{transform:rotate(0deg) translateX(56px) rotate(0deg);}
+  to{transform:rotate(360deg) translateX(56px) rotate(-360deg);}
+}
+@keyframes splashLogoPulse{0%,100%{opacity:.9;}50%{opacity:.6;}}
+@keyframes splashFade{from{opacity:.4;}to{opacity:.8;}}
+@keyframes splashBar{0%{width:0%;opacity:1;}85%{width:100%;opacity:1;}100%{width:100%;opacity:0;}}
 
 /* Scroll to bottom button */
 #scroll-to-bottom{display:none !important;}
@@ -1415,14 +1505,15 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 
 <!-- APP LOADING SPLASH -->
 <div id="app-splash">
-  <div>
-    <div class="splash-title">WikiMind <span style="font-style:normal;font-size:20px;font-weight:400;opacity:.4">AI</span></div>
-    <div class="splash-sub">Chargement en cours...</div>
-    <div class="splash-dots">
-      <div class="splash-dot"></div>
-      <div class="splash-dot"></div>
-      <div class="splash-dot"></div>
+  <div class="splash-inner">
+    <div class="splash-ring">
+      <div class="splash-logo">W</div>
+      <div class="splash-orbit-dot"></div>
+      <div class="splash-orbit-dot"></div>
     </div>
+    <div class="splash-wordmark">WikiMind AI</div>
+    <div class="splash-tagline">Initialisation...</div>
+    <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
   </div>
 </div>
 
@@ -3309,11 +3400,11 @@ const MISTRAL_MODELS = {
   medium:  { id:'mistral-medium-latest', label:'Wikimind Medium 3.1'    },
   work:    { id:'mistral-large-latest',  label:'Wikimind Work 3.1'      },
   reflect: { id:'mistral-large-latest',  label:'Wikimind Réflexion 3.1' },
-  task:    { id:'mistral-large-latest',  label:'Wikimind Task 3.1'      },
+  task:    { id:'mistral-large-latest',  label:'Wikimind Task 3.2'      },
 };
 
 // ── WIKIMIND TASK — Système multi-outils ──
-const WIKIMIND_TASK_SYSTEM = `Tu es Wikimind Task v3.1, un assistant IA ultra-puissant propulsé par Mistral AI, conçu pour accomplir des tâches complexes et structurées.
+const WIKIMIND_TASK_SYSTEM = `Tu es Wikimind Task v3.2, le modèle le plus puissant de WikiMind, propulsé par Mistral Large. Tu as accès à TOUS les outils de la plateforme et tu peux tout accomplir.
 
 Date du jour : 21 mars 2026.
 
@@ -3627,7 +3718,7 @@ function updateModelOptions(){
     {value:'medium',label:'WIKIMIND MEDIUM 3.1',minPlan:2},
     {value:'work',label:'WIKIMIND WORK 3.1',minPlan:2},
     {value:'reflect',label:'WIKIMIND RÉFLEXION 3.1',minPlan:2},
-    {value:'task',label:'WIKIMIND TASK 3.1',minPlan:2},
+    {value:'task',label:'WIKIMIND TASK 3.2',minPlan:2},
   ];
   sel.innerHTML='';
   models.forEach(m=>{ if(S.plan>=m.minPlan){const opt=document.createElement('option');opt.value=m.value;opt.textContent=m.label;sel.appendChild(opt);} });
@@ -3963,8 +4054,10 @@ function renderMsg(msg, doScroll=true){
       div.innerHTML=`<div style="margin:8px 0"><img src="${dataUrl}" style="max-width:100%;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.12)" alt="Image générée"><div style="font-size:11px;color:#999;margin-top:6px;display:flex;align-items:center;gap:6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Générée par Stable Diffusion XL · <a href="${dataUrl}" download="wikimind-image.png" style="color:#2563eb;text-decoration:underline;cursor:pointer">Télécharger</a></div></div>`;
     } else if(S.writingAnim&&doScroll){ typewriterEffect(div,msg.content); }
     else{
-      div.innerHTML=formatMarkdown(msg.content); applyMath(div); applyHljs(div); injectPythonRunButtons(div);
-      // Auto-intercept tool tags (async, non-blocking)
+      // Strip [TOOL:...] tags from displayed content before markdown render
+      const _displayContent=msg.content.replace(/\[TOOL:[^\]]+\]/g,'').trim();
+      div.innerHTML=formatMarkdown(_displayContent); applyMath(div); applyHljs(div); injectPythonRunButtons(div);
+      // Execute tool calls (async, non-blocking) — uses original content with tags
       if(msg.content&&msg.content.includes('[TOOL:')){
         interceptAndExecuteTools(msg.content,div).catch(()=>{});
       }
@@ -3982,25 +4075,35 @@ function renderMsg(msg, doScroll=true){
       (msgContent.match(/```[a-z]*\n[\s\S]*[^`]$/)&&!msgContent.trimEnd().endsWith('```'))||
       msgContent.trimEnd().match(/[a-zA-Z0-9,(]{3}$/)
     );
+    // Build tool calls summary for details popup
+    const _toolsSummary=(msg.toolCalls||[]).map(tc=>tc).filter(Boolean);
+    const _hasSources=msg._newsMode||msg._oramaMode||_toolsSummary.length>0;
+    const _detailsId='details-popup-'+msgIdx;
     acts.innerHTML=`
-      <button class="action-btn" title="Copier" onclick="copyStoredText('${_msgCopyKey}')">
+      <button class="action-btn" title="Copier" onclick="animCopy(this,'${_msgCopyKey}')">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
       </button>
-      ${!isImgMsg?`<button class="action-btn" title="Lire à voix haute" id="tts-${msgIdx}" onclick="toggleTTSStored(${msgIdx},'${_msgCopyKey}')">
+      ${!isImgMsg?`<button class="action-btn" title="Lire à voix haute" id="tts-${msgIdx}" onclick="animTTS(this,${msgIdx},'${_msgCopyKey}')">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg>
       </button>`:''}
-      <button class="action-btn" title="J'aime" id="like-${msgIdx}" onclick="toggleLike(${msgIdx})">
+      <button class="action-btn" title="J'aime" id="like-${msgIdx}" onclick="animLike(this,${msgIdx})">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>
       </button>
-      <button class="action-btn" title="Je n'aime pas" id="dislike-${msgIdx}" onclick="toggleDislike(${msgIdx})">
+      <button class="action-btn" title="Je n'aime pas" id="dislike-${msgIdx}" onclick="animDislike(this,${msgIdx})">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17"/></svg>
       </button>
-      <button class="action-btn" title="Régénérer" onclick="regenMsg(${msgIdx})">
+      <button class="action-btn" title="Régénérer" onclick="animRegen(this,${msgIdx})">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
       </button>
-      ${!isImgMsg?`<button class="action-btn continue-btn" title="Continuer la génération (si coupée)" onclick="continueGeneration(${msgIdx})" style="font-size:9px;font-weight:800;width:auto;padding:0 8px;letter-spacing:.03em;border:1px solid var(--border2);border-radius:6px;color:${lookscut?'#22c55e':'#aaa'}">▶ Suite</button>`:''}
-      <button class="action-btn" title="Partager la conversation" onclick="shareConversation()">
-        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      <button class="action-btn" title="Détails et sources" onclick="toggleMsgDetails(this,'${_detailsId}')" style="position:relative;font-size:16px;letter-spacing:1px;font-weight:700;color:#bbb">
+        <span style="letter-spacing:1px;font-size:13px;font-weight:800;line-height:1">···</span>
+        <div class="msg-details-popup" id="${_detailsId}">
+          <div class="msg-details-title">Détails</div>
+          ${_toolsSummary.length?_toolsSummary.map(tc=>`<div class="msg-details-item"><div class="msg-details-dot"></div>${esc(tc)}</div>`).join(''):'<div style="color:#aaa;font-size:11px">Aucun outil utilisé</div>'}
+          ${msg._newsMode?'<div class="msg-details-item"><div class="msg-details-dot" style="background:#3b82f6"></div>Actualités IA activées</div>':''}
+          ${msg._oramaMode?'<div class="msg-details-item"><div class="msg-details-dot" style="background:#8b5cf6"></div>Mémoire document (Orama)</div>':''}
+          ${msg._canvasMode?'<div class="msg-details-item"><div class="msg-details-dot" style="background:#f59e0b"></div>Mode Canvas</div>':''}
+        </div>
       </button>`;
     // ── A/B test card ──
     if(msg._abPending && msg._abVersion){
@@ -4058,7 +4161,7 @@ function toggleLike(i){
   const wasLiked=likeBtn.classList.contains('liked');
   likeBtn.classList.toggle('liked',!wasLiked);
   if(dislikeBtn) dislikeBtn.classList.remove('disliked');
-  toast(wasLiked ? 'Vote retiré' : '👍 Message aimé');
+  
 }
 function toggleDislike(i){
   const likeBtn=G('like-'+i); const dislikeBtn=G('dislike-'+i);
@@ -4066,7 +4169,7 @@ function toggleDislike(i){
   const wasDisliked=dislikeBtn.classList.contains('disliked');
   dislikeBtn.classList.toggle('disliked',!wasDisliked);
   if(likeBtn) likeBtn.classList.remove('liked');
-  toast(wasDisliked ? 'Vote retiré' : '👎 Retour envoyé');
+  
 }
 // ── BRANCHES DE CONVERSATION ──
 // Les branches permettent d'explorer des alternatives sans perdre l'historique
@@ -4961,6 +5064,64 @@ async function fetchAndRenderWikiImages(keyword){
       <div style="font-size:9px;color:#aaa;margin-top:5px">Source : Wikimedia Commons · Cliquer pour agrandir</div>
     </div>`;
   }catch(e){return null;}
+}
+
+
+// ── ACTION BUTTON ANIMATIONS ──
+function animCopy(btn,key){
+  const text=(window._wmCopyStore&&window._wmCopyStore[key])||'';
+  copyText(text);
+  btn.classList.remove('copy-success');
+  void btn.offsetWidth;
+  btn.classList.add('copy-success');
+  // Change icon to checkmark briefly
+  const orig=btn.innerHTML;
+  btn.innerHTML='<svg fill="none" stroke="#22c55e" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+  setTimeout(()=>{ btn.innerHTML=orig; btn.classList.remove('copy-success'); },1200);
+}
+function animLike(btn,i){
+  const likeBtn=document.getElementById('like-'+i);
+  const dislikeBtn=document.getElementById('dislike-'+i);
+  if(!likeBtn) return;
+  const wasLiked=likeBtn.classList.contains('liked');
+  likeBtn.classList.toggle('liked',!wasLiked);
+  if(dislikeBtn) dislikeBtn.classList.remove('disliked');
+  likeBtn.classList.remove('pop-anim');
+  void likeBtn.offsetWidth;
+  likeBtn.classList.add('pop-anim');
+  setTimeout(()=>likeBtn.classList.remove('pop-anim'),400);
+}
+function animDislike(btn,i){
+  const likeBtn=document.getElementById('like-'+i);
+  const dislikeBtn=document.getElementById('dislike-'+i);
+  if(!dislikeBtn) return;
+  const wasDisliked=dislikeBtn.classList.contains('disliked');
+  dislikeBtn.classList.toggle('disliked',!wasDisliked);
+  if(likeBtn) likeBtn.classList.remove('liked');
+  dislikeBtn.classList.remove('pop-anim');
+  void dislikeBtn.offsetWidth;
+  dislikeBtn.classList.add('pop-anim');
+  setTimeout(()=>dislikeBtn.classList.remove('pop-anim'),400);
+}
+function animRegen(btn,i){
+  btn.classList.add('regen-spin');
+  setTimeout(()=>btn.classList.remove('regen-spin'),700);
+  regenMsg(i);
+}
+function animTTS(btn,i,key){
+  btn.classList.toggle('tts-active');
+  toggleTTSStored(i,key);
+}
+function toggleMsgDetails(btn,popupId){
+  // Close all other popups
+  document.querySelectorAll('.msg-details-popup.open').forEach(p=>{
+    if(p.id!==popupId) p.classList.remove('open');
+  });
+  const popup=document.getElementById(popupId);
+  if(popup) popup.classList.toggle('open');
+  // Close on outside click
+  const close=(e)=>{ if(!btn.contains(e.target)){ popup?.classList.remove('open'); document.removeEventListener('click',close,true); } };
+  setTimeout(()=>document.addEventListener('click',close,true),10);
 }
 
 // ── SEND ──
@@ -5954,18 +6115,12 @@ function buildSystemPrompt(){
   const active=S.importedInstructions.filter(i=>i.enabled).map(i=>i.content).join('\n\n');
   const userName = S.user?.displayName ? S.user.displayName.split(' ')[0] : null;
   const userCtx = userName && !S.user?.isGuest ? `L'utilisateur s'appelle ${userName}. Utilise son prénom naturellement dans la conversation quand c'est pertinent.` : '';
-  const toolsDesc = `
-OUTILS WIKIMIND DISPONIBLES — Tu peux mentionner et utiliser TOUS ces outils dans tes réponses :
-- IMAGE/PHOTO : Si l'utilisateur demande une image, photo ou illustration, réponds avec [TOOL:WIKI_IMAGE:mot-clé] pour lancer une recherche Wikipedia Commons automatique dans le chat. Exemple : "donne moi une image d'Emmanuel Macron" → [TOOL:WIKI_IMAGE:Emmanuel Macron]
-- GRAPHIQUE : Si l'utilisateur demande un graphique ou une visualisation de données, génère du code Chart.js dans un bloc \`\`\`chartjs et propose d'ouvrir DataViz IA.
-- MINDMAP : Pour une carte mentale, génère la structure et propose d'ouvrir le Mind Map IA.
-- CODEUR : Pour du code, propose d'ouvrir le Codeur IA pour éditer/exécuter.
-- CONTACTS : Pour gérer des contacts, propose l'outil Contacts IA.
-- AUDIO : Pour synthétiser du texte en audio, utilise [TTS_REQUEST:texte].
-- RECHERCHE WEB : Si le mode Actualités est actif, les résultats de recherche seront injectés dans le contexte.
-- DOCUMENT : Pour créer un fichier, utilise [CREATE_DOCX:titre|contenu].
-Priorité : si la demande concerne clairement l'une de ces fonctions, utilise la balise correspondante directement dans ta réponse.`.trim();
-  const base = "Tu es WikiMind AI v3.1, un assistant IA ultra-intelligent, précis et bienveillant. Tu réponds en français par défaut. Utilise Markdown pour structurer tes réponses (titres, listes, tableaux, code). Pour les maths, utilise LaTeX. Tu as accès à tous les outils de la plateforme WikiMind."+(S.plan>=5?' Tu peux analyser des images grâce à la vision IA.':'');
+  // Outils de base disponibles pour tous les modèles
+  const toolsDesc = `Tu peux proposer d'utiliser les outils WikiMind quand c'est pertinent : DataViz IA pour les graphiques, Mind Map pour les cartes mentales, Codeur pour le code, galerie Wikipedia pour les images. Si l'utilisateur demande une image, réponds avec [TOOL:WIKI_IMAGE:mot-clé].`.trim();
+  const _now=new Date();
+  const _dateStr=_now.toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const _timeStr=_now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  const base = `Tu es WikiMind AI v3.1, un assistant IA ultra-intelligent, précis et bienveillant. Tu réponds en français par défaut. Utilise Markdown pour structurer tes réponses. Pour les maths, utilise LaTeX. Tu as accès aux outils de la plateforme WikiMind.\n\nDate et heure actuelles : ${_dateStr} à ${_timeStr}. Utilise cette information UNIQUEMENT si l'utilisateur te demande la date ou l'heure — ne la mentionne jamais spontanément.`+(S.plan>=5?' Tu peux analyser des images grâce à la vision IA.':'');
   const changelog=typeof WM_CHANGELOG_CONTEXT!=='undefined'?WM_CHANGELOG_CONTEXT:'';
   return[base,userCtx,toolsDesc,changelog,S.sysPrompt||'',active].filter(Boolean).join('\n\n');
 }
@@ -6489,7 +6644,7 @@ function syncWritingAnimToggle(){const el=G('writing-anim-toggle');if(!el)return
 function updateHlTheme(){const isDark=document.body.classList.contains('dark-mode');G('hljs-theme').disabled=isDark;G('hljs-dark').disabled=!isDark;}
 
 // ── UTILS ──
-function copyText(text){navigator.clipboard.writeText(text).then(()=>toast('Copié !')).catch(()=>{const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();toast('Copié !');});}
+function copyText(text){navigator.clipboard.writeText(text).then(()=>{}).catch(()=>{const t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();toast('Copié !');});}
 function copyStoredText(key){const text=(window._wmCopyStore&&window._wmCopyStore[key])||'';copyText(text);}
 function toggleTTSStored(msgIdx,key){const text=(window._wmCopyStore&&window._wmCopyStore[key])||'';toggleTTS(msgIdx,text);}
 function toast(msg){const t=G('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
