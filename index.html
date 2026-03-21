@@ -485,9 +485,15 @@
                     <br><span class="text-xs text-white/40 mt-2 block">🔒 Architecture Hybride &amp; Sécurisée.</span>
                 </p>
 
-                <div class="flex flex-col items-center justify-center gap-4 animate-fade-in-up" style="animation-delay: 0.3s;">
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-3 animate-fade-in-up" style="animation-delay: 0.3s;">
                     <button onclick="switchTab('apps')" class="px-8 py-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white font-display font-bold text-sm uppercase tracking-wider hover:bg-white/20 transition-all">
                         Explorer le Catalogue
+                    </button>
+                    <!-- Bouton Install PWA — visible uniquement si installable -->
+                    <button id="hero-pwa-btn" onclick="window.triggerPWAInstall()" class="hidden items-center gap-2.5 px-6 py-4 rounded-xl font-display font-bold text-sm uppercase tracking-wider transition-all"
+                        style="background: linear-gradient(135deg, rgba(99,102,241,0.25) 0%, rgba(129,140,248,0.15) 100%); border: 1px solid rgba(99,102,241,0.45); color: #a5b4fc;">
+                        <i class="fa-solid fa-arrow-down-to-line text-brand-glow"></i>
+                        Installer l'app
                     </button>
                 </div>
             </div>
@@ -1343,7 +1349,6 @@
             const splash = document.getElementById('wm-splash');
             if (!splash) return;
 
-            // Canvas ambient glow animation
             const canvas = document.getElementById('splash-canvas');
             if (canvas) {
                 const ctx = canvas.getContext('2d');
@@ -1375,7 +1380,6 @@
                 };
                 draw();
 
-                // Dismiss splash after animation completes (~1.9s)
                 setTimeout(() => {
                     cancelAnimationFrame(animId);
                     splash.classList.add('wm-splash-out');
@@ -1386,66 +1390,88 @@
                 }, 1900);
             }
 
-            // Prevent scroll during splash
             document.body.style.overflow = 'hidden';
         })();
 
         // ============================================================
-        // PWA INSTALL BUTTON
+        // PWA INSTALL — Hero button + floating pill
         // ============================================================
         (function() {
             let deferredPrompt = null;
-            const btn = document.getElementById('pwa-install-btn');
+            const heroBtn  = document.getElementById('hero-pwa-btn');
+            const floatBtn = document.getElementById('pwa-install-btn');
             const closeBtn = document.getElementById('pwa-install-close');
-            const inner = document.getElementById('pwa-install-inner');
-            if (!btn || !inner || !closeBtn) return;
+            const floatInner = document.getElementById('pwa-install-inner');
 
-            const DISMISSED_KEY = 'wm_pwa_install_dismissed';
+            const DISMISSED_KEY = 'wm_pwa_dismissed_v2';
 
-            function showBtn() {
-                btn.classList.remove('hidden');
-                // Delay the visible class so CSS transition can fire
-                requestAnimationFrame(() => requestAnimationFrame(() => btn.classList.add('pwa-visible')));
+            // Si déjà installé en standalone → cacher tout
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                              || window.navigator.standalone === true;
+            if (isStandalone) return;
+
+            function showHeroBtn() {
+                if (!heroBtn) return;
+                heroBtn.classList.remove('hidden');
+                heroBtn.classList.add('flex');
             }
 
-            function hideBtn(permanent = false) {
-                btn.classList.remove('pwa-visible');
+            function showFloatPill() {
+                if (!floatBtn || sessionStorage.getItem(DISMISSED_KEY)) return;
+                floatBtn.classList.remove('hidden');
+                requestAnimationFrame(() => requestAnimationFrame(() => floatBtn.classList.add('pwa-visible')));
+            }
+
+            function hideFloatPill(permanent) {
+                if (!floatBtn) return;
+                floatBtn.classList.remove('pwa-visible');
                 if (permanent) sessionStorage.setItem(DISMISSED_KEY, '1');
-                setTimeout(() => btn.classList.add('hidden'), 500);
+                setTimeout(() => floatBtn.classList.add('hidden'), 500);
             }
 
-            // Only show if not dismissed this session
+            // Déclencheur global (utilisé par le hero button aussi)
+            window.triggerPWAInstall = async function() {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                if (outcome === 'accepted') {
+                    hideFloatPill(true);
+                    if (heroBtn) heroBtn.classList.add('hidden');
+                }
+            };
+
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
-
-                if (sessionStorage.getItem(DISMISSED_KEY)) return;
-
-                // Show after splash has had time to dismiss
-                setTimeout(showBtn, 2600);
+                // Affiche le bouton hero immédiatement
+                showHeroBtn();
+                // Affiche la pill flottante après le splash
+                setTimeout(showFloatPill, 2800);
             });
 
-            // Trigger native install dialog
-            inner.addEventListener('click', (e) => {
-                if (e.target === closeBtn || closeBtn.contains(e.target)) return;
-                if (!deferredPrompt) return;
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choice) => {
-                    if (choice.outcome === 'accepted') hideBtn(true);
-                    deferredPrompt = null;
+            // Clic sur la pill flottante
+            if (floatInner) {
+                floatInner.addEventListener('click', (e) => {
+                    if (closeBtn && (e.target === closeBtn || closeBtn.contains(e.target))) return;
+                    window.triggerPWAInstall();
                 });
-            });
-
-            // Dismiss button
-            closeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                hideBtn(true);
-            });
-
-            // If already installed (standalone mode), never show
-            if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-                btn.classList.add('hidden');
             }
+
+            // Bouton fermer la pill
+            if (closeBtn) {
+                closeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    hideFloatPill(true);
+                });
+            }
+
+            // App installée depuis l'extérieur
+            window.addEventListener('appinstalled', () => {
+                deferredPrompt = null;
+                hideFloatPill(true);
+                if (heroBtn) heroBtn.classList.add('hidden');
+            });
         })();
     </script>
 
