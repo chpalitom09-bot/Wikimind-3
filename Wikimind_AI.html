@@ -557,14 +557,23 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 
 /* === WIKIMIND ENHANCEMENTS === */
 
-/* Model selector ring indicator */
-#model-select-wrap{position:relative;}
-.model-ring-wrap{position:absolute;inset:-3px;border-radius:14px;pointer-events:none;opacity:0;transition:opacity .35s;}
-.model-ring-wrap.show{opacity:1;}
-.ring-model-medium{background:conic-gradient(#3b82f6,#8b5cf6,#3b82f6,#60a5fa,#3b82f6);animation:ringRotate 4s linear infinite;}
-.ring-model-work{background:conic-gradient(#22c55e,#4ade80,#16a34a,#86efac,#22c55e);animation:ringRotate 3s linear infinite;}
-.ring-model-reflect{background:conic-gradient(#06b6d4,#3b82f6,#0ea5e9,#67e8f9,#06b6d4);animation:ringRotate 3s linear infinite;}
-.ring-model-task{background:conic-gradient(#ef4444,#f97316,#eab308,#f97316,#ef4444);animation:ringRotateFire 1.8s linear infinite;}
+/* Model selector color dot indicator (not a ring — select is not circular) */
+#model-select-wrap{position:relative;display:flex;align-items:center;}
+.model-color-dot{
+  width:8px;height:8px;border-radius:50%;margin-left:6px;flex-shrink:0;
+  display:none;box-shadow:0 0 0 2px rgba(0,0,0,.1);
+}
+.model-color-dot.show{display:block;}
+.ring-model-medium .model-color-dot,.model-color-dot.dot-medium{background:linear-gradient(135deg,#3b82f6,#8b5cf6);animation:dotPulse 2s ease-in-out infinite;}
+.ring-model-work .model-color-dot,.model-color-dot.dot-work{background:linear-gradient(135deg,#22c55e,#4ade80);animation:dotPulse 2s ease-in-out infinite;}
+.ring-model-reflect .model-color-dot,.model-color-dot.dot-reflect{background:linear-gradient(135deg,#06b6d4,#3b82f6);animation:dotPulse 2s ease-in-out infinite;}
+.model-color-dot.dot-task{background:linear-gradient(135deg,#ef4444,#f97316,#eab308);animation:dotPulse 1.2s ease-in-out infinite;}
+/* Colored left border on select for model indication */
+#model-select.model-medium{border-left:3px solid #8b5cf6;}
+#model-select.model-work{border-left:3px solid #22c55e;}
+#model-select.model-reflect{border-left:3px solid #06b6d4;}
+#model-select.model-task{border-left:3px solid #f97316;color:#f97316;}
+@keyframes dotPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.7;transform:scale(1.3);}}
 
 /* App loading splash */
 #app-splash{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;text-align:center;transition:opacity .4s ease;}
@@ -577,9 +586,7 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 .splash-dot:nth-child(3){animation-delay:.36s;}
 
 /* Scroll to bottom button */
-#scroll-to-bottom{position:fixed;bottom:165px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--accent-inv);border:none;border-radius:22px;padding:8px 18px;font-size:12px;font-weight:700;cursor:pointer;display:none;align-items:center;gap:6px;box-shadow:0 4px 20px rgba(0,0,0,.18);z-index:300;animation:fadeIn .2s ease;}
-#scroll-to-bottom.show{display:flex;}
-#scroll-to-bottom:hover{opacity:.85;}
+#scroll-to-bottom{display:none !important;}
 
 /* User message bubble redesign */
 .chat-bubble.user{
@@ -611,6 +618,11 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 
 /* Mobile long press indicator */
 .history-item.long-pressing{background:var(--select-bg);transform:scale(.98);}
+
+
+/* Wiki images inline block */
+.wm-wiki-images-block{margin:8px 0 16px;}
+.wm-wiki-images-block img{transition:transform .2s,box-shadow .2s;}
 
 @keyframes sttPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4);}70%{box-shadow:0 0 0 6px rgba(239,68,68,0);}}
 #btn-stt.active-btn{animation:sttPulse 1.2s infinite;border-radius:8px;}
@@ -1676,7 +1688,6 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
   </div>
 
   <div id="chat-container"></div>
-  <button id="scroll-to-bottom" onclick="scrollToBottom()">&#8595; Nouveau message</button>
   <div id="rate-warn" class="rate-warn">&#x23F3; <span id="rate-txt">Attendez entre chaque message.</span></div>
 
   <div id="input-wrapper" class="centered">
@@ -1697,37 +1708,28 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
           </button>
 
-          <!-- Groupe d'icônes import inline -->
+          <!-- Groupe d'import simplifié : 3 boutons -->
           <div class="import-inline-group" id="import-inline-group">
+            <!-- Wikimind Office -->
             <div class="imp-btn-wrap" id="imp-wrap-office" style="display:none">
               <button class="inp-icon-btn" onclick="openOfficeImport();closeImportInline()" title="Wikimind Office">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
               </button>
               <span class="imp-tooltip">Office</span>
             </div>
+            <!-- Google Drive -->
             <div class="imp-btn-wrap" id="imp-wrap-gdrive" style="display:none">
               <button class="inp-icon-btn" onclick="openGDriveImport();closeImportInline()" title="Google Drive">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 17H2l4-7h12l4 7z"/><path d="M2 17l4-7"/><path d="M15 3L9 17"/><path d="M9 3l6 14"/><path d="M9 3h6"/></svg>
               </button>
               <span class="imp-tooltip">Drive</span>
             </div>
-            <div class="imp-btn-wrap" id="imp-wrap-file" style="display:none">
-              <button class="inp-icon-btn" onclick="triggerFileImport();closeImportInline()" title="Fichiers">
+            <!-- Fichier appareil — tous formats selon forfait -->
+            <div class="imp-btn-wrap" id="imp-wrap-device" style="display:none">
+              <button class="inp-icon-btn" onclick="triggerSmartImport();closeImportInline()" title="Importer un fichier">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               </button>
-              <span class="imp-tooltip">Fichiers</span>
-            </div>
-            <div class="imp-btn-wrap" id="imp-wrap-img" style="display:none">
-              <button class="inp-icon-btn" onclick="triggerImageImport();closeImportInline()" title="Image">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-              </button>
-              <span class="imp-tooltip">Image</span>
-            </div>
-            <div class="imp-btn-wrap" id="imp-wrap-media" style="display:none">
-              <button class="inp-icon-btn" onclick="triggerMediaImport();closeImportInline()" title="Vidéo / Audio">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-              </button>
-              <span class="imp-tooltip">Vidéo/Audio</span>
+              <span class="imp-tooltip">Fichier</span>
             </div>
           </div><!-- end import-inline-group -->
 
@@ -3573,9 +3575,11 @@ function updateUserUI(){
   const wrap=id=>G(id); 
   if(wrap('imp-wrap-office')) wrap('imp-wrap-office').style.display=S.plan>=2?'flex':'none';
   if(wrap('imp-wrap-gdrive')) wrap('imp-wrap-gdrive').style.display=S.plan>=2&&S.connectors.gdrive?'flex':'none';
-  if(wrap('imp-wrap-file'))   wrap('imp-wrap-file').style.display=S.plan>=3?'flex':'none';
-  if(wrap('imp-wrap-img'))    wrap('imp-wrap-img').style.display=S.plan>=4?'flex':'none';
-  if(wrap('imp-wrap-media'))  wrap('imp-wrap-media').style.display=S.plan>=4?'flex':'none';
+  if(wrap('imp-wrap-device')) wrap('imp-wrap-device').style.display=S.plan>=2?'flex':'none';
+  // Legacy (hidden)
+  if(wrap('imp-wrap-file'))   wrap('imp-wrap-file').style.display='none';
+  if(wrap('imp-wrap-img'))    wrap('imp-wrap-img').style.display='none';
+  if(wrap('imp-wrap-media'))  wrap('imp-wrap-media').style.display='none';
   // Plan 5 ring chooser visibility
   const ringChoose=G('ring-chooser-wrap'); if(ringChoose) ringChoose.style.display=S.plan>=5?'block':'none';
   if(S.plan>=5){
@@ -3926,8 +3930,18 @@ function renderMsg(msg, doScroll=true){
           audioWrap.innerHTML=`<div class="wm-audio-chip-label"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg>Audio g\u00e9n\u00e9r\u00e9</div><div class="wm-audio-btns"><button class="wm-audio-btn play" data-text="${safeText}" onclick="speakTTS(this)"><svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>\u00c9couter</button><button class="wm-audio-btn stop" onclick="stopTTS()">Arr\u00eater</button></div><div class="wm-audio-preview">${safeText.substring(0,120)}${safeText.length>120?'\u2026':''}</div>`;
           cc.appendChild(audioWrap);
         } else {
-          const chip=document.createElement('div'); chip.className='tool-call-chip done';
-          chip.innerHTML=`<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> ${esc(tc)}`;
+          // Determine chip style based on content
+          const chip=document.createElement('div');
+          const isFile=tc.toLowerCase().includes('fichier')||tc.toLowerCase().includes('créé')||tc.toLowerCase().includes('office');
+          const isSearch=tc.toLowerCase().includes('recherche')||tc.toLowerCase().includes('actualité');
+          chip.className='tool-call-chip done';
+          chip.style.cssText=isFile?'border-color:rgba(59,130,246,.3);color:#2563eb;background:rgba(59,130,246,.06);':'';
+          const icon=isFile
+            ?'<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
+            :isSearch
+            ?'<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+            :'<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+          chip.innerHTML=icon+' '+esc(tc);
           cc.appendChild(chip);
         }
       });
@@ -3946,7 +3960,13 @@ function renderMsg(msg, doScroll=true){
       const dataUrl=msg.content.replace('[WM_IMAGE:','').replace(']','');
       div.innerHTML=`<div style="margin:8px 0"><img src="${dataUrl}" style="max-width:100%;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.12)" alt="Image générée"><div style="font-size:11px;color:#999;margin-top:6px;display:flex;align-items:center;gap:6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Générée par Stable Diffusion XL · <a href="${dataUrl}" download="wikimind-image.png" style="color:#2563eb;text-decoration:underline;cursor:pointer">Télécharger</a></div></div>`;
     } else if(S.writingAnim&&doScroll){ typewriterEffect(div,msg.content); }
-    else{ div.innerHTML=formatMarkdown(msg.content); applyMath(div); applyHljs(div); injectPythonRunButtons(div); }
+    else{
+      div.innerHTML=formatMarkdown(msg.content); applyMath(div); applyHljs(div); injectPythonRunButtons(div);
+      // Auto-intercept tool tags (async, non-blocking)
+      if(msg.content&&msg.content.includes('[TOOL:')){
+        interceptAndExecuteTools(msg.content,div).catch(()=>{});
+      }
+    }
     cc.appendChild(div);
     const msgIdx=S.msgs.indexOf(msg);
     const acts=document.createElement('div'); acts.className='msg-actions';
@@ -4250,7 +4270,7 @@ function updateAttachmentPreview(){
     const isMedia=a.type==='media';
     const isPdf=a.name&&a.name.toLowerCase().endsWith('.pdf');
     const icon=isMedia?'\u{1F3AC}':isImage?'':'\u{1F4C4}';
-    if(isPdf&&a.pdfThumb){return `<div class="attach-chip"><img src="${a.pdfThumb}" class="attach-chip-img-preview" style="width:32px;height:40px;object-fit:cover;border-radius:4px;" alt="PDF"><span class="attach-chip-type" style="font-size:10px;">PDF</span><span style="font-size:11px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(a.name)}</span><span onclick="S.attachments.splice(${h.indexOf(a)},1);updateAttachmentPreview()" style="cursor:pointer;color:#aaa;font-size:16px;flex-shrink:0;">×</span></div>`;}
+    if(isPdf&&a.pdfThumb){return `<div class="attach-chip"><img src="${a.pdfThumb}" class="attach-chip-img-preview" style="width:32px;height:40px;object-fit:cover;border-radius:4px;" alt="PDF"><span class="attach-chip-type" style="font-size:10px;">PDF</span><span style="font-size:11px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(a.name)}</span><span onclick="S.attachments.splice(${i},1);updateAttachmentPreview()" style="cursor:pointer;color:#aaa;font-size:16px;flex-shrink:0;">×</span></div>`;}
     const imgTag=isImage?`<img src="${a.content}" class="attach-chip-img-preview" alt="">`:'';
     const typeLabel=isImage?'Image':isMedia?'Média':a.name.split('.').pop().toUpperCase()||'Fichier';
     return `<div class="attach-chip">
@@ -4807,6 +4827,140 @@ function autoDetectAndOpenTool(aiContent, userMsg){
   }
 }
 
+
+// ── SMART IMPORT — unified file picker ──
+function triggerSmartImport(){
+  // AI Premium+ / Premium: all formats
+  // Pro: PDF+docs, no images/video
+  // Plus: docs only
+  const hasPremium=S.plan>=4;
+  const hasPro=S.plan>=3;
+  const hasPlus=S.plan>=2;
+  if(!hasPlus){toast('Import — plan AI Plus requis');openPlansOverlay();return;}
+
+  // Build accept string based on plan
+  let accept='.pdf,.odt,.ods,.odp,.txt,.md,.csv,.docx,.xlsx,.pptx';
+  if(hasPremium) accept+=',image/*,video/*,audio/*';
+  else if(hasPro) accept+=',image/jpeg,image/png,image/webp';
+
+  // Create a temporary file input
+  const inp=document.createElement('input');
+  inp.type='file'; inp.multiple=true; inp.accept=accept;
+  inp.style.display='none';
+  inp.onchange=async(e)=>{
+    const files=Array.from(e.target.files);
+    showLottieUpload();
+    for(const file of files){
+      const ext=file.name.split('.').pop().toLowerCase();
+      const isImage=['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext);
+      const isMedia=['mp4','mp3','wav','ogg','webm','m4a','aac'].includes(ext);
+      try{
+        if(isImage&&hasPremium){
+          const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>res(ev.target.result);r.onerror=()=>rej();r.readAsDataURL(file);});
+          S.attachments.push({type:'image',name:file.name,content:dataUrl});
+          toast('Image ajoutée: '+file.name);
+        }else if(isMedia&&hasPremium){
+          if(!window._transformersPipeline){openModal('whisper-modal');hideLottieUpload();return;}
+          toast('Transcription de '+file.name+'…');
+          const transcript=await transcribeWithWhisper(file);
+          S.attachments.push({type:'media',name:file.name,content:transcript,hidden:true});
+          toast('Audio transcrit: '+file.name);
+        }else{
+          const content=await readFileContent(file);
+          const att={type:'text',name:file.name,content};
+          if(ext==='pdf'&&window.pdfjsLib){
+            try{
+              const ab=await file.arrayBuffer();
+              const pdf=await pdfjsLib.getDocument({data:ab}).promise;
+              const page=await pdf.getPage(1);
+              const vp=page.getViewport({scale:0.4});
+              const canvas=document.createElement('canvas');
+              canvas.width=vp.width;canvas.height=vp.height;
+              await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+              att.pdfThumb=canvas.toDataURL('image/jpeg',0.7);
+            }catch(te){}
+          }
+          S.attachments.push(att);
+        }
+      }catch(err){toast('Erreur: '+file.name+' — '+err.message.substring(0,40));}
+    }
+    hideLottieUpload();
+    updateAttachmentPreview();
+    inp.remove();
+  };
+  document.body.appendChild(inp);
+  inp.click();
+}
+
+
+// ── TOOL INTERCEPT — parse AI response for [TOOL:...] tags ──
+async function interceptAndExecuteTools(aiContent, msgDiv){
+  if(!aiContent) return aiContent;
+  let cleaned=aiContent;
+
+  // [TOOL:WIKI_IMAGE:keyword] → search Wikipedia and show images in chat
+  const wikiMatches=[...aiContent.matchAll(/\[TOOL:WIKI_IMAGE:([^\]]+)\]/g)];
+  for(const m of wikiMatches){
+    const keyword=m[1].trim();
+    cleaned=cleaned.replace(m[0],'');
+    try{
+      const imgBlock=await fetchAndRenderWikiImages(keyword);
+      if(imgBlock&&msgDiv){
+        const imgDiv=document.createElement('div');
+        imgDiv.className='wm-wiki-images-block';
+        imgDiv.innerHTML=imgBlock;
+        msgDiv.after(imgDiv);
+      }
+    }catch(e){console.warn('TOOL:WIKI_IMAGE error:',e);}
+  }
+  return cleaned.trim();
+}
+
+async function fetchAndRenderWikiImages(keyword){
+  try{
+    // Translate keyword to English if needed
+    let searchTerm=keyword;
+    try{
+      const t=await callMistral([
+        {role:'system',content:'Translate this name/keyword to its best English Wikipedia search term. Reply ONLY with the search term, nothing else.'},
+        {role:'user',content:keyword}
+      ],'mistral-small-latest',20);
+      if(t&&t.trim().length>0&&t.trim().length<60) searchTerm=t.trim();
+    }catch(e){}
+
+    const url=`https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(searchTerm)}&gsrlimit=6&prop=imageinfo&iiprop=url|size&iiurlwidth=260&format=json&origin=*`;
+    const res=await fetch(url,{signal:AbortSignal.timeout(8000)});
+    const data=await res.json();
+    const pages=Object.values(data?.query?.pages||{});
+    const imgs=pages.map(p=>{
+      const ii=p.imageinfo?.[0];
+      if(!ii) return null;
+      const url=ii.thumburl||ii.url;
+      if(!url||!url.match(/\.(jpg|jpeg|png|webp|gif)/i)) return null;
+      return{url,full:ii.url,title:p.title?.replace('File:','')?.replace(/_/g,' ')||''};
+    }).filter(Boolean).slice(0,6);
+
+    if(!imgs.length) return null;
+
+    return `<div style="margin:12px 0 4px">
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#888;margin-bottom:8px">
+        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Images Wikipedia · "${keyword}"
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:420px">
+        ${imgs.map(img=>`<a href="${img.full}" target="_blank" title="${img.title.substring(0,60)}">
+          <img src="${img.url}" alt="${img.title.substring(0,40)}" loading="lazy"
+            style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:1px solid var(--border);transition:.2s;display:block"
+            onmouseover="this.style.transform='scale(1.04)';this.style.boxShadow='0 4px 12px rgba(0,0,0,.15)'"
+            onmouseout="this.style.transform='';this.style.boxShadow=''"
+            onerror="this.parentElement.style.display='none'">
+        </a>`).join('')}
+      </div>
+      <div style="font-size:9px;color:#aaa;margin-top:5px">Source : Wikimedia Commons · Cliquer pour agrandir</div>
+    </div>`;
+  }catch(e){return null;}
+}
+
 // ── SEND ──
 async function sendMsg(overrideText, _prevAssistantMsg=null){
   if(S.generating) return;
@@ -4885,8 +5039,14 @@ async function sendMsg(overrideText, _prevAssistantMsg=null){
 
   // Injecter contexte actualités si mode actif
   let newsContext='';
-  if(S_news.active){
-    toast('📰 Recherche actualités…');
+  // Auto-search for users with account when query seems to need current info
+  const _needsCurrentInfo=()=>{
+    const t=displayText.toLowerCase();
+    const indicators=['actua','récent','maintenant','aujourd','dernier','2024','2025','2026','news','info','quoi de neuf','en ce moment'];
+    return indicators.some(k=>t.includes(k));
+  };
+  if(S_news.active||(S.plan>=2&&!S.user?.isGuest&&_needsCurrentInfo())){
+    toast('🔍 Recherche en cours…');
     newsContext=await fetchNewsContext(displayText).catch(()=>'');
   }
 
@@ -5010,7 +5170,7 @@ async function sendMsg(overrideText, _prevAssistantMsg=null){
           if(ans) visionCtx+=`\n[VISION_IA: "${ans}"]`;
         }
       }
-      const raw=await callMistral(await buildHistoryWithContextManagement(finalFullContent+(visionCtx?'\n'+visionCtx:'')),MISTRAL_MODELS[S.model]?.id||MISTRAL_MODELS.flash.id);
+      let raw=await callMistral(await buildHistoryWithContextManagement(finalFullContent+(visionCtx?'\n'+visionCtx:'')),MISTRAL_MODELS[S.model]?.id||MISTRAL_MODELS.flash.id);
 
       // Détecter et traiter un brouillon Gmail dans la réponse
       let cleanedRaw=raw;
@@ -5790,13 +5950,22 @@ Format : {"chatReply":"...","canvasContent":"...","createOffice":null}`;
 
 function buildSystemPrompt(){
   const active=S.importedInstructions.filter(i=>i.enabled).map(i=>i.content).join('\n\n');
-  // Extract first name from user display name
   const userName = S.user?.displayName ? S.user.displayName.split(' ')[0] : null;
-  const userCtx = userName && !S.user?.isGuest ? `L'utilisateur s'appelle ${userName}. Utilise son prénom naturellement dans la conversation quand c'est pertinent (mais ne le répète pas à chaque message).` : '';
-  const base="Tu es WikiMind AI v3.1, un assistant IA intelligent, précis et bienveillant. Tu réponds en français par défaut. Utilise Markdown pour structurer tes réponses. Pour les maths, utilise LaTeX : $...$ inline et $$...$$ pour les blocs. Quand l'utilisateur demande un graphique, un schéma, une carte mentale, ou une visualisation — propose-lui d'utiliser les outils dédiés (DataViz, Mind Map, Diagrammes) et génère aussi une description structurée."+(S.plan>=5?' Tu peux analyser des images grâce à la vision IA.':'');
-  // Changelog v3.1 — injecté pour que tous les modèles soient au courant
+  const userCtx = userName && !S.user?.isGuest ? `L'utilisateur s'appelle ${userName}. Utilise son prénom naturellement dans la conversation quand c'est pertinent.` : '';
+  const toolsDesc = `
+OUTILS WIKIMIND DISPONIBLES — Tu peux mentionner et utiliser TOUS ces outils dans tes réponses :
+- IMAGE/PHOTO : Si l'utilisateur demande une image, photo ou illustration, réponds avec [TOOL:WIKI_IMAGE:mot-clé] pour lancer une recherche Wikipedia Commons automatique dans le chat. Exemple : "donne moi une image d'Emmanuel Macron" → [TOOL:WIKI_IMAGE:Emmanuel Macron]
+- GRAPHIQUE : Si l'utilisateur demande un graphique ou une visualisation de données, génère du code Chart.js dans un bloc \`\`\`chartjs et propose d'ouvrir DataViz IA.
+- MINDMAP : Pour une carte mentale, génère la structure et propose d'ouvrir le Mind Map IA.
+- CODEUR : Pour du code, propose d'ouvrir le Codeur IA pour éditer/exécuter.
+- CONTACTS : Pour gérer des contacts, propose l'outil Contacts IA.
+- AUDIO : Pour synthétiser du texte en audio, utilise [TTS_REQUEST:texte].
+- RECHERCHE WEB : Si le mode Actualités est actif, les résultats de recherche seront injectés dans le contexte.
+- DOCUMENT : Pour créer un fichier, utilise [CREATE_DOCX:titre|contenu].
+Priorité : si la demande concerne clairement l'une de ces fonctions, utilise la balise correspondante directement dans ta réponse.`.trim();
+  const base = "Tu es WikiMind AI v3.1, un assistant IA ultra-intelligent, précis et bienveillant. Tu réponds en français par défaut. Utilise Markdown pour structurer tes réponses (titres, listes, tableaux, code). Pour les maths, utilise LaTeX. Tu as accès à tous les outils de la plateforme WikiMind."+(S.plan>=5?' Tu peux analyser des images grâce à la vision IA.':'');
   const changelog=typeof WM_CHANGELOG_CONTEXT!=='undefined'?WM_CHANGELOG_CONTEXT:'';
-  return[base,userCtx,changelog,S.sysPrompt||'',active].filter(Boolean).join('\n\n');
+  return[base,userCtx,toolsDesc,changelog,S.sysPrompt||'',active].filter(Boolean).join('\n\n');
 }
 
 // ── CONTEXT WINDOW MANAGER ──
@@ -10255,7 +10424,7 @@ console.log('%cWikiMind AI','color:#111;font-family:Inter,sans-serif;font-size:2
       </div>
       <button onclick="closeModal('changelog-modal')" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px" onmouseover="this.style.background='var(--select-bg)'" onmouseout="this.style.background='none'">✕</button>
     </div>
-    <div style="padding:20px 24px 24px;overflow-y:auto;max-height:62vh;display:flex;flex-direction:column;gap:20px;">
+    <div style="padding:20px 24px 24px;overflow-y:scroll;max-height:60vh;display:flex;flex-direction:column;gap:20px;">
 
       <!-- Version 3.1 -->
       <div style="border:1px solid var(--border2);border-radius:16px;overflow:hidden">
@@ -10366,19 +10535,23 @@ function _smartScroll(){
 
 // ── MODEL RING INDICATOR ──
 function updateModelRingIndicator(key){
+  const sel=G('model-select');
+  if(!sel) return;
+  // Remove all model classes
+  sel.classList.remove('model-medium','model-work','model-reflect','model-task');
+  if(key&&key!=='flash') sel.classList.add('model-'+key);
+  // Color dot
   const wrap=G('model-select-wrap');
   if(!wrap) return;
-  let ring=wrap.querySelector('.model-ring-wrap');
-  if(!ring){
-    ring=document.createElement('div');
-    ring.className='model-ring-wrap';
-    wrap.style.position='relative';
-    wrap.insertBefore(ring, wrap.firstChild);
+  let dot=wrap.querySelector('.model-color-dot');
+  if(!dot){
+    dot=document.createElement('span');
+    dot.className='model-color-dot';
+    wrap.appendChild(dot);
   }
-  ring.className='model-ring-wrap';
-  const ringMap={medium:'ring-model-medium',work:'ring-model-work',reflect:'ring-model-reflect',task:'ring-model-task'};
-  if(ringMap[key]){
-    ring.classList.add(ringMap[key],'show');
+  dot.className='model-color-dot';
+  if(key&&key!=='flash'){
+    dot.classList.add('dot-'+key,'show');
   }
 }
 
