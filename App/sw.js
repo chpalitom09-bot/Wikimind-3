@@ -1,19 +1,19 @@
 // ============================================================
-// WikiMind 3.0 — Service Worker (App/sw.js)
-// v3.1.0 — Stratégie : Cache-First assets / Network-First pages
+// WikiMind 3.0 — Service Worker
+// v3.2.0 — GitHub Pages (/Wikimind-3/) compatible
 // ============================================================
 
-const CACHE_NAME = 'wikimind-v3.1.0';
+const CACHE_NAME = 'wikimind-v3.2.0';
+const BASE = '/Wikimind-3';
 
 const STATIC_ASSETS = [
-    '/index.html',
-    '/App/manifest.json',
+    `${BASE}/index.html`,
+    `${BASE}/App/manifest.json`,
     'https://cdn.tailwindcss.com',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
     'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;500;700&display=swap'
 ];
 
-// Domaines à toujours servir depuis le réseau (jamais caché)
 const NETWORK_ONLY_HOSTS = [
     'firebaseio.com',
     'firebaseapp.com',
@@ -25,107 +25,94 @@ const NETWORK_ONLY_HOSTS = [
 
 // ---- INSTALL ----
 self.addEventListener('install', (event) => {
-    console.log('[WikiMind SW] Installation v3.1.0');
+    console.log('[WikiMind SW] Install v3.2.0');
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return Promise.allSettled(
+        caches.open(CACHE_NAME).then(cache =>
+            Promise.allSettled(
                 STATIC_ASSETS.map(url =>
                     cache.add(url).catch(err =>
-                        console.warn('[WikiMind SW] Cache partiel pour', url, err)
+                        console.warn('[WikiMind SW] Cache skip:', url, err)
                     )
                 )
-            );
-        }).then(() => self.skipWaiting())
-    );
-});
-
-// ---- ACTIVATE : purge anciens caches ----
-self.addEventListener('activate', (event) => {
-    console.log('[WikiMind SW] Activation v3.1.0');
-    event.waitUntil(
-        caches.keys().then((cacheNames) =>
-            Promise.all(
-                cacheNames
-                    .filter(name => name !== CACHE_NAME)
-                    .map(name => {
-                        console.log('[WikiMind SW] Suppression ancien cache :', name);
-                        return caches.delete(name);
-                    })
             )
-        ).then(() => self.clients.claim())
+        ).then(() => self.skipWaiting())
     );
 });
 
-// ---- FETCH : stratégie hybride ----
+// ---- ACTIVATE ----
+self.addEventListener('activate', (event) => {
+    console.log('[WikiMind SW] Activate v3.2.0');
+    event.waitUntil(
+        caches.keys()
+            .then(keys => Promise.all(
+                keys.filter(k => k !== CACHE_NAME).map(k => {
+                    console.log('[WikiMind SW] Delete old cache:', k);
+                    return caches.delete(k);
+                })
+            ))
+            .then(() => self.clients.claim())
+    );
+});
+
+// ---- FETCH ----
 self.addEventListener('fetch', (event) => {
     const { request } = event;
     if (request.method !== 'GET') return;
 
     const url = new URL(request.url);
 
-    // Network-only pour les APIs et services externes critiques
-    const isNetworkOnly = NETWORK_ONLY_HOSTS.some(host => url.hostname.includes(host));
-    if (isNetworkOnly) return;
+    // Toujours réseau pour les APIs externes
+    if (NETWORK_ONLY_HOSTS.some(h => url.hostname.includes(h))) return;
 
-    // Network-First pour les pages HTML (toujours fraîches)
-    const isHTML = request.headers.get('accept')?.includes('text/html');
-    if (isHTML) {
+    // Network-First pour HTML
+    if (request.headers.get('accept')?.includes('text/html')) {
         event.respondWith(
             fetch(request)
-                .then(response => {
-                    if (response && response.status === 200) {
-                        const clone = response.clone();
-                        caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+                .then(res => {
+                    if (res && res.status === 200) {
+                        caches.open(CACHE_NAME).then(c => c.put(request, res.clone()));
                     }
-                    return response;
+                    return res;
                 })
                 .catch(() =>
-                    caches.match(request).then(cached => cached || caches.match('/index.html'))
+                    caches.match(request)
+                        .then(cached => cached || caches.match(`${BASE}/index.html`))
                 )
         );
         return;
     }
 
-    // Cache-First pour les assets statiques (fonts, CSS, JS, images)
+    // Cache-First pour les assets
     event.respondWith(
         caches.match(request).then(cached => {
             if (cached) return cached;
-
-            return fetch(request).then(response => {
-                // Ne cache que les réponses valides et non-opaques quand possible
-                if (response && response.status === 200) {
-                    const clone = response.clone();
-                    caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+            return fetch(request).then(res => {
+                if (res && res.status === 200) {
+                    caches.open(CACHE_NAME).then(c => c.put(request, res.clone()));
                 }
-                return response;
+                return res;
             }).catch(() => {
-                console.warn('[WikiMind SW] Ressource indisponible hors-ligne :', request.url);
+                console.warn('[WikiMind SW] Offline, resource unavailable:', request.url);
             });
         })
     );
 });
 
-// ---- PUSH NOTIFICATIONS ----
+// ---- PUSH ----
 self.addEventListener('push', (event) => {
-    const data = event.data?.json() ?? {
-        title: 'WikiMind',
-        body: 'Nouvelle notification !',
-        url: '/index.html'
-    };
+    const data = event.data?.json() ?? { title: 'WikiMind', body: 'Nouvelle notification !', url: `${BASE}/index.html` };
     event.waitUntil(
         self.registration.showNotification(data.title, {
             body: data.body,
-            icon: '/App/icon-192.png',
-            badge: '/App/icon-192.png',
+            icon: `${BASE}/App/icon-192.png`,
+            badge: `${BASE}/App/icon-192.png`,
             vibrate: [100, 50, 100],
-            data: { url: data.url || '/index.html' }
+            data: { url: data.url || `${BASE}/index.html` }
         })
     );
 });
 
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    event.waitUntil(
-        clients.openWindow(event.notification.data?.url || '/index.html')
-    );
+    event.waitUntil(clients.openWindow(event.notification.data?.url || `${BASE}/index.html`));
 });
