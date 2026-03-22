@@ -440,6 +440,11 @@
                     Connexion
                 </a>
                 <div id="user-logged" class="hidden flex items-center gap-3">
+                    <!-- Bouton Sync discret -->
+                    <button id="sync-btn" onclick="window.syncUserData()" title="Synchroniser les données" aria-label="Synchroniser le forfait"
+                        class="w-7 h-7 flex items-center justify-center rounded-full text-white/30 hover:text-white/70 hover:bg-white/5 transition-all duration-200">
+                        <i id="sync-icon" class="fa-solid fa-rotate text-xs"></i>
+                    </button>
                     <div class="text-right hidden sm:block">
                         <div id="user-name-display" class="text-xs font-bold text-white">Utilisateur</div>
                         <div id="nav-plan-badge" class="plan-badge plan-free mt-1">Free</div>
@@ -862,9 +867,10 @@
                 <p><strong class="text-white">1. Avertissement (Phase de Test)</strong><br>En utilisant WikiMind 3.0, vous reconnaissez utiliser un produit en phase de développement (Bêta). L'application peut comporter des bugs, des ralentissements ou des interruptions de service. Nous déclinons toute responsabilité en cas de perte de données locales.</p>
                 <p><strong class="text-white">2. Intelligence Artificielle et Hallucinations</strong><br>Les réponses générées par notre outil reposent sur des modèles de langage majeurs (Mistral AI). L'IA peut parfois générer des informations inexactes, biaisées ou inventées (hallucinations). Vérifiez toujours les informations importantes.</p>
                 <p><strong class="text-white">3. Données Sensibles (⚠️ Très Important)</strong><br>Bien que les requêtes soient sécurisées via HTTPS, <span class="text-red-400 font-bold">vous ne devez en aucun cas partager des informations personnelles sensibles</span> (Mots de passe, données bancaires, secrets d'entreprise, adresses). Le contenu est traité par des API tierces (Mistral AI).</p>
-                <p><strong class="text-white">4. Collecte et Hébergement</strong><br>Vos données de compte (email, nom, forfait) et vos conversations synchronisées sont hébergées sur les serveurs sécurisés de Google (Firebase) situés principalement aux États-Unis et en Europe. Nous n'exploitons pas vos conversations pour entraîner nos propres modèles.</p>
+                <p><strong class="text-white">4. Collecte et Hébergement</strong><br>Vos données de compte (email, nom, forfait) et vos conversations synchronisées sont hébergées sur les serveurs sécurisés de Google (Firebase) situés principalement en Europe (europe-west1). Nous n'exploitons pas vos conversations pour entraîner nos propres modèles.</p>
                 <p><strong class="text-white">5. Espace Communautaire et Modération</strong><br>Tout message publié dans l'espace communautaire est public. Vous consentez à ce qu'une Intelligence Artificielle lise, analyse et bloque automatiquement votre message s'il enfreint nos règles (Spam, haine, bot). En cas d'abus répété, votre compte pourra être banni sans préavis ni remboursement.</p>
-                <p><strong class="text-white">6. Utilisation des Cookies / LocalStorage</strong><br>Nous utilisons le stockage local de votre navigateur pour sauvegarder vos paramètres (thème, brouillons) et maintenir votre session active. Aucun cookie publicitaire intrusif n'est déployé par WikiMind.</p>
+                <p><strong class="text-white">6. Utilisation des Cookies / LocalStorage</strong><br>WikiMind utilise le stockage local de votre navigateur (localStorage) pour sauvegarder vos paramètres, vos brouillons et <strong class="text-white/90">mettre en cache vos informations de forfait</strong> pendant une durée maximale de 12 heures. Ce cache vous permet de bénéficier d'un chargement instantané sans solliciter nos serveurs à chaque visite. Vous pouvez forcer la synchronisation à tout moment via le bouton <i class="fa-solid fa-rotate text-white/70 mx-1"></i> dans la barre de navigation. Aucun cookie publicitaire intrusif n'est déployé par WikiMind.</p>
+                <p class="border border-green-500/20 bg-green-500/5 rounded-xl p-4"><strong class="text-green-400">🌿 7. Engagement Écologique de WikiMind</strong><br>WikiMind est conçu avec une conscience environnementale. Notre architecture optimise activement la consommation de données : les informations de votre compte sont mises en cache localement et les requêtes vers nos serveurs sont réduites au minimum nécessaire. Cette approche limite notre empreinte carbone numérique. De plus, nos serveurs Firebase sont hébergés en Europe, dans des datacenters opérés par Google qui s'engagent à atteindre la neutralité carbone. Nous encourageons l'utilisation de l'application en mode PWA (installée sur l'appareil) pour réduire davantage les transferts réseau.</p>
             </div>
             <button onclick="document.getElementById('privacy-modal').style.display='none'" class="mt-8 w-full bg-brand-600 hover:bg-brand-500 py-3 rounded-xl text-xs font-bold uppercase tracking-wider text-white transition-colors shadow-lg shadow-brand-500/20">J'ai compris et j'accepte</button>
         </div>
@@ -1047,6 +1053,93 @@
             ringEl.classList.add(ringClass);
         }
 
+        // ==========================================
+        // CACHE FORFAIT (12h localStorage)
+        // ==========================================
+        const CACHE_KEY_PREFIX = 'wm_user_cache_v1_';
+        const CACHE_TTL_MS = 12 * 60 * 60 * 1000; // 12 heures
+
+        function getCachedUserData(uid) {
+            try {
+                const raw = localStorage.getItem(CACHE_KEY_PREFIX + uid);
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                if (Date.now() - parsed.ts > CACHE_TTL_MS) return null; // expiré
+                return parsed.data;
+            } catch(e) { return null; }
+        }
+
+        function setCachedUserData(uid, data) {
+            try {
+                localStorage.setItem(CACHE_KEY_PREFIX + uid, JSON.stringify({ ts: Date.now(), data }));
+            } catch(e) {}
+        }
+
+        function clearCachedUserData(uid) {
+            try { localStorage.removeItem(CACHE_KEY_PREFIX + uid); } catch(e) {}
+        }
+
+        function applyCachedData(user, data) {
+            const displayName = data.displayName || user.displayName || user.email.split('@')[0];
+            const photoUrl = data.photoUrl || user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff&bold=true`;
+            document.getElementById('nav-avatar').src = photoUrl;
+            document.getElementById('user-name-display').innerText = displayName;
+            document.getElementById('current-user-avatar').src = photoUrl;
+            document.getElementById('posting-as').innerText = "Connecté : " + displayName;
+            document.getElementById('posting-as').classList.replace('text-white/30', 'text-brand-glow');
+            renderGreeting(displayName);
+            updateNavPlanUI(data.plan || 1);
+        }
+
+        async function fetchAndCacheUserData(user) {
+            const syncIcon = document.getElementById('sync-icon');
+            if (syncIcon) syncIcon.className = 'fa-solid fa-rotate fa-spin text-xs';
+            try {
+                const snapshot = await get(child(ref(authDb), `users/${user.uid}/FORFAIT`));
+                let plan = 1;
+                if (snapshot.exists()) plan = snapshot.val();
+                const displayName = user.displayName || user.email.split('@')[0];
+                const photoUrl = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff&bold=true`;
+                const data = { plan, displayName, photoUrl };
+                setCachedUserData(user.uid, data);
+                applyCachedData(user, data);
+                if (syncIcon) syncIcon.className = 'fa-solid fa-rotate text-xs';
+                return data;
+            } catch(e) {
+                if (syncIcon) syncIcon.className = 'fa-solid fa-rotate text-xs';
+                updateNavPlanUI(1);
+            }
+        }
+
+        // Sync manuelle déclenchée par le bouton
+        window.syncUserData = async function() {
+            if (!currentUser) return;
+            const syncIcon = document.getElementById('sync-icon');
+            if (syncIcon && syncIcon.classList.contains('fa-spin')) return; // déjà en cours
+            clearCachedUserData(currentUser.uid);
+            await fetchAndCacheUserData(currentUser);
+            window.showToast('Données synchronisées ✓', 'success');
+        };
+
+        // Sync auto toutes les 12h (si page reste ouverte longtemps)
+        let autoSyncTimer = null;
+        function scheduleAutoSync(uid) {
+            clearTimeout(autoSyncTimer);
+            const raw = localStorage.getItem(CACHE_KEY_PREFIX + uid);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            const remaining = CACHE_TTL_MS - (Date.now() - parsed.ts);
+            if (remaining > 0) {
+                autoSyncTimer = setTimeout(async () => {
+                    if (currentUser) {
+                        clearCachedUserData(currentUser.uid);
+                        await fetchAndCacheUserData(currentUser);
+                        scheduleAutoSync(currentUser.uid);
+                    }
+                }, remaining);
+            }
+        }
+
         onAuthStateChanged(auth, (user) => {
             const loginBtn = document.getElementById('login-btn');
             const userLogged = document.getElementById('user-logged');
@@ -1054,25 +1147,31 @@
                 currentUser = user;
                 if(loginBtn) loginBtn.classList.add('hidden');
                 if(userLogged) { userLogged.classList.remove('hidden'); userLogged.classList.add('flex'); }
-                
+
+                // Afficher basiquement depuis auth immédiatement
                 const photoUrl = user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=6366f1&color=fff&bold=true`;
-                document.getElementById('nav-avatar').src = photoUrl;
-                
                 const displayName = user.displayName || user.email.split('@')[0];
+                document.getElementById('nav-avatar').src = photoUrl;
                 document.getElementById('user-name-display').innerText = displayName;
                 document.getElementById('current-user-avatar').src = photoUrl;
                 document.getElementById('posting-as').innerText = "Connecté : " + displayName;
                 document.getElementById('posting-as').classList.replace('text-white/30', 'text-brand-glow');
                 renderGreeting(displayName);
 
-                get(child(ref(authDb), `users/${user.uid}/FORFAIT`)).then((snapshot) => {
-                    let plan = 1;
-                    if(snapshot.exists()) plan = snapshot.val();
-                    updateNavPlanUI(plan);
-                }).catch(() => updateNavPlanUI(1));
+                // Vérifier le cache (max 1 appel Firebase par 12h)
+                const cached = getCachedUserData(user.uid);
+                if (cached) {
+                    // Cache valide → appliquer sans appel Firebase
+                    applyCachedData(user, cached);
+                    scheduleAutoSync(user.uid);
+                } else {
+                    // Pas de cache ou expiré → fetch Firebase
+                    fetchAndCacheUserData(user).then(() => scheduleAutoSync(user.uid));
+                }
 
             } else {
                 currentUser = null;
+                clearTimeout(autoSyncTimer);
                 if(loginBtn) loginBtn.classList.remove('hidden');
                 if(userLogged) { userLogged.classList.add('hidden'); userLogged.classList.remove('flex'); }
                 document.getElementById('current-user-avatar').src = "https://ui-avatars.com/api/?name=Anonyme&background=333&color=fff";
