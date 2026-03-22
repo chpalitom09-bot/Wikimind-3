@@ -716,6 +716,25 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 .wm-wiki-images-block{margin:8px 0 16px;}
 .wm-wiki-images-block img{transition:transform .2s,box-shadow .2s;}
 
+
+/* ── RAG UTILISATEUR — profil mémoire ── */
+.rag-memory-item{
+  display:flex;align-items:flex-start;gap:8px;padding:8px 10px;
+  border-radius:10px;border:1px solid var(--border2);
+  background:var(--bg);margin-bottom:6px;transition:.15s;
+}
+.rag-memory-item:hover{border-color:var(--text);}
+.rag-memory-tag{
+  font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;
+  padding:2px 7px;border-radius:20px;flex-shrink:0;margin-top:1px;
+}
+.rag-tag-pref{background:rgba(59,130,246,.1);color:#2563eb;}
+.rag-tag-info{background:rgba(34,197,94,.1);color:#16a34a;}
+.rag-tag-context{background:rgba(139,92,246,.1);color:#7c3aed;}
+.rag-memory-text{flex:1;font-size:12px;line-height:1.5;color:var(--text);}
+.rag-memory-del{background:none;border:none;cursor:pointer;color:#ccc;font-size:16px;flex-shrink:0;transition:.15s;padding:0 2px;}
+.rag-memory-del:hover{color:#ef4444;}
+
 @keyframes sttPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4);}70%{box-shadow:0 0 0 6px rgba(239,68,68,0);}}
 #btn-stt.active-btn{animation:sttPulse 1.2s infinite;border-radius:8px;}
 
@@ -2477,6 +2496,10 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
         </div>
         <div class="settings-section-label" style="margin-top:16px">Actions</div>
         <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+          <button class="modal-btn secondary" onclick="openRagPanel();closeModal('settings-modal')" style="display:flex;align-items:center;gap:8px;justify-content:center">
+            🧠 <span>Mémoire IA</span>
+            <span id="rag-count" style="background:var(--select-bg);font-size:9px;font-weight:800;padding:2px 7px;border-radius:20px;color:#888">0</span>
+          </button>
           <button class="modal-btn secondary" onclick="openChangelogModal();closeModal('settings-modal')" style="display:flex;align-items:center;gap:8px;justify-content:center">
             🚀 <span>Dernières nouveautés</span>
             <span style="background:linear-gradient(90deg,#ef4444,#f97316);color:#fff;font-size:8px;font-weight:800;padding:2px 6px;border-radius:20px;text-transform:uppercase;letter-spacing:.04em">NEW</span>
@@ -3384,8 +3407,8 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
 
 <!-- ========== MAIN SCRIPT ========== -->
 <script>
-const MISTRAL_KEY = 'SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9';  // Chat principal (4 modèles)
-const MISTRAL_TOOLS_KEY = 'SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9'; // Outils IA (CV, codeur, diagrammes, OCR, aide texte) — même clé
+const MISTRAL_KEY = 'wuZGbRk6ry7KpMraZvxB3zg7ae6x1dLN';  // Clé principale (ancienne: SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9)
+const MISTRAL_TOOLS_KEY = 'wuZGbRk6ry7KpMraZvxB3zg7ae6x1dLN';
 const PLAN_PRICES_MT = { 2: 11, 3: 22, 4: 39 };
 const PROMO_END = new Date('2025-04-14T23:59:59');
 
@@ -3396,12 +3419,17 @@ const GMAIL_SCOPES  = 'https://www.googleapis.com/auth/gmail.compose https://www
 const GDRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 
 const MISTRAL_MODELS = {
-  flash:   { id:'mistral-small-latest',  label:'Wikimind Flash 3.1'     },
-  medium:  { id:'mistral-medium-latest', label:'Wikimind Medium 3.1'    },
-  work:    { id:'mistral-large-latest',  label:'Wikimind Work 3.1'      },
-  reflect: { id:'mistral-large-latest',  label:'Wikimind Réflexion 3.1' },
-  task:    { id:'mistral-large-latest',  label:'Wikimind Task 3.2'      },
+  flash:   { id:'open-mistral-nemo',     label:'Wikimind Flash 3.1'     },
+  medium:  { id:'open-mistral-nemo',     label:'Wikimind Medium 3.1'    },
+  work:    { id:'open-mixtral-8x22b',    label:'Wikimind Work 3.1'      },
+  reflect: { id:'open-mixtral-8x22b',    label:'Wikimind Réflexion 3.1' },
+  task:    { id:'open-mixtral-8x22b',    label:'Wikimind Task 3.2'      },
 };
+// Modèles spécialisés open source
+const M_MINI    = 'ministral-8b-latest';    // mini-tâches rapides: titres, mots-clés, OCR
+const M_STRUCT  = 'open-mixtral-8x7b';      // structuration JSON: mindmap, dataviz
+const M_SMART   = 'open-mistral-nemo';      // tâches générales: oral, canvas, aide
+const M_EXPERT  = 'open-mixtral-8x22b';     // code, QCM, réflexion, tâches complexes
 
 // ── WIKIMIND TASK — Système multi-outils ──
 const WIKIMIND_TASK_SYSTEM = `Tu es Wikimind Task v3.2, le modèle le plus puissant de WikiMind, propulsé par Mistral Large. Tu as accès à TOUS les outils de la plateforme et tu peux tout accomplir.
@@ -3587,6 +3615,8 @@ async function bootUser(user){
   updateUserUI(); renderHistory(); showWelcome();
   hideSplash();
   G('user-input').focus();
+  // Init RAG memory (background)
+  if(!S.user?.isGuest) WM_RAG.load().catch(()=>{});
   if(!user.isGuest){
     // Load data in background
     (async()=>{
@@ -3631,14 +3661,62 @@ function updateTokenDisplay(){
 async function loadChats(uid){
   if(S.plan<2){
     try{
-      // Use localforage (IndexedDB) instead of localStorage — much larger capacity
       const raw=await localforage.getItem('wm_local_chats');
       if(raw) S.chats=typeof raw==='string'?JSON.parse(raw):raw;
     }catch(e){ try{const r=localStorage.getItem('wm_local_chats');if(r)S.chats=JSON.parse(r);}catch(e2){} }
     return;
   }
   const fb=window._fb; if(!fb?.db) return;
-  try{ const snap=await fb.get(fb.ref(fb.db,`users/${uid}/conversations`)); if(snap.exists())S.chats=snap.val()||{}; }catch(e){}
+  try{
+    // ── OPTIMISATION FIREBASE: charger uniquement les métadonnées (index) ──
+    // On évite de télécharger tous les messages de toutes les conversations
+    const indexSnap=await fb.get(fb.ref(fb.db,`users/${uid}/convIndex`));
+    if(indexSnap.exists()){
+      // Index léger: {chatId: {title, updatedAt, msgCount}}
+      const index=indexSnap.val()||{};
+      // Reconstruire S.chats avec des stubs (messages vides, seront chargés à la demande)
+      S.chats={};
+      for(const [id,meta] of Object.entries(index)){
+        S.chats[id]={title:meta.title||'Conversation',updatedAt:meta.updatedAt||0,messages:[],_stub:true};
+      }
+      console.log(`[Firebase] Index chargé: ${Object.keys(S.chats).length} convs (métadonnées seulement)`);
+    } else {
+      // Fallback: charger tout (anciens comptes sans index)
+      const snap=await fb.get(fb.ref(fb.db,`users/${uid}/conversations`));
+      if(snap.exists()){
+        S.chats=snap.val()||{};
+        // Migrer vers index en arrière-plan
+        _migrateToConvIndex(uid).catch(()=>{});
+      }
+    }
+  }catch(e){ console.warn('loadChats:',e); }
+}
+
+// Migration en arrière-plan: construire l'index depuis les conversations existantes
+async function _migrateToConvIndex(uid){
+  const fb=window._fb; if(!fb?.db) return;
+  try{
+    const index={};
+    for(const [id,chat] of Object.entries(S.chats)){
+      index[id]={title:(chat.title||'Conversation').substring(0,60),updatedAt:chat.updatedAt||0,msgCount:(chat.messages||[]).length};
+    }
+    await fb.set(fb.ref(fb.db,`users/${uid}/convIndex`),index);
+    console.log('[Firebase] Index migré');
+  }catch(e){}
+}
+
+// Charger les messages d'une conversation à la demande (lazy load)
+async function loadChatMessages(chatId){
+  if(!S.chats[chatId]?._stub) return; // déjà chargé
+  const fb=window._fb; if(!fb?.db||!S.user||S.user.isGuest) return;
+  try{
+    const snap=await fb.get(fb.ref(fb.db,`users/${S.user.uid}/conversations/${chatId}`));
+    if(snap.exists()){
+      const data=snap.val();
+      S.chats[chatId]={...S.chats[chatId],...data,_stub:false};
+      console.log(`[Firebase] Messages chargés pour ${chatId}: ${(data.messages||[]).length} msgs`);
+    }
+  }catch(e){ console.warn('loadChatMessages:',e); }
 }
 
 function updateUserUI(){
@@ -3897,7 +3975,10 @@ function deleteChat(id){
   saveFolders();
   if(S.chatId===id) newChat();
   renderHistory();
-  if(!S.user?.isGuest){const fb=window._fb;if(!fb?.db)return;try{fb.remove(fb.ref(fb.db,`users/${S.user.uid}/conversations/${id}`));}catch(ex){}}
+  if(!S.user?.isGuest){const fb=window._fb;if(!fb?.db)return;try{
+    fb.remove(fb.ref(fb.db,`users/${S.user.uid}/conversations/${id}`));
+    fb.remove(fb.ref(fb.db,`users/${S.user.uid}/convIndex/${id}`));
+  }catch(ex){}}
   toast('Conversation supprimée');
 }
 function startRenameChat(e,id){
@@ -3923,6 +4004,18 @@ async function commitRename(id,newTitle){
 }
 function loadChat(id){
   const c=S.chats[id]; if(!c) return;
+  if(c._stub){
+    S.chatId=id; S.msgs=[];
+    G('chat-container').innerHTML='<div style="padding:2rem;color:#aaa;font-size:13px;display:flex;align-items:center;gap:8px"><div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>&nbsp;Chargement...</div>';
+    showWelcome();renderHistory();
+    loadChatMessages(id).then(()=>{
+      S.msgs=S.chats[id].messages||[];
+      G('chat-container').innerHTML='';
+      S.msgs.forEach(m=>renderMsg(m,false));
+      showWelcome();renderHistory();
+    });
+    return;
+  }
   S.chatId=id; S.msgs=c.messages||[];
   G('chat-container').innerHTML=''; S.msgs.forEach(m=>renderMsg(m,false)); showWelcome(); renderHistory();
 }
@@ -3958,10 +4051,16 @@ async function persistChat(){
   }
   if(!S.chatId) return;
   const fb=window._fb; if(!fb?.db) return;
-  try{await fb.set(fb.ref(fb.db,`users/${S.user.uid}/conversations/${S.chatId}`),S.chats[S.chatId]);}catch(e){}
+  try{
+    await fb.set(fb.ref(fb.db,`users/${S.user.uid}/conversations/${S.chatId}`),S.chats[S.chatId]);
+    // Mettre à jour l'index léger en même temps
+    const chat=S.chats[S.chatId];
+    const indexData={title:(chat.title||'Conv').substring(0,60),updatedAt:chat.updatedAt||Date.now(),msgCount:(chat.messages||[]).length};
+    fb.set(fb.ref(fb.db,`users/${S.user.uid}/convIndex/${S.chatId}`),indexData).catch(()=>{});
+  }catch(e){}
 }
 async function genTitle(text){
-  try{return await callMistral([{role:'system',content:'Génère un titre TRÈS court (4 mots max). Réponds UNIQUEMENT avec le titre.'},{role:'user',content:text.substring(0,300)}],'mistral-small-latest',50);}
+  try{return await callMistral([{role:'system',content:'Génère un titre TRÈS court (4 mots max). Réponds UNIQUEMENT avec le titre.'},{role:'user',content:text.substring(0,300)}],M_MINI,50);}
   catch(e){return text.substring(0,38)+'…';}
 }
 
@@ -5029,7 +5128,7 @@ async function fetchAndRenderWikiImages(keyword){
       const t=await callMistral([
         {role:'system',content:'Translate this name/keyword to its best English Wikipedia search term. Reply ONLY with the search term, nothing else.'},
         {role:'user',content:keyword}
-      ],'mistral-small-latest',20);
+      ],M_MINI,20);
       if(t&&t.trim().length>0&&t.trim().length<60) searchTerm=t.trim();
     }catch(e){}
 
@@ -5122,6 +5221,109 @@ function toggleMsgDetails(btn,popupId){
   // Close on outside click
   const close=(e)=>{ if(!btn.contains(e.target)){ popup?.classList.remove('open'); document.removeEventListener('click',close,true); } };
   setTimeout(()=>document.addEventListener('click',close,true),10);
+}
+
+
+// ════════════════════════════════════════
+// RAG UTILISATEUR — mémoire persistante
+// ════════════════════════════════════════
+const WM_RAG = {
+  memories: [], // [{id, tag, text, createdAt}]
+  _loaded: false,
+
+  async load(){
+    if(this._loaded) return;
+    try{
+      const raw=await localforage.getItem('wm_rag_memories');
+      if(raw) this.memories=Array.isArray(raw)?raw:JSON.parse(raw);
+    }catch(e){}
+    // Also load from Firebase for cross-device sync
+    if(S.user&&!S.user.isGuest&&window._fb?.db){
+      try{
+        const snap=await window._fb.get(window._fb.ref(window._fb.db,`users/${S.user.uid}/rag`));
+        if(snap.exists()) this.memories=snap.val()||[];
+      }catch(e){}
+    }
+    this._loaded=true;
+  },
+
+  async save(){
+    try{ await localforage.setItem('wm_rag_memories',this.memories); }catch(e){}
+    if(S.user&&!S.user.isGuest&&window._fb?.db){
+      try{ await window._fb.set(window._fb.ref(window._fb.db,`users/${S.user.uid}/rag`),this.memories); }catch(e){}
+    }
+  },
+
+  async extractFromConversation(userMsg, aiReply){
+    // Extraire des infos pertinentes de la conversation avec l'IA
+    if(!userMsg||!aiReply) return;
+    if(this.memories.length>=50) return; // limite mémoire
+    try{
+      const raw=await callMistral([
+        {role:'system',content:`Tu analyses une conversation et extrais des informations importantes sur l'utilisateur à mémoriser pour les prochaines conversations.
+Réponds UNIQUEMENT en JSON valide: {"memories":[{"tag":"pref|info|context","text":"info courte max 80 chars"}]} ou {"memories":[]} si rien d'important.
+Tags: "pref"=préférence/habitude, "info"=fait sur l'utilisateur, "context"=projet/contexte en cours.
+N'extrais que des infos réellement utiles pour personnaliser les futures réponses. Max 2 items.`},
+        {role:'user',content:`Utilisateur: ${userMsg.substring(0,300)}\nIA: ${aiReply.substring(0,300)}`}
+      ], M_MINI, 200);
+      const parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
+      if(parsed.memories?.length){
+        for(const m of parsed.memories){
+          if(m.text&&m.text.length>5&&m.text.length<100){
+            // Éviter les doublons
+            const exists=this.memories.some(ex=>ex.text.toLowerCase()===m.text.toLowerCase());
+            if(!exists){
+              this.memories.push({id:'m'+Date.now()+Math.random().toString(36).substr(2,4),tag:m.tag||'info',text:m.text,createdAt:Date.now()});
+            }
+          }
+        }
+        await this.save();
+      }
+    }catch(e){}
+    // Mettre à jour le compteur affiché
+    const countEl=document.getElementById('rag-count');
+    if(countEl) countEl.textContent=this.memories.length;
+  },
+
+  getContextString(){
+    if(!this.memories.length) return '';
+    return `\n\n[MÉMOIRE UTILISATEUR — informations retenues sur ${S.user?.displayName||'l\'utilisateur'}]\n`+
+      this.memories.map(m=>`• [${m.tag}] ${m.text}`).join('\n')+
+      '\n[/MÉMOIRE UTILISATEUR]\nUtilise ces informations naturellement pour personnaliser tes réponses.';
+  },
+
+  delete(id){
+    this.memories=this.memories.filter(m=>m.id!==id);
+    this.save();
+    renderRagMemories();
+  },
+
+  clear(){
+    this.memories=[];
+    this.save();
+    renderRagMemories();
+  }
+};
+
+function renderRagMemories(){
+  const container=G('rag-memories-list'); if(!container) return;
+  if(!WM_RAG.memories.length){
+    container.innerHTML='<div style="color:#aaa;font-size:12px;text-align:center;padding:16px">Aucune information mémorisée pour l\'instant.<br><small style="opacity:.6">Les infos importantes seront retenues automatiquement au fil des conversations.</small></div>';
+    return;
+  }
+  container.innerHTML=WM_RAG.memories.map(m=>`
+    <div class="rag-memory-item">
+      <span class="rag-memory-tag rag-tag-${m.tag||'info'}">${m.tag==='pref'?'Préf.':m.tag==='context'?'Contexte':'Info'}</span>
+      <span class="rag-memory-text">${esc(m.text)}</span>
+      <button class="rag-memory-del" onclick="WM_RAG.delete('${m.id}')" title="Supprimer">×</button>
+    </div>`).join('');
+  const countEl=G('rag-count'); if(countEl) countEl.textContent=WM_RAG.memories.length;
+}
+
+async function openRagPanel(){
+  await WM_RAG.load();
+  renderRagMemories();
+  G('rag-panel-modal')?.classList.add('show');
 }
 
 // ── SEND ──
@@ -5392,8 +5594,11 @@ async function sendMsg(overrideText, _prevAssistantMsg=null){
     }
 
     S.msgs.push(am); renderMsg(am);
-    // Index AI response in Orama conv memory (background)
     indexConversationMsg(am, S.msgs.length-1).catch(()=>{});
+    // RAG: extraire infos utiles en arrière-plan (1 message sur 3)
+    if(S.plan>=2&&!S.user?.isGuest&&Math.random()<0.33){
+      WM_RAG.extractFromConversation(displayText,aiContent).catch(()=>{});
+    }
     // ── Auto-open tool if AI response suggests it ──
     autoDetectAndOpenTool(aiContent, displayText);
     if(S.chats[S.chatId]){S.chats[S.chatId].messages=S.msgs;S.chats[S.chatId].updatedAt=Date.now();await persistChat();}
@@ -5645,7 +5850,7 @@ Réponds UNIQUEMENT avec le texte corrigé, sans commentaire ni introduction.`;
     const corrected = await callMistral(
       [{ role:'system', content:sys },
        { role:'user',   content:`Texte OCR brut à corriger :\n\n${rawText}` }],
-      'mistral-small-latest',
+      M_MINI,
       Math.min(4000, rawText.length * 2 + 500)
     );
     return corrected || rawText;
@@ -6122,7 +6327,8 @@ function buildSystemPrompt(){
   const _timeStr=_now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
   const base = `Tu es WikiMind AI v3.1, un assistant IA ultra-intelligent, précis et bienveillant. Tu réponds en français par défaut. Utilise Markdown pour structurer tes réponses. Pour les maths, utilise LaTeX. Tu as accès aux outils de la plateforme WikiMind.\n\nDate et heure actuelles : ${_dateStr} à ${_timeStr}. Utilise cette information UNIQUEMENT si l'utilisateur te demande la date ou l'heure — ne la mentionne jamais spontanément.`+(S.plan>=5?' Tu peux analyser des images grâce à la vision IA.':'');
   const changelog=typeof WM_CHANGELOG_CONTEXT!=='undefined'?WM_CHANGELOG_CONTEXT:'';
-  return[base,userCtx,toolsDesc,changelog,S.sysPrompt||'',active].filter(Boolean).join('\n\n');
+  const ragCtx=typeof WM_RAG!=='undefined'?WM_RAG.getContextString():'';
+  return[base,userCtx,toolsDesc,ragCtx,changelog,S.sysPrompt||'',active].filter(Boolean).join('\n\n');
 }
 
 // ── CONTEXT WINDOW MANAGER ──
@@ -6193,7 +6399,7 @@ async function buildHistoryWithContextManagement(latestFullContent){
         summaryMsg=await callMistral([
           {role:'system',content:'Résume cette conversation en 3-5 phrases concises, en gardant les informations et décisions clés. Réponds uniquement avec le résumé.'},
           {role:'user',content:oldText}
-        ],'mistral-small-latest',300);
+        ],M_MINI,300);
         _ctxSummaryCache={key:cacheKey,summary:summaryMsg};
       }catch(e){
         summaryMsg='[Début de conversation résumé non disponible]';
@@ -6341,7 +6547,7 @@ async function callMistral(messages, modelId, maxTokens=4096, useToolsKey=false)
   }
 }
 // Shorthand for tools API calls
-function callMistralTools(messages, modelId='mistral-large-latest', maxTokens=4096){
+function callMistralTools(messages, modelId=M_EXPERT, maxTokens=4096){
   return callMistral(messages, modelId, maxTokens, true);
 }
 
@@ -6360,7 +6566,7 @@ async function runReflection(question){
 
   let plan;
   try{
-    const raw=await callMistral([{role:'system',content:'Réponds UNIQUEMENT en JSON valide. Zéro backtick.'},{role:'user',content:`Génère un plan 2-7 étapes. Question:"${question.substring(0,400)}"\nFormat:{"steps":[{"step":1,"description":"...","model":"flash|medium|work"}]}`}],'mistral-small-latest',350);
+    const raw=await callMistral([{role:'system',content:'Réponds UNIQUEMENT en JSON valide. Zéro backtick.'},{role:'user',content:`Génère un plan 2-7 étapes. Question:"${question.substring(0,400)}"\nFormat:{"steps":[{"step":1,"description":"...","model":"flash|medium|work"}]}`}],M_MINI,350);
     plan=JSON.parse(raw.replace(/```json|```/g,'').trim());
   }catch(e){plan={steps:[{step:1,description:'Analyse',model:'flash'},{step:2,description:'Réflexion',model:'medium'},{step:3,description:'Synthèse',model:'work'}]};}
 
@@ -6695,7 +6901,7 @@ async function sendHelpMsg(){
   msgs.appendChild(typing); msgs.scrollTop=msgs.scrollHeight;
   try{
     const sys='Tu es l\'assistant support de WikiMind AI. Tu aides les utilisateurs avec leurs questions sur WikiMind : forfaits (Free, AI Plus, AI Pro, AI Premium, AI Premium+), fonctionnalités (Canvas, Codeur, OCR, Aide au texte, Réflexion, etc.), problèmes techniques. Réponds en français, de façon concise et bienveillante.\n\n'+WM_CHANGELOG_CONTEXT;
-    const reply=await callMistral([{role:'system',content:sys},...HELP_HISTORY],'mistral-small-latest',400);
+    const reply=await callMistral([{role:'system',content:sys},...HELP_HISTORY],M_MINI,400);
     typing.remove();
     HELP_HISTORY.push({role:'assistant',content:reply});
     addMsg(reply,'bot');
@@ -7295,7 +7501,7 @@ async function runTextHelper(action){
     const out=await callMistralTools([
       {role:'system',content:'Tu es un expert en rédaction française. Effectue EXACTEMENT l\'action demandée sur le texte fourni. Réponds UNIQUEMENT avec le texte résultant, sans commentaire ni introduction.'},
       {role:'user',content:`Action : ${action}\n\nTexte :\n${input}`}
-    ],'mistral-small-latest',2000);
+    ],M_SMART,2000);
     if(result) result.textContent=out;
   }catch(e){if(result) result.innerHTML='<span class="th-result-placeholder">Erreur : '+esc(e.message)+'</span>';}
   if(spinner) spinner.style.display='none';
@@ -7329,7 +7535,7 @@ async function runTranslation(){
       const out=await callMistral([
         {role:'system',content:`Traduis le texte suivant en ${toName}. Réponds UNIQUEMENT avec la traduction, sans commentaire.`},
         {role:'user',content:input}
-      ],'mistral-small-latest',1500);
+      ],M_SMART,1500);
       if(result) result.textContent=out;
     }catch(e2){if(result) result.innerHTML='<span class="th-result-placeholder">Erreur : '+esc(e2.message)+'</span>';}
   }
@@ -7900,10 +8106,10 @@ async function generateCvWithAI(){
     // Uses main MISTRAL_KEY (public, authorized) — NOT tools key
     const sys='Tu es un expert en rédaction de CV professionnel. Reformule et améliore le texte fourni pour un CV percutant et professionnel. Réponds UNIQUEMENT avec le texte amélioré, sans introduction ni commentaire.';
     if(d.experiences){
-      const exp=await callMistral([{role:'system',content:sys},{role:'user',content:`Reformule ces expériences professionnelles de façon percutante et concise pour un CV (utilise des verbes d'action, garde les dates et entreprises) :\n${d.experiences}`}],'mistral-small-latest',800);
+      const exp=await callMistral([{role:'system',content:sys},{role:'user',content:`Reformule ces expériences professionnelles de façon percutante et concise pour un CV (utilise des verbes d'action, garde les dates et entreprises) :\n${d.experiences}`}],M_STRUCT,800);
       d._aiExperiences=exp;
     }
-    const summary=await callMistral([{role:'system',content:sys},{role:'user',content:`Écris un court profil professionnel de 2-3 phrases percutantes pour ce CV:\nNom: ${d.name}\nPoste: ${d.title}\nExpériences: ${d.experiences?.substring(0,300)||''}\nCompétences: ${d.skills||''}`}],'mistral-small-latest',300);
+    const summary=await callMistral([{role:'system',content:sys},{role:'user',content:`Écris un court profil professionnel de 2-3 phrases percutantes pour ce CV:\nNom: ${d.name}\nPoste: ${d.title}\nExpériences: ${d.experiences?.substring(0,300)||''}\nCompétences: ${d.skills||''}`}],M_MINI,300);
     d._aiSummary=summary;
     const templateFn=CV_TEMPLATES[cvState.template]||CV_TEMPLATES.moderne;
     const html=templateFn(d);
@@ -7956,7 +8162,7 @@ async function generateCoverLetter(){
   const prompt=`Candidat : ${clState.name}\nPoste visé : ${clState.poste}\nEntreprise : ${clState.company}${clState.sector?'\nSecteur : '+clState.sector:''}\nPoints forts : ${clState.strengths||'Non précisé'}${clState.why?'\nMotivation spécifique : '+clState.why:''}`;
   try{
     // Uses main MISTRAL_KEY — authorized
-    const result=await callMistral([{role:'system',content:sys},{role:'user',content:prompt}],'mistral-small-latest',1200);
+    const result=await callMistral([{role:'system',content:sys},{role:'user',content:prompt}],M_MINI,1200);
     const el=G('cl-result-content');
     if(el) el.textContent=result;
     switchClTab('result');
@@ -8095,7 +8301,7 @@ async function generateOralSubjects(){
 Chaque sujet doit être une question problématique précise, sous la forme "En quoi... ?" ou "Dans quelle mesure... ?" ou "Peut-on affirmer que... ?"
 Réponds UNIQUEMENT en JSON valide sans backticks, format : {"sujets":[{"titre":"...","angle":"description de l'angle en 1 phrase","niveau":"★☆☆ ou ★★☆ ou ★★★"}]}`;
   try{
-    const raw=await callMistral([{role:'system',content:_oralSysPrompt()},{role:'user',content:prompt}],'mistral-medium-latest',1500);
+    const raw=await callMistral([{role:'system',content:_oralSysPrompt()},{role:'user',content:prompt}],M_SMART,1500);
     const clean=raw.replace(/```json|```/g,'').trim();
     const parsed=JSON.parse(clean);
     if(parsed.sujets?.length){
@@ -8157,7 +8363,7 @@ Le plan doit inclure :
 
 Sois précis, structuré, et adapté au niveau lycée. Utilise des puces et une mise en forme claire.`;
   try{
-    const result=await callMistral([{role:'system',content:_oralSysPrompt()},{role:'user',content:prompt}],'mistral-medium-latest',2500);
+    const result=await callMistral([{role:'system',content:_oralSysPrompt()},{role:'user',content:prompt}],M_SMART,2500);
     oralState.plan=result;
     if(planEl) planEl.textContent=result;
     // Auto-generate questions
@@ -8183,7 +8389,7 @@ ${plan?'Plan connu : oui':''}
 
 Questions variées : compréhension, approfondissement, liens interdisciplinaires, questions pièges, ouverture.
 Réponds UNIQUEMENT en JSON valide sans backticks : {"questions":["question 1","question 2",...]}`}
-    ],'mistral-small-latest',800);
+    ],M_MINI,800);
     const clean=raw.replace(/```json|```/g,'').trim();
     const parsed=JSON.parse(clean);
     oralState.questions=parsed.questions||[];
@@ -8241,7 +8447,7 @@ Analyse cette réponse et donne un feedback structuré avec :
 4. 🎯 Note estimée /20 avec justification
 
 Sois constructif, précis et encourageant.`}
-    ],'mistral-medium-latest',1200);
+    ],M_SMART,1200);
     if(feedbackWrap) feedbackWrap.textContent=result;
     oralState.lastFeedback=result;
   }catch(e){
@@ -8276,7 +8482,7 @@ INSTRUCTIONS :
 
 Commence directement par le texte de l'oral.`;
   try{
-    const result=await callMistral([{role:'system',content:_oralSysPrompt()},{role:'user',content:prompt}],'mistral-large-latest',4000);
+    const result=await callMistral([{role:'system',content:_oralSysPrompt()},{role:'user',content:prompt}],M_EXPERT,4000);
     oralState.fullText=result;
     if(resultEl) resultEl.textContent=result;
     toast('✓ Oral rédigé !');
@@ -8783,7 +8989,7 @@ Format de réponse STRICT (JSON pur, sans backticks, sans explication) :
 {"labels":["label1","label2"],"datasets":[{"label":"Données","data":[valeur1,valeur2],"backgroundColor":["#6366f1","#8b5cf6","#06b6d4","#22c55e","#f59e0b","#ef4444","#ec4899"],"borderColor":"#6366f1","borderWidth":2}]}
 
 Pour un graphique ${chartType}. Extrait les étiquettes et les valeurs numériques des données.`;
-    const raw = await callMistral([{role:'system',content:sys},{role:'user',content:rawData}],'mistral-small-latest',800);
+    const raw = await callMistral([{role:'system',content:sys},{role:'user',content:rawData}],M_STRUCT,800);
     const clean = raw.replace(/```json|```/g,'').trim();
     const chartData = JSON.parse(clean);
     
@@ -9021,7 +9227,7 @@ Format (sans backticks):
 Difficulté: ${diff}. Remplace les mots importants par [TROU].`;
     }
     userPrompt = topic.length > 200 ? `À partir de ce texte:\n${topic}` : `Sujet: ${topic}`;
-    const raw = await callMistral([{role:'system',content:sys},{role:'user',content:userPrompt}],'mistral-large-latest',3000);
+    const raw = await callMistral([{role:'system',content:sys},{role:'user',content:userPrompt}],M_EXPERT,3000);
     const clean = raw.replace(/```json|```/g,'').trim();
     QCM.questions = JSON.parse(clean);
     QCM.activeSetName = setName;
@@ -9371,7 +9577,7 @@ Code amélioré ou pseudo-code pour les points les plus importants.
 
     const result=await callMistral(
       [{role:'system',content:sys},{role:'user',content:`Code à analyser :\n\`\`\`${lang==='auto'?'':lang.toLowerCase()}\n${code}\n\`\`\``}],
-      'mistral-large-latest', 2000
+      M_EXPERT, 2000
     );
     if(check.record) check.record();
     G('codereview-result').style.display='block';
@@ -9438,7 +9644,7 @@ Utilise ces couleurs pour les branches : ["#3b82f6","#22c55e","#f59e0b","#ef4444
 
     const raw=await callMistral(
       [{role:'system',content:sys},{role:'user',content:`Sujet : ${topic}`}],
-      'mistral-large-latest',2000
+      M_STRUCT,2000
     );
     const clean=raw.replace(/```json|```/g,'').trim();
     const data=JSON.parse(clean);
@@ -10117,7 +10323,7 @@ async function fetchYoutubeTranscript(){
       const aiDesc = await callMistral([
         {role:'system', content:'Tu es WikiMind AI. Réponds en français.'},
         {role:'user', content:`La vidéo YouTube https://youtu.be/${videoId} n'a pas de sous-titres accessibles. Si tu connais cette vidéo ou son contenu, résume-le. Sinon, dis à l'utilisateur que les sous-titres ne sont pas disponibles pour cette vidéo et suggère des alternatives (activer les sous-titres automatiques sur YouTube, utiliser une autre vidéo, etc.).`}
-      ], 'mistral-small-latest', 600);
+      ], M_MINI, 600);
       transcript = '[Note: sous-titres non disponibles automatiquement — résumé IA]\n\n' + aiDesc;
       toast('⚠️ Sous-titres indisponibles — résumé IA généré à la place');
     }catch(e){
@@ -10302,7 +10508,7 @@ async function searchWikipediaImages(){
       const filtered = await callMistral(
         [{role:'system',content:'Tu es un assistant. Traduis et reformule la demande de l\'utilisateur en un mot-clé court en anglais optimal pour rechercher sur Wikimedia Commons. Réponds UNIQUEMENT avec le mot-clé, sans ponctuation ni explication.'},
          {role:'user',content:query}],
-        'mistral-small-latest', 30
+        M_MINI, 30
       );
       if(filtered && filtered.trim().length > 1 && filtered.trim().length < 60) searchTerm = filtered.trim();
     }catch(e){}
@@ -10563,6 +10769,33 @@ console.log('%cWikiMind AI','color:#111;font-family:Inter,sans-serif;font-size:2
         <button class="modal-btn primary" style="flex:1" onclick="sendGmailCompose()">📤 Envoyer / Brouillon</button>
         <button class="modal-btn secondary" onclick="closeModal('gmail-compose-modal')" style="width:auto;padding:10px 16px">Annuler</button>
       </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- RAG MÉMOIRE UTILISATEUR MODAL -->
+<div class="modal" id="rag-panel-modal" onclick="if(event.target===this)closeModal('rag-panel-modal')">
+  <div class="modal-content" onclick="event.stopPropagation()" style="max-width:500px;padding:0;overflow:hidden">
+    <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:18px">🧠</span>
+        <div>
+          <div style="font-size:14px;font-weight:800">Mémoire IA</div>
+          <div style="font-size:11px;color:#888;margin-top:1px">Ce que WikiMind a retenu sur vous</div>
+        </div>
+      </div>
+      <button onclick="closeModal('rag-panel-modal')" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px" onmouseover="this.style.background='var(--select-bg)'" onmouseout="this.style.background='none'">✕</button>
+    </div>
+    <div style="padding:14px 20px 6px;font-size:11px;color:#888;background:rgba(59,130,246,.04);border-bottom:1px solid var(--border)">
+      Ces informations sont utilisées pour personnaliser vos réponses. Elles sont stockées localement et synchronisées sur vos appareils.
+    </div>
+    <div id="rag-memories-list" style="padding:14px 20px;max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:4px">
+      <div style="color:#aaa;font-size:12px;text-align:center;padding:16px">Chargement...</div>
+    </div>
+    <div style="padding:12px 20px 16px;border-top:1px solid var(--border);display:flex;gap:8px">
+      <button class="modal-btn secondary" onclick="WM_RAG.clear();toast('Mémoire effacée')" style="color:#ef4444;border-color:rgba(239,68,68,.2);flex:1">🗑 Tout effacer</button>
+      <button class="modal-btn primary" onclick="closeModal('rag-panel-modal')" style="flex:1">Fermer</button>
     </div>
   </div>
 </div>
