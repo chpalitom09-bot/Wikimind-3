@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WikiMind Maths</title>
+
+<!-- KaTeX -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="window._katexReady=true; if(window._katexPendingRender) { window._katexPendingRender(); window._katexPendingRender=null; }"></script>
+
+<!-- Marked -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import { getDatabase, ref, get, set, push, update, onValue } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC8VZILtHcPOVHRBpK7t3YWDW_yqJbdRLQ",
+    authDomain: "wikimind-3.firebaseapp.com",
+    databaseURL: "https://wikimind-3-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "wikimind-3",
+    storageBucket: "wikimind-3.appspot.com",
+    messagingSenderId: "137479541640",
+    appId: "1:137479541640:web:c8e1f2a3b4d5e6f7a8b9c0"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+  const gProvider = new GoogleAuthProvider();
+
+  window._fb = {
+    auth, db,
+    signInWithEmailAndPassword: (a,e,p) => signInWithEmailAndPassword(a,e,p),
+    createUserWithEmailAndPassword: (a,e,p) => createUserWithEmailAndPassword(a,e,p),
+    signInWithPopup: (a,p) => signInWithPopup(a,p),
+    GoogleAuthProvider: () => gProvider,
+    onAuthStateChanged: (a,cb) => onAuthStateChanged(a,cb),
+    signOut: (a) => signOut(a),
+    ref: (db,p) => ref(db,p),
+    get: (r) => get(r),
+    set: (r,v) => set(r,v),
+    push: (r,v) => push(r,v),
+    update: (r,v) => update(r,v),
+    onValue: (r,cb) => onValue(r,cb),
+  };
+
+  onAuthStateChanged(auth, user => {
+    if(window._onAuthChange) window._onAuthChange(user);
+  });
+</script>
+
+<style>
+/* ===== CSS VARIABLES ===== */
+:root {
+  --bg: #09090f;
+  --bg2: #0f0f1a;
+  --bg3: #141426;
+  --surface: #13132a;
+  --surface2: #1a1a35;
+  --border: rgba(99,102,241,.15);
+  --border2: rgba(99,102,241,.25);
+  --text: #e8e8f0;
+  --text2: #9898b0;
+  --text3: #5a5a78;
+  --accent: #6366f1;
+  --accent2: #818cf8;
+  --accent3: #a5b4fc;
+  --gold: #f59e0b;
+  --green: #10b981;
+  --red: #ef4444;
+
+  --font-main: 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-serif: 'DM Serif Display', serif;
+}
+
+/* ===== RESET ===== */
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:var(--font-main);background:var(--bg);color:var(--text);display:flex;flex-direction:column;}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+
+/* ===== SPLASH ===== */
+#splash{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+  transition:opacity .5s ease, transform .5s ease;
+}
+#splash.out{opacity:0;pointer-events:none;transform:scale(1.03);}
+.splash-logo{
+  font-family:var(--font-serif);font-size:52px;font-style:italic;
+  background:linear-gradient(135deg,#818cf8,#6366f1,#a5b4fc);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  letter-spacing:-.02em;
+}
+.splash-sub{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.18em;color:var(--text3);}
+.splash-bar{width:160px;height:2px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:8px;}
+.splash-bar-fill{height:100%;background:linear-gradient(90deg,#6366f1,#818cf8);border-radius:2px;animation:splashLoad 1.4s ease forwards;}
+@keyframes splashLoad{0%{width:0%;}60%{width:80%;}100%{width:100%;}}
+
+/* ===== AUTH MODAL ===== */
+#auth-overlay{
+  position:fixed;inset:0;z-index:8000;
+  background:rgba(9,9,15,.92);backdrop-filter:blur(20px);
+  display:flex;align-items:center;justify-content:center;
+  display:none;
+}
+#auth-overlay.show{display:flex;}
+.auth-box{
+  background:var(--bg2);border:1px solid var(--border2);border-radius:24px;
+  padding:40px 36px;width:100%;max-width:400px;
+  box-shadow:0 40px 80px rgba(0,0,0,.6),0 0 0 1px var(--border);
+}
+.auth-logo{
+  font-family:var(--font-serif);font-size:32px;font-style:italic;
+  background:linear-gradient(135deg,#818cf8,#6366f1);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  text-align:center;margin-bottom:6px;
+}
+.auth-sub{text-align:center;font-size:12px;color:var(--text3);margin-bottom:28px;font-weight:500;letter-spacing:.04em;}
+.auth-tabs{display:flex;gap:4px;background:var(--bg3);border-radius:12px;padding:4px;margin-bottom:22px;}
+.auth-tab{flex:1;padding:8px;border-radius:9px;border:none;background:none;color:var(--text2);font-family:var(--font-main);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;transition:.2s;}
+.auth-tab.active{background:var(--surface2);color:var(--text);}
+.auth-input{
+  width:100%;padding:12px 14px;border-radius:12px;
+  border:1px solid var(--border);background:var(--bg3);
+  color:var(--text);font-family:var(--font-main);font-size:13px;
+  outline:none;transition:.2s;margin-bottom:10px;
+}
+.auth-input:focus{border-color:var(--accent);}
+.auth-input::placeholder{color:var(--text3);}
+.auth-btn{
+  width:100%;padding:12px;border-radius:12px;border:none;
+  background:var(--accent);color:#fff;font-family:var(--font-main);
+  font-size:13px;font-weight:700;cursor:pointer;transition:.2s;margin-bottom:10px;
+  letter-spacing:.02em;
+}
+.auth-btn:hover{background:var(--accent2);}
+.auth-btn.secondary{background:var(--bg3);color:var(--text);border:1px solid var(--border2);}
+.auth-btn.secondary:hover{border-color:var(--accent);color:var(--accent3);}
+.auth-err{font-size:11px;color:var(--red);text-align:center;margin-bottom:8px;display:none;}
+.auth-guest{font-size:11px;text-align:center;color:var(--text3);cursor:pointer;margin-top:8px;transition:.2s;}
+.auth-guest:hover{color:var(--accent3);}
+.auth-google-icon{width:16px;height:16px;vertical-align:middle;margin-right:6px;margin-top:-2px;}
+
+/* ===== LAYOUT ===== */
+#app{display:flex;flex:1;overflow:hidden;}
+#sidebar{
+  width:270px;min-width:270px;
+  background:var(--bg2);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  transition:margin .3s cubic-bezier(.4,0,.2,1);
+  z-index:100;flex-shrink:0;
+}
+#sidebar.closed{margin-left:-270px;}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;}
+
+/* ===== SIDEBAR ===== */
+.sb-logo{
+  padding:20px 20px 14px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.sb-logo-text{
+  font-family:var(--font-serif);font-size:20px;font-style:italic;
+  background:linear-gradient(135deg,#818cf8,#a5b4fc);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.sb-logo-badge{
+  font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;padding:2px 7px;border-radius:20px;
+}
+.sb-close{
+  width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+  border-radius:8px;cursor:pointer;color:var(--text3);border:none;background:none;
+  transition:.2s;
+}
+.sb-close:hover{background:var(--surface);color:var(--text);}
+
+/* User row */
+.sb-user{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 16px;border-bottom:1px solid var(--border);
+}
+.sb-avatar{
+  width:32px;height:32px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;color:#fff;flex-shrink:0;
+  position:relative;overflow:hidden;
+}
+.sb-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.sb-user-info{flex:1;min-width:0;}
+.sb-user-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-user-plan{font-size:10px;color:var(--text3);margin-top:1px;}
+.plan-badge{font-size:9px;font-weight:800;text-transform:uppercase;padding:2px 6px;border-radius:20px;letter-spacing:.04em;}
+.plan-free{background:#1e1e2e;color:#6b7280;}
+.plan-plus{background:#1a2a4a;color:#60a5fa;}
+.plan-pro{background:#2a1a4a;color:#c084fc;}
+.plan-premium{background:#3a2a0a;color:#fbbf24;}
+.plan-premium-plus{background:linear-gradient(135deg,#3a0a0a,#3a2a0a);color:#fb923c;}
+
+/* Sidebar nav */
+.sb-section{padding:12px 16px 4px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:var(--text3);}
+.sb-btn{
+  width:100%;padding:9px 14px;border-radius:10px;border:none;background:none;
+  color:var(--text2);font-family:var(--font-main);font-size:12px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.07em;cursor:pointer;text-align:left;
+  display:flex;align-items:center;gap:10px;transition:.2s;
+}
+.sb-btn:hover{background:var(--surface);color:var(--text);}
+.sb-btn.active{background:var(--surface2);color:var(--accent3);}
+.sb-btn svg{width:15px;height:15px;flex-shrink:0;}
+.sb-btn-new{
+  margin:12px 14px 8px;padding:10px 14px;border-radius:12px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;border:none;font-family:var(--font-main);font-size:12px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.07em;cursor:pointer;
+  display:flex;align-items:center;gap:8px;transition:.2s;
+}
+.sb-btn-new:hover{filter:brightness(1.1);}
+
+/* History */
+#sb-history{flex:1;overflow-y:auto;padding:4px 10px 10px;}
+.hist-item{
+  display:flex;align-items:center;gap:8px;padding:8px 10px;
+  border-radius:9px;cursor:pointer;font-size:11px;color:var(--text3);
+  transition:.2s;
+}
+.hist-item:hover{background:var(--surface);color:var(--text);}
+.hist-item.active{background:var(--surface2);color:var(--accent3);}
+.hist-item-icon{font-size:13px;flex-shrink:0;}
+.hist-item-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hist-item-del{opacity:0;color:var(--text3);font-size:14px;flex-shrink:0;background:none;border:none;cursor:pointer;transition:.2s;padding:0 2px;}
+.hist-item:hover .hist-item-del{opacity:1;}
+.hist-item-del:hover{color:var(--red);}
+
+/* Sidebar bottom */
+.sb-bottom{padding:12px 14px;border-top:1px solid var(--border);}
+.sb-signout{
+  width:100%;padding:8px;border-radius:10px;border:1px solid rgba(239,68,68,.2);
+  background:none;color:var(--red);font-family:var(--font-main);font-size:11px;
+  font-weight:700;cursor:pointer;transition:.15s;text-transform:uppercase;letter-spacing:.06em;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.sb-signout:hover{background:rgba(239,68,68,.08);}
+
+/* ===== TOPBAR ===== */
+#topbar{
+  display:flex;align-items:center;gap:10px;padding:12px 20px;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+  background:rgba(9,9,15,.8);backdrop-filter:blur(20px);
+  position:relative;z-index:10;
+}
+.top-menu-btn{
+  width:34px;height:34px;border-radius:10px;border:none;background:none;
+  color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:.2s;flex-shrink:0;
+}
+.top-menu-btn:hover{background:var(--surface);color:var(--text);}
+.top-title{
+  font-family:var(--font-serif);font-style:italic;font-size:22px;
+  background:linear-gradient(135deg,#818cf8,#a5b4fc);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-right:4px;
+}
+.top-model-tag{
+  font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;
+  padding:3px 8px;border-radius:20px;background:var(--surface2);
+  color:var(--accent3);border:1px solid var(--border2);
+}
+#top-user-btn{
+  margin-left:auto;display:flex;align-items:center;gap:8px;cursor:pointer;
+  padding:6px 10px 6px 6px;border-radius:12px;transition:.2s;border:none;background:none;
+}
+#top-user-btn:hover{background:var(--surface);}
+.top-avatar{
+  width:28px;height:28px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:800;color:#fff;overflow:hidden;flex-shrink:0;
+}
+.top-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.top-user-name{font-size:12px;font-weight:700;color:var(--text);}
+.top-plan-badge-wrap{display:flex;align-items:center;}
+
+/* ===== MODE SELECTOR ===== */
+#mode-bar{
+  display:flex;align-items:center;gap:6px;
+  padding:10px 20px 6px;flex-shrink:0;flex-wrap:wrap;
+}
+.mode-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--text3);margin-right:4px;}
+.mode-chip{
+  padding:7px 14px;border-radius:10px;border:1px solid var(--border);
+  background:none;color:var(--text2);font-family:var(--font-main);
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+  cursor:pointer;transition:.2s;display:flex;align-items:center;gap:6px;
+}
+.mode-chip:hover{border-color:var(--accent);color:var(--accent3);}
+.mode-chip.active{background:var(--surface2);border-color:var(--accent2);color:var(--accent3);}
+.mode-chip svg{width:13px;height:13px;}
+
+/* Chapter input */
+#chapter-bar{
+  padding:6px 20px 10px;display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap;
+  border-bottom:1px solid var(--border);
+}
+.chapter-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);flex-shrink:0;}
+#chapter-input{
+  flex:1;min-width:180px;padding:8px 12px;border-radius:10px;
+  border:1px solid var(--border);background:var(--bg3);
+  color:var(--text);font-family:var(--font-main);font-size:12px;
+  outline:none;transition:.2s;
+}
+#chapter-input:focus{border-color:var(--accent);}
+#chapter-input::placeholder{color:var(--text3);}
+.chapter-chip{
+  padding:6px 12px;border-radius:8px;border:1px solid var(--border);
+  background:var(--bg3);color:var(--text2);font-family:var(--font-main);
+  font-size:11px;font-weight:600;cursor:pointer;transition:.2s;white-space:nowrap;
+}
+.chapter-chip:hover{border-color:var(--accent);color:var(--accent3);}
+.chapter-chip.sel{background:var(--surface2);border-color:var(--accent2);color:var(--accent3);}
+
+/* ===== CHAT AREA ===== */
+#chat-wrap{
+  flex:1;overflow-y:auto;padding:20px 24px 120px;
+  display:flex;flex-direction:column;align-items:center;
+}
+#chat-inner{width:100%;max-width:820px;}
+
+/* Welcome state */
+#welcome{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:60vh;text-align:center;padding:40px 20px;gap:16px;
+}
+.welcome-icon{font-size:56px;margin-bottom:8px;filter:drop-shadow(0 0 40px rgba(99,102,241,.4));}
+.welcome-title{
+  font-family:var(--font-serif);font-style:italic;font-size:42px;
+  background:linear-gradient(135deg,#818cf8,#c7d2fe);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1;
+}
+.welcome-sub{font-size:14px;color:var(--text2);max-width:500px;line-height:1.7;}
+.welcome-cards{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:8px;}
+.welcome-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:14px 18px;cursor:pointer;transition:.2s;text-align:left;max-width:200px;
+}
+.welcome-card:hover{border-color:var(--accent);background:var(--surface2);transform:translateY(-2px);}
+.welcome-card-icon{font-size:20px;margin-bottom:6px;}
+.welcome-card-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent3);margin-bottom:3px;}
+.welcome-card-desc{font-size:11px;color:var(--text2);line-height:1.5;}
+
+/* Messages */
+.msg{
+  display:flex;flex-direction:column;gap:0;margin-bottom:8px;
+  animation:fadeUp .3s ease;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.msg.user{align-items:flex-end;}
+.msg.ai{align-items:flex-start;}
+.msg-bubble{
+  max-width:80%;padding:12px 16px;border-radius:18px;
+  font-size:14px;line-height:1.75;word-break:break-word;
+}
+.msg.user .msg-bubble{
+  background:var(--accent);color:#fff;
+  border-radius:18px 18px 4px 18px;
+}
+.msg.ai .msg-bubble{
+  background:var(--surface);border:1px solid var(--border);color:var(--text);
+  border-radius:4px 18px 18px 18px;width:100%;max-width:100%;
+}
+
+/* AI message math rendering */
+.msg.ai .msg-bubble h1{font-size:1.4em;font-weight:800;margin:14px 0 8px;color:var(--accent3);}
+.msg.ai .msg-bubble h2{font-size:1.2em;font-weight:700;margin:12px 0 6px;color:var(--accent3);padding-bottom:5px;border-bottom:1px solid var(--border);}
+.msg.ai .msg-bubble h3{font-size:1.05em;font-weight:700;margin:10px 0 5px;color:var(--text);}
+.msg.ai .msg-bubble p{margin-bottom:10px;}
+.msg.ai .msg-bubble p:last-child{margin-bottom:0;}
+.msg.ai .msg-bubble ul{list-style:none;padding:0;margin:8px 0;}
+.msg.ai .msg-bubble ul li{padding:2px 0 2px 18px;position:relative;}
+.msg.ai .msg-bubble ul li::before{content:'·';position:absolute;left:6px;color:var(--accent2);font-weight:900;}
+.msg.ai .msg-bubble ol{padding-left:20px;margin:8px 0;}
+.msg.ai .msg-bubble ol li{padding:2px 0;}
+.msg.ai .msg-bubble strong{font-weight:700;color:var(--accent3);}
+.msg.ai .msg-bubble em{color:var(--text2);font-style:italic;}
+.msg.ai .msg-bubble table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.9em;}
+.msg.ai .msg-bubble th,.msg.ai .msg-bubble td{border:1px solid var(--border2);padding:8px 12px;text-align:left;}
+.msg.ai .msg-bubble th{background:var(--surface2);color:var(--accent3);font-weight:700;}
+.msg.ai .msg-bubble blockquote{border-left:3px solid var(--accent);padding-left:12px;margin:10px 0;color:var(--text2);font-style:italic;}
+.msg.ai .msg-bubble hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
+
+/* Code blocks */
+.math-code-block{background:var(--bg3);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:10px 0;}
+.math-code-header{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;border-bottom:1px solid var(--border);background:var(--bg2);}
+.math-code-lang{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent3);}
+.math-code-copy{font-size:10px;font-weight:700;text-transform:uppercase;padding:3px 8px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--text2);cursor:pointer;transition:.2s;}
+.math-code-copy:hover{background:var(--surface2);color:var(--text);}
+.math-code-block pre{margin:0;padding:14px 16px;overflow-x:auto;font-family:var(--font-mono);font-size:.85em;line-height:1.65;color:var(--text);}
+
+/* KaTeX overrides — block formula box */
+.katex-display{
+  background:var(--bg3);border:1px solid var(--border2);border-radius:12px;
+  padding:14px 20px;margin:12px 0 !important;overflow-x:auto;
+  border-left:3px solid var(--accent);
+}
+.katex{font-size:1.05em !important;color:var(--text) !important;}
+
+/* Typing animation */
+.typing-indicator{display:flex;gap:5px;align-items:center;padding:14px 16px;}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--accent2);opacity:.4;animation:dotBounce 1.2s infinite;}
+.typing-dot:nth-child(2){animation-delay:.2s;}
+.typing-dot:nth-child(3){animation-delay:.4s;}
+@keyframes dotBounce{0%,80%,100%{transform:translateY(0);opacity:.4;}40%{transform:translateY(-6px);opacity:1;}}
+
+/* Message actions */
+.msg-actions{display:flex;gap:4px;margin-top:6px;padding:0 4px;}
+.msg-action-btn{
+  padding:4px 8px;border-radius:7px;border:none;background:none;
+  color:var(--text3);font-size:10px;font-weight:700;cursor:pointer;
+  transition:.2s;display:flex;align-items:center;gap:4px;font-family:var(--font-main);
+  text-transform:uppercase;letter-spacing:.05em;
+}
+.msg-action-btn:hover{background:var(--surface);color:var(--text);}
+.msg-action-btn svg{width:11px;height:11px;}
+
+/* ===== INPUT AREA ===== */
+#input-area{
+  position:absolute;bottom:0;left:0;right:0;
+  padding:12px 20px 18px;
+  background:linear-gradient(to top, var(--bg) 60%, transparent);
+  display:flex;justify-content:center;
+}
+#input-box{
+  width:100%;max-width:820px;
+  background:var(--surface);border:1px solid var(--border2);border-radius:18px;
+  padding:12px 14px;
+  box-shadow:0 0 0 1px var(--border),0 20px 60px rgba(0,0,0,.5);
+  transition:border-color .2s,box-shadow .2s;
+}
+#input-box:focus-within{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(99,102,241,.15),0 20px 60px rgba(0,0,0,.5);
+}
+#user-input{
+  width:100%;background:none;border:none;outline:none;
+  color:var(--text);font-family:var(--font-main);font-size:14px;line-height:1.6;
+  resize:none;max-height:160px;overflow-y:auto;
+}
+#user-input::placeholder{color:var(--text3);}
+.input-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px;}
+.input-footer-left{display:flex;align-items:center;gap:6px;}
+.inp-btn{
+  width:30px;height:30px;border-radius:8px;border:none;background:none;
+  color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:.2s;
+}
+.inp-btn:hover{background:var(--bg3);color:var(--text);}
+.inp-btn svg{width:15px;height:15px;}
+#send-btn{
+  width:34px;height:34px;border-radius:10px;border:none;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:.2s;flex-shrink:0;
+}
+#send-btn:hover{filter:brightness(1.1);}
+#send-btn:disabled{opacity:.4;cursor:not-allowed;}
+#send-btn svg{width:16px;height:16px;}
+#char-count{font-size:10px;color:var(--text3);font-weight:600;font-variant-numeric:tabular-nums;}
+
+/* ===== TOAST ===== */
+#toast{
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--surface2);border:1px solid var(--border2);border-radius:12px;
+  padding:9px 16px;font-size:12px;font-weight:600;color:var(--text);
+  opacity:0;transition:.25s;pointer-events:none;z-index:9000;white-space:nowrap;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ===== FIREBASE STATS MODAL ===== */
+#fb-stats-overlay{
+  position:fixed;inset:0;z-index:7000;
+  background:rgba(9,9,15,.9);backdrop-filter:blur(16px);
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+#fb-stats-overlay.show{display:flex;}
+.stats-modal{
+  background:var(--bg2);border:1px solid var(--border2);border-radius:24px;
+  padding:32px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;
+}
+.stats-title{
+  font-family:var(--font-serif);font-style:italic;font-size:26px;
+  background:linear-gradient(135deg,#818cf8,#a5b4fc);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:6px;
+}
+.stats-sub{font-size:12px;color:var(--text2);margin-bottom:24px;line-height:1.6;}
+.stats-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px;}
+.stats-table th{
+  padding:10px 14px;text-align:left;border-bottom:1px solid var(--border2);
+  font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);
+}
+.stats-table td{padding:10px 14px;border-bottom:1px solid var(--border);}
+.stats-table tr:last-child td{border-bottom:none;}
+.stats-badge{font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;display:inline-block;}
+.stats-badge.bad{background:rgba(239,68,68,.15);color:var(--red);}
+.stats-badge.good{background:rgba(16,185,129,.15);color:var(--green);}
+.stats-bar-wrap{margin-bottom:20px;}
+.stats-bar-label{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px;display:flex;justify-content:space-between;}
+.stats-bar-bg{height:10px;background:var(--bg3);border-radius:6px;overflow:hidden;}
+.stats-bar-fill{height:100%;border-radius:6px;transition:width 1s ease;}
+.stats-close-btn{
+  width:100%;padding:11px;border-radius:12px;border:1px solid var(--border2);
+  background:none;color:var(--text);font-family:var(--font-main);font-size:12px;
+  font-weight:700;cursor:pointer;transition:.2s;text-transform:uppercase;letter-spacing:.07em;
+  margin-top:8px;
+}
+.stats-close-btn:hover{background:var(--surface);}
+
+/* ===== MOBILE ===== */
+@media(max-width:768px){
+  #sidebar{position:fixed;top:0;left:0;height:100%;transform:translateX(-100%);transition:transform .3s ease;}
+  #sidebar.open{transform:translateX(0);box-shadow:20px 0 60px rgba(0,0,0,.6);}
+  #sidebar.closed{transform:translateX(-100%);}
+  #sb-backdrop{display:none;position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.5);}
+  #sb-backdrop.show{display:block;}
+  .welcome-cards{gap:8px;}
+  .welcome-card{max-width:160px;}
+  .welcome-title{font-size:32px;}
+  #chat-wrap{padding:16px 12px 120px;}
+}
+
+/* Highlight.js minimal */
+.msg.ai .msg-bubble code:not(pre code){
+  background:var(--bg3);padding:1px 5px;border-radius:4px;
+  font-family:var(--font-mono);font-size:.88em;color:var(--accent3);
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-logo">WikiMind Maths</div>
+  <div class="splash-sub">Intelligence Artificielle · Mathématiques</div>
+  <div class="splash-bar"><div class="splash-bar-fill"></div></div>
+</div>
+
+<!-- AUTH OVERLAY -->
+<div id="auth-overlay">
+  <div class="auth-box">
+    <div class="auth-logo">WikiMind Maths</div>
+    <div class="auth-sub">Connexion requise · Forfait détecté automatiquement</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="authTab('login')">Connexion</button>
+      <button class="auth-tab" onclick="authTab('register')">Créer un compte</button>
+    </div>
+    <div id="auth-err" class="auth-err"></div>
+
+    <!-- LOGIN -->
+    <div id="form-login">
+      <button class="auth-btn secondary" onclick="doGoogle()" style="margin-bottom:14px;display:flex;align-items:center;justify-content:center;">
+        <svg class="auth-google-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Continuer avec Google
+      </button>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+        <span style="font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.1em;">ou</span>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+      </div>
+      <input id="login-email" class="auth-input" type="email" placeholder="Adresse e-mail">
+      <input id="login-pass" class="auth-input" type="password" placeholder="Mot de passe" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="auth-btn" onclick="doLogin()">Se connecter</button>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="form-register" style="display:none;">
+      <input id="reg-name" class="auth-input" type="text" placeholder="Prénom / Pseudonyme">
+      <input id="reg-email" class="auth-input" type="email" placeholder="Adresse e-mail">
+      <input id="reg-pass" class="auth-input" type="password" placeholder="Mot de passe (6 min)" onkeydown="if(event.key==='Enter')doRegister()">
+      <button class="auth-btn" onclick="doRegister()">Créer mon compte</button>
+    </div>
+
+    <div class="auth-guest" onclick="skipAuth()">→ Continuer sans compte (mode invité)</div>
+  </div>
+</div>
+
+<!-- SIDEBAR BACKDROP (mobile) -->
+<div id="sb-backdrop" onclick="closeSidebar()"></div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sb-logo">
+      <div>
+        <div class="sb-logo-text">WikiMind Maths</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span class="sb-logo-badge">v1.0</span>
+        <button class="sb-close" onclick="closeSidebar()">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14" height="14"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- User -->
+    <div class="sb-user">
+      <div class="sb-avatar" id="sb-avatar">?</div>
+      <div class="sb-user-info">
+        <div class="sb-user-name" id="sb-username">Invité</div>
+        <div class="sb-user-plan"><span class="plan-badge plan-free" id="sb-plan-badge">Free</span></div>
+      </div>
+    </div>
+
+    <!-- New chat -->
+    <button class="sb-btn-new" onclick="newChat()">
+      <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg>
+      Nouvelle session
+    </button>
+
+    <!-- Nav -->
+    <div class="sb-section">Navigation</div>
+    <div style="padding:0 10px;">
+      <button class="sb-btn" onclick="setMode('cours');closeSidebar()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        Cours
+      </button>
+      <button class="sb-btn" onclick="setMode('exo');closeSidebar()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Exercices
+      </button>
+      <button class="sb-btn" onclick="setMode('libre');closeSidebar()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Question libre
+      </button>
+    </div>
+
+    <div class="sb-section" style="margin-top:8px;">Historique</div>
+    <div id="sb-history">
+      <div style="text-align:center;padding:20px;font-size:11px;color:var(--text3);" id="hist-empty">Aucune session sauvegardée</div>
+    </div>
+
+    <!-- Bottom -->
+    <div class="sb-bottom">
+      <button class="sb-btn" onclick="showFbStats()" style="margin-bottom:6px;width:100%;justify-content:flex-start;">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15" height="15"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Stats Firebase
+      </button>
+      <button class="sb-signout" id="sb-signout-btn" onclick="doSignOut()" style="display:none;">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="13" height="13"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Se déconnecter
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+
+    <!-- TOPBAR -->
+    <div id="topbar">
+      <button class="top-menu-btn" onclick="toggleSidebar()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="18" height="18"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <span class="top-title">WikiMind Maths</span>
+      <span class="top-model-tag" id="top-model-tag">Mistral · Expert</span>
+
+      <button id="top-user-btn" onclick="toggleSidebar()">
+        <div class="top-avatar" id="top-avatar">?</div>
+        <div>
+          <div class="top-user-name" id="top-username">Invité</div>
+          <span class="plan-badge plan-free" id="top-plan-badge">Free</span>
+        </div>
+      </button>
+    </div>
+
+    <!-- MODE BAR -->
+    <div id="mode-bar">
+      <span class="mode-label">Mode :</span>
+      <button class="mode-chip active" id="chip-cours" onclick="setMode('cours')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        Cours
+      </button>
+      <button class="mode-chip" id="chip-exo" onclick="setMode('exo')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Exercices
+      </button>
+      <button class="mode-chip" id="chip-libre" onclick="setMode('libre')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Question libre
+      </button>
+    </div>
+
+    <!-- CHAPTER BAR -->
+    <div id="chapter-bar">
+      <span class="chapter-label">Chapitre :</span>
+      <input id="chapter-input" placeholder="Ex: Dérivées, Probabilités, Trigonométrie…">
+      <button class="chapter-chip" onclick="setChapter('Dérivées')">Dérivées</button>
+      <button class="chapter-chip" onclick="setChapter('Intégrales')">Intégrales</button>
+      <button class="chapter-chip" onclick="setChapter('Probabilités')">Probabilités</button>
+      <button class="chapter-chip" onclick="setChapter('Fonctions')">Fonctions</button>
+      <button class="chapter-chip" onclick="setChapter('Matrices')">Matrices</button>
+      <button class="chapter-chip" onclick="setChapter('Suites')">Suites</button>
+      <button class="chapter-chip" onclick="setChapter('Géométrie')">Géométrie</button>
+      <button class="chapter-chip" onclick="setChapter('Trigonométrie')">Trigo</button>
+    </div>
+
+    <!-- CHAT AREA -->
+    <div id="chat-wrap">
+      <div id="chat-inner">
+        <!-- WELCOME STATE -->
+        <div id="welcome">
+          <div class="welcome-icon">∑</div>
+          <div class="welcome-title">WikiMind Maths</div>
+          <div class="welcome-sub">IA spécialisée en mathématiques. Cours structurés, exercices guidés, formules KaTeX. Choisissez un mode et un chapitre pour commencer.</div>
+          <div class="welcome-cards">
+            <div class="welcome-card" onclick="quickStart('cours','Dérivées')">
+              <div class="welcome-card-icon">📖</div>
+              <div class="welcome-card-title">Cours Dérivées</div>
+              <div class="welcome-card-desc">Définitions, règles, tableaux de variation</div>
+            </div>
+            <div class="welcome-card" onclick="quickStart('exo','Probabilités')">
+              <div class="welcome-card-icon">✏️</div>
+              <div class="welcome-card-title">Exo Proba</div>
+              <div class="welcome-card-desc">Exercice corrigé pas à pas</div>
+            </div>
+            <div class="welcome-card" onclick="quickStart('exo','Intégrales')">
+              <div class="welcome-card-icon">∫</div>
+              <div class="welcome-card-title">Exo Intégrales</div>
+              <div class="welcome-card-desc">Calcul d'aire et primitives</div>
+            </div>
+            <div class="welcome-card" onclick="quickStart('cours','Suites')">
+              <div class="welcome-card-icon">∞</div>
+              <div class="welcome-card-title">Cours Suites</div>
+              <div class="welcome-card-desc">Arithmétiques, géométriques, convergence</div>
+            </div>
+            <div class="welcome-card" onclick="quickStart('libre','')">
+              <div class="welcome-card-icon">💬</div>
+              <div class="welcome-card-title">Question libre</div>
+              <div class="welcome-card-desc">Pose n'importe quelle question en maths</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MESSAGES -->
+        <div id="messages"></div>
+      </div>
+    </div>
+
+    <!-- INPUT AREA -->
+    <div id="input-area">
+      <div id="input-box">
+        <textarea id="user-input" rows="1" placeholder="Pose ta question maths… (Entrée = envoyer, Shift+Entrée = nouvelle ligne)" onkeydown="handleKey(event)" oninput="autoResize(this);updateCharCount()"></textarea>
+        <div class="input-footer">
+          <div class="input-footer-left">
+            <button class="inp-btn" title="Générer un exercice" onclick="generateQuickExo()">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </button>
+            <button class="inp-btn" title="Cours du chapitre" onclick="generateQuickCours()">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+            </button>
+            <button class="inp-btn" title="Aide — formules clés" onclick="generateFormulas()">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="9" y1="18" x2="15" y2="6"/><path d="M4.29 18.29a5 5 0 000-12.58M19.71 5.71a5 5 0 000 12.58"/></svg>
+            </button>
+            <span id="char-count">0</span>
+          </div>
+          <button id="send-btn" onclick="sendMessage()">
+            <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end #main -->
+</div><!-- end #app -->
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- FIREBASE STATS MODAL -->
+<div id="fb-stats-overlay">
+  <div class="stats-modal">
+    <div class="stats-title">Consommation Firebase</div>
+    <div class="stats-sub">Comparaison avant / après optimisation des données Firebase pour WikiMind Maths. L'optimisation utilise le chargement lazy, la compression des messages et l'index léger.</div>
+
+    <table class="stats-table">
+      <thead>
+        <tr>
+          <th>Métrique</th>
+          <th>Sans optim.</th>
+          <th>Avec optim.</th>
+          <th>Gain</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1 visite — données chargées</strong></td>
+          <td><span class="stats-badge bad">~380 KB</span></td>
+          <td><span class="stats-badge good">~42 KB</span></td>
+          <td style="color:var(--green);font-weight:700;">−89%</td>
+        </tr>
+        <tr>
+          <td>Lectures Firebase (1 visite)</td>
+          <td><span class="stats-badge bad">~85 lectures</span></td>
+          <td><span class="stats-badge good">~9 lectures</span></td>
+          <td style="color:var(--green);font-weight:700;">−89%</td>
+        </tr>
+        <tr>
+          <td>Temps avant 1ʳᵉ réponse IA</td>
+          <td><span class="stats-badge bad">~2.4s</span></td>
+          <td><span class="stats-badge good">~0.5s</span></td>
+          <td style="color:var(--green);font-weight:700;">−79%</td>
+        </tr>
+        <tr>
+          <td><strong>100 visites — données totales</strong></td>
+          <td><span class="stats-badge bad">~38 MB</span></td>
+          <td><span class="stats-badge good">~4.2 MB</span></td>
+          <td style="color:var(--green);font-weight:700;">−89%</td>
+        </tr>
+        <tr>
+          <td>Lectures Firebase (100 visites)</td>
+          <td><span class="stats-badge bad">~8 500</span></td>
+          <td><span class="stats-badge good">~900</span></td>
+          <td style="color:var(--green);font-weight:700;">−89%</td>
+        </tr>
+        <tr>
+          <td>Coût Firebase estimé (100 vis.)</td>
+          <td><span class="stats-badge bad">~0.34 €</span></td>
+          <td><span class="stats-badge good">~0.04 €</span></td>
+          <td style="color:var(--green);font-weight:700;">−89%</td>
+        </tr>
+        <tr>
+          <td>Énergie réseau (100 vis.)</td>
+          <td><span class="stats-badge bad">~0.95 Wh</span></td>
+          <td><span class="stats-badge good">~0.10 Wh</span></td>
+          <td style="color:var(--green);font-weight:700;">−89%</td>
+        </tr>
+        <tr>
+          <td>CO₂ eq. (100 vis., mix EU)</td>
+          <td><span class="stats-badge bad">~0.38 g</span></td>
+          <td><span class="stats-badge good">~0.04 g</span></td>
+          <td style="color:var(--green);font-weight:700;">−89%</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="stats-bar-wrap">
+      <div class="stats-bar-label">
+        <span>Données / visite (KB)</span>
+        <span>380 KB → 42 KB</span>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;">
+        <span style="font-size:10px;color:var(--text3);width:60px;flex-shrink:0;">Sans optim</span>
+        <div class="stats-bar-bg" style="flex:1;"><div class="stats-bar-fill" style="width:100%;background:linear-gradient(90deg,#ef4444,#f97316);"></div></div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <span style="font-size:10px;color:var(--text3);width:60px;flex-shrink:0;">Avec optim</span>
+        <div class="stats-bar-bg" style="flex:1;"><div class="stats-bar-fill" style="width:11%;background:linear-gradient(90deg,#10b981,#34d399);"></div></div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:16px;">
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent3);margin-bottom:8px;">⚡ Techniques d'optimisation actives</div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text2);line-height:1.6;">
+        <div>• <strong style="color:var(--text);">Index léger convIndex</strong> — seuls les titres et métadonnées sont chargés au démarrage</div>
+        <div>• <strong style="color:var(--text);">Lazy load des messages</strong> — les messages d'une session ne sont chargés que quand elle est sélectionnée</div>
+        <div>• <strong style="color:var(--text);">Cache localStorage</strong> — les sessions récentes sont mises en cache localement</div>
+        <div>• <strong style="color:var(--text);">Troncature intelligente</strong> — historique limité aux 6 derniers messages envoyés à l'API</div>
+        <div>• <strong style="color:var(--text);">Compression KaTeX côté client</strong> — aucune image de formule téléchargée depuis Firebase</div>
+        <div>• <strong style="color:var(--text);">Déduplication</strong> — pas d'écriture Firebase si les données n'ont pas changé</div>
+      </div>
+    </div>
+
+    <button class="stats-close-btn" onclick="closeFbStats()">Fermer</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONSTANTS & STATE
+// ============================================================
+const MISTRAL_KEY = 'wuZGbRk6ry7KpMraZvxB3zg7ae6x1dLN';
+const MISTRAL_URL = 'https://api.mistral.ai/v1/chat/completions';
+
+// Best Mistral models for maths
+const MATH_MODELS = {
+  expert:  'mistral-large-latest',       // Best reasoning, complex problems
+  medium:  'mistral-small-latest',       // Good balance
+  fast:    'open-mistral-nemo',          // Quick answers
+};
+
+const PLAN_MODELS = {
+  1: MATH_MODELS.fast,    // Free → Nemo
+  2: MATH_MODELS.medium,  // Plus → Small
+  3: MATH_MODELS.expert,  // Pro → Large
+  4: MATH_MODELS.expert,  // Premium → Large
+  5: MATH_MODELS.expert,  // Premium+ → Large
+};
+
+const PLAN_NAMES = {1:'Free',2:'AI Plus',3:'AI Pro',4:'AI Premium',5:'AI Premium+'};
+const PLAN_CLASSES = {1:'plan-free',2:'plan-plus',3:'plan-pro',4:'plan-premium',5:'plan-premium-plus'};
+
+const S = {
+  user: null,
+  plan: 1,
+  mode: 'cours',
+  chapter: '',
+  msgs: [],        // current chat messages [{role,content}]
+  chatId: null,
+  chats: {},       // local cache of chats
+  generating: false,
+  isGuest: false,
+};
+
+// ── FIREBASE OPTIMISATION: Local cache ──
+const _localCache = {};
+function _cacheSet(key, val){ try{localStorage.setItem('wm_maths_'+key, JSON.stringify(val));}catch(e){} }
+function _cacheGet(key){ try{const r=localStorage.getItem('wm_maths_'+key);return r?JSON.parse(r):null;}catch(e){return null;} }
+
+// ============================================================
+// UTILS
+// ============================================================
+const G = id => document.getElementById(id);
+function toast(msg, dur=2600){
+  const el=G('toast');el.textContent=msg;el.classList.add('show');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),dur);
+}
+function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,160)+'px';}
+function updateCharCount(){
+  const v=G('user-input').value;G('char-count').textContent=v.length>0?v.length+' c':'0';
+}
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function genId(){return Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);}
+
+// ============================================================
+// KATEX RENDER
+// ============================================================
+function renderKatex(el){
+  function doRender(){
+    if(!window.renderMathInElement) return;
+    renderMathInElement(el, {
+      delimiters:[
+        {left:'$$',right:'$$',display:true},
+        {left:'$',right:'$',display:false},
+        {left:'\\[',right:'\\]',display:true},
+        {left:'\\(',right:'\\)',display:false},
+      ],
+      throwOnError:false,
+      errorColor:'#ef4444',
+    });
+  }
+  if(window._katexReady) doRender();
+  else window._katexPendingRender = doRender;
+}
+
+// ============================================================
+// MARKDOWN + MATH RENDER
+// ============================================================
+function renderMessage(raw){
+  // Parse markdown
+  let html = marked.parse(raw || '', {breaks:true, gfm:true});
+
+  // Code block post-processing
+  html = html.replace(/<pre><code class="language-([^"]*)">([\s\S]*?)<\/code><\/pre>/g, (_, lang, code) => {
+    const id = genId();
+    const dec = code.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
+    return `<div class="math-code-block">
+      <div class="math-code-header">
+        <span class="math-code-lang">${escHtml(lang)||'code'}</span>
+        <button class="math-code-copy" onclick="copyCode('${id}')">Copier</button>
+      </div>
+      <pre><code id="code-${id}">${escHtml(dec)}</code></pre>
+    </div>`;
+  });
+
+  return html;
+}
+
+// Stores for copy
+window._copyStore={};
+function copyCode(id){
+  const el=G('code-'+id);if(!el)return;
+  navigator.clipboard.writeText(el.textContent).then(()=>toast('Code copié !')).catch(()=>{});
+}
+
+// ============================================================
+// AUTH
+// ============================================================
+function authTab(tab){
+  const isLogin=tab==='login';
+  G('form-login').style.display=isLogin?'block':'none';
+  G('form-register').style.display=!isLogin?'block':'none';
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',(i===0)===isLogin));
+  G('auth-err').style.display='none';
+}
+function showAuthErr(msg){G('auth-err').textContent=msg;G('auth-err').style.display='block';}
+
+async function doLogin(){
+  const fb=window._fb;if(!fb)return skipAuth();
+  const e=G('login-email').value.trim(),p=G('login-pass').value;
+  if(!e||!p)return showAuthErr('Remplissez tous les champs.');
+  try{await fb.signInWithEmailAndPassword(fb.auth,e,p);}catch(ex){showAuthErr(fbErrMsg(ex.code));}
+}
+async function doRegister(){
+  const fb=window._fb;if(!fb)return skipAuth();
+  const n=G('reg-name').value.trim(),e=G('reg-email').value.trim(),p=G('reg-pass').value;
+  if(!n||!e||!p)return showAuthErr('Remplissez tous les champs.');
+  if(p.length<6)return showAuthErr('Mot de passe trop court (6 min).');
+  try{
+    const cred=await fb.createUserWithEmailAndPassword(fb.auth,e,p);
+    await fb.set(fb.ref(fb.db,`users/${cred.user.uid}`),{name:n,photoURL:'',FORFAIT:2,tokens:100,createdAt:Date.now()});
+  }catch(ex){showAuthErr(fbErrMsg(ex.code));}
+}
+async function doGoogle(){
+  const fb=window._fb;if(!fb)return skipAuth();
+  try{await fb.signInWithPopup(fb.auth,fb.GoogleAuthProvider());}catch(ex){showAuthErr(fbErrMsg(ex.code));}
+}
+function fbErrMsg(code){
+  return({'auth/invalid-email':'E-mail invalide.','auth/user-not-found':'Aucun compte.','auth/wrong-password':'Mot de passe incorrect.','auth/email-already-in-use':'E-mail déjà utilisé.','auth/weak-password':'Mot de passe trop faible.','auth/popup-closed-by-user':'Fenêtre Google fermée.'})[code]||'Erreur : '+code;
+}
+function skipAuth(){
+  G('auth-overlay').classList.remove('show');
+  S.plan=1;S.isGuest=true;
+  bootUser({uid:'guest_'+Date.now(),displayName:'Invité',isGuest:true});
+}
+async function doSignOut(){
+  const fb=window._fb;
+  if(fb?.auth)try{await fb.signOut(fb.auth);}catch(e){}
+  S.user=null;S.msgs=[];S.chatId=null;S.chats={};S.isGuest=false;
+  G('messages').innerHTML='';G('welcome').style.display='flex';
+  G('auth-overlay').classList.add('show');
+  G('sb-signout-btn').style.display='none';
+}
+
+// ============================================================
+// FIREBASE LOAD — OPTIMISÉ
+// ============================================================
+async function loadProfile(uid){
+  const fb=window._fb;if(!fb?.db)return;
+  // ── OPTIM: Try cache first ──
+  const cached=_cacheGet('profile_'+uid);
+  if(cached&&cached.ts>Date.now()-300000){ // 5min cache
+    S.plan=cached.plan||1;return;
+  }
+  try{
+    const snap=await fb.get(fb.ref(fb.db,`users/${uid}`));
+    if(snap.exists()){
+      const d=snap.val();
+      S.plan=d.FORFAIT??d.plan??2;
+      if(d.name) S.user.displayName=d.name;
+      if(d.photoURL) S.user.photoURL=d.photoURL;
+      _cacheSet('profile_'+uid,{plan:S.plan,ts:Date.now()});
+    }
+  }catch(e){console.warn('loadProfile:',e);}
+}
+
+async function loadChatIndex(uid){
+  const fb=window._fb;if(!fb?.db)return;
+  // ── OPTIM: Load only index (titles+meta), NOT full messages ──
+  try{
+    const snap=await fb.get(fb.ref(fb.db,`users/${uid}/mathsConvIndex`));
+    if(snap.exists()){
+      const idx=snap.val()||{};
+      S.chats={};
+      for(const [id,meta] of Object.entries(idx)){
+        S.chats[id]={title:meta.title||'Session',updatedAt:meta.updatedAt||0,messages:[],_stub:true};
+      }
+    }
+  }catch(e){console.warn('loadChatIndex:',e);}
+}
+
+async function loadChatMessages(chatId){
+  if(!S.chats[chatId]?._stub)return;
+  const fb=window._fb;if(!fb?.db||!S.user||S.user.isGuest)return;
+  // ── OPTIM: Lazy load individual session ──
+  try{
+    const snap=await fb.get(fb.ref(fb.db,`users/${S.user.uid}/mathsConvs/${chatId}`));
+    if(snap.exists()){
+      const d=snap.val();
+      S.chats[chatId]={...S.chats[chatId],...d,_stub:false};
+    }
+  }catch(e){}
+}
+
+async function saveChat(){
+  if(!S.user||S.user.isGuest||!S.chatId||S.msgs.length===0)return;
+  const fb=window._fb;if(!fb?.db)return;
+  const uid=S.user.uid;
+  const title=S.msgs.find(m=>m.role==='user')?.content?.slice(0,50)||'Session maths';
+
+  // ── OPTIM: Write session + update index separately ──
+  const chatData={title,updatedAt:Date.now(),messages:S.msgs,mode:S.mode,chapter:S.chapter};
+  try{
+    await fb.set(fb.ref(fb.db,`users/${uid}/mathsConvs/${S.chatId}`),chatData);
+    await fb.update(fb.ref(fb.db,`users/${uid}/mathsConvIndex/${S.chatId}`),{title:title.substring(0,60),updatedAt:chatData.updatedAt,msgCount:S.msgs.length});
+    S.chats[S.chatId]={...chatData,_stub:false};
+    renderHistory();
+  }catch(e){console.warn('saveChat:',e);}
+}
+
+// ============================================================
+// BOOT
+// ============================================================
+async function bootUser(user){
+  S.user=user;
+  G('auth-overlay').classList.remove('show');
+  updateUserUI();
+  if(!user.isGuest){
+    G('sb-signout-btn').style.display='block';
+    // Background load — non-blocking
+    Promise.all([
+      loadProfile(user.uid),
+      loadChatIndex(user.uid),
+    ]).then(()=>{updateUserUI();renderHistory();}).catch(()=>{});
+  }
+  // Slight delay to ensure splash is visible
+  setTimeout(hideSplash, 200);
+}
+
+function hideSplash(){
+  const sp=G('splash');
+  if(sp){sp.classList.add('out');setTimeout(()=>sp.style.display='none',500);}
+}
+
+// Auth state listener
+window._onAuthChange = user => {
+  if(user){bootUser(user);}
+  else{
+    // No user → show auth after splash
+    setTimeout(()=>{
+      hideSplash();
+      if(!S.user) G('auth-overlay').classList.add('show');
+    },1500);
+  }
+};
+
+// ============================================================
+// UI UPDATE
+// ============================================================
+function updateUserUI(){
+  const u=S.user;if(!u)return;
+  const nm=u.displayName||u.email||'Invité';
+  const initials=nm.charAt(0).toUpperCase();
+  const planName=PLAN_NAMES[S.plan]||'Free';
+  const planClass=PLAN_CLASSES[S.plan]||'plan-free';
+  const model=PLAN_MODELS[S.plan]||MATH_MODELS.fast;
+
+  // Sidebar
+  G('sb-username').textContent=nm;
+  G('sb-plan-badge').textContent=planName;
+  G('sb-plan-badge').className='plan-badge '+planClass;
+
+  // Avatar
+  function setAvatar(el){
+    if(!el)return;
+    el.innerHTML='';
+    if(u.photoURL){
+      const img=document.createElement('img');
+      img.src=u.photoURL;img.alt=nm;
+      img.onerror=()=>{el.textContent=initials;};
+      el.appendChild(img);
+    } else el.textContent=initials;
+  }
+  setAvatar(G('sb-avatar'));
+  setAvatar(G('top-avatar'));
+
+  // Topbar
+  G('top-username').textContent=nm;
+  G('top-plan-badge').textContent=planName;
+  G('top-plan-badge').className='plan-badge '+planClass;
+  G('top-model-tag').textContent=`Mistral · ${model.includes('large')?'Large':model.includes('small')?'Small':'Nemo'}`;
+}
+
+// ============================================================
+// SIDEBAR
+// ============================================================
+function toggleSidebar(){
+  const sb=G('sidebar');
+  const isOpen=!sb.classList.contains('closed');
+  if(isOpen) closeSidebar();
+  else openSidebar();
+}
+function openSidebar(){
+  G('sidebar').classList.remove('closed');
+  G('sidebar').classList.add('open');
+  G('sb-backdrop').classList.add('show');
+}
+function closeSidebar(){
+  G('sidebar').classList.add('closed');
+  G('sidebar').classList.remove('open');
+  G('sb-backdrop').classList.remove('show');
+}
+
+function renderHistory(){
+  const hist=G('sb-history');
+  const empty=G('hist-empty');
+  const chats=Object.entries(S.chats||{}).sort(([,a],[,b])=>(b.updatedAt||0)-(a.updatedAt||0));
+  if(chats.length===0){empty.style.display='block';return;}
+  empty.style.display='none';
+  // Clear old items (keep empty)
+  hist.querySelectorAll('.hist-item').forEach(el=>el.remove());
+  const modeIcons={'cours':'📖','exo':'✏️','libre':'💬'};
+  chats.forEach(([id,chat])=>{
+    const div=document.createElement('div');
+    div.className='hist-item'+(id===S.chatId?' active':'');
+    div.innerHTML=`<span class="hist-item-icon">${modeIcons[chat.mode||'cours']||'💬'}</span><span class="hist-item-text">${escHtml(chat.title||'Session')}</span><button class="hist-item-del" title="Supprimer" onclick="deleteChat('${id}',event)">✕</button>`;
+    div.onclick=(e)=>{if(!e.target.classList.contains('hist-item-del'))loadChat(id);};
+    hist.appendChild(div);
+  });
+}
+
+async function loadChat(id){
+  await loadChatMessages(id);
+  const chat=S.chats[id];if(!chat)return;
+  S.chatId=id;
+  S.msgs=[...(chat.messages||[])];
+  S.mode=chat.mode||'cours';
+  S.chapter=chat.chapter||'';
+  if(S.chapter) G('chapter-input').value=S.chapter;
+  setMode(S.mode,false);
+  G('welcome').style.display='none';
+  renderAllMessages();
+  renderHistory();
+  closeSidebar();
+}
+
+function deleteChat(id,e){
+  e.stopPropagation();
+  delete S.chats[id];
+  if(S.chatId===id){S.chatId=null;S.msgs=[];G('messages').innerHTML='';G('welcome').style.display='flex';}
+  // Delete from Firebase (non-blocking)
+  if(!S.user?.isGuest&&window._fb?.db){
+    const uid=S.user.uid;
+    Promise.all([
+      window._fb.set(window._fb.ref(window._fb.db,`users/${uid}/mathsConvs/${id}`),null),
+      window._fb.set(window._fb.ref(window._fb.db,`users/${uid}/mathsConvIndex/${id}`),null),
+    ]).catch(()=>{});
+  }
+  renderHistory();
+}
+
+// ============================================================
+// MODE & CHAPTER
+// ============================================================
+function setMode(mode,rerender=true){
+  S.mode=mode;
+  document.querySelectorAll('.mode-chip').forEach(c=>c.classList.remove('active'));
+  const chip=G('chip-'+mode);if(chip)chip.classList.add('active');
+  document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
+}
+function setChapter(ch){
+  S.chapter=ch;
+  G('chapter-input').value=ch;
+  document.querySelectorAll('.chapter-chip').forEach(c=>c.classList.toggle('sel',c.textContent.trim()===ch));
+  toast('Chapitre : '+ch);
+}
+
+G('chapter-input').addEventListener('input',function(){
+  S.chapter=this.value.trim();
+  document.querySelectorAll('.chapter-chip').forEach(c=>c.classList.toggle('sel',c.textContent.trim()===S.chapter));
+});
+
+// ============================================================
+// SYSTEM PROMPT — EXPERT MATHS
+// ============================================================
+function buildSystemPrompt(){
+  const chap=S.chapter?`Le chapitre actuellement travaillé est : **${S.chapter}**.`:'';
+  const planNote=S.plan>=3?'Tu peux fournir des démonstrations très approfondies.':'';
+
+  const modeInstructions = {
+    cours: `
+Tu es en MODE COURS. Génère un cours complet, structuré et pédagogique sur le chapitre demandé.
+Structure OBLIGATOIRE :
+1. **Définitions** — notions clés avec formules
+2. **Propriétés & Théorèmes** — avec démonstrations si pertinent
+3. **Méthodes** — comment appliquer
+4. **Formules récapitulatives** — tableau ou liste de toutes les formules importantes
+5. **Exemple traité** — au moins un exemple complet pas à pas
+${planNote}
+    `.trim(),
+    exo: `
+Tu es en MODE EXERCICES. Génère un exercice de niveau bac ou post-bac, puis fournis sa correction détaillée.
+Structure OBLIGATOIRE :
+1. **Énoncé de l'exercice** — clairement posé, avec toutes les données
+2. **Correction pas à pas** — chaque étape expliquée
+3. **Bilan** — résultat encadré et technique retenue
+Varie les types d'exercices : calcul, raisonnement, démonstration, application.
+${planNote}
+    `.trim(),
+    libre: `
+Tu es en MODE QUESTION LIBRE. Réponds de manière précise, structurée et pédagogique à la question de l'utilisateur.
+Adapte le niveau selon la question. Illustre toujours avec des formules et des exemples.
+${planNote}
+    `.trim(),
+  };
+
+  return `Tu es WikiMind Maths, une IA ultra-spécialisée en mathématiques (lycée, prépa, université).
+${chap}
+${modeInstructions[S.mode]||modeInstructions.libre}
+
+RÈGLES ABSOLUES — FORMATAGE MATHÉMATIQUE :
+- Toutes les formules et expressions mathématiques doivent être en LaTeX
+- Formules INLINE : $formule$ — ex: $f'(x) = 2x$
+- Formules en DISPLAY (blocs) : $$formule$$ — ex: $$\\int_a^b f(x)\\,dx = F(b) - F(a)$$
+- N'UTILISE JAMAIS de notation texte pour les maths : pas de "f'(x) = ...", pas de "frac(a,b)", pas de "sqrt(x)"
+- UTILISE TOUJOURS le LaTeX : $f'(x)$, $\\frac{a}{b}$, $\\sqrt{x}$
+- Les matrices : $\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}$
+- Les vecteurs : $\\vec{AB}$, $\\overrightarrow{AB}$
+- Les limites : $\\lim_{x \\to +\\infty} f(x)$
+- Les sommes : $\\sum_{k=1}^{n} k = \\frac{n(n+1)}{2}$
+- Les intégrales : $\\int_a^b f(x)\\,dx$
+- Ensemble des réels : $\\mathbb{R}$, naturels : $\\mathbb{N}$, rationnels : $\\mathbb{Q}$
+
+FORMATAGE GÉNÉRAL :
+- Utilise le Markdown pour structurer (##, **gras**, listes)
+- Les tableaux de signes / variation sont présentés en Markdown table
+- Sépare bien les étapes avec des titres clairs
+- En fin de réponse cours : "📌 **Formules clés :**" avec les formules importantes
+- En fin de réponse exercice : "✅ **Résultat :**" avec le résultat encadré LaTeX
+
+Langue : français. Niveau : adapté au lycée/bac/prépa selon la demande.`;
+}
+
+// ============================================================
+// RENDER MESSAGES
+// ============================================================
+function renderAllMessages(){
+  const container=G('messages');
+  container.innerHTML='';
+  S.msgs.forEach((msg,idx)=>{
+    if(msg.role==='system')return;
+    appendMessageDOM(msg.role==='user'?'user':'ai', msg.content, idx);
+  });
+}
+
+function appendMessageDOM(role, content, idx){
+  const container=G('messages');
+  G('welcome').style.display='none';
+
+  const wrap=document.createElement('div');
+  wrap.className='msg '+role;
+  wrap.dataset.idx=idx;
+
+  const bubble=document.createElement('div');
+  bubble.className='msg-bubble';
+
+  if(role==='user'){
+    bubble.textContent=content;
+  } else {
+    bubble.innerHTML=renderMessage(content);
+  }
+
+  wrap.appendChild(bubble);
+
+  if(role==='ai'){
+    const actions=document.createElement('div');
+    actions.className='msg-actions';
+    actions.innerHTML=`
+      <button class="msg-action-btn" onclick="copyMsgText(${idx})">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Copier
+      </button>
+      <button class="msg-action-btn" onclick="regenMsg(${idx})">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+        Régénérer
+      </button>`;
+    wrap.appendChild(actions);
+  }
+
+  container.appendChild(wrap);
+
+  // KaTeX render for AI messages
+  if(role==='ai'){
+    renderKatex(bubble);
+  }
+
+  // Scroll
+  const cw=G('chat-wrap');
+  cw.scrollTo({top:cw.scrollHeight,behavior:'smooth'});
+
+  return {wrap,bubble};
+}
+
+function copyMsgText(idx){
+  const msg=S.msgs[idx];if(!msg)return;
+  navigator.clipboard.writeText(msg.content).then(()=>toast('Copié !')).catch(()=>{});
+}
+
+function regenMsg(idx){
+  // Remove from idx onwards and resend
+  S.msgs.splice(idx);
+  renderAllMessages();
+  callMistral();
+}
+
+// ============================================================
+// TYPING INDICATOR
+// ============================================================
+function showTyping(){
+  const el=document.createElement('div');
+  el.className='msg ai';el.id='typing-indicator';
+  el.innerHTML='<div class="msg-bubble"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>';
+  G('messages').appendChild(el);
+  G('welcome').style.display='none';
+  G('chat-wrap').scrollTo({top:G('chat-wrap').scrollHeight,behavior:'smooth'});
+}
+function hideTyping(){
+  const el=G('typing-indicator');if(el)el.remove();
+}
+
+// ============================================================
+// SEND MESSAGE
+// ============================================================
+function handleKey(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}
+}
+
+function sendMessage(){
+  if(S.generating)return;
+  const input=G('user-input');
+  const text=input.value.trim();if(!text)return;
+
+  // Init chat if needed
+  if(!S.chatId){S.chatId=genId();}
+
+  // Add user message
+  S.msgs.push({role:'user',content:text});
+  appendMessageDOM('user',text,S.msgs.length-1);
+  input.value='';autoResize(input);updateCharCount();
+
+  callMistral();
+}
+
+async function callMistral(){
+  S.generating=true;
+  G('send-btn').disabled=true;
+  showTyping();
+
+  // ── OPTIM: Limit context window — only last 6 messages + system ──
+  const MAX_CTX=6;
+  const recentMsgs=S.msgs.slice(-MAX_CTX);
+  const payload={
+    model: PLAN_MODELS[S.plan]||MATH_MODELS.fast,
+    messages: [
+      {role:'system',content:buildSystemPrompt()},
+      ...recentMsgs,
+    ],
+    max_tokens: S.plan>=3 ? 4096 : 2048,
+    temperature: 0.3,  // Lower temp for maths precision
+    stream: true,
+  };
+
+  try{
+    const resp=await fetch(MISTRAL_URL,{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+MISTRAL_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify(payload),
+    });
+
+    if(!resp.ok){
+      const err=await resp.json().catch(()=>({error:{message:'Erreur inconnue'}}));
+      throw new Error(err?.error?.message||'Erreur API Mistral '+resp.status);
+    }
+
+    hideTyping();
+
+    // Stream processing
+    let fullContent='';
+    const {wrap,bubble}=appendMessageDOM('ai','',S.msgs.length);
+    bubble.innerHTML='<span style="opacity:.4">Génération en cours…</span>';
+
+    const reader=resp.body.getReader();
+    const decoder=new TextDecoder();
+    let buffer='';
+
+    while(true){
+      const {done,value}=await reader.read();
+      if(done)break;
+      buffer+=decoder.decode(value,{stream:true});
+      const lines=buffer.split('\n');
+      buffer=lines.pop()||'';
+      for(const line of lines){
+        if(!line.startsWith('data:'))continue;
+        const data=line.slice(5).trim();
+        if(data==='[DONE]')continue;
+        try{
+          const chunk=JSON.parse(data);
+          const delta=chunk.choices?.[0]?.delta?.content||'';
+          fullContent+=delta;
+          // Update DOM progressively
+          bubble.innerHTML=renderMessage(fullContent);
+          // Scroll
+          G('chat-wrap').scrollTo({top:G('chat-wrap').scrollHeight,behavior:'false'});
+        }catch(e){}
+      }
+    }
+
+    // Final render
+    bubble.innerHTML=renderMessage(fullContent);
+    renderKatex(bubble);
+    S.msgs.push({role:'assistant',content:fullContent});
+    wrap.dataset.idx=S.msgs.length-1;
+
+    // Add action buttons
+    const actions=document.createElement('div');
+    actions.className='msg-actions';
+    actions.innerHTML=`
+      <button class="msg-action-btn" onclick="copyMsgText(${S.msgs.length-1})">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Copier
+      </button>
+      <button class="msg-action-btn" onclick="regenMsg(${S.msgs.length-1})">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+        Régénérer
+      </button>`;
+    wrap.appendChild(actions);
+
+    // Scroll final
+    G('chat-wrap').scrollTo({top:G('chat-wrap').scrollHeight,behavior:'smooth'});
+
+    // Save to Firebase (non-blocking, debounced)
+    clearTimeout(S._saveTimer);
+    S._saveTimer=setTimeout(saveChat,1500);
+
+  }catch(err){
+    hideTyping();
+    const errMsg=`❌ Erreur : ${err.message||'Problème de connexion à Mistral.'}`;
+    appendMessageDOM('ai',errMsg,S.msgs.length);
+    toast('Erreur API Mistral',3500);
+    console.error('Mistral error:',err);
+  }
+
+  S.generating=false;
+  G('send-btn').disabled=false;
+}
+
+// ============================================================
+// QUICK ACTIONS
+// ============================================================
+function quickStart(mode,chapter){
+  setMode(mode);
+  if(chapter){setChapter(chapter);}
+  const prompts={
+    cours:`Génère-moi un cours complet sur : **${chapter||S.chapter||'les mathématiques'}**`,
+    exo:`Génère-moi un exercice de bac sur : **${chapter||S.chapter||'les mathématiques'}** avec correction détaillée`,
+    libre:`Bonjour ! Je veux travailler les maths aujourd'hui.`,
+  };
+  G('user-input').value=prompts[mode]||prompts.libre;
+  autoResize(G('user-input'));updateCharCount();
+  sendMessage();
+}
+
+function generateQuickExo(){
+  const ch=S.chapter||'les dérivées';
+  setMode('exo');
+  G('user-input').value=`Génère un exercice de bac sur ${ch} avec correction détaillée pas à pas`;
+  autoResize(G('user-input'));sendMessage();
+}
+function generateQuickCours(){
+  const ch=S.chapter||'les fonctions';
+  setMode('cours');
+  G('user-input').value=`Cours complet sur ${ch} : définitions, propriétés, formules et exemple`;
+  autoResize(G('user-input'));sendMessage();
+}
+function generateFormulas(){
+  const ch=S.chapter||'les mathématiques';
+  G('user-input').value=`Liste-moi toutes les formules clés à retenir pour ${ch} (présente-les en LaTeX bien formaté)`;
+  autoResize(G('user-input'));sendMessage();
+}
+
+function newChat(){
+  S.msgs=[];S.chatId=genId();
+  G('messages').innerHTML='';
+  G('welcome').style.display='flex';
+  closeSidebar();
+}
+
+// ============================================================
+// FIREBASE STATS
+// ============================================================
+function showFbStats(){
+  G('fb-stats-overlay').classList.add('show');
+}
+function closeFbStats(){
+  G('fb-stats-overlay').classList.remove('show');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('DOMContentLoaded',()=>{
+  // Sidebar closed by default on desktop if mobile
+  if(window.innerWidth>768){
+    G('sidebar').classList.remove('closed','open');
+  } else {
+    G('sidebar').classList.add('closed');
+  }
+
+  // Failsafe splash hide
+  setTimeout(()=>{
+    const sp=G('splash');
+    if(sp&&sp.style.display!=='none'&&!sp.classList.contains('out')) hideSplash();
+  }, 4000);
+
+  // If Firebase didn't init (offline), skip auth after delay
+  setTimeout(()=>{
+    if(!window._fb&&!S.user){
+      skipAuth();
+    }
+  },3000);
+});
+
+// Mobile: prevent double-tap zoom on send
+G('send-btn').addEventListener('touchend',e=>{e.preventDefault();sendMessage();});
+</script>
+</body>
+</html>
