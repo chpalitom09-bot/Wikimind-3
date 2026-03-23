@@ -685,11 +685,14 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
   opacity:0;animation:splashFadeIn .4s .9s ease forwards;
 }
 @keyframes splashReveal{
-  from{opacity:0;transform:translateY(20px);}
-  to{opacity:1;transform:translateY(0);}
+  from{opacity:0;transform:translate3d(0,20px,0);}
+  to{opacity:1;transform:translate3d(0,0,0);}
 }
-@keyframes splashLine{from{width:0;}to{width:100%;}}
-@keyframes splashFadeIn{from{opacity:0;}to{opacity:1;}}
+@keyframes splashLine{from{width:0;transform:translate3d(0,0,0);}to{width:100%;transform:translate3d(0,0,0);}}
+@keyframes splashFadeIn{from{opacity:0;transform:translate3d(0,0,0);}to{opacity:1;transform:translate3d(0,0,0);}}
+.splash-wm-logo span{will-change:transform,opacity;}
+.splash-line{will-change:width;}
+.splash-sub{will-change:opacity;}
 
 /* Scroll to bottom button */
 #scroll-to-bottom{display:none !important;}
@@ -3732,6 +3735,256 @@ const S = {
 const G  = id => document.getElementById(id);
 const V  = id => G(id)?.value?.trim() || '';
 const esc= s  => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+
+// ════════════════════════════════════════════════
+// WIKIMIND CORE ENHANCEMENTS — must be defined early
+// ════════════════════════════════════════════════
+
+// ── SPLASH SCREEN ──
+function hideSplash(){
+  const sp=document.getElementById('app-splash');
+  if(!sp) return;
+  sp.classList.add('fade-out');
+  setTimeout(()=>{sp.style.display='none';},520);
+}
+setTimeout(hideSplash, 5000); // failsafe
+
+// ── SMART SCROLL ──
+var _wmScrolledUp=false;
+function _initSmartScroll(){
+  var cc=document.getElementById('chat-container');
+  if(!cc) return;
+  cc.addEventListener('scroll',function(){
+    var atBottom=cc.scrollHeight-cc.scrollTop-cc.clientHeight<120;
+    _wmScrolledUp=!atBottom;
+  },{passive:true});
+}
+function scrollToBottom(){
+  var cc=document.getElementById('chat-container');
+  if(!cc) return;
+  _wmScrolledUp=false;
+  cc.scrollTo({top:cc.scrollHeight,behavior:'smooth'});
+}
+function _smartScroll(){
+  if(_wmScrolledUp) return;
+  var cc=document.getElementById('chat-container');
+  if(cc) cc.scrollTop=cc.scrollHeight;
+}
+
+// ── MODEL RING INDICATOR ──
+function updateModelRingIndicator(key){
+  var sel=document.getElementById('model-select');
+  if(!sel) return;
+  sel.classList.remove('model-medium','model-work','model-reflect','model-task');
+  if(key&&key!=='flash') sel.classList.add('model-'+key);
+  var wrap=document.getElementById('model-select-wrap');
+  if(!wrap) return;
+  var dot=wrap.querySelector('.model-color-dot');
+  if(!dot){
+    dot=document.createElement('span');
+    dot.className='model-color-dot';
+    wrap.appendChild(dot);
+  }
+  dot.className='model-color-dot';
+  if(key&&key!=='flash') dot.classList.add('dot-'+key,'show');
+}
+
+// ── MOBILE LONG PRESS ──
+var _lpTimer=null;
+function startLongPress(e,id){
+  if(e.type==='mousedown'&&e.button!==0) return;
+  var el=e.currentTarget;
+  if(el) el.classList.add('long-pressing');
+  _lpTimer=setTimeout(function(){
+    if(el) el.classList.remove('long-pressing');
+    showConvContextMenu(e,id);
+  },650);
+}
+function cancelLongPress(e){
+  if(_lpTimer){clearTimeout(_lpTimer);_lpTimer=null;}
+  if(e&&e.currentTarget) e.currentTarget.classList.remove('long-pressing');
+}
+
+// ── PLAN CHIP DROPDOWN MENU ──
+function togglePlanChipMenu(e){
+  e.stopPropagation();
+  var menu=document.getElementById('plan-chip-menu');
+  if(!menu) return;
+  var isOpen=menu.classList.contains('open');
+  document.querySelectorAll('#plan-chip-menu.open').forEach(function(m){m.classList.remove('open');});
+  if(!isOpen){
+    menu.classList.add('open');
+    var u=S.user;
+    var nm=u&&u.displayName||u&&u.email||'Invité';
+    var pcmName=document.getElementById('pcm-name'); if(pcmName) pcmName.textContent=nm;
+    var pcmHandle=document.getElementById('pcm-handle'); if(pcmHandle) pcmHandle.textContent=u&&u.email?'@'+u.email.split('@')[0]:'@—';
+    var pcmAv=document.getElementById('pcm-avatar-img');
+    if(pcmAv){
+      if(u&&u.photoURL) pcmAv.innerHTML='<img src="'+u.photoURL+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.innerHTML=\'<span>'+nm.charAt(0).toUpperCase()+'</span>\'">';
+      else pcmAv.innerHTML='<span>'+nm.charAt(0).toUpperCase()+'</span>';
+    }
+    setTimeout(function(){
+      var close=function(ev){
+        if(!document.getElementById('plan-chip').contains(ev.target)){
+          menu.classList.remove('open');
+          document.removeEventListener('click',close);
+        }
+      };
+      document.addEventListener('click',close);
+    },10);
+  }
+}
+function closePlanChipMenu(){
+  var m=document.getElementById('plan-chip-menu'); if(m) m.classList.remove('open');
+}
+
+// ── SIDEBAR USER MENU ──
+function toggleSbUserMenu(e){
+  e.stopPropagation();
+  var menu=document.getElementById('sb-user-menu');
+  if(!menu) return;
+  var isOpen=menu.style.display!=='none'&&menu.style.display!=='';
+  menu.style.display=isOpen?'none':'block';
+  if(!isOpen){
+    // Sync user info
+    var u=S.user;
+    if(u){
+      var nm=u.displayName||u.email||'Invité';
+      var sbName=document.getElementById('sb-menu-name'); if(sbName) sbName.textContent=nm;
+      var sbHandle=document.getElementById('sb-menu-handle'); if(sbHandle) sbHandle.textContent=u.email?'@'+u.email.split('@')[0]:'@—';
+      var sbAv=document.getElementById('sb-menu-avatar');
+      if(sbAv){
+        if(u.photoURL) sbAv.innerHTML='<img src="'+u.photoURL+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+        else sbAv.innerHTML='<span>'+nm.charAt(0).toUpperCase()+'</span>';
+      }
+    }
+    setTimeout(function(){
+      var close=function(ev){
+        if(!menu.contains(ev.target)){menu.style.display='none';document.removeEventListener('click',close);}
+      };
+      document.addEventListener('click',close);
+    },10);
+  }
+}
+
+// ── PLAN CHIP NOTIF DOT ──
+function syncPlanChipNotif(){
+  var dot=document.getElementById('plan-chip-notif-dot');
+  var badge=document.getElementById('pcm-notif-badge');
+  var seen=localStorage.getItem('wm_changelog_seen')||'0';
+  var lastUpdate='20260323';
+  var hasNew=seen<lastUpdate;
+  if(dot) dot.classList.toggle('show',hasNew);
+  if(badge) badge.style.display=hasNew?'':'none';
+  // Sync sidebar menu header
+  var u=S.user;
+  if(u){
+    var nm=u.displayName||u.email||'Invité';
+    var sbName=document.getElementById('sb-menu-name'); if(sbName) sbName.textContent=nm;
+    var sbHandle=document.getElementById('sb-menu-handle'); if(sbHandle) sbHandle.textContent=u.email?'@'+u.email.split('@')[0]:'@—';
+    var settEmail=document.getElementById('settings-email-label'); if(settEmail) settEmail.textContent=u.email||'';
+  }
+}
+
+// ── TTS AUDIO ──
+function speakTTS(btn){
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  var text=btn.dataset.text||'';
+  if(!text) return;
+  var utt=new SpeechSynthesisUtterance(text);
+  utt.lang='fr-FR';
+  var orig=btn.innerHTML;
+  btn.innerHTML='Lecture...';
+  utt.onend=function(){btn.innerHTML=orig;};
+  window.speechSynthesis.speak(utt);
+}
+function stopTTS(){if(window.speechSynthesis) window.speechSynthesis.cancel();}
+
+// ── HTML IFRAME RUNNER ──
+function runHtmlInIframe(cid){
+  var code=window._wmCopyStore&&window._wmCopyStore[cid];
+  if(!code) return;
+  var modal=document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;';
+  modal.onclick=function(e){if(e.target===modal)modal.remove();};
+  var box=document.createElement('div');
+  box.style.cssText='background:#fff;border-radius:16px;overflow:hidden;width:90%;max-width:900px;height:80vh;display:flex;flex-direction:column;';
+  var bar=document.createElement('div');
+  bar.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#f4f4f5;border-bottom:1px solid #e5e7eb;flex-shrink:0;';
+  bar.innerHTML='<span style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em">Aperçu HTML</span><button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#aaa">&#x2715;</button>';
+  var iframe=document.createElement('iframe');
+  iframe.style.cssText='flex:1;border:none;background:#fff;';
+  iframe.sandbox='allow-scripts allow-modals';
+  box.appendChild(bar);box.appendChild(iframe);modal.appendChild(box);
+  document.body.appendChild(modal);
+  iframe.srcdoc=code;
+}
+
+// ── CHAT ÉPHÉMÈRE ──
+window._ephemeralMode=false;
+window._ephemeralMsgs=[];
+function startEphemeralChat(){
+  var btn=document.getElementById('btn-ephemeral-chat');
+  if(window._ephemeralMode){
+    window._ephemeralMode=false;
+    window._ephemeralMsgs=[];
+    if(btn){btn.style.background='var(--select-bg)';btn.style.color='#888';btn.style.borderColor='var(--border2)';}
+    var wt=document.getElementById('welcome-text');
+    if(wt){var ind=wt.querySelector('.ephemeral-indicator');if(ind)ind.remove();}
+    newChat();
+    toast('Mode éphémère désactivé');
+    return;
+  }
+  window._ephemeralMode=true;
+  if(btn){btn.style.background='rgba(239,68,68,.1)';btn.style.color='#ef4444';btn.style.borderColor='rgba(239,68,68,.3)';}
+  S.chatId='ephemeral_'+Date.now();
+  S.msgs=[];
+  S.chats[S.chatId]={title:'Chat éphémère',messages:[],createdAt:Date.now(),updatedAt:Date.now(),_ephemeral:true};
+  document.getElementById('chat-container').innerHTML='';
+  showWelcome();
+  var wt=document.getElementById('welcome-text');
+  if(wt&&!wt.querySelector('.ephemeral-indicator')){
+    var ind=document.createElement('div');
+    ind.className='ephemeral-indicator';
+    ind.style.cssText='display:inline-flex;align-items:center;gap:6px;margin-top:8px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:#ef4444;';
+    ind.innerHTML='&#9679; Chat éphémère — non sauvegardé';
+    wt.appendChild(ind);
+  }
+  toast('Chat éphémère activé — non sauvegardé');
+}
+
+// Patch persistChat pour ignorer éphémère
+(function(){
+  var _origPersist=null;
+  var _interval=setInterval(function(){
+    if(typeof persistChat==='function'&&!_origPersist){
+      _origPersist=persistChat;
+      window.persistChat=async function(){
+        if(window._ephemeralMode) return;
+        return _origPersist();
+      };
+      clearInterval(_interval);
+    }
+  },200);
+})();
+
+// ── CHANGELOG MARK READ ──
+(function(){
+  var _interval2=setInterval(function(){
+    if(typeof openChangelogModal==='function'){
+      var orig=openChangelogModal;
+      window.openChangelogModal=function(){
+        orig();
+        localStorage.setItem('wm_changelog_seen','20260323');
+        syncPlanChipNotif();
+      };
+      clearInterval(_interval2);
+    }
+  },300);
+})();
+
 
 window.addEventListener('load', () => {
   if(localStorage.getItem('wm_dark')==='1') document.body.classList.add('dark-mode');
