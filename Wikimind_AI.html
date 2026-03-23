@@ -736,6 +736,62 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 #canvas-panel.open ~ #canvas-resizer-guard,
 .canvas-resizer-active{display:flex;}
 
+
+/* ── PLAN CHIP DROPDOWN MENU ── */
+#plan-chip{position:absolute;top:24px;right:24px;z-index:50;display:flex;align-items:center;gap:8px;cursor:pointer;position:relative;}
+#plan-chip-notif-dot{
+  position:absolute;top:-1px;right:-1px;width:9px;height:9px;border-radius:50%;
+  background:linear-gradient(135deg,#ec4899,#f97316);
+  border:2px solid var(--bg);z-index:3;
+  animation:notifPulse 2s ease-in-out infinite;
+  display:none;
+}
+#plan-chip-notif-dot.show{display:block;}
+@keyframes notifPulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.2);opacity:.8;}}
+
+/* Plan-chip dropdown */
+#plan-chip-menu{
+  position:absolute;top:calc(100% + 10px);right:0;
+  background:var(--bg);border:1px solid var(--border2);border-radius:18px;
+  min-width:230px;padding:8px;
+  box-shadow:0 16px 48px rgba(0,0,0,.18);z-index:500;
+  opacity:0;pointer-events:none;
+  transform:translateY(-6px) scale(.97);
+  transition:opacity .18s cubic-bezier(.4,0,.2,1),transform .18s cubic-bezier(.4,0,.2,1);
+}
+#plan-chip-menu.open{opacity:1;pointer-events:auto;transform:translateY(0) scale(1);}
+
+.pcm-header{
+  display:flex;align-items:center;gap:10px;padding:10px 12px 12px;
+  border-bottom:1px solid var(--border);margin-bottom:4px;
+}
+.pcm-avatar{
+  width:36px;height:36px;border-radius:50%;background:var(--accent);
+  color:var(--accent-inv);display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:800;flex-shrink:0;overflow:hidden;
+}
+.pcm-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.pcm-name{font-size:13px;font-weight:700;line-height:1.3;}
+.pcm-handle{font-size:11px;color:#888;margin-top:1px;}
+.pcm-item{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;
+  cursor:pointer;font-size:13px;font-weight:500;color:var(--text);transition:.15s;
+  border:none;background:none;width:100%;text-align:left;
+}
+.pcm-item:hover{background:var(--select-bg);}
+.pcm-item svg{width:16px;height:16px;color:#888;flex-shrink:0;}
+.pcm-item .pcm-label{flex:1;}
+.pcm-item .pcm-badge-wrap{margin-left:auto;}
+.pcm-separator{height:1px;background:var(--border);margin:4px 0;}
+.pcm-item.danger{color:#ef4444;}
+.pcm-item.danger svg{color:#ef4444;}
+.pcm-item.danger:hover{background:rgba(239,68,68,.08);}
+/* Notif dot sur item nouveautés */
+.pcm-notif-badge{
+  font-size:9px;font-weight:800;background:linear-gradient(135deg,#ec4899,#f97316);
+  color:#fff;padding:2px 6px;border-radius:20px;letter-spacing:.02em;
+}
+
 @keyframes sttPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4);}70%{box-shadow:0 0 0 6px rgba(239,68,68,0);}}
 #btn-stt.active-btn{animation:sttPulse 1.2s infinite;border-radius:8px;}
 
@@ -1602,13 +1658,33 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
   <div class="sb-section" style="margin-top:6px" id="history-section-label">Récents</div>
   <div id="history-list"></div>
   <div class="sb-bottom">
-    <div class="user-row" onclick="openPlansOverlay()">
+    <div class="user-row" onclick="toggleSbUserMenu(event)" style="position:relative;">
       <div class="user-avatar" id="u-av">?</div>
       <div class="user-info">
         <div class="user-name" id="u-name">Invité</div>
         <div class="user-plan-label"><span class="plan-badge plan-free" id="u-badge">Free</span></div>
       </div>
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color:#aaa"><polyline points="6,9 12,15 18,9"/></svg>
+    </div>
+    <!-- Sidebar user dropdown -->
+    <div id="sb-user-menu" onclick="event.stopPropagation()" style="display:none;position:absolute;bottom:64px;left:12px;right:12px;background:var(--bg);border:1px solid var(--border2);border-radius:16px;padding:6px;box-shadow:0 -8px 32px rgba(0,0,0,.14);z-index:200;">
+      <button class="pcm-item" onclick="openPlansOverlay();G('sb-user-menu').style.display='none'">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <span class="pcm-label">Forfaits</span>
+      </button>
+      <button class="pcm-item" onclick="openModal('settings-modal');G('sb-user-menu').style.display='none'">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span class="pcm-label">Paramètres</span>
+      </button>
+      <button class="pcm-item" onclick="openChangelogModal();G('sb-user-menu').style.display='none'">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span class="pcm-label">Nouveautés</span>
+      </button>
+      <div class="pcm-separator"></div>
+      <button class="pcm-item danger" onclick="doSignOut();G('sb-user-menu').style.display='none'">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span class="pcm-label">Se déconnecter</span>
+      </button>
     </div>
   </div>
 </div>
@@ -1786,10 +1862,56 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
     </div>
   </div>
 
-  <div id="plan-chip" onclick="openPlansOverlay()">
-    <div class="plan-chip-avatar ring-free" id="tb-avatar"><span id="tb-avatar-initials">?</span></div>
+  <div id="plan-chip" onclick="togglePlanChipMenu(event)" style="position:absolute;top:24px;right:24px;z-index:50;display:flex;align-items:center;gap:8px;cursor:pointer;">
+    <div style="position:relative">
+      <div class="plan-chip-avatar ring-free" id="tb-avatar"><span id="tb-avatar-initials">?</span></div>
+      <div id="plan-chip-notif-dot" class="show"></div>
+    </div>
     <span class="plan-badge plan-free" id="tb-badge">Free</span>
     <span class="upgrade-link">&#x2191; Forfaits</span>
+    <!-- Dropdown menu -->
+    <div id="plan-chip-menu" onclick="event.stopPropagation()">
+      <!-- Header user -->
+      <div class="pcm-header">
+        <div class="pcm-avatar" id="pcm-avatar-img"><span id="pcm-avatar-initials">?</span></div>
+        <div>
+          <div class="pcm-name" id="pcm-name">Invité</div>
+          <div class="pcm-handle" id="pcm-handle">@—</div>
+        </div>
+      </div>
+      <!-- Items -->
+      <button class="pcm-item" onclick="openPlansOverlay();closePlanChipMenu()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <span class="pcm-label">Passer au forfait supérieur</span>
+      </button>
+      <button class="pcm-item" onclick="openModal('settings-modal');settingsTab('perso');closePlanChipMenu()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        <span class="pcm-label">Personnalisation</span>
+      </button>
+      <button class="pcm-item" onclick="openModal('settings-modal');settingsTab('account');closePlanChipMenu()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span class="pcm-label">Profil</span>
+      </button>
+      <button class="pcm-item" onclick="openModal('settings-modal');closePlanChipMenu()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span class="pcm-label">Paramètres</span>
+      </button>
+      <div class="pcm-separator"></div>
+      <button class="pcm-item" onclick="openChangelogModal();closePlanChipMenu()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span class="pcm-label">Nouveautés</span>
+        <div class="pcm-badge-wrap"><span class="pcm-notif-badge" id="pcm-notif-badge">3 NEW</span></div>
+      </button>
+      <button class="pcm-item" onclick="openModal('settings-modal');settingsTab('help');closePlanChipMenu()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span class="pcm-label">Aide</span>
+      </button>
+      <div class="pcm-separator"></div>
+      <button class="pcm-item danger" onclick="doSignOut();closePlanChipMenu()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span class="pcm-label">Se déconnecter</span>
+      </button>
+    </div>
   </div>
 
   <div id="welcome-text">
@@ -3420,7 +3542,7 @@ const GDRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 
 const MISTRAL_MODELS = {
   flash:   { id:'open-mistral-nemo',     label:'Wikimind Flash 3.2',   style:'concis'      },
-  medium:  { id:'open-mistral-nemo',     label:'Wikimind Medium 3.2',  style:'approfondi'  },
+  medium:  { id:'mistral-small-latest',  label:'Wikimind Medium 3.2',  style:'approfondi'  },
   work:    { id:'open-mixtral-8x22b',    label:'Wikimind Work 3.2',    style:'expert'      },
   reflect: { id:'open-mixtral-8x22b',    label:'Wikimind Réflexion 3.2',style:'reflexion'  },
   task:    { id:'open-mixtral-8x22b',    label:'Wikimind Task 3.3',    style:'omnipotent'  },
@@ -3795,6 +3917,9 @@ function updateUserUI(){
   syncConnectorUI('gmail'); syncConnectorUI('gdrive');
   renderPlansGrid(); renderInstructions(); updateTokenDisplay();
   _updateUserUIExtras();
+  syncPlanChipNotif();
+  // Sync plan-chip badge plan
+  const tbBadge2=G('tb-badge'); if(tbBadge2) tbBadge2.style.display=S.user&&!S.user.isGuest?'inline-flex':'none';
 }
 
 function updateModelOptions(){
@@ -6426,7 +6551,7 @@ function buildSystemPrompt(){
   const _timeStr=_now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
   const _modelStyle=MISTRAL_MODELS[S.model]?.style||'concis';
   const _styleInstructions={
-    'concis':     'Sois clair et direct. Réponds avec la longueur nécessaire — ni trop court ni trop long. Si la question est complexe, développe. Si elle est simple, reste bref.',
+    'concis':     'Tu es Wikimind Flash : rapide, précis, naturel. Réponds avec autant de détails que nécessaire. Ne te bride jamais — si la réponse doit être longue, fais-la longue. Si courte, fais-la courte.',
     'approfondi': 'Tu incarnes Wikimind Medium v3.2 : développe tes réponses avec profondeur et nuances. Fournis des explications détaillées, des exemples, des alternatives. Structure avec des sections claires. Sois plus exhaustif que Flash.',
     'expert':     'Tu es Wikimind Work : analyse en profondeur avec expertise technique pointue.',
     'reflexion':  'Tu es Wikimind Réflexion : raisonne étape par étape, méthodiquement.',
@@ -6476,16 +6601,24 @@ function cleanMsgsForAPI(msgs){
 
 async function buildHistoryWithContextManagement(latestFullContent){
   const sysPrompt=buildSystemPrompt();
-  const limit=CTX_CHAR_LIMITS[S.plan]||16000;
+  const limit=CTX_CHAR_LIMITS[S.plan]||32000;
 
-  // Construire l'historique propre (role + content seulement)
-  let rawHist=[...S.msgs].slice(-40);
+  // Prendre TOUS les messages (pas juste 40) — la mémoire complète
+  let rawHist=[...S.msgs];
 
   // Remplacer le contenu du dernier message user par le fullContent courant
+  // Pour les messages précédents: utiliser content (pas fullContent qui peut avoir des images base64 énormes)
   const cleanHist=rawHist.map((m,idx,arr)=>{
-    const content=m.role==='user'&&idx===arr.length-1&&latestFullContent
-      ? latestFullContent
-      : (m.fullContent||m.content||'');
+    let content;
+    if(m.role==='user'&&idx===arr.length-1&&latestFullContent){
+      content=latestFullContent;
+    } else if(m.role==='user'){
+      // Pour les anciens messages user: utiliser content (texte seul, sans images)
+      content=m.content||m.fullContent||'';
+    } else {
+      // Messages assistant: utiliser content (la réponse complète)
+      content=m.content||'';
+    }
     return{role:m.role,content:String(content).trim()};
   }).filter(m=>['user','assistant'].includes(m.role)&&m.content);
 
@@ -6523,10 +6656,10 @@ async function buildHistoryWithContextManagement(latestFullContent){
 }
 
 function buildHistory(latestFullContent){
-  const rawHist=S.msgs.slice(-20).map((m,idx,arr)=>{
+  const rawHist=S.msgs.map((m,idx,arr)=>{
     const content=m.role==='user'&&idx===arr.length-1&&latestFullContent
       ? latestFullContent
-      : (m.fullContent||m.content||'');
+      : (m.content||'');
     return{role:m.role,content:String(content).trim()};
   }).filter(m=>['user','assistant'].includes(m.role)&&m.content);
   return cleanMsgsForAPI([{role:'system',content:buildSystemPrompt()},...rawHist]);
@@ -10976,12 +11109,49 @@ console.log('%cWikiMind AI','color:#111;font-family:Inter,sans-serif;font-size:2
     </div>
     <div style="padding:20px 24px 24px;overflow-y:scroll;max-height:60vh;display:flex;flex-direction:column;gap:20px;">
 
-      <!-- Version 3.1 -->
+      <!-- Version 3.3 — 23 mars 2026 (DERNIÈRE MAJ) -->
+      <div style="border:1px solid rgba(236,72,153,.35);border-radius:16px;overflow:hidden">
+        <div style="background:linear-gradient(135deg,rgba(236,72,153,.09),rgba(249,115,22,.06));padding:14px 18px;border-bottom:1px solid rgba(236,72,153,.2);display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:16px;font-weight:900;letter-spacing:-.02em">WikiMind AI v3.3</span>
+            <span style="background:linear-gradient(90deg,#ec4899,#f97316);color:#fff;font-size:9px;font-weight:800;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.06em">NEW</span>
+          </div>
+          <span style="font-size:11px;color:#aaa;font-weight:700">23 mars 2026</span>
+        </div>
+        <div style="padding:16px 18px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;gap:12px;padding:10px 14px;background:var(--select-bg);border-radius:10px;border-left:3px solid #ec4899">
+            <span style="font-size:18px;flex-shrink:0">🤖</span>
+            <div><div style="font-size:13px;font-weight:800;margin-bottom:3px">Migration vers les modèles Open Source Mistral</div>
+            <div style="font-size:12px;color:#888;line-height:1.6">Flash/Medium → open-mistral-nemo (128k tokens), Work/Task/Réflexion → open-mixtral-8x22b. Plus généreux sur les quotas.</div></div>
+          </div>
+          <div style="display:flex;gap:12px;padding:10px 14px;background:var(--select-bg);border-radius:10px;border-left:3px solid #3b82f6">
+            <span style="font-size:18px;flex-shrink:0">⚡</span>
+            <div><div style="font-size:13px;font-weight:800;margin-bottom:3px">Optimisation Firebase — 88% de données économisées</div>
+            <div style="font-size:12px;color:#888;line-height:1.6">Chargement lazy des conversations. ~400KB/visite → ~50KB/visite.</div></div>
+          </div>
+          <div style="display:flex;gap:12px;padding:10px 14px;background:var(--select-bg);border-radius:10px;border-left:3px solid #22c55e">
+            <span style="font-size:18px;flex-shrink:0">📊</span>
+            <div><div style="font-size:13px;font-weight:800;margin-bottom:3px">Graphiques Chart.js dans le chat + mémoire RAG</div>
+            <div style="font-size:12px;color:#888;line-height:1.6">Les graphiques sont rendus visuellement. L'IA mémorise vos informations clés entre sessions.</div></div>
+          </div>
+          <div style="display:flex;gap:12px;padding:10px 14px;background:var(--select-bg);border-radius:10px;border-left:3px solid #8b5cf6">
+            <span style="font-size:18px;flex-shrink:0">↔️</span>
+            <div><div style="font-size:13px;font-weight:800;margin-bottom:3px">Panneaux redimensionnables + Canvas PDF corrigé</div>
+            <div style="font-size:12px;color:#888;line-height:1.6">Canvas et Codeur se redimensionnent par drag. Export PDF canvas corrigé.</div></div>
+          </div>
+          <div style="display:flex;gap:12px;padding:10px 14px;background:var(--select-bg);border-radius:10px;border-left:3px solid #f59e0b">
+            <span style="font-size:18px;flex-shrink:0">👤</span>
+            <div><div style="font-size:13px;font-weight:800;margin-bottom:3px">Nouveau menu utilisateur + notifications nouveautés</div>
+            <div style="font-size:12px;color:#888;line-height:1.6">Menu déroulant sur l'avatar (profil, paramètres, forfaits, déconnexion). Point de notification pour les mises à jour.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Version 3.2 — 21 mars 2026 -->
       <div style="border:1px solid var(--border2);border-radius:16px;overflow:hidden">
         <div style="background:linear-gradient(135deg,rgba(239,68,68,.08),rgba(251,146,60,.06));padding:14px 18px;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between">
           <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:16px;font-weight:900;letter-spacing:-.02em">WikiMind AI v3.3</span>
-            <span style="background:linear-gradient(90deg,#ef4444,#f97316,#eab308);color:#fff;font-size:9px;font-weight:800;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.06em">NOUVEAU</span>
+            <span style="font-size:16px;font-weight:900;letter-spacing:-.02em">WikiMind AI v3.2</span>
           </div>
           <span style="font-size:11px;color:#aaa;font-weight:700">21 mars 2026</span>
         </div>
@@ -11280,6 +11450,71 @@ async function renderPdfThumbnail(file, container){
     initResizer('coder-resizer','coder-panel','--coder-w',320,1000,'right');
   });
 })();
+
+
+// ── PLAN CHIP DROPDOWN MENU ──
+
+function toggleSbUserMenu(e){
+  e.stopPropagation();
+  const menu=G('sb-user-menu');
+  if(!menu) return;
+  const isOpen=menu.style.display!=='none';
+  menu.style.display=isOpen?'none':'block';
+  if(!isOpen){
+    setTimeout(()=>{
+      const close=(ev)=>{ if(!menu.contains(ev.target)){ menu.style.display='none'; document.removeEventListener('click',close); } };
+      document.addEventListener('click',close);
+    },10);
+  }
+}
+
+function togglePlanChipMenu(e){
+  e.stopPropagation();
+  const menu=G('plan-chip-menu');
+  if(!menu) return;
+  const isOpen=menu.classList.contains('open');
+  // Close all other dropdowns
+  document.querySelectorAll('#plan-chip-menu.open').forEach(m=>m.classList.remove('open'));
+  if(!isOpen){
+    menu.classList.add('open');
+    // Sync user info in menu
+    const u=S.user;
+    const nm=u?.displayName||u?.email||'Invité';
+    const pcmName=G('pcm-name'); if(pcmName) pcmName.textContent=nm;
+    const pcmHandle=G('pcm-handle'); if(pcmHandle) pcmHandle.textContent=u?.email?'@'+u.email.split('@')[0]:'@—';
+    const pcmAv=G('pcm-avatar-img');
+    if(pcmAv){
+      if(u?.photoURL){ pcmAv.innerHTML=`<img src="${u.photoURL}" alt="" onerror="this.parentElement.innerHTML='<span>${nm.charAt(0).toUpperCase()}</span>'">`; }
+      else{ pcmAv.innerHTML=`<span>${nm.charAt(0).toUpperCase()}</span>`; }
+    }
+    // Close on outside click
+    setTimeout(()=>{
+      const close=(ev)=>{ if(!G('plan-chip')?.contains(ev.target)){ menu.classList.remove('open'); document.removeEventListener('click',close); } };
+      document.addEventListener('click',close);
+    },10);
+  }
+}
+function closePlanChipMenu(){
+  G('plan-chip-menu')?.classList.remove('open');
+}
+function syncPlanChipNotif(){
+  // Dot sur avatar
+  const dot=G('plan-chip-notif-dot');
+  const badge=G('pcm-notif-badge');
+  const seen=localStorage.getItem('wm_changelog_seen')||'0';
+  // Dernière MAJ: 23 mars 2026
+  const lastUpdate='20260323';
+  const hasNew=seen<lastUpdate;
+  if(dot) dot.classList.toggle('show',hasNew);
+  if(badge) badge.style.display=hasNew?'':'none';
+}
+// Marquer comme lu quand on ouvre le changelog
+const _origOpenChangelog=window.openChangelogModal;
+window.openChangelogModal=function(){
+  if(_origOpenChangelog) _origOpenChangelog();
+  localStorage.setItem('wm_changelog_seen','20260323');
+  syncPlanChipNotif();
+};
 
 document.addEventListener('DOMContentLoaded', ()=>{
   const toInput = G('gmail-compose-to');
