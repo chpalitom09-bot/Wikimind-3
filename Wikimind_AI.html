@@ -3746,9 +3746,13 @@ function hideSplash(){
   const sp=document.getElementById('app-splash');
   if(!sp) return;
   sp.classList.add('fade-out');
-  setTimeout(()=>{sp.style.display='none';},520);
+  setTimeout(()=>{if(sp)sp.style.display='none';},600);
 }
-setTimeout(hideSplash, 5000); // failsafe
+// Failsafe: if app never loads in 6s, hide splash anyway
+setTimeout(function(){
+  var sp=document.getElementById('app-splash');
+  if(sp&&sp.style.display!=='none') hideSplash();
+}, 6000);
 
 // ── SMART SCROLL ──
 var _wmScrolledUp=false;
@@ -3955,35 +3959,20 @@ function startEphemeralChat(){
   toast('Chat éphémère activé — non sauvegardé');
 }
 
-// Patch persistChat pour ignorer éphémère
-(function(){
-  var _origPersist=null;
-  var _interval=setInterval(function(){
-    if(typeof persistChat==='function'&&!_origPersist){
-      _origPersist=persistChat;
-      window.persistChat=async function(){
-        if(window._ephemeralMode) return;
-        return _origPersist();
-      };
-      clearInterval(_interval);
-    }
-  },200);
-})();
+// persistChat ephemeral guard: handled in sendMsg directly
 
-// ── CHANGELOG MARK READ ──
-(function(){
-  var _interval2=setInterval(function(){
-    if(typeof openChangelogModal==='function'){
-      var orig=openChangelogModal;
-      window.openChangelogModal=function(){
-        orig();
-        localStorage.setItem('wm_changelog_seen','20260323');
-        syncPlanChipNotif();
-      };
-      clearInterval(_interval2);
-    }
-  },300);
-})();
+// ── CHANGELOG MODAL ──
+function openChangelogModal(){
+  // Use the global openModal function if available, fallback to classList
+  if(typeof openModal==='function'){
+    openModal('changelog-modal');
+  } else {
+    var m=document.getElementById('changelog-modal');
+    if(m){m.style.display='flex';m.classList.add('show');}
+  }
+  localStorage.setItem('wm_changelog_seen','20260323');
+  syncPlanChipNotif();
+}
 
 
 window.addEventListener('load', () => {
@@ -3998,7 +3987,7 @@ window.addEventListener('load', () => {
   if(S.gmailToken) S.connectors.gmail=true;
   if(S.gdriveToken) S.connectors.gdrive=true;
   setTimeout(()=>{ if(!S.user){ G('auth-modal').style.display='block'; } }, 600);
-  renderPlansGrid();
+  if(typeof renderPlansGrid==='function') renderPlansGrid();
   G('user-input').addEventListener('input',()=>{
     autoResize(G('user-input'));
     // Auto-detect YouTube URL
@@ -4021,7 +4010,7 @@ window.addEventListener('load', () => {
     }
   });
   // Init Mermaid
-  _initSmartScroll();
+  if(typeof _initSmartScroll==='function') _initSmartScroll();
   if(window.mermaid){
     window.mermaid.initialize({startOnLoad:false,theme:'neutral',securityLevel:'loose',fontFamily:'Inter,sans-serif'});
   }
@@ -4258,9 +4247,8 @@ function updateUserUI(){
   syncConnectorUI('gmail'); syncConnectorUI('gdrive');
   renderPlansGrid(); renderInstructions(); updateTokenDisplay();
   _updateUserUIExtras();
-  syncPlanChipNotif();
-  // Sync plan-chip badge plan
-  const tbBadge2=G('tb-badge'); if(tbBadge2) tbBadge2.style.display=S.user&&!S.user.isGuest?'inline-flex':'none';
+  if(typeof syncPlanChipNotif==='function') syncPlanChipNotif();
+  const tbBadge2=G('tb-badge'); if(tbBadge2) tbBadge2.style.display='none';
 }
 
 function updateModelOptions(){
@@ -4502,6 +4490,8 @@ async function delChat(e,id){
   e.stopPropagation(); deleteChat(id);
 }
 async function persistChat(){
+  // Guard: never save ephemeral chats
+  if(window._ephemeralMode) return;
   // Helper: strip heavy base64 data before storing (images, etc.)
   function _stripHeavyData(chats){
     try{
