@@ -303,7 +303,7 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
   display:flex;flex-direction:column;flex-shrink:0;
   transition:width .3s cubic-bezier(.4,0,.2,1);
 }
-#canvas-panel.open{width:520px;}
+#canvas-panel.open{width:var(--canvas-w,520px);}
 @media(max-width:1100px){#canvas-panel.open{width:420px;}}
 @media(max-width:768px){#canvas-panel.open{width:100%;position:fixed;inset:0;z-index:100;}}
 
@@ -714,6 +714,27 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 .rag-memory-text{flex:1;font-size:12px;line-height:1.5;color:var(--text);}
 .rag-memory-del{background:none;border:none;cursor:pointer;color:#ccc;font-size:16px;flex-shrink:0;transition:.15s;padding:0 2px;}
 .rag-memory-del:hover{color:#ef4444;}
+
+
+/* ── PANEL RESIZER ── */
+.panel-resizer{
+  width:5px;flex-shrink:0;cursor:col-resize;
+  background:transparent;
+  position:relative;z-index:10;
+  transition:background .15s;
+  display:none;
+}
+.panel-resizer:hover,.panel-resizer.dragging{background:var(--accent);opacity:.3;}
+.panel-resizer::after{
+  content:'';position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:1px;height:32px;background:var(--border2);border-radius:2px;
+  transition:height .15s;
+}
+.panel-resizer:hover::after,.panel-resizer.dragging::after{height:48px;background:var(--accent);}
+/* Show resizer when panel is open */
+#canvas-panel.open ~ #canvas-resizer-guard,
+.canvas-resizer-active{display:flex;}
 
 @keyframes sttPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4);}70%{box-shadow:0 0 0 6px rgba(239,68,68,0);}}
 #btn-stt.active-btn{animation:sttPulse 1.2s infinite;border-radius:8px;}
@@ -1139,7 +1160,7 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
   display:flex;flex-direction:column;flex-shrink:0;
   transition:width .35s cubic-bezier(.4,0,.2,1);
 }
-#coder-panel.open{width:600px;}
+#coder-panel.open{width:var(--coder-w,600px);}
 @media(max-width:1100px){#coder-panel.open{width:480px;}}
 @media(max-width:768px){#coder-panel.open{width:100%;position:fixed;inset:0;z-index:100;}}
 
@@ -1870,6 +1891,7 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
 </div>
 
 <!-- CANVAS PANEL -->
+<div id="canvas-resizer" class="panel-resizer" title="Redimensionner"></div>
 <div id="canvas-panel">
   <div class="canvas-hdr">
     <div class="canvas-hdr-left">
@@ -2054,6 +2076,7 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
 </div>
 
 <!-- CODER PANEL -->
+<div id="coder-resizer" class="panel-resizer" title="Redimensionner"></div>
 <div id="coder-panel">
   <div class="coder-hdr">
     <div class="coder-hdr-left">
@@ -3421,9 +3444,14 @@ TES CAPACITÉS (utilise-les toutes selon le besoin) :
    - Adapte le ton, les arguments, les projets en fonction de chaque formation
    - Réponds TOUJOURS avec toutes les variantes dans un format structuré et lisible
 
-2. GRAPHIQUES & DATAVIZ
-   - Génère du code Chart.js intégré en markdown quand on te demande un graphique
-   - Format : \`\`\`chartjs\n{type:"bar",data:{...},options:{...}}\n\`\`\`
+2. GRAPHIQUES & DATAVIZ (GÉNÈRE TOUJOURS DIRECTEMENT)
+   - Pour tout graphique : génère un bloc chartjs COMPLET, rendu visuellement dans le chat
+   - Format JSON STRICT (guillemets doubles partout, pas de commentaires, pas de virgule finale) :
+   \`\`\`chartjs
+   {"type":"bar","data":{"labels":["A","B"],"datasets":[{"label":"Données","data":[10,20],"backgroundColor":["#3b82f6","#8b5cf6"]}]},"options":{"responsive":true,"plugins":{"title":{"display":true,"text":"Mon graphique"}}}}
+   \`\`\`
+   - Types: bar, line, pie, doughnut, radar
+   - Ne propose JAMAIS DataViz — génère toujours directement
 
 3. GÉNÉRATION AUDIO (TEXT-TO-SPEECH)
    - Si on te demande de convertir en audio, réponds avec : [TTS_REQUEST:texte à synthétiser]
@@ -4233,7 +4261,18 @@ function typewriterEffect(el,fullText){
   function tick(){
     i+=Math.ceil(plain.length/400); el.innerHTML=formatMarkdown(plain.substring(0,i));
     if(!_wmScrolledUp) cc.scrollTop=cc.scrollHeight;
-    if(i<plain.length){setTimeout(tick,speed);}else{el.innerHTML=formatMarkdown(fullText);el.classList.remove('typing-cursor');applyMath(el);applyHljs(el);injectPythonRunButtons(el);}
+    if(i<plain.length){setTimeout(tick,speed);}else{
+    el.innerHTML=formatMarkdown(fullText);
+    el.classList.remove('typing-cursor');
+    applyMath(el);applyHljs(el);injectPythonRunButtons(el);
+    // Trigger chartjs render after typewriter completes
+    el.querySelectorAll('canvas[id^="chart-"]').forEach(c=>{
+      if(c.id&&window._wmCopyStore){
+        const cid=c.id.replace('chart-','wmc');
+        if(window._wmCopyStore[cid]) _renderChartJsBlock(c.id,window._wmCopyStore[cid]);
+      }
+    });
+  }
   }
   tick();
 }
@@ -4403,7 +4442,7 @@ function formatMarkdown(text){
     return `<div class="mermaid-wrap"><div class="mermaid" id="${mid}">${raw}</div><div class="mermaid-actions"><button class="mermaid-action-btn" onclick="copyStoredText('${cid}')">📋 Copier code</button><button class="mermaid-action-btn" onclick="toggleDiagramPanel();setTimeout(()=>{const el=G('diagram-prompt');if(el)el.value='${escapedRaw.substring(0,200)}';},300)">✏️ Éditer</button></div></div>`;
   });
   html=html.replace(/<pre><code( class="language-([^"]*)")?>([\s\S]*?)<\/code><\/pre>/g,(_,cls,lang,code)=>{
-    const raw=code.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
+    const raw=code.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'").trim();
     const cid='wmc'+(+(window._wciCounter=(window._wciCounter||0)+1));
     window._wmCopyStore[cid]=raw;
     if(S.coderActive) scheduleCoderAutoImport(raw, lang||'');
@@ -4411,7 +4450,7 @@ function formatMarkdown(text){
     if(lang==='chartjs'){
       const chartId='chart-'+cid;
       // Schedule rendering after DOM insertion
-      setTimeout(()=>_renderChartJsBlock(chartId,raw),60);
+      setTimeout(()=>_renderChartJsBlock(chartId,raw),150);
       return `<div class="wm-chartjs-wrap" style="background:var(--select-bg);border:1px solid var(--border);border-radius:14px;padding:14px;margin:12px 0;max-width:100%">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#888">Graphique WikiMind</span>
@@ -4433,13 +4472,30 @@ function _renderChartJsBlock(canvasId, jsonStr){
   if(!canvas) return;
   if(!window.Chart){ console.warn('Chart.js not loaded'); return; }
   try{
-    // Parse JSON — supporte les formats avec et sans guillemets stricts
+    // Nettoyer TOUTES les entités HTML résiduelles (marked encode & en &amp;, < en &lt; etc.)
+    let clean=jsonStr
+      .replace(/&amp;/g,'&')
+      .replace(/&lt;/g,'<')
+      .replace(/&gt;/g,'>')
+      .replace(/&quot;/g,'"')
+      .replace(/&#39;/g,"'")
+      .replace(/&apos;/g,"'")
+      .trim();
+    // Supprimer les virgules trailing avant } ou ]
+    clean=clean.replace(/,(\s*[}\]])/g,'$1');
     let cfg;
-    try{ cfg=JSON.parse(jsonStr); }
-    catch(e){
-      // Tentative de réparation JSON (clés sans guillemets)
-      const fixed=jsonStr.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g,'$1"$2":');
-      cfg=JSON.parse(fixed);
+    try{ cfg=JSON.parse(clean); }
+    catch(e1){
+      // Tentative 2: réparer les clés sans guillemets
+      try{
+        const fixed=clean.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g,'$1"$2":');
+        cfg=JSON.parse(fixed);
+      }catch(e2){
+        // Tentative 3: eval sécurisé (dernier recours)
+        try{
+          cfg=(new Function('return ('+clean+')'))();
+        }catch(e3){ throw new Error('JSON invalide: '+e1.message); }
+      }
     }
     // Thème adaptatif (dark/light)
     const isDark=document.body.classList.contains('dark-mode');
@@ -5633,8 +5689,9 @@ async function sendMsg(overrideText, _prevAssistantMsg=null){
 
     S.msgs.push(am); renderMsg(am);
     indexConversationMsg(am, S.msgs.length-1).catch(()=>{});
-    // RAG: extraire infos utiles en arrière-plan (1 message sur 3)
-    if(S.plan>=2&&!S.user?.isGuest&&Math.random()<0.15){
+    // RAG: extraire infos utiles — seulement si message substantiel (>30 chars et pas trivial)
+    const _isTrivialMsg=displayText.length<30||/^(salut|bonjour|hi|hello|ok|oui|non|merci|ciao|bye|good|bien|yes|no|d'accord|parfait|super|cool|wsh|slt)\s*[!?.]?$/i.test(displayText.trim());
+    if(S.plan>=2&&!S.user?.isGuest&&!_isTrivialMsg&&Math.random()<0.12){
       WM_RAG.extractFromConversation(displayText,aiContent).catch(()=>{});
     }
     // ── Auto-open tool if AI response suggests it ──
@@ -6359,13 +6416,17 @@ function buildSystemPrompt(){
   const userName = S.user?.displayName ? S.user.displayName.split(' ')[0] : null;
   const userCtx = userName && !S.user?.isGuest ? `L'utilisateur s'appelle ${userName}. Utilise son prénom naturellement dans la conversation quand c'est pertinent.` : '';
   // Outils de base disponibles pour tous les modèles
-  const toolsDesc = `Tu peux proposer d'utiliser les outils WikiMind quand c'est pertinent : DataViz IA pour les graphiques, Mind Map pour les cartes mentales, Codeur pour le code, galerie Wikipedia pour les images. Si l'utilisateur demande une image, réponds avec [TOOL:WIKI_IMAGE:mot-clé].`.trim();
+  const toolsDesc = `Outils disponibles :
+- GRAPHIQUE : si demandé, génère un bloc \`\`\`chartjs\n{...json...}\n\`\`\` (JSON strict, guillemets doubles partout)
+- IMAGE : si demandé, réponds avec [TOOL:WIKI_IMAGE:terme anglais]
+- CARTE MENTALE : propose Mind Map IA
+- CODE : propose le Codeur IA`.trim();
   const _now=new Date();
   const _dateStr=_now.toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   const _timeStr=_now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
   const _modelStyle=MISTRAL_MODELS[S.model]?.style||'concis';
   const _styleInstructions={
-    'concis':     'Sois concis et direct. Réponds efficacement sans développements inutiles.',
+    'concis':     'Sois clair et direct. Réponds avec la longueur nécessaire — ni trop court ni trop long. Si la question est complexe, développe. Si elle est simple, reste bref.',
     'approfondi': 'Tu incarnes Wikimind Medium v3.2 : développe tes réponses avec profondeur et nuances. Fournis des explications détaillées, des exemples, des alternatives. Structure avec des sections claires. Sois plus exhaustif que Flash.',
     'expert':     'Tu es Wikimind Work : analyse en profondeur avec expertise technique pointue.',
     'reflexion':  'Tu es Wikimind Réflexion : raisonne étape par étape, méthodiquement.',
@@ -6379,7 +6440,7 @@ function buildSystemPrompt(){
 
 // ── CONTEXT WINDOW MANAGER ──
 // Max tokens estimés par plan (heuristique: 1 token ≈ 4 chars)
-const CTX_CHAR_LIMITS={1:8000,2:16000,3:32000,4:64000,5:128000};
+const CTX_CHAR_LIMITS={1:16000,2:32000,3:64000,4:96000,5:128000};
 let _ctxSummaryCache=null; // {forMsgCount, summary}
 
 function estimateChars(msgs){
@@ -6810,6 +6871,13 @@ function switchCvsTab(tab){
     ed.style.display='none';pv.style.display='block';
     pv.innerHTML=formatMarkdown(ed.value);
     applyMath(pv);applyHljs(pv);injectPythonRunButtons(pv);
+    // Re-render any chartjs blocks in canvas preview
+    setTimeout(()=>{
+      pv.querySelectorAll('canvas[id^="chart-"]').forEach(c=>{
+        const cid=c.id.replace('chart-','wmc');
+        if(window._wmCopyStore&&window._wmCopyStore[cid]) _renderChartJsBlock(c.id,window._wmCopyStore[cid]);
+      });
+    },100);
     // Scroll to top on switch
     pv.scrollTop=0;
   }
@@ -11135,6 +11203,83 @@ async function renderPdfThumbnail(file, container){
     container.appendChild(canvas);
   }catch(e){}
 }
+
+// ════════════════════════════════════════
+// PANEL RESIZER — drag to resize Canvas & Coder
+// ════════════════════════════════════════
+(function(){
+  function initResizer(resizerId, panelId, cssVar, minW, maxW, side){
+    const resizer=document.getElementById(resizerId);
+    const panel=document.getElementById(panelId);
+    if(!resizer||!panel) return;
+
+    // Show resizer when panel opens
+    const observer=new MutationObserver(()=>{
+      const isOpen=panel.classList.contains('open');
+      resizer.style.display=isOpen?'flex':'none';
+    });
+    observer.observe(panel,{attributes:true,attributeFilter:['class']});
+
+    let startX=0, startW=0, dragging=false;
+
+    resizer.addEventListener('mousedown',(e)=>{
+      e.preventDefault();
+      dragging=true;
+      startX=e.clientX;
+      startW=panel.offsetWidth;
+      resizer.classList.add('dragging');
+      document.body.style.cursor='col-resize';
+      document.body.style.userSelect='none';
+    });
+
+    // Touch support
+    resizer.addEventListener('touchstart',(e)=>{
+      dragging=true;
+      startX=e.touches[0].clientX;
+      startW=panel.offsetWidth;
+      resizer.classList.add('dragging');
+    },{passive:true});
+
+    document.addEventListener('mousemove',(e)=>{
+      if(!dragging) return;
+      // Panel is on the RIGHT side of resizer
+      const dx = side==='right' ? startX-e.clientX : e.clientX-startX;
+      const newW=Math.max(minW, Math.min(maxW, startW+dx));
+      document.documentElement.style.setProperty(cssVar, newW+'px');
+    });
+
+    document.addEventListener('touchmove',(e)=>{
+      if(!dragging) return;
+      const dx=side==='right'?startX-e.touches[0].clientX:e.touches[0].clientX-startX;
+      const newW=Math.max(minW,Math.min(maxW,startW+dx));
+      document.documentElement.style.setProperty(cssVar,newW+'px');
+    },{passive:true});
+
+    const stopDrag=()=>{
+      if(!dragging) return;
+      dragging=false;
+      resizer.classList.remove('dragging');
+      document.body.style.cursor='';
+      document.body.style.userSelect='';
+      // Save preference
+      try{ localStorage.setItem('wm_'+panelId+'_w', document.documentElement.style.getPropertyValue(cssVar)); }catch(e){}
+    };
+    document.addEventListener('mouseup',stopDrag);
+    document.addEventListener('touchend',stopDrag);
+
+    // Restore saved width
+    try{
+      const saved=localStorage.getItem('wm_'+panelId+'_w');
+      if(saved&&parseFloat(saved)>=minW) document.documentElement.style.setProperty(cssVar,saved);
+    }catch(e){}
+  }
+
+  // Init after DOM ready
+  window.addEventListener('load',()=>{
+    initResizer('canvas-resizer','canvas-panel','--canvas-w',280,900,'right');
+    initResizer('coder-resizer','coder-panel','--coder-w',320,1000,'right');
+  });
+})();
 
 document.addEventListener('DOMContentLoaded', ()=>{
   const toInput = G('gmail-compose-to');
