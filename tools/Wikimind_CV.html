@@ -1052,6 +1052,87 @@ a{text-decoration:none;color:inherit;}
   #cv-preview-frame, #cv-preview-frame * { visibility: visible; }
   #cv-preview-frame { position: fixed; left: 0; top: 0; width: 100%; }
 }
+
+/* ── TOOLTIP INFO BUTTONS ── */
+.field-info{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:15px;height:15px;border-radius:50%;background:var(--border2);
+  color:#888;font-size:9px;font-weight:900;cursor:help;
+  vertical-align:middle;margin-left:5px;flex-shrink:0;
+  position:relative;transition:.2s;border:none;font-family:'Inter',sans-serif;
+}
+.field-info:hover{background:#6366f1;color:#fff;}
+.field-info::after{
+  content:attr(data-tip);
+  position:absolute;left:50%;bottom:calc(100% + 8px);
+  transform:translateX(-50%);
+  background:#1a1a1a;color:#fff;
+  font-size:11px;font-weight:500;
+  padding:7px 10px;border-radius:8px;
+  white-space:nowrap;max-width:220px;white-space:normal;
+  text-transform:none;letter-spacing:0;
+  pointer-events:none;opacity:0;transition:opacity .2s;
+  z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,.3);
+  line-height:1.5;
+}
+.dark-mode .field-info::after{background:#fff;color:#111;}
+.field-info:hover::after{opacity:1;}
+
+/* ── AI SIDE PANEL ── */
+#ai-side-panel{
+  width:0;min-width:0;overflow:hidden;
+  background:var(--sidebar);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;
+  transition:width .35s cubic-bezier(.4,0,.2,1),min-width .35s cubic-bezier(.4,0,.2,1);
+  flex-shrink:0;
+}
+#ai-side-panel.open{width:300px;min-width:300px;}
+.ai-side-header{
+  padding:14px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.ai-side-title{
+  font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;
+  background:linear-gradient(90deg,#6366f1,#ec4899);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  display:flex;align-items:center;gap:6px;
+}
+.ai-side-close{background:none;border:none;cursor:pointer;color:#888;font-size:16px;transition:.2s;padding:4px;}
+.ai-side-close:hover{color:var(--text);}
+.ai-chat-area{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;}
+.ai-msg{padding:9px 12px;border-radius:10px;font-size:12px;line-height:1.6;max-width:95%;}
+.ai-msg.assistant{background:linear-gradient(135deg,rgba(99,102,241,.1),rgba(139,92,246,.08));border:1px solid rgba(99,102,241,.15);align-self:flex-start;color:var(--text);}
+.ai-msg.user{background:var(--accent);color:var(--accent-inv);align-self:flex-end;border-radius:10px 10px 2px 10px;}
+.ai-chat-footer{padding:10px;border-top:1px solid var(--border);flex-shrink:0;}
+.ai-chat-input-row{display:flex;gap:6px;align-items:flex-end;}
+.ai-chat-textarea{
+  flex:1;padding:8px 10px;border-radius:9px;border:1px solid rgba(99,102,241,.25);
+  background:rgba(99,102,241,.05);color:var(--text);font-size:12px;
+  outline:none;font-family:'Inter',sans-serif;resize:none;min-height:36px;max-height:80px;
+  line-height:1.5;
+}
+.ai-chat-textarea:focus{border-color:#6366f1;}
+.ai-send-btn{
+  width:34px;height:34px;border-radius:8px;background:#6366f1;color:#fff;
+  border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:.2s;
+}
+.ai-send-btn:hover{background:#4f46e5;}
+.ai-quick-actions{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;}
+.ai-quick-btn{
+  padding:4px 9px;border-radius:15px;font-size:10px;font-weight:700;
+  border:1px solid rgba(99,102,241,.25);background:rgba(99,102,241,.06);
+  color:#6366f1;cursor:pointer;transition:.2s;font-family:'Inter',sans-serif;
+}
+.ai-quick-btn:hover{background:rgba(99,102,241,.14);}
+#btn-ai-panel.active{background:linear-gradient(135deg,#6366f1,#8b5cf6)!important;color:#fff!important;}
+#ai-notif-dot{
+  position:absolute;top:2px;right:2px;width:7px;height:7px;
+  border-radius:50%;background:#ec4899;
+  animation:pulse 2s infinite;pointer-events:none;
+}
+#btn-ai-panel{position:relative;}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.4);opacity:.7;}}
 </style>
 </head>
 <body>
@@ -1147,6 +1228,11 @@ a{text-decoration:none;color:inherit;}
         Exporter PDF
       </button>
       <div class="et-spacer"></div>
+      <button class="et-btn" id="btn-ai-panel" onclick="toggleAIPanel()" title="Assistant IA Wikimind">
+        <div id="ai-notif-dot"></div>
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Assistant IA
+      </button>
       <div class="preview-zoom">
         <button class="zoom-btn" onclick="changeZoom(-10)">−</button>
         <span class="zoom-val" id="zoom-val">85%</span>
@@ -1203,23 +1289,23 @@ a{text-decoration:none;color:inherit;}
           <div class="form-section">
             <div class="form-section-hdr"><span class="form-section-title">Identité</span></div>
             <div class="form-row">
-              <div class="form-field"><label class="form-label">Prénom</label><input class="form-input" id="f-firstname" placeholder="Marie" oninput="updatePreview()"></div>
-              <div class="form-field"><label class="form-label">Nom</label><input class="form-input" id="f-lastname" placeholder="Dupont" oninput="updatePreview()"></div>
+              <div class="form-field"><label class="form-label">Prénom <button class="field-info" data-tip="Ex: Marie, Thomas, Sarah — votre prénom tel qu'il apparaîtra sur le CV">ⓘ</button></label><input class="form-input" id="f-firstname" placeholder="Marie" oninput="updatePreview()"></div>
+              <div class="form-field"><label class="form-label">Nom <button class="field-info" data-tip="Votre nom de famille. Ex: Dupont, Martin, Bernard">ⓘ</button></label><input class="form-input" id="f-lastname" placeholder="Dupont" oninput="updatePreview()"></div>
             </div>
-            <div class="form-field"><label class="form-label">Titre / Poste</label><input class="form-input" id="f-title" placeholder="Développeuse Full-Stack" oninput="updatePreview()"></div>
-            <div class="form-field"><label class="form-label">Résumé professionnel</label><textarea class="form-textarea" id="f-summary" placeholder="Professionnelle passionnée par…" rows="4" oninput="updatePreview()"></textarea></div>
+            <div class="form-field"><label class="form-label">Titre / Poste <button class="field-info" data-tip="Votre poste actuel ou souhaité. Ex: Développeur Full-Stack Senior, Responsable Marketing Digital, Chef de projet IT">ⓘ</button></label><input class="form-input" id="f-title" placeholder="Développeuse Full-Stack" oninput="updatePreview()"></div>
+            <div class="form-field"><label class="form-label">Résumé professionnel <button class="field-info" data-tip="2-3 phrases percutantes décrivant votre profil, compétences clés et valeur ajoutée. Utilisez des verbes d'action. L'IA peut l'améliorer automatiquement !">ⓘ</button></label><textarea class="form-textarea" id="f-summary" placeholder="Professionnelle passionnée par…" rows="4" oninput="updatePreview()"></textarea></div>
           </div>
 
           <div class="form-section">
             <div class="form-section-hdr"><span class="form-section-title">Contact</span></div>
-            <div class="form-field"><label class="form-label">Email</label><input class="form-input" id="f-email" type="email" placeholder="marie@exemple.com" oninput="updatePreview()"></div>
-            <div class="form-field"><label class="form-label">Téléphone</label><input class="form-input" id="f-phone" placeholder="+33 6 12 34 56 78" oninput="updatePreview()"></div>
+            <div class="form-field"><label class="form-label">Email <button class="field-info" data-tip="Adresse email professionnelle. Ex: marie.dupont@gmail.com. Évitez les adresses fantaisistes.">ⓘ</button></label><input class="form-input" id="f-email" type="email" placeholder="marie@exemple.com" oninput="updatePreview()"></div>
+            <div class="form-field"><label class="form-label">Téléphone <button class="field-info" data-tip="Format international recommandé. Ex: +33 6 12 34 56 78">ⓘ</button></label><input class="form-input" id="f-phone" placeholder="+33 6 12 34 56 78" oninput="updatePreview()"></div>
             <div class="form-row">
-              <div class="form-field"><label class="form-label">Ville</label><input class="form-input" id="f-city" placeholder="Paris" oninput="updatePreview()"></div>
-              <div class="form-field"><label class="form-label">Pays</label><input class="form-input" id="f-country" placeholder="France" oninput="updatePreview()"></div>
+              <div class="form-field"><label class="form-label">Ville <button class="field-info" data-tip="Votre ville de résidence ou de recherche d'emploi. Ex: Paris, Lyon, Bordeaux">ⓘ</button></label><input class="form-input" id="f-city" placeholder="Paris" oninput="updatePreview()"></div>
+              <div class="form-field"><label class="form-label">Pays <button class="field-info" data-tip="Ex: France, Belgique, Suisse, Canada">ⓘ</button></label><input class="form-input" id="f-country" placeholder="France" oninput="updatePreview()"></div>
             </div>
-            <div class="form-field"><label class="form-label">LinkedIn</label><input class="form-input" id="f-linkedin" placeholder="linkedin.com/in/marie" oninput="updatePreview()"></div>
-            <div class="form-field"><label class="form-label">Site web / Portfolio</label><input class="form-input" id="f-website" placeholder="marie-portfolio.fr" oninput="updatePreview()"></div>
+            <div class="form-field"><label class="form-label">LinkedIn <button class="field-info" data-tip="URL ou nom d'utilisateur LinkedIn. Ex: linkedin.com/in/marie-dupont ou juste marie-dupont">ⓘ</button></label><input class="form-input" id="f-linkedin" placeholder="linkedin.com/in/marie" oninput="updatePreview()"></div>
+            <div class="form-field"><label class="form-label">Site web / Portfolio <button class="field-info" data-tip="Votre site perso, portfolio ou GitHub. Ex: marie-dupont.fr, github.com/marie">ⓘ</button></label><input class="form-input" id="f-website" placeholder="marie-portfolio.fr" oninput="updatePreview()"></div>
           </div>
         </div>
 
@@ -1297,29 +1383,39 @@ a{text-decoration:none;color:inherit;}
 
         <!-- TAB: EXTRAS -->
         <div class="form-body" id="fbody-extra" style="display:none">
+          <div style="background:linear-gradient(135deg,rgba(16,185,129,.06),rgba(6,182,212,.06));border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:12px;margin-bottom:14px;">
+            <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#10b981;margin-bottom:8px;display:flex;align-items:center;gap:5px;">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              IA — Extras
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button style="padding:6px 12px;border-radius:8px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.08);color:#10b981;transition:.2s;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:4px;" onclick="aiGenerateInterests()"><div class="ai-spinner" id="sp-interests"></div>🎯 Générer intérêts</button>
+              <button style="padding:6px 12px;border-radius:8px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.08);color:#10b981;transition:.2s;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:4px;" onclick="aiGenerateCertifications()"><div class="ai-spinner" id="sp-certif"></div>🏆 Certifications</button>
+            </div>
+          </div>
           <div class="form-section">
             <div class="form-section-hdr"><span class="form-section-title">Centres d'intérêt</span></div>
             <div class="form-field">
-              <label class="form-label">Loisirs / Hobbies</label>
+              <label class="form-label">Loisirs / Hobbies <button class="field-info" data-tip="Activités qui révèlent votre personnalité. Ex: Photographie, randonnée, bénévolat, échecs, musique. Évitez les généralités comme 'lecture' sans précision.">ⓘ</button></label>
               <textarea class="form-textarea" id="f-interests" placeholder="Photographie, randonnée, bénévolat…" rows="3" oninput="updatePreview()"></textarea>
             </div>
           </div>
           <div class="form-section">
             <div class="form-section-hdr"><span class="form-section-title">Certifications</span></div>
             <div class="form-field">
-              <label class="form-label">Certifications</label>
+              <label class="form-label">Certifications <button class="field-info" data-tip="Certifications professionnelles avec l'organisme et l'année. Ex: AWS Certified Solutions Architect (2023), Google Analytics (2022), TOEIC 920 (2022)">ⓘ</button></label>
               <textarea class="form-textarea" id="f-certifications" placeholder="AWS Certified, Google Analytics…" rows="3" oninput="updatePreview()"></textarea>
             </div>
           </div>
           <div class="form-section">
             <div class="form-section-hdr"><span class="form-section-title">Projets personnels</span></div>
             <div class="form-field">
-              <label class="form-label">Projets</label>
+              <label class="form-label">Projets <button class="field-info" data-tip="Projets perso, side-projects, contributions open-source. Ex: App mobile de suivi sportif (React Native, 500 users), Blog tech (2000 lecteurs/mois)">ⓘ</button></label>
               <textarea class="form-textarea" id="f-projects" placeholder="App mobile, blog technique…" rows="3" oninput="updatePreview()"></textarea>
             </div>
           </div>
           <div class="form-section">
-            <div class="form-section-hdr"><span class="form-section-title">Couleur d'accentuation</span></div>
+            <div class="form-section-hdr"><span class="form-section-title">Couleur d'accentuation <button class="field-info" data-tip="Choisissez une couleur qui s'accorde avec le template sélectionné et l'image que vous voulez donner (sobre pour un CV corporate, plus vif pour un CV créatif)">ⓘ</button></span></div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;" id="color-palette">
               <!-- generated by JS -->
             </div>
@@ -1337,6 +1433,36 @@ a{text-decoration:none;color:inherit;}
         <div class="preview-scroll" id="preview-scroll">
           <div id="cv-preview-wrapper">
             <div id="cv-preview-frame"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI SIDE PANEL -->
+      <div id="ai-side-panel">
+        <div class="ai-side-header">
+          <span class="ai-side-title">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Wikimind AI
+          </span>
+          <button class="ai-side-close" onclick="toggleAIPanel()">✕</button>
+        </div>
+        <div class="ai-chat-area" id="ai-chat-area">
+          <div class="ai-msg assistant">👋 Bonjour ! Je suis <strong>Wikimind AI</strong>, votre assistant CV.<br><br>Je peux vous aider à rédiger votre profil, améliorer vos descriptions d'expériences, générer des compétences, ou optimiser l'ensemble de votre CV.</div>
+        </div>
+        <div class="ai-chat-footer">
+          <div class="ai-quick-actions">
+            <button class="ai-quick-btn" onclick="aiQuick('Améliore mon résumé professionnel')">✍️ Résumé</button>
+            <button class="ai-quick-btn" onclick="aiQuick('Génère 8 compétences pour mon profil')">🎯 Compétences</button>
+            <button class="ai-quick-btn" onclick="aiQuick('Améliore ma dernière expérience professionnelle')">💼 Expérience</button>
+            <button class="ai-quick-btn" onclick="aiQuick('Optimise tout mon CV maintenant')">⚡ Tout optimiser</button>
+            <button class="ai-quick-btn" onclick="aiQuick('Analyse mon CV et donne-moi des conseils')">🔍 Analyser</button>
+            <button class="ai-quick-btn" onclick="aiQuick('Génère des centres d\'intérêt percutants')">🌟 Intérêts</button>
+          </div>
+          <div class="ai-chat-input-row">
+            <textarea class="ai-chat-textarea" id="ai-chat-input" placeholder="Posez votre question…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();aiChatSend();}"></textarea>
+            <button class="ai-send-btn" onclick="aiChatSend()">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
           </div>
         </div>
       </div>
@@ -1363,13 +1489,13 @@ a{text-decoration:none;color:inherit;}
   <div class="modal-box" onclick="event.stopPropagation()" style="max-width:500px">
     <h3>Expérience</h3>
     <div class="entry-form">
-      <div><label class="form-label">Poste / Titre</label><input class="modal-input" id="em-role" placeholder="Développeur Frontend Senior"></div>
-      <div><label class="form-label">Entreprise</label><input class="modal-input" id="em-company" placeholder="Acme Corp."></div>
+      <div><label class="form-label">Poste / Titre <button class="field-info" data-tip="Ex: Développeur Frontend Senior, Chef de projet, Responsable commercial">ⓘ</button></label><input class="modal-input" id="em-role" placeholder="Développeur Frontend Senior"></div>
+      <div><label class="form-label">Entreprise <button class="field-info" data-tip="Nom de l'entreprise ou organisation. Ex: Acme Corp., Freelance, Gouvernement français">ⓘ</button></label><input class="modal-input" id="em-company" placeholder="Acme Corp."></div>
       <div class="form-row">
-        <div><label class="form-label">Début</label><input class="modal-input" id="em-from" placeholder="Jan 2021"></div>
-        <div><label class="form-label">Fin</label><input class="modal-input" id="em-to" placeholder="Présent"></div>
+        <div><label class="form-label">Début <button class="field-info" data-tip="Mois et année. Ex: Jan 2021, Mars 2019">ⓘ</button></label><input class="modal-input" id="em-from" placeholder="Jan 2021"></div>
+        <div><label class="form-label">Fin <button class="field-info" data-tip="Mois/année ou 'Présent' si c'est votre poste actuel">ⓘ</button></label><input class="modal-input" id="em-to" placeholder="Présent"></div>
       </div>
-      <div><label class="form-label">Description</label><textarea class="modal-input" id="em-desc" rows="4" placeholder="Missions, réalisations, technologies…" style="resize:vertical"></textarea></div>
+      <div><label class="form-label">Description <button class="field-info" data-tip="Décrivez vos missions et réalisations avec des verbes d'action et des chiffres. Ex: Développé une app React utilisée par 10 000 utilisateurs, réduit le temps de chargement de 40%">ⓘ</button></label><textarea class="modal-input" id="em-desc" rows="4" placeholder="Missions, réalisations, technologies…" style="resize:vertical"></textarea></div>
       <div class="modal-btn-row">
         <button class="modal-btn primary" onclick="saveExpEntry()">Enregistrer</button>
         <button class="modal-btn secondary" style="width:auto;padding:12px 20px" onclick="closeModal('exp-modal')">Annuler</button>
@@ -1592,7 +1718,7 @@ onAuthStateChanged(auth,user=>{
 'use strict';
 
 // ── MISTRAL KEY ──
-const MISTRAL_KEY = 'p4WvRh9MV9TKHHpHOQpfT9EpGVIqe0V0';
+const MISTRAL_KEY = 'wuZGbRk6ry7KpMraZvxB3zg7ae6x1dLN';
 const MISTRAL_MODEL = 'mistral-large-latest';
 
 // ── VIP ACCOUNT (Clément — fondateur de l'idée) ──
@@ -2365,6 +2491,19 @@ function buildCVHTML(templateId, data, color, isPreview){
   }
   const contactItems=[[d.email,'✉'],[d.phone,'📞'],[locationStr,'📍'],[d.linkedin,'in'],[d.website,'🌐']].filter(([v])=>v);
 
+  // Shared extras block (interests, certifications, projects)
+  function extrasBlock(titleColor, textColor, borderColor){
+    let html='';
+    const tc = titleColor||c;
+    const xtc = textColor||'#475569';
+    const bc = borderColor||c+'22';
+    if(d.interests) html+=`<div style="margin-bottom:14px"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.15em;color:${tc};margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid ${bc}">Centres d'intérêt</div><div style="font-size:11.5px;color:${xtc};line-height:1.7">${esc(d.interests)}</div></div>`;
+    if(d.certifications) html+=`<div style="margin-bottom:14px"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.15em;color:${tc};margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid ${bc}">Certifications</div><div style="font-size:11.5px;color:${xtc};line-height:1.7">${esc(d.certifications)}</div></div>`;
+    if(d.projects) html+=`<div style="margin-bottom:14px"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.15em;color:${tc};margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid ${bc}">Projets</div><div style="font-size:11.5px;color:${xtc};line-height:1.7">${esc(d.projects)}</div></div>`;
+    return html;
+  }
+  const hasExtras = !!(d.interests||d.certifications||d.projects);
+
   switch(templateId){
     // ── T1: AURORA ──
     case 't1': return `
@@ -2394,7 +2533,7 @@ function buildCVHTML(templateId, data, color, isPreview){
           ${d.summary?`<div class="t1-hero-summary">${esc(d.summary)}</div>`:''}
           ${d.experiences?.length?`<div class="t1-r-section"><div class="t1-r-section-title">Expérience</div>${expBlock('t1',d.experiences)}</div>`:''}
           ${d.education?.length?`<div class="t1-r-section"><div class="t1-r-section-title">Formation</div>${d.education.map(e=>`<div class="t1-edu-item"><div class="t1-exp-company">${esc(e.degree)}</div><div class="t1-exp-date" style="font-size:11px;color:#64748b">${esc(e.school)} · ${esc(e.from)}${e.to?' – '+e.to:''}</div></div>`).join('')}</div>`:''}
-          ${d.interests?`<div class="t1-r-section"><div class="t1-r-section-title">Intérêts</div><div style="font-size:11.5px;color:#475569;line-height:1.7">${esc(d.interests)}</div></div>`:''}
+          ${hasExtras?`<div class="t1-r-section"><div class="t1-r-section-title">Extras</div>${extrasBlock(c,'#475569',c+'22')}</div>`:''}
         </div>
       </div></div>`;
 
@@ -2414,6 +2553,7 @@ function buildCVHTML(templateId, data, color, isPreview){
             ${d.summary?`<div class="t2-section"><div class="t2-section-title">Profil</div><div class="t2-summary">${esc(d.summary)}</div></div>`:''}
             ${d.experiences?.length?`<div class="t2-section"><div class="t2-section-title">Expériences</div>${expBlock('t2',d.experiences)}</div>`:''}
             ${d.education?.length?`<div class="t2-section"><div class="t2-section-title">Formation</div>${d.education.map(e=>`<div class="t2-edu"><div class="t2-edu-degree">${esc(e.degree)}</div><div class="t2-edu-school">${esc(e.school)}</div><div class="t2-edu-date">${esc(e.from)}${e.to?' – '+e.to:''}</div></div>`).join('')}</div>`:''}
+            ${hasExtras?`<div class="t2-section"><div class="t2-section-title">Extras</div>${extrasBlock(c,'#374151',c+'33')}</div>`:''}
           </div>
           <div class="t2-aside">
             ${d.skills?.length?`<div class="t2-section"><div class="t2-section-title">Compétences</div>${d.skills.map(s=>`<div class="t2-skill-item"><span>${esc(s.name)}</span><span class="t2-skill-lvl">${esc(s.level)}</span></div>`).join('')}</div>`:''}
@@ -2447,6 +2587,7 @@ function buildCVHTML(templateId, data, color, isPreview){
             ${d.summary?`<div class="t3-summary">${esc(d.summary)}</div>`:''}
             ${d.experiences?.length?`<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.15em;color:${c};margin-bottom:10px;">Expériences</div>${expBlock('t3',d.experiences)}`:''}
             ${d.education?.length?`<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.15em;color:${c};margin-bottom:10px;margin-top:16px;">Formation</div>${d.education.map(e=>`<div class="t3-edu"><div class="t3-edu-degree">${esc(e.degree)}</div><div class="t3-edu-school">${esc(e.school)}</div><div class="t3-edu-date">${esc(e.from)}${e.to?' – '+e.to:''}</div></div>`).join('')}`:''}
+            ${hasExtras?`<div style="margin-top:16px">${extrasBlock(c,'#374151',c+'33')}</div>`:''}
           </div>
         </div>
       </div></div>`;
@@ -2474,6 +2615,7 @@ function buildCVHTML(templateId, data, color, isPreview){
             ${d.summary?`<div class="t4-section"><div class="t4-section-title">Profil</div><div class="t4-summary">${esc(d.summary)}</div></div>`:''}
             ${d.experiences?.length?`<div class="t4-section"><div class="t4-section-title">Expériences</div>${expBlock('t4',d.experiences)}</div>`:''}
             ${d.education?.length?`<div class="t4-section"><div class="t4-section-title">Formation</div>${d.education.map(e=>`<div class="t4-edu"><div class="t4-edu-degree">${esc(e.degree)}</div><div class="t4-edu-school">${esc(e.school)}</div><div class="t4-edu-date">${esc(e.from)}${e.to?' – '+e.to:''}</div></div>`).join('')}</div>`:''}
+            ${hasExtras?`<div class="t4-section">${extrasBlock(c,'#374151',c+'33')}</div>`:''}
           </div>
         </div>
       </div></div>`;
@@ -2495,7 +2637,7 @@ function buildCVHTML(templateId, data, color, isPreview){
           <div class="t5-main">
             ${d.summary?`<div class="t5-section"><div class="t5-section-title">Profil</div><div class="t5-summary">${esc(d.summary)}</div></div>`:''}
             ${d.experiences?.length?`<div class="t5-section"><div class="t5-section-title">Expériences</div>${expBlock('t5',d.experiences)}</div>`:''}
-            ${d.education?.length?`<div class="t5-section"><div class="t5-section-title">Formation</div>${d.education.map(e=>`<div class="t5-edu"><div class="t5-edu-degree">${esc(e.degree)}</div><div class="t5-edu-school">${esc(e.school)}</div><div class="t5-edu-date">${esc(e.from)}${e.to?' – '+e.to:''}</div></div>`).join('')}</div>`:''}
+            ${d.education?.length?`<div class="t5-section"><div class="t5-section-title">Formation</div>${d.education.map(e=>`<div class="t5-edu"><div class="t5-edu-degree">${esc(e.degree)}</div><div class="t5-edu-school">${esc(e.school)}</div><div class="t5-edu-date">${esc(e.from)}${e.to?' – '+e.to:''}</div></div>`).join('')}</div>`:''}\n            ${hasExtras?`<div class="t5-section">${extrasBlock(c,'#374151',c+'33')}</div>`:''}
           </div>
           <div class="t5-aside">
             ${d.skills?.length?`<div class="t5-aside-section"><div class="t5-aside-section-title">Compétences</div>${d.skills.map(s=>`<div class="t5-skill"><div class="t5-skill-name">${esc(s.name)}</div><div class="t5-skill-lvl">${esc(s.level)}</div></div>`).join('')}</div>`:''}
@@ -2522,7 +2664,7 @@ function buildCVHTML(templateId, data, color, isPreview){
           <div>
             ${d.skills?.length?`<div class="t6-section"><div class="t6-section-title">Compétences</div>${d.skills.map(s=>`<div class="t6-skill"><span class="t6-skill-name">${esc(s.name)}</span><span class="t6-skill-lvl">${esc(s.level)}</span></div>`).join('')}</div>`:''}
             ${d.languages?.length?`<div class="t6-section"><div class="t6-section-title">Langues</div>${d.languages.map(l=>`<div class="t6-lang"><span>${esc(l.name)}</span><span class="t6-lang-lvl">${esc(l.level)}</span></div>`).join('')}</div>`:''}
-            ${d.interests?`<div class="t6-section"><div class="t6-section-title">Intérêts</div><div style="font-size:12px;color:#444;line-height:1.7">${esc(d.interests)}</div></div>`:''}
+            ${hasExtras?`${extrasBlock(c,'#444','#ddd')}`:''}
           </div>
         </div>
       </div></div>`;
@@ -2546,6 +2688,7 @@ function buildCVHTML(templateId, data, color, isPreview){
             ${d.summary?`<div class="t7-section"><div class="t7-section-title">Profil</div><div class="t7-summary">${esc(d.summary)}</div></div>`:''}
             ${d.experiences?.length?`<div class="t7-section"><div class="t7-section-title">Expériences</div>${expBlock('t7',d.experiences)}</div>`:''}
             ${d.education?.length?`<div class="t7-section"><div class="t7-section-title">Formation</div>${d.education.map(e=>`<div class="t7-edu"><div class="t7-edu-degree">${esc(e.degree)}</div><div class="t7-edu-school">${esc(e.school)}</div><div class="t7-edu-date">${esc(e.from)}${e.to?' – '+e.to:''}</div></div>`).join('')}</div>`:''}
+            ${hasExtras?`${extrasBlock(c,'#374151',c+'33')}`:''}
           </div>
           <div class="t7-side">
             ${d.skills?.length?`<div class="t7-side-section"><div class="t7-side-section-title">Compétences</div>${d.skills.map(s=>`<div class="t7-skill"><div class="t7-skill-name">${esc(s.name)}</div><div class="t7-skill-lvl">${esc(s.level)}</div></div>`).join('')}</div>`:''}
@@ -2576,6 +2719,7 @@ function buildCVHTML(templateId, data, color, isPreview){
             ${d.summary?`<div class="t8-summary">${esc(d.summary)}</div>`:''}
             ${d.experiences?.length?`<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.15em;color:${c};margin-bottom:10px">Expériences</div>${expBlock('t8',d.experiences)}`:''}
             ${d.education?.length?`<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.15em;color:${c};margin-bottom:10px;margin-top:16px">Formation</div>${d.education.map(e=>`<div class="t8-edu"><div class="t8-edu-degree">${esc(e.degree)}</div><div class="t8-edu-school">${esc(e.school)}</div><div class="t8-edu-date">${esc(e.from)}${e.to?' – '+e.to:''}</div></div>`).join('')}`:''}
+            ${hasExtras?`${extrasBlock(c,'#374151',c+'33')}`:''}
           </div>
         </div>
       </div></div>`;
@@ -2605,6 +2749,7 @@ function buildCVHTML(templateId, data, color, isPreview){
             ${d.summary?`<div class="t9-section"><div class="t9-section-title">Profil</div><div class="t9-summary">${esc(d.summary)}</div></div>`:''}
             ${d.experiences?.length?`<div class="t9-section"><div class="t9-section-title">Expériences</div>${expBlock('t9',d.experiences)}</div>`:''}
             ${d.education?.length?`<div class="t9-section"><div class="t9-section-title">Formation</div>${d.education.map(e=>`<div class="t9-edu"><div class="t9-edu-degree">${esc(e.degree)}</div><div class="t9-edu-school">${esc(e.school)}</div><div class="t9-edu-date">${esc(e.from)}${e.to?' – '+e.to:''}</div></div>`).join('')}</div>`:''}
+            ${hasExtras?`${extrasBlock(c,'#374151',c+'33')}`:''}
           </div>
           <div>
             ${d.skills?.length?`<div class="t9-section"><div class="t9-section-title">Compétences</div>${d.skills.map(s=>`<div class="t9-skill-item"><span>${esc(s.name)}</span><span class="t9-skill-lvl">${esc(s.level)}</span></div>`).join('')}</div>`:''}
@@ -2635,6 +2780,7 @@ function buildCVHTML(templateId, data, color, isPreview){
             ${d.summary?`<div class="t10-summary">${esc(d.summary)}</div>`:''}
             ${d.experiences?.length?`<div class="t10-section-title">Expériences</div>${expBlock('t10',d.experiences)}`:''}
             ${d.education?.length?`<div class="t10-section-title" style="margin-top:20px">Formation</div>${d.education.map(e=>`<div class="t10-edu"><div class="t10-edu-degree">${esc(e.degree)}</div><div class="t10-edu-school">${esc(e.school)}</div><div class="t10-edu-date">${esc(e.from)}${e.to?' – '+e.to:''}</div></div>`).join('')}`:''}
+            ${hasExtras?`${extrasBlock(c,'#9ca3af',c+'44')}`:''}
           </div>
         </div>
       </div></div>`;
@@ -2655,6 +2801,7 @@ function buildCVHTML(templateId, data, color, isPreview){
             ${d.summary?`<div class="t11-section"><div class="t11-section-title">Profil</div><div class="t11-summary">${esc(d.summary)}</div></div>`:''}
             ${d.experiences?.length?`<div class="t11-section"><div class="t11-section-title">Expériences</div>${d.experiences.map(e=>`<div class="t11-exp"><div style="display:flex;justify-content:space-between"><div class="t11-exp-role">${esc(e.role)}</div><div class="t11-exp-date">${esc(e.from)} – ${esc(e.to)}</div></div><div class="t11-exp-company">${esc(e.company)}</div>${e.desc?`<div class="t11-exp-desc">${esc(e.desc)}</div>`:''}</div>`).join('')}</div>`:''}
             ${d.education?.length?`<div class="t11-section"><div class="t11-section-title">Formation</div>${d.education.map(e=>`<div class="t11-edu"><div class="t11-edu-degree">${esc(e.degree)}</div><div class="t11-edu-school">${esc(e.school)}</div><div class="t11-edu-date">${esc(e.from)}${e.to?' – '+e.to:''}</div></div>`).join('')}</div>`:''}
+            ${hasExtras?`${extrasBlock(c,'#9ca3af',c+'44')}`:''}
           </div>
           <div>
             ${d.skills?.length?`<div class="t11-section"><div class="t11-section-title">Compétences</div>${d.skills.map(s=>`<div class="t11-skill"><span class="t11-skill-name">${esc(s.name)}</span><span class="t11-skill-lvl">${esc(s.level)}</span></div>`).join('')}</div>`:''}
@@ -2679,6 +2826,7 @@ function buildCVHTML(templateId, data, color, isPreview){
             ${d.summary?`<div class="t12-section"><div class="t12-section-title">Profil</div><div class="t12-summary">${esc(d.summary)}</div></div>`:''}
             ${d.experiences?.length?`<div class="t12-section"><div class="t12-section-title">Expériences</div>${d.experiences.map(e=>`<div class="t12-exp"><div style="display:flex;justify-content:space-between"><div class="t12-exp-role">${esc(e.role)}</div><div class="t12-exp-date">${esc(e.from)} – ${esc(e.to)}</div></div><div class="t12-exp-company">${esc(e.company)}</div>${e.desc?`<div class="t12-exp-desc">${esc(e.desc)}</div>`:''}</div>`).join('')}</div>`:''}
             ${d.education?.length?`<div class="t12-section"><div class="t12-section-title">Formation</div>${d.education.map(e=>`<div class="t12-edu"><div class="t12-edu-degree">${esc(e.degree)}</div><div class="t12-edu-school">${esc(e.school)}</div><div class="t12-edu-date">${esc(e.from)}${e.to?' – '+e.to:''}</div></div>`).join('')}</div>`:''}
+            ${hasExtras?`${extrasBlock(c,'#9ca3af',c+'44')}`:''}
           </div>
           <div>
             ${d.skills?.length?`<div class="t12-section"><div class="t12-section-title">Compétences</div>${d.skills.map(s=>`<div class="t12-skill"><span class="t12-skill-name">${esc(s.name)}</span><span class="t12-skill-lvl">${esc(s.level)}</span></div>`).join('')}</div>`:''}
@@ -2706,6 +2854,7 @@ function buildCVHTML(templateId, data, color, isPreview){
             <div>
               ${d.experiences?.length?`<div class="t13-section"><div class="t13-section-title">Expériences</div>${d.experiences.map(e=>`<div class="t13-exp"><div class="t13-exp-role">${esc(e.role)}</div><div class="t13-exp-company">${esc(e.company)}</div><div class="t13-exp-date">${esc(e.from)} – ${esc(e.to)}</div>${e.desc?`<div class="t13-exp-desc">${esc(e.desc)}</div>`:''}</div>`).join('')}</div>`:''}
               ${d.education?.length?`<div class="t13-section"><div class="t13-section-title">Formation</div>${d.education.map(e=>`<div class="t13-edu"><div class="t13-edu-degree">${esc(e.degree)}</div><div class="t13-edu-school">${esc(e.school)}</div><div class="t13-edu-date">${esc(e.from)}${e.to?' – '+e.to:''}</div></div>`).join('')}</div>`:''}
+            ${hasExtras?`${extrasBlock(c,'#374151',c+'33')}`:''}
             </div>
             <div>
               ${d.skills?.length?`<div class="t13-section"><div class="t13-section-title">Compétences</div>${d.skills.map(s=>`<div class="t13-skill"><div class="t13-skill-name">${esc(s.name)}</div><div class="t13-skill-lvl">${esc(s.level)}</div></div>`).join('')}</div>`:''}
@@ -2738,6 +2887,7 @@ function buildCVHTML(templateId, data, color, isPreview){
             ${d.summary?`<div class="t14-section"><div class="t14-section-title">Profil</div><div class="t14-summary">${esc(d.summary)}</div></div>`:''}
             ${d.experiences?.length?`<div class="t14-section"><div class="t14-section-title">Expériences</div>${d.experiences.map(e=>`<div class="t14-exp"><div style="display:flex;justify-content:space-between"><div class="t14-exp-role">${esc(e.role)}</div><div class="t14-exp-date">${esc(e.from)} – ${esc(e.to)}</div></div><div class="t14-exp-company">${esc(e.company)}</div>${e.desc?`<div class="t14-exp-desc">${esc(e.desc)}</div>`:''}</div>`).join('')}</div>`:''}
             ${d.education?.length?`<div class="t14-section"><div class="t14-section-title">Formation</div>${d.education.map(e=>`<div class="t14-edu"><div class="t14-edu-degree">${esc(e.degree)}</div><div class="t14-edu-school">${esc(e.school)}</div><div class="t14-edu-date">${esc(e.from)}${e.to?' – '+e.to:''}</div></div>`).join('')}</div>`:''}
+            ${hasExtras?`${extrasBlock(c,'#374151',c+'33')}`:''}
           </div>
           <div>
             ${d.skills?.length?`<div class="t14-section"><div class="t14-section-title">Compétences</div>${d.skills.map(s=>`<div class="t14-skill"><span class="t14-skill-name">${esc(s.name)}</span><span class="t14-skill-lvl">${esc(s.level)}</span></div>`).join('')}</div>`:''}
@@ -2765,6 +2915,7 @@ function buildCVHTML(templateId, data, color, isPreview){
             ${d.summary?`<div class="t15-section"><div class="t15-section-title">Profil</div><div class="t15-summary">${esc(d.summary)}</div></div>`:''}
             ${d.experiences?.length?`<div class="t15-section"><div class="t15-section-title">Expériences</div>${d.experiences.map(e=>`<div class="t15-exp"><div style="display:flex;justify-content:space-between"><div class="t15-exp-role">${esc(e.role)}</div><div class="t15-exp-date">${esc(e.from)} – ${esc(e.to)}</div></div><div class="t15-exp-company">${esc(e.company)}</div>${e.desc?`<div class="t15-exp-desc">${esc(e.desc)}</div>`:''}</div>`).join('')}</div>`:''}
             ${d.education?.length?`<div class="t15-section"><div class="t15-section-title">Formation</div>${d.education.map(e=>`<div class="t15-edu"><div class="t15-edu-degree">${esc(e.degree)}</div><div class="t15-edu-school">${esc(e.school)}</div><div class="t15-edu-date">${esc(e.from)}${e.to?' – '+e.to:''}</div></div>`).join('')}</div>`:''}
+            ${hasExtras?`${extrasBlock(c,'#9ca3af',c+'44')}`:''}
           </div>
           <div>
             ${d.skills?.length?`<div class="t15-section"><div class="t15-section-title">Compétences</div>${d.skills.map(s=>`<div class="t15-skill"><span class="t15-skill-name">${esc(s.name)}</span><span class="t15-skill-lvl">${esc(s.level)}</span></div>`).join('')}</div>`:''}
@@ -2791,6 +2942,7 @@ function buildCVHTML(templateId, data, color, isPreview){
             ${d.summary?`<div class="t16-section"><div class="t16-section-title">Profil professionnel</div><div class="t16-summary">${esc(d.summary)}</div></div>`:''}
             ${d.experiences?.length?`<div class="t16-section"><div class="t16-section-title">Expériences</div>${d.experiences.map(e=>`<div class="t16-exp"><div class="t16-exp-role">${esc(e.role)}</div><div class="t16-exp-company">${esc(e.company)}</div><div class="t16-exp-date">${esc(e.from)} – ${esc(e.to)}</div>${e.desc?`<div class="t16-exp-desc">${esc(e.desc)}</div>`:''}</div>`).join('')}</div>`:''}
             ${d.education?.length?`<div class="t16-section"><div class="t16-section-title">Formation</div>${d.education.map(e=>`<div class="t16-edu"><div class="t16-edu-degree">${esc(e.degree)}</div><div class="t16-edu-school">${esc(e.school)}</div><div class="t16-edu-date">${esc(e.from)}${e.to?' – '+e.to:''}</div></div>`).join('')}</div>`:''}
+            ${hasExtras?`${extrasBlock(c,'#374151',c+'33')}`:''}
           </div>
           <div class="t16-aside">
             ${contactItems.length?`<div class="t16-aside-section"><div class="t16-aside-section-title">Contact</div>${contactItems.map(([v])=>`<div class="t16-contact-item-a">${esc(v)}</div>`).join('')}</div>`:''}
@@ -2826,6 +2978,7 @@ function buildCVHTML(templateId, data, color, isPreview){
             ${d.summary?`<div class="t17-summary">${esc(d.summary)}</div>`:''}
             ${d.experiences?.length?`<div class="t17-section-title">Expériences</div>${d.experiences.map(e=>`<div class="t17-exp"><div class="t17-exp-hdr"><div class="t17-exp-role">${esc(e.role)}</div><div class="t17-exp-date">${esc(e.from)} – ${esc(e.to)}</div></div><div class="t17-exp-company">${esc(e.company)}</div>${e.desc?`<div class="t17-exp-desc">${esc(e.desc)}</div>`:''}</div>`).join('')}`:''}
             ${d.education?.length?`<div class="t17-section-title">Formation</div>${d.education.map(e=>`<div class="t17-edu"><div class="t17-edu-degree">${esc(e.degree)}</div><div class="t17-edu-school">${esc(e.school)}</div><div class="t17-edu-date">${esc(e.from)}${e.to?' – '+e.to:''}</div></div>`).join('')}`:''}
+            ${hasExtras?`${extrasBlock(c,'#374151',c+'33')}`:''}
           </div>
         </div>
       </div></div>`;
@@ -2847,6 +3000,7 @@ function buildCVHTML(templateId, data, color, isPreview){
           </div>
           <div>
             ${d.education?.length?`<div class="t18-section"><div class="t18-section-title">Formation</div>${d.education.map(e=>`<div class="t18-edu"><div class="t18-edu-degree">${esc(e.degree)}</div><div class="t18-edu-school">${esc(e.school)}</div><div class="t18-edu-date">${esc(e.from)}${e.to?' – '+e.to:''}</div></div>`).join('')}</div>`:''}
+            ${hasExtras?`${extrasBlock(c,'#374151',c+'33')}`:''}
             ${d.skills?.length?`<div class="t18-section"><div class="t18-section-title">Compétences</div>${d.skills.map(s=>`<div class="t18-skill"><span class="t18-skill-name">${esc(s.name)}</span><span class="t18-skill-lvl">${esc(s.level)}</span></div>`).join('')}</div>`:''}
             ${d.languages?.length?`<div class="t18-section"><div class="t18-section-title">Langues</div>${d.languages.map(l=>`<div class="t18-lang"><span>${esc(l.name)}</span><span class="t18-lang-lvl">${esc(l.level)}</span></div>`).join('')}</div>`:''}
           </div>
@@ -2870,6 +3024,7 @@ function buildCVHTML(templateId, data, color, isPreview){
             ${d.summary?`<div class="t19-section"><div class="t19-section-title">Profil</div><div class="t19-summary">${esc(d.summary)}</div></div>`:''}
             ${d.experiences?.length?`<div class="t19-section"><div class="t19-section-title">Expériences</div>${d.experiences.map(e=>`<div class="t19-exp"><div class="t19-exp-hdr"><div class="t19-exp-role">${esc(e.role)}</div><div class="t19-exp-date">${esc(e.from)} – ${esc(e.to)}</div></div><div class="t19-exp-company">${esc(e.company)}</div>${e.desc?`<div class="t19-exp-desc">${esc(e.desc)}</div>`:''}</div>`).join('')}</div>`:''}
             ${d.education?.length?`<div class="t19-section"><div class="t19-section-title">Formation</div>${d.education.map(e=>`<div class="t19-edu"><div class="t19-edu-degree">${esc(e.degree)}</div><div class="t19-edu-school">${esc(e.school)}</div><div class="t19-edu-date">${esc(e.from)}${e.to?' – '+e.to:''}</div></div>`).join('')}</div>`:''}
+            ${hasExtras?`${extrasBlock(c,'#374151',c+'33')}`:''}
           </div>
           <div class="t19-aside">
             ${contactItems.length?`<div class="t19-aside-section"><div class="t19-aside-section-title">Contact</div>${contactItems.map(([v])=>`<div class="t19-contact-item-a">${esc(v)}</div>`).join('')}</div>`:''}
@@ -2894,6 +3049,7 @@ function buildCVHTML(templateId, data, color, isPreview){
             ${d.summary?`<div class="t20-section"><div class="t20-section-title">Profil</div><div class="t20-summary">${esc(d.summary)}</div></div>`:''}
             ${d.experiences?.length?`<div class="t20-section"><div class="t20-section-title">Expériences</div>${d.experiences.map(e=>`<div class="t20-exp"><div class="t20-exp-role">${esc(e.role)}</div><div class="t20-exp-company">${esc(e.company)}</div><div class="t20-exp-date">${esc(e.from)} – ${esc(e.to)}</div>${e.desc?`<div class="t20-exp-desc">${esc(e.desc)}</div>`:''}</div>`).join('')}</div>`:''}
             ${d.education?.length?`<div class="t20-section"><div class="t20-section-title">Formation</div>${d.education.map(e=>`<div class="t20-edu"><div class="t20-edu-degree">${esc(e.degree)}</div><div class="t20-edu-school">${esc(e.school)}</div><div class="t20-edu-date">${esc(e.from)}${e.to?' – '+e.to:''}</div></div>`).join('')}</div>`:''}
+            ${hasExtras?`${extrasBlock(c,'#9ca3af',c+'44')}`:''}
           </div>
           <div>
             ${contactItems.length?`<div class="t20-aside-section"><div class="t20-aside-section-title">Contact</div>${contactItems.map(([v])=>`<div class="t20-contact-item-a">${esc(v)}</div>`).join('')}</div>`:''}
@@ -3208,7 +3364,168 @@ async function aiCreateTemplate(){
   finally{ if(sp) sp.style.display='none'; }
 }
 
-// ── PLAN CARDS ──
+// ── AI SIDE PANEL ──
+let _aiPanelOpen = false;
+function toggleAIPanel(){
+  _aiPanelOpen = !_aiPanelOpen;
+  const panel = G('ai-side-panel');
+  const btn = G('btn-ai-panel');
+  const notif = G('ai-notif-dot');
+  if(panel) panel.classList.toggle('open', _aiPanelOpen);
+  if(btn) btn.classList.toggle('active', _aiPanelOpen);
+  if(notif && _aiPanelOpen) notif.style.display='none';
+  if(_aiPanelOpen) setTimeout(()=>G('ai-chat-input')?.focus(), 400);
+}
+
+function aiAddMsg(role, text){
+  const area = G('ai-chat-area'); if(!area) return;
+  const div = document.createElement('div');
+  div.className = `ai-msg ${role}`;
+  div.innerHTML = text.replace(/\n/g,'<br>');
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+async function aiChatSend(){
+  const input = G('ai-chat-input');
+  const msg = input?.value?.trim();
+  if(!msg) return;
+  input.value = '';
+  input.style.height='';
+  aiAddMsg('user', msg);
+  await aiChatProcess(msg);
+}
+
+async function aiQuick(msg){
+  if(!_aiPanelOpen) toggleAIPanel();
+  setTimeout(()=>{ aiAddMsg('user', msg); aiChatProcess(msg); }, 350);
+}
+
+async function aiChatProcess(userMsg){
+  if(!_S.currentCV){ aiAddMsg('assistant', '⚠️ Ouvrez ou créez un CV d\'abord pour que je puisse vous aider !'); return; }
+  
+  const d = _S.currentCV.data;
+  const cvContext = `CV actuel — Prénom: ${d.firstname||'?'}, Nom: ${d.lastname||'?'}, Titre: ${d.title||'?'}, Résumé: ${d.summary||'(vide)'}, Expériences: ${d.experiences?.length||0}, Compétences: ${(d.skills||[]).map(s=>s.name).join(', ')||'(vide)'}`;
+
+  // Loading indicator
+  const loadDiv = document.createElement('div');
+  loadDiv.className = 'ai-msg assistant';
+  loadDiv.innerHTML = '<span style="color:#888;font-style:italic">⚡ En train de réfléchir…</span>';
+  G('ai-chat-area').appendChild(loadDiv);
+  G('ai-chat-area').scrollTop = G('ai-chat-area').scrollHeight;
+
+  const lowerMsg = userMsg.toLowerCase();
+  
+  try {
+    // Smart routing based on intent
+    let systemPrompt = `Tu es Wikimind AI, assistant expert en CV professionnels. Tu réponds TOUJOURS en français. Tu es concis, professionnel et orienté résultats. Contexte du CV: ${cvContext}`;
+    
+    let finalMsg = userMsg;
+    let applyAction = null;
+
+    if(lowerMsg.includes('résumé') || lowerMsg.includes('profil') || lowerMsg.includes('summary')){
+      finalMsg = `${userMsg}. Profil actuel: "${d.summary||'vide'}". Génère directement le nouveau résumé (2-3 phrases max avec verbes d'action). Précise à la fin: [APPLIQUER_RÉSUMÉ: le_texte_amélioré]`;
+      applyAction = 'summary';
+    } else if(lowerMsg.includes('compétence') || lowerMsg.includes('skill')){
+      finalMsg = `${userMsg}. Titre du profil: "${d.title||''}". Génère une liste de 6-8 compétences pertinentes. Précise à la fin sous forme JSON: [APPLIQUER_COMPÉTENCES: ["Compétence1","Compétence2",...]]`;
+      applyAction = 'skills';
+    } else if(lowerMsg.includes('expérience') || lowerMsg.includes('améliore') && d.experiences?.length){
+      const lastExp = d.experiences[d.experiences.length-1];
+      finalMsg = `${userMsg}. Dernière expérience: poste "${lastExp?.role||''}" chez "${lastExp?.company||''}", description: "${lastExp?.desc||'vide'}". Améliore cette description avec verbes d'action et chiffres. Précise à la fin: [APPLIQUER_EXP: le_texte_amélioré]`;
+      applyAction = 'exp';
+    } else if(lowerMsg.includes('optimis') || lowerMsg.includes('tout')){
+      finalMsg = `Analyse ce CV complet et liste les 3 points forts et 3 axes d'amélioration prioritaires. Contexte: ${cvContext}`;
+    } else if(lowerMsg.includes('intérêt') || lowerMsg.includes('loisir') || lowerMsg.includes('hobby')){
+      finalMsg = `Génère 4-5 centres d'intérêt percutants pour ce profil (${d.title||'professionnel'}). Précise à la fin: [APPLIQUER_INTÉRÊTS: le_texte]`;
+      applyAction = 'interests';
+    }
+
+    const result = await callMistral(finalMsg, null);
+    if(!result){ loadDiv.remove(); return; }
+
+    // Parse and apply actions
+    let displayText = result;
+    
+    if(applyAction === 'summary'){
+      const match = result.match(/\[APPLIQUER_RÉSUMÉ:\s*([\s\S]+?)\]/);
+      if(match){
+        const newSummary = match[1].trim().replace(/^["']|["']$/g,'');
+        d.summary = newSummary;
+        if(G('f-summary')) G('f-summary').value = newSummary;
+        updatePreview();
+        displayText = result.replace(/\[APPLIQUER_RÉSUMÉ:[\s\S]+?\]/, '').trim();
+        displayText += '\n\n✅ <strong>Résumé appliqué dans votre CV !</strong>';
+      }
+    } else if(applyAction === 'skills'){
+      const match = result.match(/\[APPLIQUER_COMPÉTENCES:\s*(\[[\s\S]+?\])\]/);
+      if(match){
+        try{
+          const skills = JSON.parse(match[1]);
+          if(!d.skills) d.skills = [];
+          skills.forEach(s=>{ if(!d.skills.find(e=>e.name===s)) d.skills.push({name:s,level:'Avancé'}); });
+          renderSkillsList(); updatePreview();
+          displayText = result.replace(/\[APPLIQUER_COMPÉTENCES:[\s\S]+?\]/, '').trim();
+          displayText += '\n\n✅ <strong>Compétences ajoutées à votre CV !</strong>';
+        }catch(e){}
+      }
+    } else if(applyAction === 'exp'){
+      const match = result.match(/\[APPLIQUER_EXP:\s*([\s\S]+?)\]/);
+      if(match && d.experiences?.length){
+        const newDesc = match[1].trim().replace(/^["']|["']$/g,'');
+        d.experiences[d.experiences.length-1].desc = newDesc;
+        renderExpList(); updatePreview();
+        displayText = result.replace(/\[APPLIQUER_EXP:[\s\S]+?\]/, '').trim();
+        displayText += '\n\n✅ <strong>Expérience mise à jour dans votre CV !</strong>';
+      }
+    } else if(applyAction === 'interests'){
+      const match = result.match(/\[APPLIQUER_INTÉRÊTS:\s*([\s\S]+?)\]/);
+      if(match){
+        const txt = match[1].trim().replace(/^["']|["']$/g,'');
+        d.interests = txt;
+        if(G('f-interests')) G('f-interests').value = txt;
+        updatePreview();
+        displayText = result.replace(/\[APPLIQUER_INTÉRÊTS:[\s\S]+?\]/, '').trim();
+        displayText += '\n\n✅ <strong>Centres d\'intérêt appliqués !</strong>';
+      }
+    }
+
+    loadDiv.innerHTML = displayText.replace(/\n/g,'<br>');
+  } catch(e) {
+    loadDiv.innerHTML = '❌ Erreur IA. Réessayez.';
+  }
+}
+
+// ── AI GENERATE INTERESTS (extras tab button) ──
+async function aiGenerateInterests(){
+  if(!_S.currentCV){ toast('Ouvrez un CV d\'abord.'); return; }
+  const d = _S.currentCV.data;
+  const prompt = `Génère 4-5 centres d'intérêt percutants et originaux pour un profil "${d.title||'professionnel'}". Format: une ligne comma-separated. Réponds UNIQUEMENT avec les centres d'intérêt.`;
+  const result = await callMistral(prompt, 'sp-interests');
+  if(result){
+    d.interests = result;
+    if(G('f-interests')) G('f-interests').value = result;
+    updatePreview();
+    toast('✅ Centres d\'intérêt générés !');
+  }
+}
+
+// ── AI GENERATE CERTIFICATIONS ──
+async function aiGenerateCertifications(){
+  if(!_S.currentCV){ toast('Ouvrez un CV d\'abord.'); return; }
+  const d = _S.currentCV.data;
+  const prompt = `Génère 3-4 certifications pertinentes et crédibles pour un profil "${d.title||'professionnel'}". Format: une par ligne avec organisme et année fictive. Réponds UNIQUEMENT avec la liste.`;
+  const result = await callMistral(prompt, 'sp-certif');
+  if(result){
+    d.certifications = result;
+    if(G('f-certifications')) G('f-certifications').value = result;
+    updatePreview();
+    toast('✅ Certifications générées !');
+  }
+}
+
+window.toggleAIPanel=toggleAIPanel; window.aiChatSend=aiChatSend; window.aiQuick=aiQuick;
+window.aiGenerateInterests=aiGenerateInterests; window.aiGenerateCertifications=aiGenerateCertifications;
+
 function renderPlanCards(){
   const el=G('plan-cards-cv'); if(!el) return;
   const plans=[
