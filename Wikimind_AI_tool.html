@@ -4,1361 +4,918 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>WikiMind AI Tool - Detector & Humanizer</title>
-    
-    <!-- Google tag -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-RRFWS36RWJ"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-RRFWS36RWJ');
-    </script>
-
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-RRFWS36RWJ');</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
-    
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
-                    colors: {
-                        glass: { panel: 'rgba(20, 20, 20, 0.6)', border: 'rgba(255, 255, 255, 0.08)' },
-                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8', danger: '#ef4444', success: '#10b981' }
-                    },
-                    animation: { 'fade-in-up': 'fadeInUp 0.5s ease-out forwards', 'fade-in': 'fadeIn 0.3s ease-out forwards' },
-                    keyframes: {
-                        fadeInUp: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
-                        fadeIn: { '0%': { opacity: 0 }, '100%': { opacity: 1 } }
-                    }
-                }
-            }
-        }
-    </script>
+    <script>tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{sans:['Inter','sans-serif'],display:['Space Grotesk','sans-serif']}}}}</script>
     <style>
-        body { background-color: #050505; color: #ffffff; overflow-x: hidden; }
-        .glass-panel {
-            background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-        }
-        .text-gradient { background: linear-gradient(135deg, #ffffff 0%, #a5a6f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
-        /* Jauge Circulaire */
-        .circular-chart { display: block; margin: 0 auto; max-width: 80%; max-height: 250px; }
-        .circle-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 2.5; }
-        .circle { fill: none; stroke-width: 2.5; stroke-linecap: round; transition: stroke-dasharray 1.2s cubic-bezier(0.4,0,0.2,1), stroke 0.3s; }
-        .percentage { fill: #fff; font-family: 'Space Grotesk', sans-serif; font-weight: bold; font-size: 0.5em; text-anchor: middle; }
-        .label { fill: rgba(255,255,255,0.5); font-family: 'Inter', sans-serif; font-size: 0.2em; text-anchor: middle; }
+        :root{--bg:#050505;--glass:rgba(20,20,20,.65);--border:rgba(255,255,255,.08);--brand:#6366f1;--glow:#818cf8;}
+        *,*::before,*::after{box-sizing:border-box;}
+        body{background:var(--bg);color:#fff;overflow-x:hidden;font-family:'Inter',sans-serif;}
+        .glass{background:var(--glass);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,.35);}
+        ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:4px;}
+        .tg{background:linear-gradient(135deg,#fff 0%,#a5a6f6 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+        /* ══ ANIMATIONS ══ */
+        @keyframes fadeUp  {from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes fadeIn  {from{opacity:0}to{opacity:1}}
+        @keyframes popIn   {0%{opacity:0;transform:scale(.86)}70%{transform:scale(1.04)}100%{opacity:1;transform:scale(1)}}
+        @keyframes slideR  {from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:translateX(0)}}
+        @keyframes float   {0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+        @keyframes spinAnim{to{transform:rotate(360deg)}}
+        @keyframes scanLine{0%{top:-100%}100%{top:110%}}
+        @keyframes ripple  {to{transform:scale(4);opacity:0}}
+        @keyframes toastIn {from{opacity:0;transform:translateY(18px) scale(.88)}to{opacity:1;transform:translateY(0) scale(1)}}
+        @keyframes toastOut{to{opacity:0;transform:scale(.88)}}
+        @keyframes barGrow {from{width:0%}to{width:var(--target)}}
+        @keyframes pulseGlow{0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,.45)}50%{box-shadow:0 0 0 9px rgba(99,102,241,0)}}
+        @keyframes ringR   {to{transform:rotate(360deg)}}
+        @keyframes ringFire{0%{transform:rotate(0);filter:brightness(1)}50%{transform:rotate(180deg);filter:brightness(1.35)}100%{transform:rotate(360deg);filter:brightness(1)}}
+        @keyframes countUp {from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes shimmer {0%{background-position:200% center}100%{background-position:-200% center}}
+        @keyframes gaugeDraw{from{stroke-dasharray:0,100}}
+        @keyframes headIn  {from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 
-        /* ✅ ANNEAUX AVATAR FORFAITS */
-        .plan-badge { font-size:9px; font-weight:800; text-transform:uppercase; padding:2px 6px; border-radius:20px; letter-spacing:.04em; }
-        .plan-free { background:#27272a; color:#a1a1aa; }
-        .plan-plus { background:#1e3a5f; color:#60a5fa; }
-        .plan-pro { background:#3b1f5e; color:#c084fc; }
-        .plan-premium { background:#44330f; color:#fbbf24; }
-        .plan-premium-plus { background:linear-gradient(135deg,#44110f,#44330f); color:#fb923c; }
+        /* stagger */
+        .stg>*{opacity:0;animation:fadeUp .5s cubic-bezier(.22,1,.36,1) both;}
+        .stg>*:nth-child(1){animation-delay:.04s}.stg>*:nth-child(2){animation-delay:.11s}
+        .stg>*:nth-child(3){animation-delay:.18s}.stg>*:nth-child(4){animation-delay:.25s}
+        .stg>*:nth-child(5){animation-delay:.32s}.stg>*:nth-child(6){animation-delay:.39s}
 
-        .plan-chip-avatar { position:relative; width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
-        .plan-chip-avatar img { width:32px; height:32px; object-fit:cover; border-radius:50%; position:relative; z-index:2; }
-        .plan-chip-avatar::after { content:''; position:absolute; inset:-2px; border-radius:50%; z-index:0; }
-        .plan-chip-avatar::before { content:''; position:absolute; inset:2px; border-radius:50%; z-index:1; background:#050505; }
-        
-        .ring-free::after { background:conic-gradient(#9ca3af,#d1d5db,#9ca3af); }
-        .ring-plus::after { background:conic-gradient(#fff,#aaa,#fff,#aaa,#fff); animation:ringRotate 4s linear infinite; }
-        .ring-pro::after { background:conic-gradient(#22c55e,#4ade80,#16a34a,#86efac,#22c55e); animation:ringRotate 3s linear infinite; }
-        .ring-premium::after { background:conic-gradient(#f59e0b,#fcd34d,#d97706,#fef08a,#f59e0b); animation:ringRotate 2.5s linear infinite; }
-        .ring-premium-plus::after { background:conic-gradient(#ef4444,#f97316,#eab308,#f97316,#ef4444); animation:ringRotateFire 1.8s linear infinite; }
+        /* page entrance */
+        nav{animation:headIn .5s cubic-bezier(.22,1,.36,1) both;}
+        .hero-block{animation:fadeUp .6s cubic-bezier(.22,1,.36,1) .05s both;}
+        .tabs-row{animation:fadeUp .5s cubic-bezier(.22,1,.36,1) .12s both;}
+        .main-panel{animation:fadeUp .55s cubic-bezier(.22,1,.36,1) .18s both;}
+        .history-sec{animation:fadeUp .5s cubic-bezier(.22,1,.36,1) .25s both;}
 
-        @keyframes ringRotate { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
-        @keyframes ringRotateFire { 0% { transform:rotate(0deg); filter:brightness(1); } 50% { transform:rotate(180deg); filter:brightness(1.3); } 100% { transform:rotate(360deg); filter:brightness(1); } }
+        /* plan rings */
+        .plan-badge{font-size:9px;font-weight:800;text-transform:uppercase;padding:2px 6px;border-radius:20px;letter-spacing:.04em;}
+        .plan-free{background:#27272a;color:#a1a1aa;}.plan-plus{background:#1e3a5f;color:#60a5fa;}
+        .plan-pro{background:#3b1f5e;color:#c084fc;}.plan-premium{background:#44330f;color:#fbbf24;}
+        .plan-premium-plus{background:linear-gradient(135deg,#44110f,#44330f);color:#fb923c;}
+        .plan-chip-avatar{position:relative;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+        .plan-chip-avatar img{width:32px;height:32px;object-fit:cover;border-radius:50%;position:relative;z-index:2;}
+        .plan-chip-avatar::after{content:'';position:absolute;inset:-2px;border-radius:50%;z-index:0;}
+        .plan-chip-avatar::before{content:'';position:absolute;inset:2px;border-radius:50%;z-index:1;background:#050505;}
+        .ring-free::after{background:conic-gradient(#9ca3af,#d1d5db,#9ca3af);}
+        .ring-plus::after{background:conic-gradient(#fff,#aaa,#fff,#aaa,#fff);animation:ringR 4s linear infinite;}
+        .ring-pro::after{background:conic-gradient(#22c55e,#4ade80,#16a34a,#86efac,#22c55e);animation:ringR 3s linear infinite;}
+        .ring-premium::after{background:conic-gradient(#f59e0b,#fcd34d,#d97706,#fef08a,#f59e0b);animation:ringR 2.5s linear infinite;}
+        .ring-premium-plus::after{background:conic-gradient(#ef4444,#f97316,#eab308,#f97316,#ef4444);animation:ringFire 1.8s linear infinite;}
 
-        /* Toast */
-        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-        @keyframes toastEnter { 0% { opacity: 0; transform: translateY(100%) scale(0.9); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
-        @keyframes toastLeave { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.9); } }
-        .toast-anim { animation: toastEnter 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        /* gauge */
+        .circle-bg{fill:none;stroke:rgba(255,255,255,.05);stroke-width:2.5;}
+        .circle{fill:none;stroke-width:2.5;stroke-linecap:round;animation:gaugeDraw .1s;transition:stroke-dasharray 1.5s cubic-bezier(.4,0,.2,1),stroke .4s;}
+        .pct{fill:#fff;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.5em;text-anchor:middle;}
+        .lbl{fill:rgba(255,255,255,.4);font-family:'Inter',sans-serif;font-size:.2em;text-anchor:middle;}
 
-        /* Modal */
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 100; align-items: center; justify-content: center; }
-        .modal-overlay.open { display: flex; }
+        /* score bars */
+        .sbar{height:4px;border-radius:2px;width:0%;transition:width 1.3s cubic-bezier(.4,0,.2,1);}
 
-        /* Options tabs */
-        .opt-tab { padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255,255,255,0.4); cursor: pointer; transition: all 0.2s; }
-        .opt-tab.active { background: rgba(255,255,255,0.1); color: white; }
-        .opt-panel { display: none; }
-        .opt-panel.active { display: block; animation: fadeInUp 0.3s ease forwards; }
+        /* ══ INFO BUTTON ══ */
+        .ib{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:rgba(99,102,241,.18);border:1px solid rgba(99,102,241,.32);color:#818cf8;font-size:9px;font-weight:800;cursor:pointer;transition:all .2s;flex-shrink:0;font-style:normal;}
+        .ib:hover{background:rgba(99,102,241,.38);transform:scale(1.2);}
+        #tooltip{position:fixed;z-index:9999;max-width:240px;background:rgba(12,12,18,.97);border:1px solid rgba(99,102,241,.38);border-radius:13px;padding:11px 14px;font-size:12px;line-height:1.55;color:rgba(255,255,255,.8);box-shadow:0 14px 44px rgba(0,0,0,.65),0 0 0 1px rgba(99,102,241,.12);pointer-events:none;animation:popIn .22s cubic-bezier(.34,1.56,.64,1);}
+        #tooltip .tt{font-weight:700;color:#fff;margin-bottom:4px;font-size:12px;display:block;}
 
-        /* Lock overlay for premium features */
-        .locked-feature { position: relative; }
-        .locked-feature .lock-overlay { position: absolute; inset: 0; border-radius: inherit; background: rgba(5,5,5,0.7); backdrop-filter: blur(4px); display: flex; flex-col: column; align-items: center; justify-content: center; z-index: 10; gap: 8px; flex-direction: column; }
+        /* tabs */
+        .opt-tab{padding:8px 16px;border-radius:10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:rgba(255,255,255,.4);cursor:pointer;transition:all .2s;}
+        .opt-tab.active{background:rgba(255,255,255,.1);color:#fff;}
+        .opt-tab:hover:not(.active){color:rgba(255,255,255,.7);}
+        .opt-panel{display:none;}.opt-panel.active{display:block;animation:fadeUp .38s cubic-bezier(.22,1,.36,1) both;}
 
-        /* Sub-score bars */
-        .score-bar-fill { height: 4px; border-radius: 2px; transition: width 1s cubic-bezier(0.4,0,0.2,1); }
+        /* style chips */
+        .schip{padding:6px 14px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid rgba(255,255,255,.1);cursor:pointer;transition:all .22s;color:rgba(255,255,255,.5);}
+        .schip.sel{border-color:#6366f1;background:rgba(99,102,241,.16);color:#818cf8;transform:scale(1.05);}
+        .schip:hover:not(.sel){border-color:rgba(255,255,255,.28);color:rgba(255,255,255,.8);transform:scale(1.02);}
 
-        /* Humanize options */
-        .style-chip { padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: 600; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: all 0.2s; color: rgba(255,255,255,0.5); }
-        .style-chip.selected { border-color: #6366f1; background: rgba(99,102,241,0.15); color: #818cf8; }
-        .style-chip:hover:not(.selected) { border-color: rgba(255,255,255,0.25); color: rgba(255,255,255,0.8); }
+        /* toggles */
+        .tog{width:34px;height:18px;background:rgba(255,255,255,.1);border-radius:20px;position:relative;cursor:pointer;transition:background .22s;}
+        .tog.on{background:#6366f1;}
+        .tog-thumb{width:14px;height:14px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:transform .22s cubic-bezier(.34,1.56,.64,1);box-shadow:0 2px 4px rgba(0,0,0,.3);}
+        .tog.on .tog-thumb{transform:translateX(16px);}
 
-        /* Intensity slider */
-        input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.1); outline: none; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #6366f1; cursor: pointer; box-shadow: 0 0 8px rgba(99,102,241,0.5); }
+        /* range */
+        input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;background:rgba(255,255,255,.1);outline:none;}
+        input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#6366f1;cursor:pointer;box-shadow:0 0 8px rgba(99,102,241,.5);transition:transform .15s;}
+        input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2);}
 
-        /* Plan banner */
-        .plan-banner { padding: 12px 16px; border-radius: 12px; display: flex; align-items: center; gap: 12px; font-size: 12px; font-weight: 600; }
-        .plan-banner.free { background: rgba(39,39,42,0.6); border: 1px solid rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); }
-        .plan-banner.premium { background: rgba(68,51,15,0.4); border: 1px solid rgba(245,158,11,0.3); color: #fbbf24; }
-        .plan-banner.premium-plus { background: linear-gradient(135deg, rgba(68,17,15,0.4), rgba(68,51,15,0.4)); border: 1px solid rgba(249,115,22,0.3); color: #fb923c; }
+        /* scan loading */
+        .scan{position:relative;overflow:hidden;}
+        .scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(99,102,241,.7),transparent);animation:scanLine 1.5s linear infinite;pointer-events:none;z-index:5;}
 
-        /* Credits badge */
-        .credits-badge { background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2); border-radius: 8px; padding: 4px 10px; font-size: 11px; color: #818cf8; font-weight: 700; }
+        /* ripple */
+        .rip{position:relative;overflow:hidden;}
+        .rip-el{position:absolute;border-radius:50%;background:rgba(255,255,255,.22);transform:scale(0);animation:ripple .65s linear;pointer-events:none;}
+
+        /* card hover */
+        .card{transition:border-color .2s,transform .22s,box-shadow .22s;}
+        .card:hover{border-color:rgba(99,102,241,.28)!important;transform:translateY(-2px);box-shadow:0 14px 40px rgba(0,0,0,.45);}
+
+        /* action btn */
+        #action-btn{transition:transform .18s,box-shadow .18s;}
+        #action-btn:hover{transform:scale(1.04);}
+        #action-btn:active{transform:scale(.97);}
+
+        /* floating dot */
+        .pulse-dot{animation:pulseGlow 2.2s ease-in-out infinite;}
+
+        /* result entrance */
+        #state-result-detect,#state-result-humanize{animation:fadeUp .4s cubic-bezier(.22,1,.36,1);}
+
+        /* pattern chips */
+        #patterns-chips span{animation:popIn .32s cubic-bezier(.34,1.56,.64,1) both;}
+        #patterns-chips span:nth-child(1){animation-delay:0s}#patterns-chips span:nth-child(2){animation-delay:.06s}
+        #patterns-chips span:nth-child(3){animation-delay:.12s}#patterns-chips span:nth-child(4){animation-delay:.18s}
+        #patterns-chips span:nth-child(5){animation-delay:.24s}
+
+        /* history rows */
+        tbody tr{animation:slideR .35s cubic-bezier(.22,1,.36,1) both;}
+
+        /* toast container */
+        #toast-wrap{position:fixed;bottom:20px;right:20px;z-index:9998;display:flex;flex-direction:column;gap:8px;}
     </style>
 </head>
-<body class="selection:bg-brand-500 selection:text-white">
+<body>
+<canvas id="aurora-bg" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;"></canvas>
+<div id="tooltip" style="display:none;"></div>
+<div id="toast-wrap"></div>
 
-    <!-- AURORA BG -->
-    <canvas id="aurora-bg" class="fixed top-0 left-0 w-full h-full -z-10"></canvas>
-
-    <!-- TOAST -->
-    <div id="toast-container"></div>
-
-    <!-- UPGRADE MODAL -->
-    <div id="upgrade-modal" class="modal-overlay" onclick="closeUpgradeModal()">
-        <div class="glass-panel rounded-2xl p-8 max-w-md w-full mx-4 border border-white/10" onclick="event.stopPropagation()">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 flex items-center justify-center mb-4 text-2xl">🔒</div>
-                <h3 class="text-xl font-display font-bold mb-2">Fonctionnalité Premium</h3>
-                <p class="text-white/50 text-sm" id="upgrade-modal-text">Cette fonctionnalité est réservée aux membres Premium.</p>
+<!-- ══ NAVBAR ══ -->
+<nav class="fixed top-0 w-full z-50 px-5 py-5">
+    <div class="max-w-7xl mx-auto flex justify-between items-center glass rounded-full px-6 py-3">
+        <a href="index.html" class="flex items-center gap-3 group">
+            <div class="w-8 h-8 bg-gradient-to-tr from-white to-gray-400 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110">
+                <span class="font-bold text-black text-xs">W</span>
             </div>
-            <div class="space-y-3 mb-6">
-                <div class="plan-banner premium">
-                    <span class="text-lg">⭐</span>
-                    <div>
-                        <div class="font-bold text-yellow-400">AI Premium</div>
-                        <div class="text-yellow-400/60 text-[11px] font-normal">Détection avancée · Humaniseur Pro · 500 crédits/mois</div>
-                    </div>
+            <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;">WikiMind <span style="color:#818cf8;font-weight:400">Tools</span></span>
+        </a>
+        <div class="flex items-center gap-4">
+            <a href="Wikimind_user.html" id="login-btn" class="px-5 py-2 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-gray-100 transition-all hover:scale-105 rip">Connexion</a>
+            <div id="user-logged" class="hidden items-center gap-3">
+                <div class="hidden md:flex flex-col items-end">
+                    <div id="user-name-display" class="text-xs font-bold text-white">Utilisateur</div>
+                    <div id="nav-plan-badge" class="plan-badge plan-free mt-1">Free</div>
                 </div>
-                <div class="plan-banner premium-plus">
-                    <span class="text-lg">🔥</span>
-                    <div>
-                        <div class="font-bold text-orange-400">AI Premium+</div>
-                        <div class="text-orange-400/60 text-[11px] font-normal">Tout illimité · Multi-styles · Rapport PDF · Priorité</div>
+                <a href="Wikimind_user.html">
+                    <div id="nav-avatar-ring" class="plan-chip-avatar ring-free">
+                        <img id="nav-avatar" src="" class="bg-gray-800">
                     </div>
-                </div>
-            </div>
-            <div class="flex gap-3">
-                <button onclick="closeUpgradeModal()" class="flex-1 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-bold transition">Plus tard</button>
-                <a href="index.html#pricing" class="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 text-white text-xs font-bold transition text-center">Passer Premium ✨</a>
+                </a>
             </div>
         </div>
     </div>
+</nav>
 
-    <!-- NAVBAR -->
-    <nav class="fixed top-0 w-full z-50 px-6 py-6 transition-all duration-300" id="navbar">
-        <div class="max-w-7xl mx-auto flex justify-between items-center glass-panel rounded-full px-6 py-3">
-            <a href="index.html" class="flex items-center gap-3 group">
-                <div class="w-8 h-8 bg-gradient-to-tr from-white to-gray-400 rounded-lg flex items-center justify-center">
-                    <span class="font-bold text-black text-xs">W</span>
+<!-- ══ MAIN ══ -->
+<main class="relative pt-28 pb-24 px-4 md:px-6 max-w-7xl mx-auto">
+
+    <!-- HEADER -->
+    <div class="text-center mb-10 hero-block">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass text-xs text-white/50 mb-5 font-mono pulse-dot">
+            <span class="w-1.5 h-1.5 rounded-full bg-green-400" style="animation:pulseGlow 2s infinite"></span>
+            Moteur v3.2 · Multi-couches · IA + Local
+        </div>
+        <h1 style="font-family:'Space Grotesk',sans-serif;font-size:clamp(2rem,5vw,3.5rem);font-weight:700;line-height:1.1;margin-bottom:16px">
+            Détecteur &amp; <span class="tg">Humaniseur</span>
+        </h1>
+        <p class="text-white/50 max-w-2xl mx-auto text-sm">
+            Analyse multi-couches : perplexité, burstiness, patterns LLM, n-grams et empreinte stylistique.
+            <br><span class="text-xs text-white/30" id="storage-status">Chargement...</span>
+        </p>
+    </div>
+
+    <!-- TABS ROW -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 tabs-row">
+        <div class="flex gap-1 p-1 glass rounded-xl">
+            <div class="opt-tab active" onclick="switchTab('detect')">🔍 Détecteur</div>
+            <div class="opt-tab" onclick="switchTab('humanize')">✨ Humaniseur</div>
+            <div class="opt-tab" onclick="switchTab('options')">⚙️ Options</div>
+        </div>
+        <div class="flex items-center gap-3">
+            <div id="credits-display" class="hidden px-3 py-1.5 rounded-lg text-xs font-bold" style="background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);color:#818cf8">
+                <i class="fa-solid fa-bolt mr-1"></i><span id="credits-count">—</span> crédits
+            </div>
+            <button onclick="refreshCredits()" title="Synchroniser" class="text-white/30 hover:text-white/60 transition">
+                <i class="fa-solid fa-rotate text-xs" id="sync-icon"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- ══════ TAB DETECT ══════ -->
+    <div id="tab-detect" class="opt-panel active main-panel">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+            <!-- LEFT -->
+            <div class="flex flex-col gap-5 stg">
+
+                <!-- MODE SWITCH -->
+                <div class="glass p-1 rounded-xl flex">
+                    <button id="btn-detect" onclick="switchMode('detect')" class="flex-1 py-3 rounded-lg font-bold text-sm transition-all bg-white/10 text-white shadow-lg rip">
+                        <i class="fa-solid fa-shield-halved mr-2"></i>Détecter
+                    </button>
+                    <button id="btn-humanize" onclick="switchMode('humanize')" class="flex-1 py-3 rounded-lg font-bold text-sm text-white/50 hover:text-white transition-all rip">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>Humaniser
+                    </button>
                 </div>
-                <span class="font-display font-bold text-lg tracking-tight">WikiMind <span class="text-brand-glow font-normal">Tools</span></span>
-            </a>
 
-            <div id="auth-container" class="flex items-center gap-4">
-                <a href="Wikimind_user.html" id="login-btn" class="px-5 py-2 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-gray-200 transition-colors">
-                    Connexion
-                </a>
-                <div id="user-logged" class="hidden items-center gap-3">
-                    <div class="hidden md:flex flex-col items-end">
-                        <div id="user-name-display" class="text-xs font-bold text-white">Utilisateur</div>
-                        <div id="nav-plan-badge" class="plan-badge plan-free mt-1">Free</div>
-                    </div>
-                    <a href="Wikimind_user.html" class="relative group">
-                        <div id="nav-avatar-ring" class="plan-chip-avatar ring-free">
-                            <img id="nav-avatar" src="" class="bg-gray-800">
-                        </div>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </nav>
+                <!-- DETECT OPTIONS -->
+                <div id="detect-opts" class="glass p-5 rounded-2xl card">
+                    <div class="text-xs font-bold uppercase tracking-widest text-white/30 mb-4">Options de détection</div>
+                    <div class="space-y-3">
 
-    <main class="relative pt-28 pb-20 px-4 md:px-6 max-w-7xl mx-auto">
-        
-        <!-- Header -->
-        <div class="text-center mb-10 animate-fade-in-up">
-            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-white/50 mb-5 font-mono">
-                <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                Moteur de détection v3.2 · Multi-couches
-            </div>
-            <h1 class="text-4xl md:text-6xl font-display font-bold mb-4">
-                Détecteur & <span class="text-gradient">Humaniseur</span>
-            </h1>
-            <p class="text-white/50 max-w-2xl mx-auto text-sm">
-                Analyse multi-couches : perplexité, burstiness, patterns syntaxiques LLM, n-grams et empreinte stylistique.
-                <br><span class="text-xs text-white/30" id="storage-status">Chargement...</span>
-            </p>
-            <!-- Plan banner dynamique -->
-            <div id="plan-info-banner" class="hidden mt-5 max-w-sm mx-auto"></div>
-        </div>
-
-        <!-- OPTIONS TABS + CREDITS -->
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 animate-fade-in-up" style="animation-delay:0.05s">
-            <div class="flex gap-1 p-1 glass-panel rounded-xl">
-                <div class="opt-tab active" onclick="switchOptTab('detect')">🔍 Détecteur</div>
-                <div class="opt-tab" onclick="switchOptTab('humanize')">✨ Humaniseur</div>
-                <div class="opt-tab" onclick="switchOptTab('options')">⚙️ Options</div>
-            </div>
-            <div class="flex items-center gap-3">
-                <div id="credits-display" class="credits-badge hidden"><i class="fa-solid fa-bolt mr-1"></i><span id="credits-count">—</span> crédits</div>
-                <button onclick="refreshCredits()" id="btn-sync" class="text-white/30 hover:text-white/60 text-xs transition" title="Synchroniser">
-                    <i class="fa-solid fa-rotate text-xs" id="sync-icon"></i>
-                </button>
-            </div>
-        </div>
-
-        <!-- OPT PANEL: DETECTEUR -->
-        <div id="opt-detect" class="opt-panel active animate-fade-in-up" style="animation-delay:0.1s">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                
-                <!-- LEFT: INPUT -->
-                <div class="flex flex-col gap-5">
-                    <!-- Mode switch -->
-                    <div class="glass-panel p-1 rounded-xl flex">
-                        <button id="btn-mode-detect" class="flex-1 py-3 rounded-lg font-bold text-sm transition-all bg-white/10 text-white shadow-lg" onclick="switchMode('detect')">
-                            <i class="fa-solid fa-shield-halved mr-2"></i> Détecter
-                        </button>
-                        <button id="btn-mode-humanize" class="flex-1 py-3 rounded-lg font-bold text-sm text-white/50 hover:text-white transition-all" onclick="switchMode('humanize')">
-                            <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Humaniser
-                        </button>
-                    </div>
-
-                    <!-- Detect Options -->
-                    <div id="detect-options-panel" class="glass-panel p-4 rounded-2xl">
-                        <div class="text-xs font-bold uppercase tracking-widest text-white/30 mb-3">Options de détection</div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <label class="flex items-center gap-2 cursor-pointer group">
-                                <input type="checkbox" id="opt-deep" class="rounded" checked>
-                                <span class="text-xs text-white/60 group-hover:text-white transition">Analyse profonde</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer group">
-                                <input type="checkbox" id="opt-perplexity" class="rounded" checked>
-                                <span class="text-xs text-white/60 group-hover:text-white transition">Perplexité</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer group">
-                                <input type="checkbox" id="opt-burstiness" class="rounded" checked>
-                                <span class="text-xs text-white/60 group-hover:text-white transition">Burstiness</span>
-                            </label>
-                            <div class="locked-feature">
-                                <label class="flex items-center gap-2 cursor-pointer opacity-40">
-                                    <input type="checkbox" id="opt-pdf-report" class="rounded" disabled>
-                                    <span class="text-xs text-white/60">Rapport PDF</span>
-                                </label>
-                                <div class="lock-overlay rounded" onclick="openUpgradeModal('Rapport PDF disponible en Premium+')">
-                                    <span class="text-[9px] text-orange-400 font-bold">PREMIUM+</span>
-                                </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-white/60">Analyse profonde (IA)</span>
+                                <i class="ib" onclick='tt(this,"Analyse profonde","Combine l\'analyse locale instantanée avec un appel à Mistral AI pour affiner le score. Résultat plus précis, ~2 s de plus.")'>i</i>
                             </div>
+                            <div class="tog on" id="tog-deep" onclick="togOpt('tog-deep','opt-deep')"><div class="tog-thumb"></div></div>
+                            <input type="checkbox" id="opt-deep" class="hidden" checked>
                         </div>
-                        <div class="mt-3 pt-3 border-t border-white/5">
+
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-white/60">Perplexité</span>
+                                <i class="ib" onclick='tt(this,"Perplexité","Mesure la régularité de longueur des phrases. L\'IA produit des phrases très uniformes — l\'humain varie naturellement.")'>i</i>
+                            </div>
+                            <div class="tog on" id="tog-perp" onclick="togOpt('tog-perp','opt-perplexity')"><div class="tog-thumb"></div></div>
+                            <input type="checkbox" id="opt-perplexity" class="hidden" checked>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-white/60">Burstiness</span>
+                                <i class="ib" onclick='tt(this,"Burstiness","Variation du rythme lexical. Un humain écrit en rafales irrégulières — l\'IA maintient un flux constant et prévisible.")'>i</i>
+                            </div>
+                            <div class="tog on" id="tog-burst" onclick="togOpt('tog-burst','opt-burstiness')"><div class="tog-thumb"></div></div>
+                            <input type="checkbox" id="opt-burstiness" class="hidden" checked>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-white/60">Analyse N-grams</span>
+                                <i class="ib" onclick='tt(this,"N-grams","Détecte les paires de mots (bigrams) répétitives. Plus la structure syntaxique est répétée, plus le score IA monte.")'>i</i>
+                            </div>
+                            <div class="tog on" id="tog-ngram" onclick="togOpt('tog-ngram','opt-ngrams')"><div class="tog-thumb"></div></div>
+                            <input type="checkbox" id="opt-ngrams" class="hidden" checked>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-white/60">Rapport PDF</span>
+                                <i class="ib" onclick='tt(this,"Rapport PDF","Génère un rapport complet avec score, sous-scores, marqueurs détectés et recommandations. Pratique pour partager les résultats.")'>i</i>
+                            </div>
+                            <div class="tog" id="tog-pdf" onclick="togOpt('tog-pdf','opt-pdf')"><div class="tog-thumb"></div></div>
+                            <input type="checkbox" id="opt-pdf" class="hidden">
+                        </div>
+
+                        <div class="pt-3 border-t" style="border-color:rgba(255,255,255,.05)">
                             <div class="flex items-center justify-between">
-                                <span class="text-xs text-white/40">Langue de l'analyse</span>
-                                <select id="opt-lang" class="text-xs bg-white/5 border border-white/10 rounded px-2 py-1 text-white/60 focus:outline-none">
-                                    <option value="fr">Français</option>
-                                    <option value="en">English</option>
-                                    <option value="es">Español</option>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-white/40">Langue d'analyse</span>
+                                    <i class="ib" onclick='tt(this,"Langue","Adapte le dictionnaire de marqueurs LLM et la langue des explications dans le résultat.")'>i</i>
+                                </div>
+                                <select id="opt-lang" class="text-xs rounded-lg px-3 py-1.5 focus:outline-none" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.7)">
+                                    <option value="fr">🇫🇷 Français</option>
+                                    <option value="en">🇬🇧 English</option>
+                                    <option value="es">🇪🇸 Español</option>
                                 </select>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Humanize Options -->
-                    <div id="humanize-options-panel" class="glass-panel p-4 rounded-2xl hidden">
-                        <div class="text-xs font-bold uppercase tracking-widest text-white/30 mb-3">Style d'humanisation</div>
-                        <div class="flex flex-wrap gap-2 mb-4" id="style-chips">
-                            <div class="style-chip selected" onclick="selectStyle(this,'naturel')">Naturel</div>
-                            <div class="style-chip" onclick="selectStyle(this,'academique')">Académique</div>
-                            <div class="style-chip" onclick="selectStyle(this,'professionnel')">Professionnel</div>
-                            <div class="style-chip" onclick="selectStyle(this,'decontracte')">Décontracté</div>
-                            <div class="style-chip locked-feature" onclick="checkPlanForStyle('poétique')">
-                                Poétique
-                                <div class="lock-overlay rounded-xl" onclick="openUpgradeModal('Style Poétique disponible en Premium')">
-                                    <span class="text-[8px] text-yellow-400 font-bold">PRE</span>
-                                </div>
-                            </div>
-                            <div class="style-chip locked-feature" onclick="checkPlanForStyle('journalistique')">
-                                Journalistique
-                                <div class="lock-overlay rounded-xl" onclick="openUpgradeModal('Style Journalistique disponible en Premium+')">
-                                    <span class="text-[8px] text-orange-400 font-bold">PRE+</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="space-y-3">
-                            <div>
-                                <div class="flex justify-between text-xs mb-1">
-                                    <span class="text-white/40">Intensité</span>
-                                    <span class="text-white/60" id="intensity-val">50%</span>
-                                </div>
-                                <input type="range" id="humanize-intensity" min="1" max="100" value="50" oninput="document.getElementById('intensity-val').textContent=this.value+'%'">
-                            </div>
-                            <div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-xs text-white/40">Préserver la structure</span>
-                                    <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" id="preserve-structure" class="sr-only peer" checked>
-                                        <div class="w-8 h-4 bg-white/10 peer-checked:bg-brand-500 rounded-full transition-colors"></div>
-                                        <div class="absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="locked-feature">
-                                <div class="flex items-center justify-between opacity-40">
-                                    <span class="text-xs text-white/40">Double passe (re-analyser)</span>
-                                    <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" id="double-pass" class="sr-only peer" disabled>
-                                        <div class="w-8 h-4 bg-white/10 rounded-full"></div>
-                                        <div class="absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full"></div>
-                                    </label>
-                                </div>
-                                <div class="lock-overlay rounded" onclick="openUpgradeModal('Double passe disponible en Premium+')">
-                                    <span class="text-[9px] text-orange-400 font-bold">PREMIUM+</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Text Input -->
-                    <div class="glass-panel p-6 rounded-3xl relative group">
-                        <div class="flex justify-between items-center mb-4">
-                            <span class="text-xs font-bold uppercase tracking-widest text-white/40">Texte à analyser</span>
-                            <div class="flex items-center gap-3">
-                                <span id="char-count" class="text-xs text-white/40">0 car.</span>
-                                <span id="word-count" class="text-xs text-white/30">0 mots</span>
-                            </div>
-                        </div>
-                        <textarea id="input-text" class="w-full h-56 bg-transparent border-none focus:ring-0 text-white/90 resize-none placeholder-white/20 leading-relaxed font-light text-sm" placeholder="Collez votre texte ici (Essai, Article, Email, Rapport...)&#10;&#10;Minimum 80 caractères pour une analyse fiable."></textarea>
-                        
-                        <div class="flex justify-between items-center gap-3 mt-4 pt-4 border-t border-white/5">
-                            <div class="flex gap-2">
-                                <button onclick="pasteFromClipboard()" class="px-3 py-1.5 rounded-lg text-white/30 hover:text-white hover:bg-white/5 text-xs transition-all flex items-center gap-1">
-                                    <i class="fa-regular fa-clipboard"></i> Coller
-                                </button>
-                                <button onclick="clearInput()" class="px-3 py-1.5 rounded-lg text-white/30 hover:text-red-400 hover:bg-red-500/5 text-xs transition-all flex items-center gap-1">
-                                    <i class="fa-regular fa-trash-can"></i> Effacer
-                                </button>
-                            </div>
-                            <button id="action-btn" class="px-8 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm uppercase tracking-wide shadow-lg shadow-brand-500/20 transition-all flex items-center gap-2">
-                                <i class="fa-solid fa-magnifying-glass"></i> <span>Analyser</span>
-                            </button>
-                        </div>
-                    </div>
                 </div>
 
-                <!-- RIGHT: RESULTS -->
-                <div class="flex flex-col gap-5">
-                    <div class="glass-panel p-8 rounded-3xl flex-1 relative overflow-hidden flex flex-col items-center justify-center min-h-[380px]" id="result-panel">
-                        
-                        <!-- EMPTY STATE -->
-                        <div id="state-empty" class="text-center">
-                            <div class="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-3xl mx-auto mb-6 text-white/20">
-                                <i class="fa-solid fa-microchip"></i>
-                            </div>
-                            <h3 class="text-xl font-bold mb-2">En attente</h3>
-                            <p class="text-white/40 text-sm">Entrez du texte et lancez l'analyse.</p>
-                            <div class="mt-5 grid grid-cols-3 gap-3 max-w-xs mx-auto">
-                                <div class="bg-white/5 rounded-xl p-3 text-center">
-                                    <div class="text-lg mb-1">🧠</div>
-                                    <div class="text-[10px] text-white/30">Perplexité</div>
-                                </div>
-                                <div class="bg-white/5 rounded-xl p-3 text-center">
-                                    <div class="text-lg mb-1">📊</div>
-                                    <div class="text-[10px] text-white/30">Burstiness</div>
-                                </div>
-                                <div class="bg-white/5 rounded-xl p-3 text-center">
-                                    <div class="text-lg mb-1">🔬</div>
-                                    <div class="text-[10px] text-white/30">Patterns</div>
-                                </div>
-                            </div>
-                        </div>
+                <!-- HUMANIZE OPTIONS -->
+                <div id="humanize-opts" class="glass p-5 rounded-2xl card hidden">
+                    <div class="text-xs font-bold uppercase tracking-widest text-white/30 mb-4">Style d'humanisation</div>
 
-                        <!-- LOADING STATE -->
-                        <div id="state-loading" class="hidden text-center absolute inset-0 bg-black/60 backdrop-blur-md z-20 flex flex-col items-center justify-center rounded-3xl">
-                            <div class="relative mb-6">
-                                <div class="w-16 h-16 border-4 border-brand-500/30 rounded-full"></div>
-                                <div class="w-16 h-16 border-4 border-brand-500 border-t-transparent rounded-full animate-spin absolute inset-0"></div>
-                            </div>
-                            <p class="font-display font-bold text-brand-glow animate-pulse" id="loading-text">Analyse en cours...</p>
-                            <p class="text-white/30 text-xs mt-2" id="loading-sub">Calcul de la perplexité...</p>
-                        </div>
-
-                        <!-- DETECT RESULT -->
-                        <div id="state-result-detect" class="hidden w-full h-full flex flex-col">
-                            <h3 class="text-sm font-bold mb-5 text-center border-b border-white/5 pb-3 text-white/60 uppercase tracking-widest">Analyse IA</h3>
-                            
-                            <div class="flex gap-6 items-start">
-                                <!-- Gauge -->
-                                <div class="flex-shrink-0">
-                                    <svg viewBox="0 0 36 36" class="circular-chart w-36 h-36">
-                                        <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                        <path id="gauge-circle" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="#4f46e5" />
-                                        <text x="18" y="20.35" class="percentage" id="score-text">0%</text>
-                                        <text x="18" y="25" class="label">SCORE IA</text>
-                                    </svg>
-                                    <div class="text-center mt-2">
-                                        <span id="verdict-badge" class="text-xs font-bold px-3 py-1 rounded-full bg-white/10">—</span>
-                                    </div>
-                                </div>
-                                <!-- Details -->
-                                <div class="flex-1 space-y-3 min-w-0">
-                                    <div id="sub-score-perplexity" class="space-y-1">
-                                        <div class="flex justify-between text-[10px]">
-                                            <span class="text-white/40">Perplexité</span>
-                                            <span class="text-white/60" id="sub-perplexity-val">—</span>
-                                        </div>
-                                        <div class="h-1 bg-white/5 rounded-full overflow-hidden">
-                                            <div class="score-bar-fill bg-blue-500" id="bar-perplexity" style="width:0%"></div>
-                                        </div>
-                                    </div>
-                                    <div id="sub-score-burstiness" class="space-y-1">
-                                        <div class="flex justify-between text-[10px]">
-                                            <span class="text-white/40">Burstiness</span>
-                                            <span class="text-white/60" id="sub-burstiness-val">—</span>
-                                        </div>
-                                        <div class="h-1 bg-white/5 rounded-full overflow-hidden">
-                                            <div class="score-bar-fill bg-purple-500" id="bar-burstiness" style="width:0%"></div>
-                                        </div>
-                                    </div>
-                                    <div class="space-y-1">
-                                        <div class="flex justify-between text-[10px]">
-                                            <span class="text-white/40">Patterns LLM</span>
-                                            <span class="text-white/60" id="sub-patterns-val">—</span>
-                                        </div>
-                                        <div class="h-1 bg-white/5 rounded-full overflow-hidden">
-                                            <div class="score-bar-fill bg-red-500" id="bar-patterns" style="width:0%"></div>
-                                        </div>
-                                    </div>
-                                    <div class="space-y-1">
-                                        <div class="flex justify-between text-[10px]">
-                                            <span class="text-white/40">Richesse vocab.</span>
-                                            <span class="text-white/60" id="sub-vocab-val">—</span>
-                                        </div>
-                                        <div class="h-1 bg-white/5 rounded-full overflow-hidden">
-                                            <div class="score-bar-fill bg-green-500" id="bar-vocab" style="width:0%"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mt-4 p-4 bg-white/5 rounded-xl border border-white/5">
-                                <span class="text-[10px] uppercase tracking-widest text-white/30 block mb-2">Analyse détaillée</span>
-                                <p id="reasoning-text" class="text-xs text-white/70 leading-relaxed">...</p>
-                            </div>
-
-                            <!-- Patterns détectés -->
-                            <div id="patterns-found" class="mt-3 hidden">
-                                <span class="text-[10px] uppercase tracking-widest text-white/30 block mb-2">Marqueurs détectés</span>
-                                <div id="patterns-chips" class="flex flex-wrap gap-1.5"></div>
-                            </div>
-
-                            <!-- Actions -->
-                            <div class="mt-4 flex gap-2">
-                                <button onclick="humanizeFromResult()" class="flex-1 py-2.5 rounded-xl bg-purple-600/20 border border-purple-500/30 hover:bg-purple-600/30 text-purple-300 text-xs font-bold transition flex items-center justify-center gap-2">
-                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Humaniser maintenant
-                                </button>
-                                <button id="btn-copy-result" onclick="copyDetectionReport()" class="px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/40 hover:text-white text-xs transition" title="Copier le rapport">
-                                    <i class="fa-regular fa-copy"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- HUMANIZE RESULT -->
-                        <div id="state-result-humanize" class="hidden w-full h-full flex flex-col">
-                            <div class="flex justify-between items-center mb-4 border-b border-white/5 pb-3">
-                                <h3 class="text-sm font-bold text-white/60 uppercase tracking-widest"><i class="fa-solid fa-check-circle text-green-400 mr-2"></i>Résultat</h3>
-                                <div class="flex gap-2">
-                                    <button onclick="copyToClipboard()" class="text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition flex items-center gap-1">
-                                        <i class="fa-regular fa-copy"></i> Copier
-                                    </button>
-                                    <button onclick="reHumanize()" class="text-xs bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 px-3 py-1.5 rounded-lg transition text-purple-300 flex items-center gap-1">
-                                        <i class="fa-solid fa-rotate-right"></i> Relancer
-                                    </button>
-                                </div>
-                            </div>
-                            <textarea id="output-humanized" readonly class="flex-1 w-full bg-black/20 rounded-xl p-4 text-sm leading-relaxed text-green-100 border border-green-500/20 resize-none focus:outline-none min-h-[200px]"></textarea>
-                            <div class="mt-3 flex flex-wrap gap-2">
-                                <div class="bg-green-500/10 border border-green-500/20 px-3 py-1 rounded text-[10px] text-green-400">
-                                    <i class="fa-solid fa-chart-line mr-1"></i>Score IA estimé : &lt; 12%
-                                </div>
-                                <div id="humanize-style-badge" class="bg-purple-500/10 border border-purple-500/20 px-3 py-1 rounded text-[10px] text-purple-400">Style: Naturel</div>
-                                <button onclick="verifyHumanized()" class="bg-brand-500/10 border border-brand-500/20 px-3 py-1 rounded text-[10px] text-brand-glow hover:bg-brand-500/20 transition">
-                                    <i class="fa-solid fa-shield-halved mr-1"></i>Vérifier le score
-                                </button>
-                            </div>
-                        </div>
+                    <div class="flex flex-wrap gap-2 mb-5" id="style-chips">
+                        <div class="schip sel" onclick="selStyle(this,'naturel')">Naturel</div>
+                        <div class="schip" onclick="selStyle(this,'academique')">Académique</div>
+                        <div class="schip" onclick="selStyle(this,'professionnel')">Professionnel</div>
+                        <div class="schip" onclick="selStyle(this,'decontracte')">Décontracté</div>
+                        <div class="schip" onclick="selStyle(this,'poetique')">Poétique ✨</div>
+                        <div class="schip" onclick="selStyle(this,'journalistique')">Journalistique 📰</div>
                     </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- OPT PANEL: HUMANIZER STANDALONE -->
-        <div id="opt-humanize" class="opt-panel">
-            <div class="glass-panel p-6 rounded-3xl mb-6">
-                <h2 class="text-lg font-display font-bold mb-1">Humaniseur avancé</h2>
-                <p class="text-white/40 text-sm">Reformulez votre texte IA en texte naturel, indétectable, sans gros mots ni approximations.</p>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="glass-panel p-5 rounded-2xl">
-                    <div class="text-2xl mb-3">🎯</div>
-                    <div class="font-bold text-sm mb-1">Ciblage précis</div>
-                    <p class="text-white/40 text-xs">Détecte et remplace uniquement les marqueurs IA sans toucher au reste du texte.</p>
-                </div>
-                <div class="glass-panel p-5 rounded-2xl">
-                    <div class="text-2xl mb-3">📈</div>
-                    <div class="font-bold text-sm mb-1">Score garanti</div>
-                    <p class="text-white/40 text-xs">Notre algorithme vise systématiquement un score IA &lt; 15% après humanisation.</p>
-                </div>
-                <div class="locked-feature glass-panel p-5 rounded-2xl">
-                    <div class="text-2xl mb-3">🔄</div>
-                    <div class="font-bold text-sm mb-1 opacity-40">Double passe</div>
-                    <p class="text-white/40 text-xs opacity-40">Re-analyse automatique après humanisation pour garantir le résultat.</p>
-                    <div class="lock-overlay rounded-2xl" onclick="openUpgradeModal('La Double passe est disponible en Premium+')">
-                        <span class="text-xs text-orange-400 font-bold">🔥 PREMIUM+</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- OPT PANEL: OPTIONS -->
-        <div id="opt-options" class="opt-panel">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Forfait actuel -->
-                <div class="glass-panel p-6 rounded-3xl">
-                    <h3 class="font-display font-bold text-lg mb-4">Votre forfait</h3>
-                    <div id="current-plan-card" class="p-4 rounded-2xl bg-white/5 border border-white/10 mb-4">
-                        <div class="flex items-center gap-3">
-                            <div id="plan-icon" class="text-2xl">🆓</div>
-                            <div>
-                                <div id="plan-name-big" class="font-bold text-white">Free</div>
-                                <div id="plan-desc" class="text-xs text-white/40">10 analyses/jour · Humaniseur basique</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="space-y-2" id="plan-features-list">
-                        <!-- Rempli par JS -->
-                    </div>
-                    <a href="index.html#pricing" class="block mt-4 text-center py-2.5 rounded-xl bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-500/20 text-yellow-400 text-xs font-bold hover:from-yellow-600/30 hover:to-orange-600/30 transition">
-                        Voir les offres Premium →
-                    </a>
-                </div>
-                <!-- Paramètres -->
-                <div class="glass-panel p-6 rounded-3xl">
-                    <h3 class="font-display font-bold text-lg mb-4">Paramètres</h3>
                     <div class="space-y-4">
                         <div>
-                            <label class="text-xs text-white/40 block mb-2 uppercase tracking-widest">Langue par défaut</label>
-                            <select id="settings-lang" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500/50">
-                                <option value="fr">🇫🇷 Français</option>
-                                <option value="en">🇬🇧 English</option>
-                                <option value="es">🇪🇸 Español</option>
-                            </select>
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-white/50">Intensité de réécriture</span>
+                                    <i class="ib" onclick='tt(this,"Intensité","Faible : changements minimes. Moyen : réécriture modérée. Élevé : transformation totale du style tout en préservant le sens.")'>i</i>
+                                </div>
+                                <span class="text-xs font-bold text-white" id="intensity-val">50%</span>
+                            </div>
+                            <input type="range" id="humanize-intensity" min="1" max="100" value="50" oninput="document.getElementById('intensity-val').textContent=this.value+'%'">
+                            <div class="flex justify-between text-[9px] mt-1" style="color:rgba(255,255,255,.2)"><span>Minimal</span><span>Moyen</span><span>Maximal</span></div>
                         </div>
-                        <div>
-                            <label class="text-xs text-white/40 block mb-2 uppercase tracking-widest">Seuil d'alerte IA (%)</label>
-                            <div class="flex items-center gap-3">
-                                <input type="range" id="settings-threshold" min="10" max="90" value="50" oninput="document.getElementById('threshold-val').textContent=this.value+'%'">
-                                <span class="text-sm font-bold text-white w-12" id="threshold-val">50%</span>
+
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-white/50">Préserver la structure</span>
+                                <i class="ib" onclick='tt(this,"Structure","Activé : conserve vos titres et paragraphes. Désactivé : l\'IA peut réorganiser librement pour un résultat plus naturel.")'>i</i>
+                            </div>
+                            <div class="tog on" id="tog-struct" onclick="togOpt('tog-struct','preserve-structure')"><div class="tog-thumb"></div></div>
+                            <input type="checkbox" id="preserve-structure" class="hidden" checked>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-white/50">Double passe IA</span>
+                                <i class="ib" onclick='tt(this,"Double passe","Après la première humanisation, re-analyse le texte et relance une seconde passe sur les passages encore suspects. Score final &lt; 8%.")'>i</i>
+                            </div>
+                            <div class="tog" id="tog-double" onclick="togOpt('tog-double','double-pass')"><div class="tog-thumb"></div></div>
+                            <input type="checkbox" id="double-pass" class="hidden">
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-white/50">Ciblage des marqueurs</span>
+                                <i class="ib" onclick='tt(this,"Ciblage","Analyse le texte localement AVANT d\'appeler l\'API pour identifier les marqueurs IA précis à éliminer en priorité. Plus efficace.")'>i</i>
+                            </div>
+                            <div class="tog on" id="tog-target" onclick="togOpt('tog-target','opt-targeting')"><div class="tog-thumb"></div></div>
+                            <input type="checkbox" id="opt-targeting" class="hidden" checked>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-white/50">Contenu poli garanti</span>
+                                <i class="ib" onclick='tt(this,"Contenu poli","Interdit strictement au modèle d\'utiliser des grossièretés, vulgarités ou insultes — le texte reste toujours professionnel et propre.")'>i</i>
+                            </div>
+                            <div class="tog on" id="tog-clean" onclick="togOpt('tog-clean','opt-clean')"><div class="tog-thumb"></div></div>
+                            <input type="checkbox" id="opt-clean" class="hidden" checked>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TEXT INPUT -->
+                <div class="glass p-6 rounded-3xl scan card">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-xs font-bold uppercase tracking-widest text-white/30">Votre texte</span>
+                        <div class="flex items-center gap-3">
+                            <span id="char-count" class="text-xs" style="color:rgba(255,255,255,.25)">0 car.</span>
+                            <span id="word-count" class="text-xs" style="color:rgba(255,255,255,.18)">0 mots</span>
+                        </div>
+                    </div>
+                    <textarea id="input-text" class="w-full h-56 bg-transparent border-none focus:ring-0 text-white/90 resize-none placeholder-white/20 leading-relaxed text-sm" style="font-weight:300" placeholder="Collez votre texte ici (essai, article, email...)&#10;&#10;Minimum 80 caractères pour la détection."></textarea>
+                    <div class="flex justify-between items-center mt-4 pt-4" style="border-top:1px solid rgba(255,255,255,.05)">
+                        <div class="flex gap-2">
+                            <button onclick="pasteClip()" class="px-3 py-1.5 rounded-lg text-xs transition-all rip flex items-center gap-1" style="color:rgba(255,255,255,.3)"><i class="fa-regular fa-clipboard"></i> Coller</button>
+                            <button onclick="clearInput()" class="px-3 py-1.5 rounded-lg text-xs transition-all rip flex items-center gap-1" style="color:rgba(255,255,255,.3)"><i class="fa-regular fa-trash-can"></i> Effacer</button>
+                        </div>
+                        <button id="action-btn" class="px-8 py-3 rounded-xl text-white font-bold text-sm uppercase tracking-wide rip flex items-center gap-2" style="background:#4f46e5;box-shadow:0 0 22px rgba(79,70,229,.32)">
+                            <i class="fa-solid fa-magnifying-glass"></i><span>Analyser</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT RESULTS -->
+            <div class="glass p-8 rounded-3xl relative overflow-hidden flex flex-col items-center justify-center min-h-[460px]" id="result-panel">
+
+                <!-- EMPTY -->
+                <div id="state-empty" class="text-center stg">
+                    <div class="w-20 h-20 rounded-full flex items-center justify-center text-3xl mx-auto mb-6" style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.15);color:rgba(255,255,255,.2);animation:float 3s ease-in-out infinite">
+                        <i class="fa-solid fa-microchip"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">En attente</h3>
+                    <p class="text-sm mb-6" style="color:rgba(255,255,255,.4)">Entrez votre texte et lancez l'analyse.</p>
+                    <div class="grid grid-cols-3 gap-3 max-w-xs mx-auto">
+                        <div class="rounded-xl p-3 text-center card" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)">
+                            <div class="text-xl mb-1">🧠</div>
+                            <div class="text-[10px]" style="color:rgba(255,255,255,.3)">Perplexité</div>
+                        </div>
+                        <div class="rounded-xl p-3 text-center card" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)">
+                            <div class="text-xl mb-1">📊</div>
+                            <div class="text-[10px]" style="color:rgba(255,255,255,.3)">Burstiness</div>
+                        </div>
+                        <div class="rounded-xl p-3 text-center card" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)">
+                            <div class="text-xl mb-1">🔬</div>
+                            <div class="text-[10px]" style="color:rgba(255,255,255,.3)">N-grams</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LOADING -->
+                <div id="state-loading" class="hidden absolute inset-0 flex flex-col items-center justify-center rounded-3xl z-20 scan" style="background:rgba(5,5,5,.8);backdrop-filter:blur(14px)">
+                    <div class="scan-line"></div>
+                    <div class="relative mb-6">
+                        <div class="w-16 h-16 rounded-full" style="border:3px solid rgba(99,102,241,.2)"></div>
+                        <div class="w-16 h-16 rounded-full absolute inset-0" style="border:3px solid transparent;border-top-color:#6366f1;animation:spinAnim .85s linear infinite"></div>
+                        <div class="absolute inset-3 rounded-full" style="background:rgba(99,102,241,.12);animation:pulseGlow 1.6s ease-in-out infinite"></div>
+                    </div>
+                    <p class="font-bold" style="font-family:'Space Grotesk',sans-serif;color:#818cf8" id="loading-text">Analyse neuronale...</p>
+                    <p class="text-xs mt-2" style="color:rgba(255,255,255,.3)" id="loading-sub">Tokenisation...</p>
+                    <div class="flex gap-2 mt-4">
+                        <div class="w-1.5 h-1.5 rounded-full" style="background:#6366f1;animation:pulseGlow 1s .0s infinite"></div>
+                        <div class="w-1.5 h-1.5 rounded-full" style="background:#818cf8;animation:pulseGlow 1s .2s infinite"></div>
+                        <div class="w-1.5 h-1.5 rounded-full" style="background:#a5b4fc;animation:pulseGlow 1s .4s infinite"></div>
+                    </div>
+                </div>
+
+                <!-- DETECT RESULT -->
+                <div id="state-result-detect" class="hidden w-full flex flex-col">
+                    <h3 class="text-xs font-bold mb-4 text-center uppercase tracking-widest pb-3" style="color:rgba(255,255,255,.35);border-bottom:1px solid rgba(255,255,255,.05)">Analyse IA</h3>
+                    <div class="flex gap-5 items-start">
+                        <div class="flex-shrink-0 text-center">
+                            <svg viewBox="0 0 36 36" style="width:136px;height:136px;display:block;margin:0 auto">
+                                <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                <path id="gauge-circle" class="circle" stroke-dasharray="0,100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="#4f46e5"/>
+                                <text x="18" y="20.35" class="pct" id="score-text">0%</text>
+                                <text x="18" y="25" class="lbl">SCORE IA</text>
+                            </svg>
+                            <span id="verdict-badge" class="text-xs font-bold px-3 py-1 rounded-full mt-2 inline-block" style="background:rgba(255,255,255,.08)">—</span>
+                        </div>
+                        <div class="flex-1 space-y-2.5 min-w-0">
+                            <div class="space-y-1">
+                                <div class="flex justify-between items-center text-[10px]">
+                                    <div class="flex items-center gap-1"><span style="color:rgba(255,255,255,.4)">Perplexité</span><i class="ib" onclick='tt(this,"Perplexité","Régularité des phrases. Élevé = structure trop uniforme, caractéristique des LLM.")'>i</i></div>
+                                    <span class="font-bold" style="color:rgba(255,255,255,.6)" id="sv-perp">—</span>
+                                </div>
+                                <div style="height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden"><div id="bar-perp" class="sbar" style="background:#818cf8"></div></div>
+                            </div>
+                            <div class="space-y-1">
+                                <div class="flex justify-between items-center text-[10px]">
+                                    <div class="flex items-center gap-1"><span style="color:rgba(255,255,255,.4)">Burstiness</span><i class="ib" onclick='tt(this,"Burstiness","Variation du rythme lexical. Faible variation = écriture machinique et prévisible.")'>i</i></div>
+                                    <span class="font-bold" style="color:rgba(255,255,255,.6)" id="sv-burst">—</span>
+                                </div>
+                                <div style="height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden"><div id="bar-burst" class="sbar" style="background:#c084fc"></div></div>
+                            </div>
+                            <div class="space-y-1">
+                                <div class="flex justify-between items-center text-[10px]">
+                                    <div class="flex items-center gap-1"><span style="color:rgba(255,255,255,.4)">Patterns LLM</span><i class="ib" onclick='tt(this,"Patterns LLM","Présence de tournures typiques des LLM (\"en outre\", \"il convient de\"...). Plus il y en a, plus le score monte.")'>i</i></div>
+                                    <span class="font-bold" style="color:rgba(255,255,255,.6)" id="sv-pat">—</span>
+                                </div>
+                                <div style="height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden"><div id="bar-pat" class="sbar" style="background:#f87171"></div></div>
+                            </div>
+                            <div class="space-y-1">
+                                <div class="flex justify-between items-center text-[10px]">
+                                    <div class="flex items-center gap-1"><span style="color:rgba(255,255,255,.4)">Richesse vocab.</span><i class="ib" onclick='tt(this,"Richesse vocab.","Type-Token Ratio : rapport mots uniques / total. L\'IA tend vers une zone moyenne, ni trop répétitive ni trop riche.")'>i</i></div>
+                                    <span class="font-bold" style="color:rgba(255,255,255,.6)" id="sv-vocab">—</span>
+                                </div>
+                                <div style="height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden"><div id="bar-vocab" class="sbar" style="background:#34d399"></div></div>
+                            </div>
+                            <div class="space-y-1">
+                                <div class="flex justify-between items-center text-[10px]">
+                                    <div class="flex items-center gap-1"><span style="color:rgba(255,255,255,.4)">N-grams</span><i class="ib" onclick='tt(this,"N-grams","Répétitivité des bigrams (paires de mots consécutifs). Les LLM réutilisent les mêmes constructions syntaxiques.")'>i</i></div>
+                                    <span class="font-bold" style="color:rgba(255,255,255,.6)" id="sv-ngram">—</span>
+                                </div>
+                                <div style="height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden"><div id="bar-ngram" class="sbar" style="background:#fbbf24"></div></div>
                             </div>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs text-white/40">Sauvegarde auto historique</span>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="settings-autosave" class="sr-only peer" checked>
-                                <div class="w-8 h-4 bg-white/10 peer-checked:bg-brand-500 rounded-full transition-colors"></div>
-                                <div class="absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
-                            </label>
+                    </div>
+
+                    <div class="mt-4 p-4 rounded-xl" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)">
+                        <div class="flex items-center gap-1.5 mb-2">
+                            <span class="text-[10px] uppercase tracking-widest" style="color:rgba(255,255,255,.3)">Analyse détaillée</span>
+                            <i class="ib" onclick='tt(this,"Analyse","Synthèse des signaux détectés expliquant le score. Combine l\'analyse locale et l\'affinage Mistral si activé.")'>i</i>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs text-white/40">Notifications résultat</span>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="settings-notif" class="sr-only peer" checked>
-                                <div class="w-8 h-4 bg-white/10 peer-checked:bg-brand-500 rounded-full transition-colors"></div>
-                                <div class="absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
-                            </label>
+                        <p id="reasoning-text" class="text-xs leading-relaxed" style="color:rgba(255,255,255,.7)">...</p>
+                    </div>
+
+                    <div id="patterns-found" class="mt-3 hidden">
+                        <div class="flex items-center gap-1.5 mb-2">
+                            <span class="text-[10px] uppercase tracking-widest" style="color:rgba(255,255,255,.3)">Marqueurs détectés</span>
+                            <i class="ib" onclick='tt(this,"Marqueurs","Expressions IA trouvées dans votre texte. Remplacez-les pour améliorer le score humain — l\'humaniseur s\'en occupe automatiquement.")'>i</i>
                         </div>
+                        <div id="patterns-chips" class="flex flex-wrap gap-1.5"></div>
+                    </div>
+
+                    <div class="mt-4 flex gap-2">
+                        <button onclick="humanizeFromResult()" class="flex-1 py-2.5 rounded-xl font-bold text-xs transition-all rip flex items-center justify-center gap-2 hover:scale-[1.02]" style="background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.25);color:#c084fc">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>Humaniser maintenant
+                        </button>
+                        <button onclick="copyDetectionReport()" class="px-3 py-2.5 rounded-xl text-xs transition-all rip hover:scale-105" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.4)" title="Copier le rapport">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- HUMANIZE RESULT -->
+                <div id="state-result-humanize" class="hidden w-full flex flex-col">
+                    <div class="flex justify-between items-center mb-4 pb-3" style="border-bottom:1px solid rgba(255,255,255,.05)">
+                        <h3 class="text-xs font-bold uppercase tracking-widest" style="color:rgba(255,255,255,.4)"><i class="fa-solid fa-check-circle mr-2" style="color:#4ade80"></i>Texte humanisé</h3>
+                        <div class="flex gap-2">
+                            <button onclick="copyToClipboard()" class="text-xs px-3 py-1.5 rounded-lg transition-all rip hover:scale-105" style="background:rgba(255,255,255,.08)"><i class="fa-regular fa-copy mr-1"></i>Copier</button>
+                            <button onclick="reHumanize()" class="text-xs px-3 py-1.5 rounded-lg transition-all rip hover:scale-105" style="background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.2);color:#c084fc"><i class="fa-solid fa-rotate-right mr-1"></i>Relancer</button>
+                        </div>
+                    </div>
+                    <textarea id="output-humanized" readonly class="flex-1 w-full rounded-xl p-4 text-sm leading-relaxed resize-none focus:outline-none min-h-[200px]" style="background:rgba(0,0,0,.25);color:#bbf7d0;border:1px solid rgba(74,222,128,.15)"></textarea>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <div id="hum-score-badge" class="px-3 py-1 rounded text-[10px]" style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.2);color:#4ade80"><i class="fa-solid fa-chart-line mr-1"></i>Score estimé : ~12%</div>
+                        <div id="hum-style-badge" class="px-3 py-1 rounded text-[10px]" style="background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.2);color:#c084fc">Style: Naturel</div>
+                        <button onclick="verifyHumanized()" class="px-3 py-1 rounded text-[10px] transition-all hover:scale-105 rip" style="background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);color:#818cf8"><i class="fa-solid fa-shield-halved mr-1"></i>Vérifier</button>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- HISTORY -->
-        <section class="mt-12 animate-fade-in-up" style="animation-delay: 0.2s;">
-            <div class="flex items-center justify-between mb-5">
-                <h2 class="text-xl font-display font-bold">Historique</h2>
-                <div class="flex items-center gap-3">
-                    <span id="history-source" class="text-[10px] uppercase bg-white/5 px-2 py-1 rounded text-white/40 tracking-widest">...</span>
-                    <button onclick="clearLocalHistory()" id="btn-clear-local" class="hidden text-xs text-red-400 hover:text-red-300 transition">
-                        <i class="fa-solid fa-trash mr-1"></i>Effacer
-                    </button>
+    <!-- ══════ TAB HUMANIZE INFO ══════ -->
+    <div id="tab-humanize" class="opt-panel">
+        <div class="glass p-6 rounded-3xl mb-6 card">
+            <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;margin-bottom:6px">Humaniseur avancé</h2>
+            <p class="text-sm" style="color:rgba(255,255,255,.4)">Reformulez vos textes IA en textes naturels et indétectables — zéro grossièreté, zéro hallucination, 6 styles disponibles.</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 stg">
+            <div class="glass p-6 rounded-2xl card">
+                <div class="text-2xl mb-3" style="display:inline-block;animation:float 3s ease-in-out infinite">🎯</div>
+                <div class="font-bold text-sm mb-2 flex items-center gap-1.5">Ciblage précis<i class="ib" onclick='tt(this,"Ciblage","Pré-analyse locale pour identifier et cibler précisément les expressions IA à éliminer en priorité.")'>i</i></div>
+                <p class="text-xs" style="color:rgba(255,255,255,.4)">Détecte et remplace uniquement les marqueurs IA sans toucher au reste du texte.</p>
+            </div>
+            <div class="glass p-6 rounded-2xl card">
+                <div class="text-2xl mb-3" style="display:inline-block;animation:float 3s ease-in-out .35s infinite">📈</div>
+                <div class="font-bold text-sm mb-2 flex items-center gap-1.5">Score garanti<i class="ib" onclick='tt(this,"Garantie score","Paramètres optimisés pour viser un score IA < 15% après humanisation.")'>i</i></div>
+                <p class="text-xs" style="color:rgba(255,255,255,.4)">Notre algorithme vise systématiquement un score IA &lt; 15%.</p>
+            </div>
+            <div class="glass p-6 rounded-2xl card">
+                <div class="text-2xl mb-3" style="display:inline-block;animation:float 3s ease-in-out .7s infinite">🔄</div>
+                <div class="font-bold text-sm mb-2 flex items-center gap-1.5">Double passe<i class="ib" onclick='tt(this,"Double passe","Active une seconde itération d\'humanisation sur les passages encore suspects. Résultat final < 8%.")'>i</i></div>
+                <p class="text-xs" style="color:rgba(255,255,255,.4)">Re-analyse et second tour si des passages restent suspects.</p>
+            </div>
+            <div class="glass p-6 rounded-2xl card">
+                <div class="text-2xl mb-3" style="display:inline-block;animation:float 3s ease-in-out 1.05s infinite">🎨</div>
+                <div class="font-bold text-sm mb-2 flex items-center gap-1.5">6 styles<i class="ib" onclick='tt(this,"Styles","Naturel, Académique, Professionnel, Décontracté, Poétique, Journalistique — tous disponibles.")'>i</i></div>
+                <p class="text-xs" style="color:rgba(255,255,255,.4)">Naturel, Académique, Pro, Décontracté, Poétique, Journalistique.</p>
+            </div>
+            <div class="glass p-6 rounded-2xl card">
+                <div class="text-2xl mb-3" style="display:inline-block;animation:float 3s ease-in-out 1.4s infinite">🛡️</div>
+                <div class="font-bold text-sm mb-2 flex items-center gap-1.5">Contenu propre<i class="ib" onclick='tt(this,"Contenu propre","Règles absolues dans le prompt : zéro grossièreté, zéro vulgaire, zéro hallucination.")'>i</i></div>
+                <p class="text-xs" style="color:rgba(255,255,255,.4)">Zéro grossièreté, zéro hallucination — fidèle à l'original.</p>
+            </div>
+            <div class="glass p-6 rounded-2xl card">
+                <div class="text-2xl mb-3" style="display:inline-block;animation:float 3s ease-in-out 1.75s infinite">⚡</div>
+                <div class="font-bold text-sm mb-2 flex items-center gap-1.5">Rapide &amp; précis<i class="ib" onclick='tt(this,"Performance","Mistral Medium offre le meilleur équilibre vitesse/qualité pour la réécriture humaine.")'>i</i></div>
+                <p class="text-xs" style="color:rgba(255,255,255,.4)">Mistral Medium — résultat en quelques secondes.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════ TAB OPTIONS ══════ -->
+    <div id="tab-options" class="opt-panel">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="glass p-6 rounded-3xl card">
+                <h3 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;margin-bottom:16px">Votre forfait</h3>
+                <div id="plan-card" class="p-4 rounded-2xl mb-5" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)">
+                    <div class="flex items-center gap-3">
+                        <div id="plan-icon" class="text-2xl">🆓</div>
+                        <div>
+                            <div id="plan-name-big" class="font-bold">Free</div>
+                            <div id="plan-desc" class="text-xs" style="color:rgba(255,255,255,.4)">Toutes les fonctionnalités disponibles</div>
+                        </div>
+                    </div>
+                </div>
+                <div id="plan-features" class="space-y-1.5"></div>
+                <a href="index.html#pricing" class="block mt-5 text-center py-3 rounded-xl font-bold text-xs transition-all hover:scale-[1.02]" style="background:linear-gradient(135deg,rgba(245,158,11,.2),rgba(249,115,22,.2));border:1px solid rgba(245,158,11,.25);color:#fbbf24">
+                    Voir les offres Premium →
+                </a>
+            </div>
+            <div class="glass p-6 rounded-3xl card">
+                <h3 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;margin-bottom:16px">Paramètres globaux</h3>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex items-center gap-1.5 mb-2">
+                            <label class="text-xs uppercase tracking-widest" style="color:rgba(255,255,255,.4)">Langue par défaut</label>
+                            <i class="ib" onclick='tt(this,"Langue","Langue pour les explications et le dictionnaire de marqueurs IA.")'>i</i>
+                        </div>
+                        <select id="settings-lang" class="w-full rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)">
+                            <option value="fr">🇫🇷 Français</option><option value="en">🇬🇧 English</option><option value="es">🇪🇸 Español</option>
+                        </select>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="flex items-center gap-1.5">
+                                <label class="text-xs uppercase tracking-widest" style="color:rgba(255,255,255,.4)">Seuil d'alerte IA</label>
+                                <i class="ib" onclick='tt(this,"Seuil","Au-dessus de ce seuil, l\'alerte devient rouge. En dessous, vert.")'>i</i>
+                            </div>
+                            <span class="text-sm font-bold text-white" id="threshold-val">50%</span>
+                        </div>
+                        <input type="range" id="settings-threshold" min="10" max="90" value="50" oninput="document.getElementById('threshold-val').textContent=this.value+'%'">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5"><span class="text-xs" style="color:rgba(255,255,255,.5)">Sauvegarde automatique</span><i class="ib" onclick='tt(this,"Sauvegarde","Enregistre chaque analyse dans l\'historique local ou Cloud.")'>i</i></div>
+                        <div class="tog on" id="tog-autosave" onclick="togOpt('tog-autosave','settings-autosave')"><div class="tog-thumb"></div></div>
+                        <input type="checkbox" id="settings-autosave" class="hidden" checked>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5"><span class="text-xs" style="color:rgba(255,255,255,.5)">Notifications toast</span><i class="ib" onclick='tt(this,"Notifications","Affiche une notification en bas à droite à chaque analyse terminée.")'>i</i></div>
+                        <div class="tog on" id="tog-notif" onclick="togOpt('tog-notif','settings-notif')"><div class="tog-thumb"></div></div>
+                        <input type="checkbox" id="settings-notif" class="hidden" checked>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5"><span class="text-xs" style="color:rgba(255,255,255,.5)">Afficher les marqueurs</span><i class="ib" onclick='tt(this,"Marqueurs","Affiche les expressions IA détectées sous forme de chips colorées.")'>i</i></div>
+                        <div class="tog on" id="tog-showm" onclick="togOpt('tog-showm','settings-showm')"><div class="tog-thumb"></div></div>
+                        <input type="checkbox" id="settings-showm" class="hidden" checked>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5"><span class="text-xs" style="color:rgba(255,255,255,.5)">Animation jauge</span><i class="ib" onclick='tt(this,"Animation jauge","Anime la jauge circulaire lors de l\'affichage du résultat.")'>i</i></div>
+                        <div class="tog on" id="tog-anim" onclick="togOpt('tog-anim','settings-anim')"><div class="tog-thumb"></div></div>
+                        <input type="checkbox" id="settings-anim" class="hidden" checked>
+                    </div>
                 </div>
             </div>
-            <div class="glass-panel rounded-2xl overflow-hidden">
-                <table class="w-full text-left border-collapse">
-                    <thead class="bg-white/5 text-[10px] uppercase text-white/30 tracking-widest">
-                        <tr>
-                            <th class="p-4 font-normal">Type</th>
-                            <th class="p-4 font-normal">Extrait</th>
-                            <th class="p-4 font-normal">Résultat</th>
-                            <th class="p-4 font-normal text-right">Date</th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-list" class="text-sm text-white/70"></tbody>
-                </table>
+        </div>
+    </div>
+
+    <!-- HISTORY -->
+    <section class="mt-14 history-sec">
+        <div class="flex items-center justify-between mb-5">
+            <h2 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px">Historique</h2>
+            <div class="flex items-center gap-3">
+                <span id="history-source" class="text-[10px] uppercase tracking-widest px-2 py-1 rounded" style="background:rgba(255,255,255,.04);color:rgba(255,255,255,.3)">...</span>
+                <button onclick="clearLocalHistory()" id="btn-clear-local" class="hidden text-xs transition" style="color:#f87171"><i class="fa-solid fa-trash mr-1"></i>Effacer</button>
             </div>
-        </section>
-    </main>
+        </div>
+        <div class="glass rounded-2xl overflow-hidden">
+            <table class="w-full text-left border-collapse">
+                <thead style="background:rgba(255,255,255,.04)">
+                    <tr class="text-[10px] uppercase tracking-widest" style="color:rgba(255,255,255,.3)">
+                        <th class="p-4 font-normal">Type</th><th class="p-4 font-normal">Extrait</th>
+                        <th class="p-4 font-normal">Résultat</th><th class="p-4 font-normal text-right">Date</th>
+                    </tr>
+                </thead>
+                <tbody id="history-list" class="text-sm" style="color:rgba(255,255,255,.7)"></tbody>
+            </table>
+        </div>
+    </section>
+</main>
 
-    <!-- FIREBASE + MAIN LOGIC -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, push, onValue, get, child, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+<!-- ══════════════════ FIREBASE + LOGIC ══════════════════ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getDatabase, ref, push, onValue, get, child, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // ==========================================
-        // FIREBASE CONFIG
-        // ==========================================
-        const authApp = initializeApp({
-            apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
-            authDomain: "wikimind-3-comments.firebaseapp.com",
-            projectId: "wikimind-3-comments",
-            appId: "1:137479541640:web:4ed2510a9908055052e03d",
-            databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app"
+const authApp = initializeApp({apiKey:"AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",authDomain:"wikimind-3-comments.firebaseapp.com",projectId:"wikimind-3-comments",appId:"1:137479541640:web:4ed2510a9908055052e03d",databaseURL:"https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app"});
+const auth=getAuth(authApp),authDb=getDatabase(authApp);
+const storageApp=initializeApp({apiKey:"AIzaSyDncM_j7gCZQfIUKaBUzI1QDRXz78ANvAg",authDomain:"wikiminddatabase.firebaseapp.com",projectId:"wikiminddatabase",appId:"1:938308326593:web:93c162dc72b49dc8b7b040"},"StorageApp");
+const db=getDatabase(storageApp);
+
+let currentUser=null,currentMode='detect',currentPlan=1,selectedStyle='naturel',lastText='';
+const MK="SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9",CPX='wm_user_cache_v1_',CTTL=43200000;
+const PLAN_INFO={1:{name:'Free',icon:'🆓',desc:'Toutes fonctionnalités disponibles',badge:'plan-free',ring:'ring-free'},2:{name:'AI Plus',icon:'💎',desc:'Cloud sync activé',badge:'plan-plus',ring:'ring-plus'},3:{name:'AI Pro',icon:'🚀',desc:'200 appels/jour · PDF',badge:'plan-pro',ring:'ring-pro'},4:{name:'AI Premium',icon:'⭐',desc:'500 crédits · Priorité',badge:'plan-premium',ring:'ring-premium'},5:{name:'AI Premium+',icon:'🔥',desc:'Illimité · Support 24/7',badge:'plan-premium-plus',ring:'ring-premium-plus'}};
+const PLAN_FEAT={1:['✅ Détection multi-couches','✅ Humaniseur 6 styles','✅ Double passe','✅ Tous les sous-scores','✅ Historique local'],2:['✅ Tout Free','✅ Affinage Mistral AI','✅ Cloud sync','✅ 50 appels/jour','✅ Support email'],3:['✅ Tout Plus','✅ Export PDF','✅ 200 appels/jour','✅ Multilingue','✅ Accès prioritaire'],4:['✅ Tout Pro','✅ 500 crédits/mois','✅ Analyse 5000 mots','✅ API access','✅ Support 12h'],5:['✅ Tout illimité','✅ GPT-4 backup','✅ Webhook','✅ Dashboard analytics','✅ Support 24/7 dédié']};
+
+function updatePlanUI(plan){
+    currentPlan=plan;const i=PLAN_INFO[plan]||PLAN_INFO[1];
+    const ring=document.getElementById('nav-avatar-ring'),badge=document.getElementById('nav-plan-badge');
+    if(ring)ring.className='plan-chip-avatar '+i.ring;
+    if(badge){badge.className='plan-badge mt-1 '+i.badge;badge.textContent=i.name;}
+    const pn=document.getElementById('plan-name-big'),pd=document.getElementById('plan-desc'),pi=document.getElementById('plan-icon');
+    if(pn)pn.textContent=i.name;if(pd)pd.textContent=i.desc;if(pi)pi.textContent=i.icon;
+    const fl=document.getElementById('plan-features');
+    if(fl)fl.innerHTML=(PLAN_FEAT[plan]||PLAN_FEAT[1]).map(f=>`<div class="text-xs py-2" style="border-bottom:1px solid rgba(255,255,255,.05);color:${f.startsWith('✅')?'rgba(255,255,255,.7)':'rgba(255,255,255,.25)'}">${f}</div>`).join('');
+    const cd=document.getElementById('credits-display');
+    if(cd){if(plan>=2){cd.classList.remove('hidden');document.getElementById('credits-count').textContent=({2:50,3:200,4:500,5:'∞'})[plan]||'10';}else cd.classList.add('hidden');}
+}
+function getCached(uid){try{const r=JSON.parse(localStorage.getItem(CPX+uid)||'null');return r&&(Date.now()-r.ts<CTTL)?r.data:null;}catch{return null;}}
+function setCached(uid,d){try{localStorage.setItem(CPX+uid,JSON.stringify({ts:Date.now(),data:d}));}catch{}}
+async function fetchPlan(user){
+    try{const s=await get(child(ref(authDb),`users/${user.uid}/FORFAIT`));const plan=s.exists()?s.val():1;const d={plan,displayName:user.displayName||user.email.split('@')[0],photoUrl:user.photoURL||`https://ui-avatars.com/api/?name=${encodeURIComponent(user.email)}&background=6366f1&color=fff&bold=true`};setCached(user.uid,d);return d;}
+    catch{return{plan:1,displayName:user.email.split('@')[0],photoUrl:`https://ui-avatars.com/api/?name=${encodeURIComponent(user.email)}&background=6366f1&color=fff&bold=true`};}
+}
+onAuthStateChanged(auth,async(user)=>{
+    const lb=document.getElementById('login-btn'),ul=document.getElementById('user-logged'),ss=document.getElementById('storage-status'),hs=document.getElementById('history-source'),bcl=document.getElementById('btn-clear-local');
+    if(user){
+        currentUser=user;if(lb)lb.classList.add('hidden');if(ul){ul.classList.remove('hidden');ul.classList.add('flex');}
+        const fb=`https://ui-avatars.com/api/?name=${encodeURIComponent(user.email)}&background=6366f1&color=fff&bold=true`;
+        const av=document.getElementById('nav-avatar');if(av)av.src=user.photoURL||fb;
+        const nd=document.getElementById('user-name-display');if(nd)nd.textContent=user.displayName||user.email.split('@')[0];
+        let d=getCached(user.uid)||await fetchPlan(user);
+        if(av)av.src=d.photoUrl;if(nd)nd.textContent=d.displayName;updatePlanUI(d.plan);
+        if(ss){ss.textContent='Cloud sync activé ✓';ss.style.color='#4ade80';}if(hs)hs.textContent='CLOUD';if(bcl)bcl.classList.add('hidden');loadHistoryFromDB();
+    }else{
+        currentUser=null;updatePlanUI(1);if(lb)lb.classList.remove('hidden');if(ul){ul.classList.add('hidden');ul.classList.remove('flex');}
+        if(ss)ss.textContent='Mode invité · Stockage local';if(hs)hs.textContent='LOCAL (3j)';if(bcl)bcl.classList.remove('hidden');loadHistoryFromLocal();
+    }
+});
+window.refreshCredits=async function(){if(!currentUser)return;const si=document.getElementById('sync-icon');if(si)si.className='fa-solid fa-rotate fa-spin text-xs';try{localStorage.removeItem(CPX+currentUser.uid);}catch{}const d=await fetchPlan(currentUser);updatePlanUI(d.plan);if(si)si.className='fa-solid fa-rotate text-xs';showToast('Synchronisé ✓','success');};
+
+// ── INPUT ──
+const inputText=document.getElementById('input-text'),actionBtn=document.getElementById('action-btn');
+inputText.addEventListener('input',()=>{const v=inputText.value;document.getElementById('char-count').textContent=v.length+' car.';document.getElementById('word-count').textContent=(v.trim()?v.trim().split(/\s+/).length:0)+' mots';});
+window.clearInput=()=>{inputText.value='';inputText.dispatchEvent(new Event('input'));};
+window.pasteClip=async()=>{try{inputText.value=await navigator.clipboard.readText();inputText.dispatchEvent(new Event('input'));}catch{showToast('Permission refusée','error');}};
+window.switchMode=(mode)=>{
+    currentMode=mode;
+    ['state-result-detect','state-result-humanize'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+    document.getElementById('state-empty').classList.remove('hidden');
+    document.getElementById('detect-opts').classList.toggle('hidden',mode!=='detect');
+    document.getElementById('humanize-opts').classList.toggle('hidden',mode!=='humanize');
+    const bd=document.getElementById('btn-detect'),bh=document.getElementById('btn-humanize');
+    const sp=actionBtn.querySelector('span'),ic=actionBtn.querySelector('i');
+    if(mode==='detect'){bd.className='flex-1 py-3 rounded-lg font-bold text-sm transition-all bg-white/10 text-white shadow-lg rip';bh.className='flex-1 py-3 rounded-lg font-bold text-sm text-white/50 hover:text-white transition-all rip';sp.textContent='Analyser';ic.className='fa-solid fa-magnifying-glass';actionBtn.style.background='#4f46e5';actionBtn.style.boxShadow='0 0 22px rgba(79,70,229,.35)';}
+    else{bh.className='flex-1 py-3 rounded-lg font-bold text-sm transition-all bg-white/10 text-white shadow-lg rip';bd.className='flex-1 py-3 rounded-lg font-bold text-sm text-white/50 hover:text-white transition-all rip';sp.textContent='Humaniser';ic.className='fa-solid fa-wand-magic-sparkles';actionBtn.style.background='#7c3aed';actionBtn.style.boxShadow='0 0 22px rgba(124,58,237,.35)';}
+};
+window.copyToClipboard=()=>{const o=document.getElementById('output-humanized');o.select();document.execCommand('copy');showToast('Texte copié !','success');};
+window.copyDetectionReport=()=>{const s=document.getElementById('score-text').textContent,v=document.getElementById('verdict-badge').textContent,r=document.getElementById('reasoning-text').textContent;navigator.clipboard.writeText(`WikiMind AI Detector\nScore IA: ${s}\nVerdict: ${v}\nAnalyse: ${r}`).then(()=>showToast('Rapport copié !','success'));};
+window.humanizeFromResult=()=>{if(lastText){inputText.value=lastText;inputText.dispatchEvent(new Event('input'));switchMode('humanize');showToast('Texte chargé','info');}};
+window.reHumanize=()=>actionBtn.click();
+window.verifyHumanized=()=>{const o=document.getElementById('output-humanized').value;if(o){inputText.value=o;inputText.dispatchEvent(new Event('input'));switchMode('detect');actionBtn.click();}};
+window.selStyle=(el,style)=>{document.querySelectorAll('.schip').forEach(c=>c.classList.remove('sel'));el.classList.add('sel');selectedStyle=style;};
+
+// ══ DETECTION ALGORITHM ══
+function detectAI(text){
+    const sents=text.match(/[^.!?]+[.!?]+/g)||[text];
+    const words=text.toLowerCase().match(/\b[a-zA-ZÀ-ÿ]+\b/g)||[];
+    const wc=words.length;
+    if(wc<15)return{score:0,perp:0,burst:0,pat:0,vocab:0,ngram:0,markers:[],reasoning:"Texte trop court."};
+    const sl=sents.map(s=>(s.match(/\b\w+\b/g)||[]).length);
+    const avgS=sl.reduce((a,b)=>a+b,0)/sl.length;
+    const varS=sl.reduce((a,l)=>a+Math.pow(l-avgS,2),0)/sl.length;
+    const perp=Math.max(0,Math.min(100,100-(Math.sqrt(varS)/(avgS||1))*150));
+    const wl=words.map(w=>w.length);
+    const avgW=wl.reduce((a,b)=>a+b,0)/wl.length;
+    const varW=wl.reduce((a,l)=>a+Math.pow(l-avgW,2),0)/wl.length;
+    const burst=Math.max(0,Math.min(100,100-(Math.sqrt(varW)/(avgW||1))*200));
+    const MKS={tfr:['en outre','par ailleurs','néanmoins','il convient de','en effet','ainsi que','de plus','cependant','toutefois','en conclusion','en résumé','premièrement','deuxièmement','troisièmement','enfin','d\'abord','ensuite','finalement','dans un premier temps','dans un second temps'],ten:['furthermore','moreover','however','therefore','thus','hence','consequently','in conclusion','in summary','firstly','secondly','finally','additionally','notably','in today\'s world','in an era of'],ffr:['il est important de noter','il est crucial','il est essentiel','à titre d\'exemple','dans le cadre de','dans cette optique','il faut souligner','on peut noter','notons que','force est de constater','il va sans dire'],fen:['it is worth noting','it is important to','it is essential','it is crucial','one must consider','it should be noted','it is clear that'],cl:['en somme','pour conclure','en définitive','pour résumer','in summary','to sum up','in conclusion','to conclude','overall','to summarize']};
+    const lt=text.toLowerCase();let total=0;const found=[];
+    Object.values(MKS).forEach(arr=>arr.forEach(p=>{if(lt.includes(p)){total++;if(!found.includes(p))found.push(p);}}));
+    const pat=Math.min(100,(total/Math.max(1,wc/50))*120);
+    const uniq=new Set(words);const ttr=uniq.size/wc;
+    const vocab=Math.max(0,Math.min(100,100-Math.abs(ttr-0.5)*300));
+    const bg=[];for(let i=0;i<words.length-1;i++)bg.push(words[i]+'_'+words[i+1]);
+    const bgSet=new Set(bg);const ngram=bg.length>0?Math.min(100,(1-bgSet.size/bg.length)*300):0;
+    const score=Math.max(0,Math.min(99,Math.round(perp*.25+burst*.2+pat*.3+vocab*.15+ngram*.1)));
+    const reasons=[];
+    if(perp>60)reasons.push("phrases trop régulières");if(burst>60)reasons.push("rythme lexical uniforme");
+    if(pat>40&&found.length)reasons.push(`marqueurs: ${found.slice(0,3).map(m=>`"${m}"`).join(', ')}`);
+    if(vocab>60)reasons.push("TTR dans la zone IA");if(ngram>40)reasons.push("bigrams répétitifs");
+    const reasoning=score>70?`Texte très probablement généré par IA. ${reasons.length?'Indices : '+reasons.join(', ')+'.':''}`:score>40?`Texte mixte. ${reasons.length?'Éléments suspects : '+reasons.join(', ')+'.':'Quelques tournures standardisées.'}`:reasons.length?`Texte probablement humain. Légères similarités : ${reasons[0]}.`:'Texte probablement humain. Aucun marqueur IA significatif.';
+    return{score,perp:Math.round(perp),burst:Math.round(burst),pat:Math.round(pat),vocab:Math.round(vocab),ngram:Math.round(ngram),markers:found.slice(0,8),reasoning};
+}
+
+async function runDetector(text){
+    const sub=document.getElementById('loading-sub');
+    const steps=['Tokenisation...','Calcul perplexité...','Analyse burstiness...','Patterns LLM...','Score composite...','Affinage Mistral...'];
+    let si=0;const iv=setInterval(()=>{if(sub&&si<steps.length)sub.textContent=steps[si++];},380);
+    let r=detectAI(text);
+    if(document.getElementById('opt-deep')?.checked){
+        try{const resp=await fetch('https://api.mistral.ai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${MK}`},body:JSON.stringify({model:"mistral-small-latest",max_tokens:150,messages:[{role:"system",content:`Expert détection IA. Score local: ${r.score}/100. JSON ONLY: {"adj":number entre -20 et 20,"note":"1 phrase fr"}`},{role:"user",content:text.substring(0,1200)}],response_format:{type:"json_object"}})});
+        if(resp.ok){const d=await resp.json();const j=JSON.parse(d.choices[0].message.content);const adj=Math.max(-20,Math.min(20,j.adj||0));r={...r,score:Math.max(0,Math.min(99,r.score+adj))};if(j.note)r.reasoning+=' '+j.note;}}catch{}
+    }
+    clearInterval(iv);
+    document.getElementById('state-loading').classList.add('hidden');
+    document.getElementById('state-result-detect').classList.remove('hidden');
+    const g=document.getElementById('gauge-circle'),s=r.score;
+    const col=s>70?'#ef4444':s>40?'#f59e0b':'#10b981';
+    g.setAttribute('stroke',col);g.setAttribute('stroke-dasharray',`${s},100`);
+    document.getElementById('score-text').textContent=s+'%';
+    const vb=document.getElementById('verdict-badge');
+    vb.textContent=s>70?'🤖 IA Détectée':s>40?'⚠️ Mixte':'✅ Humain';
+    vb.style.background=s>70?'rgba(239,68,68,.15)':s>40?'rgba(245,158,11,.15)':'rgba(16,185,129,.15)';
+    vb.style.color=col;
+    setTimeout(()=>{
+        [['bar-perp','sv-perp',r.perp],['bar-burst','sv-burst',r.burst],['bar-pat','sv-pat',r.pat],['bar-vocab','sv-vocab',r.vocab],['bar-ngram','sv-ngram',r.ngram]].forEach(([bid,vid,val],i)=>{
+            setTimeout(()=>{const bar=document.getElementById(bid);if(bar)bar.style.width=val+'%';const v=document.getElementById(vid);if(v){v.textContent=val+'%';v.style.animation='countUp .35s ease both';}},i*90);
         });
-        const auth = getAuth(authApp);
-        const authDb = getDatabase(authApp);
+    },180);
+    document.getElementById('reasoning-text').textContent=r.reasoning;
+    const showM=document.getElementById('settings-showm')?.checked!==false;
+    const pf=document.getElementById('patterns-found'),pc=document.getElementById('patterns-chips');
+    if(showM&&r.markers.length>0){pf.classList.remove('hidden');pc.innerHTML=r.markers.map((m,i)=>`<span style="padding:3px 10px;border-radius:20px;font-size:10px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#fca5a5;animation-delay:${i*.06}s">${m}</span>`).join('');}else pf.classList.add('hidden');
+    lastText=text;saveEntry('Détection',text.substring(0,40)+'...',`${s}% IA`);
+    if(document.getElementById('settings-notif')?.checked)showToast(`Score IA : ${s}%`,s>70?'error':s>40?'info':'success');
+}
 
-        const storageApp = initializeApp({
-            apiKey: "AIzaSyDncM_j7gCZQfIUKaBUzI1QDRXz78ANvAg",
-            authDomain: "wikiminddatabase.firebaseapp.com",
-            projectId: "wikiminddatabase",
-            storageBucket: "wikiminddatabase.firebasestorage.app",
-            messagingSenderId: "938308326593",
-            appId: "1:938308326593:web:93c162dc72b49dc8b7b040"
-        }, "StorageApp");
-        const db = getDatabase(storageApp);
+async function runHumanizer(text){
+    const sub=document.getElementById('loading-sub');if(sub)sub.textContent='Humanisation...';
+    const style=selectedStyle,intensity=parseInt(document.getElementById('humanize-intensity')?.value||50);
+    const preserve=document.getElementById('preserve-structure')?.checked;
+    const targeting=document.getElementById('opt-targeting')?.checked;
+    const doublePass=document.getElementById('double-pass')?.checked;
+    const lang=document.getElementById('opt-lang')?.value||'fr';
+    let mf='les transitions trop formelles';
+    if(targeting){const la=detectAI(text);if(la.markers.length)mf=la.markers.slice(0,5).join(', ');}
+    const SG={naturel:"Ton naturel, conversationnel. Contractions. Phrases variées. Spontané.",academique:"Registre académique sans formules creuses. Analytique authentique.",professionnel:"Professionnel direct. Affirmations courtes + développements.",decontracte:"Familier SANS vulgarité ni gros mots. Naturel, expressions courantes.",poetique:"Lyrique avec métaphores originales. Sensibilité émotionnelle authentique.",journalistique:"Journalistique : attaque directe, faits, pyramide inversée."};
+    const IG=intensity<33?"Changements minimes.":intensity<66?"Réécriture modérée.":"Transformation profonde.";
+    const sys=`Tu es un expert en réécriture humaine de textes IA. Rends ce texte indétectable.
+RÈGLES ABSOLUES:
+1. JAMAIS de gros mots, grossièretés ou vulgarité — texte poli obligatoire.
+2. JAMAIS de faits inventés — aucune information absente de l'original.
+3. Retourne UNIQUEMENT le texte réécrit, sans commentaire.
+4. Préserve toutes les informations importantes.
+${preserve?"5. Conserve la structure paragraphes.":"5. Peut réorganiser si ça améliore le naturel."}
+STYLE: ${SG[style]||SG.naturel}
+INTENSITÉ: ${IG}
+ANTI-DÉTECTION: Varier les longueurs de phrases (5 mots ↔ 25+ mots). Éviter: ${mf}. Verbes actifs. Questions rhétoriques. Légères imperfections stylistiques naturelles.
+LANGUE: ${lang==='fr'?'français':lang==='en'?'anglais':'espagnol'}.`;
+    const resp=await fetch('https://api.mistral.ai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${MK}`},body:JSON.stringify({model:"mistral-medium-latest",temperature:.88,max_tokens:2048,messages:[{role:"system",content:sys},{role:"user",content:text}]})});
+    const data=await resp.json();let result=data.choices[0].message.content.trim();
+    if(doublePass){if(sub)sub.textContent='Double passe...';const pa=detectAI(result);if(pa.score>20){try{const r2=await fetch('https://api.mistral.ai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${MK}`},body:JSON.stringify({model:"mistral-medium-latest",temperature:.93,max_tokens:2048,messages:[{role:"system",content:sys+` Score toujours à ${pa.score}%. Varier encore plus les longueurs de phrases.`},{role:"user",content:result}]})});if(r2.ok){const d2=await r2.json();result=d2.choices[0].message.content.trim();}}catch{}}}
+    document.getElementById('state-loading').classList.add('hidden');document.getElementById('state-result-humanize').classList.remove('hidden');
+    document.getElementById('output-humanized').value=result;
+    const post=detectAI(result),est=Math.max(2,Math.min(22,Math.round(post.score*.32)));
+    const sb=document.getElementById('hum-score-badge');if(sb){sb.innerHTML=`<i class="fa-solid fa-chart-line mr-1"></i>Score estimé : ~${est}%`;sb.style.color=est<10?'#4ade80':est<15?'#fbbf24':'#f87171';}
+    document.getElementById('hum-style-badge').textContent=`Style: ${style.charAt(0).toUpperCase()+style.slice(1)}`;
+    saveEntry('Humanisation',text.substring(0,40)+'...',`~${est}% IA`);
+    if(document.getElementById('settings-notif')?.checked)showToast(`Humanisation terminée ~${est}%`,'success');
+}
 
-        // ==========================================
-        // STATE
-        // ==========================================
-        let currentUser = null;
-        let currentMode = 'detect';
-        let currentPlan = 1;
-        let selectedStyle = 'naturel';
-        let lastAnalyzedText = '';
-        const MISTRAL_API_KEY = "SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9";
-        
-        const CACHE_KEY = 'wm_user_cache_v1_';
-        const CACHE_TTL = 12 * 60 * 60 * 1000;
+actionBtn.addEventListener('click',async()=>{
+    const text=inputText.value.trim();
+    if(!text){showToast('Veuillez entrer du texte.','error');return;}
+    if(text.length<80&&currentMode==='detect'){showToast('Minimum 80 caractères.','error');return;}
+    if(text.length<30&&currentMode==='humanize'){showToast('Minimum 30 caractères.','error');return;}
+    ['state-empty','state-result-detect','state-result-humanize'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+    document.getElementById('state-loading').classList.remove('hidden');
+    document.getElementById('loading-text').textContent=currentMode==='detect'?'Analyse neuronale...':'Humanisation en cours...';
+    try{if(currentMode==='detect')await runDetector(text);else await runHumanizer(text);}
+    catch(err){console.error(err);showToast('Erreur: '+(err.message||'Inconnue'),'error');document.getElementById('state-loading').classList.add('hidden');document.getElementById('state-empty').classList.remove('hidden');}
+});
 
-        const PLAN_INFO = {
-            1: { name: 'Free',       icon: '🆓', desc: '10 analyses/jour · Humaniseur basique', color: '#a1a1aa', badge: 'plan-free', ring: 'ring-free' },
-            2: { name: 'AI Plus',    icon: '💎', desc: '50 analyses/jour · Options avancées', color: '#60a5fa', badge: 'plan-plus', ring: 'ring-plus' },
-            3: { name: 'AI Pro',     icon: '🚀', desc: '200 analyses/jour · Rapport PDF', color: '#c084fc', badge: 'plan-pro', ring: 'ring-pro' },
-            4: { name: 'AI Premium', icon: '⭐', desc: '500 crédits/mois · Tous les styles', color: '#fbbf24', badge: 'plan-premium', ring: 'ring-premium' },
-            5: { name: 'AI Premium+',icon: '🔥', desc: 'Illimité · Double passe · Priorité',  color: '#fb923c', badge: 'plan-premium-plus', ring: 'ring-premium-plus' }
-        };
+function saveEntry(type,excerpt,result){
+    if(!document.getElementById('settings-autosave')?.checked)return;
+    const entry={type,excerpt,result,timestamp:Date.now()};
+    if(currentUser){push(ref(db,'ai_history/'+currentUser.uid),entry);}
+    else{let l=JSON.parse(localStorage.getItem('wm_ai_history')||'[]');l.push(entry);if(l.length>50)l=l.slice(-50);localStorage.setItem('wm_ai_history',JSON.stringify(l));loadHistoryFromLocal();}
+}
+function loadHistoryFromDB(){if(!currentUser)return;onValue(query(ref(db,'ai_history/'+currentUser.uid),limitToLast(15)),(snap)=>{const d=snap.val();renderHistory(d?Object.values(d).sort((a,b)=>b.timestamp-a.timestamp):[]);});}
+function loadHistoryFromLocal(){let l=JSON.parse(localStorage.getItem('wm_ai_history')||'[]');const td=Date.now()-259200000;l=l.filter(i=>i.timestamp>td).sort((a,b)=>b.timestamp-a.timestamp);localStorage.setItem('wm_ai_history',JSON.stringify(l));renderHistory(l);}
+function renderHistory(items){
+    const hl=document.getElementById('history-list');if(!hl)return;
+    if(!items.length){hl.innerHTML='<tr><td colspan="4" class="p-8 text-center text-sm" style="color:rgba(255,255,255,.15)">Aucun historique récent.</td></tr>';return;}
+    hl.innerHTML=items.map((item,i)=>{
+        const date=new Date(item.timestamp).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+        const isH=item.type==='Humanisation';
+        const bc=isH?'background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.25);color:#c084fc':'background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.25);color:#818cf8';
+        return`<tr class="border-b hover:bg-white/3 transition-colors" style="border-color:rgba(255,255,255,.04);animation-delay:${i*.05}s"><td class="p-4"><span class="px-2 py-1 rounded text-[10px] font-bold" style="${bc}">${item.type}</span></td><td class="p-4 text-xs truncate max-w-[150px]" style="color:rgba(255,255,255,.45)">${item.excerpt}</td><td class="p-4 font-bold text-sm">${item.result}</td><td class="p-4 text-right text-xs" style="color:rgba(255,255,255,.25)">${date}</td></tr>`;
+    }).join('');
+}
+window.clearLocalHistory=()=>{if(confirm('Effacer l\'historique local ?')){localStorage.removeItem('wm_ai_history');loadHistoryFromLocal();showToast('Historique effacé','success');}};
 
-        const PLAN_FEATURES = {
-            1: ['✅ Détection basique (50 mots min)', '✅ Humaniseur style Naturel', '❌ Sous-scores désactivés', '❌ Styles avancés verrouillés', '❌ Rapport PDF indisponible'],
-            2: ['✅ Détection avancée', '✅ Tous les sous-scores', '✅ 3 styles d\'humanisation', '❌ Rapport PDF indisponible', '❌ Double passe indisponible'],
-            3: ['✅ Détection profonde', '✅ Rapport PDF', '✅ 4 styles d\'humanisation', '❌ Double passe indisponible', '✅ Historique illimité'],
-            4: ['✅ Tout de Pro inclus', '✅ Styles Poétique + Journalistique', '✅ 500 crédits/mois', '✅ Priorité de traitement', '❌ Double passe indisponible'],
-            5: ['✅ Tout illimité', '✅ Double passe IA', '✅ Tous les styles', '✅ Rapport PDF automatique', '✅ Support prioritaire 24/7']
-        };
+window.showToast=function(msg,type='info'){
+    const wrap=document.getElementById('toast-wrap');if(!wrap)return;
+    const t=document.createElement('div');
+    const c={error:'rgba(239,68,68,.2)',success:'rgba(74,222,128,.2)',info:'rgba(255,255,255,.1)'};
+    const bc={error:'rgba(239,68,68,.3)',success:'rgba(74,222,128,.3)',info:'rgba(255,255,255,.12)'};
+    const col={error:'#fca5a5',success:'#bbf7d0',info:'#fff'};
+    const ic={error:'fa-triangle-exclamation',success:'fa-check-circle',info:'fa-info-circle'};
+    t.style.cssText=`padding:12px 16px;border-radius:12px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:10px;animation:toastIn .3s cubic-bezier(.34,1.56,.64,1) both;backdrop-filter:blur(14px);background:${c[type]};border:1px solid ${bc[type]};color:${col[type]};box-shadow:0 8px 32px rgba(0,0,0,.4);`;
+    t.innerHTML=`<i class="fa-solid ${ic[type]}"></i><span>${msg}</span>`;
+    wrap.appendChild(t);
+    setTimeout(()=>{t.style.animation='toastOut .3s ease forwards';setTimeout(()=>t.remove(),300);},3800);
+};
+window.switchTab=function(tab){
+    document.querySelectorAll('.opt-tab').forEach((t,i)=>{const ts=['detect','humanize','options'];t.classList.toggle('active',ts[i]===tab);});
+    document.querySelectorAll('.opt-panel').forEach(p=>p.classList.remove('active'));
+    const p=document.getElementById('tab-'+tab);if(p)p.classList.add('active');
+};
+window.togOpt=function(trackId,cbId){const t=document.getElementById(trackId),cb=document.getElementById(cbId);if(!t||!cb)return;t.classList.toggle('on');cb.checked=t.classList.contains('on');};
+</script>
 
-        // ==========================================
-        // AUTH + PLAN DETECTION
-        // ==========================================
-        function updateNavPlanUI(plan) {
-            currentPlan = plan;
-            const info = PLAN_INFO[plan] || PLAN_INFO[1];
-            const ringEl = document.getElementById('nav-avatar-ring');
-            const badgeEl = document.getElementById('nav-plan-badge');
-            if (ringEl) { ringEl.className = 'plan-chip-avatar ' + info.ring; }
-            if (badgeEl) { badgeEl.className = 'plan-badge mt-1 ' + info.badge; badgeEl.innerText = info.name; }
-            updatePlanOptionsUI(plan);
-            updatePlanBanner(plan);
-        }
+<!-- TOOLTIP + RIPPLE + AURORA -->
+<script>
+const TT=document.getElementById('tooltip');
+function positionTT(btn){
+    const r=btn.getBoundingClientRect();
+    let x=r.right+12,y=r.top-6;
+    if(x+250>window.innerWidth)x=r.left-262;
+    if(y+130>window.innerHeight)y=window.innerHeight-140;
+    if(y<8)y=8;
+    TT.style.left=x+'px';TT.style.top=y+'px';
+}
+window.tt=function(btn,title,text){
+    if(TT.style.display==='block'&&TT._src===btn){TT.style.display='none';TT._src=null;return;}
+    TT.innerHTML=`<span class="tt">${title}</span>${text}`;
+    TT.style.display='block';TT._src=btn;positionTT(btn);
+    TT.style.animation='none';TT.offsetHeight;TT.style.animation='popIn .22s cubic-bezier(.34,1.56,.64,1)';
+    const hide=(e)=>{if(!btn.contains(e.target)&&e.target!==btn){TT.style.display='none';TT._src=null;document.removeEventListener('click',hide);}};
+    setTimeout(()=>document.addEventListener('click',hide),60);
+};
 
-        function updatePlanBanner(plan) {
-            const banner = document.getElementById('plan-info-banner');
-            if (!banner) return;
-            const info = PLAN_INFO[plan] || PLAN_INFO[1];
-            if (plan >= 4) {
-                banner.className = `plan-banner ${plan === 5 ? 'premium-plus' : 'premium'}`;
-                banner.innerHTML = `<span>${info.icon}</span><div><span class="font-bold">${info.name}</span> — ${info.desc}</div>`;
-                banner.classList.remove('hidden');
-            } else {
-                banner.classList.add('hidden');
-            }
-        }
+// Ripple
+document.addEventListener('click',e=>{
+    const btn=e.target.closest('.rip');if(!btn)return;
+    const r=document.createElement('span');r.className='rip-el';
+    const rect=btn.getBoundingClientRect(),size=Math.max(rect.width,rect.height);
+    r.style.cssText=`width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
+    btn.appendChild(r);r.addEventListener('animationend',()=>r.remove());
+});
 
-        function updatePlanOptionsUI(plan) {
-            // Plan card
-            const info = PLAN_INFO[plan] || PLAN_INFO[1];
-            const el = document.getElementById('plan-name-big');
-            if (el) el.textContent = info.name;
-            const desc = document.getElementById('plan-desc');
-            if (desc) desc.textContent = info.desc;
-            const icon = document.getElementById('plan-icon');
-            if (icon) icon.textContent = info.icon;
-
-            // Features list
-            const fl = document.getElementById('plan-features-list');
-            if (fl) {
-                fl.innerHTML = (PLAN_FEATURES[plan] || PLAN_FEATURES[1]).map(f =>
-                    `<div class="text-xs py-1.5 border-b border-white/5 last:border-0 ${f.startsWith('✅') ? 'text-white/70' : 'text-white/25'}">${f}</div>`
-                ).join('');
-            }
-            
-            // Credits display
-            const credits = document.getElementById('credits-display');
-            if (credits) {
-                if (plan >= 2) {
-                    credits.classList.remove('hidden');
-                    const creditsMap = {2:50, 3:200, 4:500, 5:'∞'};
-                    document.getElementById('credits-count').textContent = creditsMap[plan] || '10';
-                } else {
-                    credits.classList.add('hidden');
-                }
-            }
-        }
-
-        function getCachedUserData(uid) {
-            try {
-                const raw = localStorage.getItem(CACHE_KEY + uid);
-                if (!raw) return null;
-                const p = JSON.parse(raw);
-                if (Date.now() - p.ts > CACHE_TTL) return null;
-                return p.data;
-            } catch(e) { return null; }
-        }
-        function setCachedUserData(uid, data) {
-            try { localStorage.setItem(CACHE_KEY + uid, JSON.stringify({ ts: Date.now(), data })); } catch(e) {}
-        }
-
-        async function fetchAndCacheUserData(user) {
-            try {
-                const snapshot = await get(child(ref(authDb), `users/${user.uid}/FORFAIT`));
-                let plan = 1;
-                if (snapshot.exists()) plan = snapshot.val();
-                const data = {
-                    plan,
-                    displayName: user.displayName || user.email.split('@')[0],
-                    photoUrl: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email)}&background=6366f1&color=fff&bold=true`
-                };
-                setCachedUserData(user.uid, data);
-                return data;
-            } catch(e) {
-                return { plan: 1, displayName: user.email.split('@')[0], photoUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email)}&background=6366f1&color=fff&bold=true` };
-            }
-        }
-
-        onAuthStateChanged(auth, async (user) => {
-            const loginBtn = document.getElementById('login-btn');
-            const userLogged = document.getElementById('user-logged');
-            const storageStatus = document.getElementById('storage-status');
-            const historySource = document.getElementById('history-source');
-            const btnClearLocal = document.getElementById('btn-clear-local');
-
-            if (user) {
-                currentUser = user;
-                if (loginBtn) loginBtn.classList.add('hidden');
-                if (userLogged) { userLogged.classList.remove('hidden'); userLogged.classList.add('flex'); }
-
-                // Show basic info immediately
-                const fallbackPhoto = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email)}&background=6366f1&color=fff&bold=true`;
-                const navAvatar = document.getElementById('nav-avatar');
-                const nameDisplay = document.getElementById('user-name-display');
-                if (navAvatar) navAvatar.src = user.photoURL || fallbackPhoto;
-                if (nameDisplay) nameDisplay.innerText = user.displayName || user.email.split('@')[0];
-
-                // Load plan from cache or Firebase
-                let userData = getCachedUserData(user.uid);
-                if (!userData) userData = await fetchAndCacheUserData(user);
-                if (navAvatar) navAvatar.src = userData.photoUrl;
-                if (nameDisplay) nameDisplay.innerText = userData.displayName;
-                updateNavPlanUI(userData.plan);
-
-                if (storageStatus) { storageStatus.innerText = "Synchronisation Cloud activée ✓"; storageStatus.classList.add('text-green-400'); }
-                if (historySource) historySource.innerText = "CLOUD";
-                if (btnClearLocal) btnClearLocal.classList.add('hidden');
-                loadHistoryFromDB();
-            } else {
-                currentUser = null;
-                if (loginBtn) loginBtn.classList.remove('hidden');
-                if (userLogged) { userLogged.classList.add('hidden'); userLogged.classList.remove('flex'); }
-                currentPlan = 1;
-                updateNavPlanUI(1);
-                if (storageStatus) { storageStatus.innerText = "Mode Invité · Stockage local"; }
-                if (historySource) historySource.innerText = "LOCAL (3j)";
-                if (btnClearLocal) btnClearLocal.classList.remove('hidden');
-                loadHistoryFromLocal();
-            }
+// Aurora
+const canvas=document.getElementById('aurora-bg');
+if(canvas){
+    const ctx=canvas.getContext('2d');let w,h;
+    const orbs=[{x:.2,y:.2,r:.4,c:[79,70,229],vx:.0005,vy:.0005},{x:.8,y:.3,r:.5,c:[168,85,247],vx:-.0006,vy:.0004},{x:.5,y:.8,r:.3,c:[99,102,241],vx:.0004,vy:-.0003}];
+    function resize(){w=canvas.width=window.innerWidth;h=canvas.height=window.innerHeight;}
+    function draw(){
+        ctx.clearRect(0,0,w,h);ctx.fillStyle='#050505';ctx.fillRect(0,0,w,h);
+        orbs.forEach(o=>{
+            o.x+=o.vx;o.y+=o.vy;
+            if(o.x<-.2||o.x>1.2)o.vx*=-1;if(o.y<-.2||o.y>1.2)o.vy*=-1;
+            const g=ctx.createRadialGradient(o.x*w,o.y*h,0,o.x*w,o.y*h,o.r*w);
+            g.addColorStop(0,`rgba(${o.c.join(',')},0.18)`);g.addColorStop(1,'rgba(0,0,0,0)');
+            ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
         });
-
-        window.refreshCredits = async function() {
-            if (!currentUser) return;
-            const icon = document.getElementById('sync-icon');
-            if (icon) icon.className = 'fa-solid fa-rotate fa-spin text-xs';
-            const uid = currentUser.uid;
-            try { localStorage.removeItem(CACHE_KEY + uid); } catch(e) {}
-            const data = await fetchAndCacheUserData(currentUser);
-            updateNavPlanUI(data.plan);
-            if (icon) icon.className = 'fa-solid fa-rotate text-xs';
-            showToast('Synchronisé ✓', 'success');
-        };
-
-        // ==========================================
-        // UI UTILS
-        // ==========================================
-        const inputText = document.getElementById('input-text');
-        const actionBtn = document.getElementById('action-btn');
-
-        inputText.addEventListener('input', () => {
-            const v = inputText.value;
-            document.getElementById('char-count').textContent = v.length + ' car.';
-            const words = v.trim() ? v.trim().split(/\s+/).length : 0;
-            document.getElementById('word-count').textContent = words + ' mots';
-        });
-
-        window.clearInput = () => { inputText.value = ''; inputText.dispatchEvent(new Event('input')); };
-        window.pasteFromClipboard = async () => {
-            try { inputText.value = await navigator.clipboard.readText(); inputText.dispatchEvent(new Event('input')); } 
-            catch(e) { showToast('Permission presse-papier refusée', 'error'); }
-        };
-
-        window.switchMode = (mode) => {
-            currentMode = mode;
-            ['state-result-detect','state-result-humanize'].forEach(id => document.getElementById(id).classList.add('hidden'));
-            document.getElementById('state-empty').classList.remove('hidden');
-            document.getElementById('detect-options-panel').classList.toggle('hidden', mode !== 'detect');
-            document.getElementById('humanize-options-panel').classList.toggle('hidden', mode !== 'humanize');
-
-            const btnD = document.getElementById('btn-mode-detect');
-            const btnH = document.getElementById('btn-mode-humanize');
-            const span = actionBtn.querySelector('span');
-            const ico = actionBtn.querySelector('i');
-
-            if (mode === 'detect') {
-                btnD.className = "flex-1 py-3 rounded-lg font-bold text-sm transition-all bg-white/10 text-white shadow-lg";
-                btnH.className = "flex-1 py-3 rounded-lg font-bold text-sm text-white/50 hover:text-white transition-all";
-                span.innerText = "Analyser"; ico.className = "fa-solid fa-magnifying-glass";
-                actionBtn.className = "px-8 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm uppercase tracking-wide shadow-lg shadow-brand-500/20 transition-all flex items-center gap-2";
-            } else {
-                btnH.className = "flex-1 py-3 rounded-lg font-bold text-sm transition-all bg-white/10 text-white shadow-lg";
-                btnD.className = "flex-1 py-3 rounded-lg font-bold text-sm text-white/50 hover:text-white transition-all";
-                span.innerText = "Humaniser"; ico.className = "fa-solid fa-wand-magic-sparkles";
-                actionBtn.className = "px-8 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm uppercase tracking-wide shadow-lg shadow-purple-500/20 transition-all flex items-center gap-2";
-            }
-        };
-
-        window.copyToClipboard = () => {
-            const out = document.getElementById('output-humanized');
-            out.select();
-            document.execCommand('copy');
-            showToast('Texte copié !', 'success');
-        };
-
-        window.copyDetectionReport = () => {
-            const score = document.getElementById('score-text').textContent;
-            const verdict = document.getElementById('verdict-badge').textContent;
-            const reasoning = document.getElementById('reasoning-text').textContent;
-            const text = `WikiMind AI Detector — Rapport\nScore IA: ${score}\nVerdict: ${verdict}\n\nAnalyse: ${reasoning}`;
-            navigator.clipboard.writeText(text).then(() => showToast('Rapport copié !', 'success')).catch(()=>{});
-        };
-
-        window.humanizeFromResult = () => {
-            if (lastAnalyzedText) {
-                inputText.value = lastAnalyzedText;
-                inputText.dispatchEvent(new Event('input'));
-                switchMode('humanize');
-                showToast('Texte chargé pour humanisation', 'info');
-            }
-        };
-
-        window.reHumanize = () => { actionBtn.click(); };
-
-        window.verifyHumanized = () => {
-            const out = document.getElementById('output-humanized').value;
-            if (out) { inputText.value = out; inputText.dispatchEvent(new Event('input')); switchMode('detect'); actionBtn.click(); }
-        };
-
-        window.selectStyle = (el, style) => {
-            if (currentPlan < 4 && ['poétique'].includes(style)) { openUpgradeModal('Le style Poétique nécessite Premium'); return; }
-            if (currentPlan < 5 && style === 'journalistique') { openUpgradeModal('Le style Journalistique nécessite Premium+'); return; }
-            document.querySelectorAll('.style-chip').forEach(c => c.classList.remove('selected'));
-            el.classList.add('selected');
-            selectedStyle = style;
-        };
-
-        window.checkPlanForStyle = (style) => {};
-
-        // ==========================================
-        // ✅ VRAI ALGORITHME DE DÉTECTION IA
-        // Multi-couches: perplexité estimée, burstiness,
-        // patterns LLM, richesse vocabulaire, n-grams
-        // ==========================================
-        function detectAILocally(text) {
-            const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-            const words = text.toLowerCase().match(/\b[a-zA-ZÀ-ÿ]+\b/g) || [];
-            const wordCount = words.length;
-            
-            if (wordCount < 20) return { score: 0, perplexity: 0, burstiness: 0, patterns: 0, vocab: 0, markers: [], reasoning: "Texte trop court pour une analyse fiable." };
-
-            // --- 1. PERPLEXITÉ (variation de la longueur des phrases) ---
-            const sentLengths = sentences.map(s => (s.match(/\b\w+\b/g) || []).length);
-            const avgSentLen = sentLengths.reduce((a,b)=>a+b,0) / sentLengths.length;
-            const sentVariance = sentLengths.reduce((acc, l) => acc + Math.pow(l - avgSentLen, 2), 0) / sentLengths.length;
-            const sentCV = Math.sqrt(sentVariance) / (avgSentLen || 1); // Coefficient de variation
-            // L'IA produit des phrases régulières → faible CV = plus IA
-            const perplexityScore = Math.max(0, Math.min(100, 100 - (sentCV * 150)));
-
-            // --- 2. BURSTINESS (variation de la longueur des mots) ---
-            const wordLengths = words.map(w => w.length);
-            const avgWordLen = wordLengths.reduce((a,b)=>a+b,0) / wordLengths.length;
-            const wordVariance = wordLengths.reduce((acc, l) => acc + Math.pow(l - avgWordLen, 2), 0) / wordLengths.length;
-            const wordCV = Math.sqrt(wordVariance) / (avgWordLen || 1);
-            // L'IA a une distribution plus uniforme
-            const burstiScore = Math.max(0, Math.min(100, 100 - (wordCV * 200)));
-
-            // --- 3. PATTERNS LLM (marqueurs lexicaux typiques de GPT/Claude) ---
-            const aiMarkers = {
-                'transitions_formelles': ['en outre', 'par ailleurs', 'néanmoins', 'il convient de', 'en effet', 'ainsi', 'de plus', 'cependant', 'toutefois', 'en conclusion', 'en résumé', 'premièrement', 'deuxièmement', 'troisièmement', 'enfin', 'furthermore', 'moreover', 'however', 'therefore', 'thus', 'hence', 'consequently', 'in conclusion', 'in summary', 'firstly', 'secondly', 'thirdly', 'finally', 'additionally', 'notably'],
-                'formules_vagues': ['il est important de noter', 'il est crucial', 'il est essentiel', 'à titre d\'exemple', 'dans le cadre de', 'dans cette optique', 'il faut souligner', 'on peut noter', 'notons que', 'il est intéressant de', 'it is worth noting', 'it is important to', 'it is essential', 'it is crucial', 'one must consider', 'it should be noted'],
-                'structure_enumeration': ['d\'abord', 'ensuite', 'finalement', 'premièrement', 'deuxièmement', 'en premier lieu', 'en second lieu', 'en dernier lieu', 'first and foremost', 'last but not least'],
-                'hedges_ia': ['généralement', 'typiquement', 'en général', 'dans la plupart des cas', 'souvent', 'il arrive que', 'generally speaking', 'typically', 'in most cases', 'often', 'usually'],
-                'opening_ia': ['dans un monde', 'à l\'ère du', 'dans notre société', 'de nos jours', 'aujourd\'hui plus que jamais', 'in today\'s world', 'in an era of', 'in our society'],
-                'closing_ia': ['en somme', 'pour conclure', 'en définitive', 'pour résumer', 'in summary', 'to sum up', 'in conclusion', 'to conclude', 'overall'],
-            };
-
-            const lowerText = text.toLowerCase();
-            let totalMarkers = 0;
-            const foundMarkers = [];
-
-            Object.entries(aiMarkers).forEach(([category, patterns]) => {
-                patterns.forEach(p => {
-                    if (lowerText.includes(p)) {
-                        totalMarkers++;
-                        if (!foundMarkers.includes(p)) foundMarkers.push(p);
-                    }
-                });
-            });
-
-            const patternScore = Math.min(100, (totalMarkers / Math.max(1, wordCount / 50)) * 120);
-
-            // --- 4. RICHESSE DU VOCABULAIRE (Type-Token Ratio) ---
-            const uniqueWords = new Set(words);
-            const ttr = uniqueWords.size / wordCount;
-            // L'IA tend vers un TTR moyen autour de 0.4-0.6
-            // Humain très riche (0.7+) ou très répétitif (<0.3)
-            const ttrDeviation = Math.abs(ttr - 0.5);
-            // Plus on est proche de 0.5, plus c'est suspect
-            const vocabScore = Math.max(0, Math.min(100, 100 - (ttrDeviation * 300)));
-
-            // --- 5. RÉPÉTITIVITÉ DE STRUCTURE (bigrams) ---
-            const bigrams = [];
-            for (let i = 0; i < words.length - 1; i++) bigrams.push(words[i] + '_' + words[i+1]);
-            const bigramSet = new Set(bigrams);
-            const bigramRepetition = bigrams.length > 0 ? 1 - (bigramSet.size / bigrams.length) : 0;
-            const repetitionScore = Math.min(100, bigramRepetition * 300);
-
-            // --- SCORE COMPOSITE PONDÉRÉ ---
-            const weights = { perplexity: 0.25, burstiness: 0.20, patterns: 0.30, vocab: 0.15, repetition: 0.10 };
-            const compositeScore = Math.round(
-                perplexityScore * weights.perplexity +
-                burstiScore * weights.burstiness +
-                patternScore * weights.patterns +
-                vocabScore * weights.vocab +
-                repetitionScore * weights.repetition
-            );
-
-            // --- RAISONNEMENT ---
-            const reasons = [];
-            if (perplexityScore > 60) reasons.push("structure de phrases régulière et uniforme");
-            if (burstiScore > 60) reasons.push("distribution lexicale typiquement machinique");
-            if (patternScore > 40) reasons.push(`${foundMarkers.slice(0,3).map(m=>`"${m}"`).join(', ')} — marqueurs LLM fréquents`);
-            if (vocabScore > 60) reasons.push("richesse vocabulaire dans la zone IA");
-            if (repetitionScore > 40) reasons.push("répétitivité de structures syntaxiques");
-
-            const lang = document.getElementById('opt-lang')?.value || 'fr';
-            let reasoningText;
-            if (compositeScore > 70) {
-                reasoningText = `Texte très probablement généré par IA. Indices : ${reasons.join(', ')||'multiples marqueurs détectés'}.`;
-            } else if (compositeScore > 40) {
-                reasoningText = `Texte mixte ou partiellement IA. ${reasons.length ? 'Éléments suspects : ' + reasons.join(', ') + '.' : 'Quelques tournures standardisées détectées.'}`;
-            } else {
-                reasoningText = `Texte probablement humain. ${reasons.length ? 'Quelques similarités mineures : ' + reasons[0] + '.' : 'Aucun marqueur IA significatif.'}`;
-            }
-
-            return {
-                score: Math.max(0, Math.min(99, compositeScore)),
-                perplexity: Math.round(perplexityScore),
-                burstiness: Math.round(burstiScore),
-                patterns: Math.round(patternScore),
-                vocab: Math.round(vocabScore),
-                markers: foundMarkers.slice(0, 8),
-                reasoning: reasoningText
-            };
-        }
-
-        async function runDetector(text) {
-            const loadingSub = document.getElementById('loading-sub');
-            const steps = ['Tokenisation du texte...', 'Calcul de la perplexité...', 'Analyse burstiness...', 'Détection des patterns LLM...', 'Calcul du score composite...'];
-            let stepIdx = 0;
-            const stepInterval = setInterval(() => {
-                if (loadingSub && stepIdx < steps.length) { loadingSub.textContent = steps[stepIdx++]; }
-            }, 320);
-
-            // Analyse locale instantanée
-            const localResult = detectAILocally(text);
-            
-            // Si deep analysis activé ET plan >= 2 → affiner avec Mistral
-            const deepOpt = document.getElementById('opt-deep')?.checked;
-            let finalResult = localResult;
-
-            if (deepOpt && currentPlan >= 2) {
-                try {
-                    if (loadingSub) loadingSub.textContent = 'Affinage par IA...';
-                    const resp = await fetch('https://api.mistral.ai/v1/chat/completions', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${MISTRAL_API_KEY}` },
-                        body: JSON.stringify({
-                            model: "mistral-small-latest",
-                            messages: [{
-                                role: "system",
-                                content: `Tu es un expert en détection de texte IA. Analyse CE texte uniquement selon : la cohérence narrative, la spontanéité émotionnelle, les incohérences temporelles/factuelles (signes d'humain), et confirme ou ajuste ce score local: ${localResult.score}. 
-Réponds SEULEMENT en JSON: {"score_adjustment": number entre -20 et +20, "additional_reasoning": "1 phrase courte en français", "human_indicators": ["liste de 0-3 signes humains si trouvés"]}`
-                            }, { role: "user", content: text.substring(0, 1500) }],
-                            response_format: { type: "json_object" },
-                            max_tokens: 200
-                        })
-                    });
-                    if (resp.ok) {
-                        const d = await resp.json();
-                        const r = JSON.parse(d.choices[0].message.content);
-                        const adjustment = Math.max(-20, Math.min(20, r.score_adjustment || 0));
-                        finalResult = { ...localResult, score: Math.max(0, Math.min(99, localResult.score + adjustment)) };
-                        if (r.additional_reasoning) finalResult.reasoning += ' ' + r.additional_reasoning;
-                        if (r.human_indicators?.length) finalResult.reasoning += ` Signes humains : ${r.human_indicators.join(', ')}.`;
-                    }
-                } catch(e) { /* Silently fall back to local */ }
-            }
-
-            clearInterval(stepInterval);
-            
-            document.getElementById('state-loading').classList.add('hidden');
-            document.getElementById('state-result-detect').classList.remove('hidden');
-
-            // Update gauge
-            const circle = document.getElementById('gauge-circle');
-            const s = finalResult.score;
-            let color = s > 70 ? "#ef4444" : s > 40 ? "#f59e0b" : "#10b981";
-            circle.setAttribute('stroke', color);
-            circle.setAttribute('stroke-dasharray', `${s}, 100`);
-            document.getElementById('score-text').textContent = s + "%";
-
-            // Verdict badge
-            const verdict = s > 70 ? "IA Détectée 🤖" : s > 40 ? "Mixte ⚠️" : "Humain ✅";
-            const vb = document.getElementById('verdict-badge');
-            vb.textContent = verdict;
-            vb.style.background = s > 70 ? 'rgba(239,68,68,0.15)' : s > 40 ? 'rgba(245,158,11,0.15)' : 'rgba(16,185,129,0.15)';
-            vb.style.color = color;
-
-            // Sub-scores (only show if plan >= 2 or if plan 1 give partial)
-            const showSubScores = currentPlan >= 2;
-            setTimeout(() => {
-                if (showSubScores) {
-                    document.getElementById('bar-perplexity').style.width = finalResult.perplexity + '%';
-                    document.getElementById('bar-burstiness').style.width = finalResult.burstiness + '%';
-                    document.getElementById('bar-patterns').style.width = finalResult.patterns + '%';
-                    document.getElementById('bar-vocab').style.width = finalResult.vocab + '%';
-                    document.getElementById('sub-perplexity-val').textContent = finalResult.perplexity + '%';
-                    document.getElementById('sub-burstiness-val').textContent = finalResult.burstiness + '%';
-                    document.getElementById('sub-patterns-val').textContent = finalResult.patterns + '%';
-                    document.getElementById('sub-vocab-val').textContent = finalResult.vocab + '%';
-                } else {
-                    document.getElementById('bar-perplexity').style.width = finalResult.perplexity + '%';
-                    ['sub-burstiness-val','sub-patterns-val','sub-vocab-val'].forEach(id => {
-                        document.getElementById(id).textContent = '🔒 Premium';
-                        document.getElementById(id).style.color = 'rgba(255,255,255,0.2)';
-                    });
-                    ['bar-burstiness','bar-patterns','bar-vocab'].forEach(id => {
-                        document.getElementById(id).style.width = '0%';
-                    });
-                }
-            }, 100);
-
-            // Reasoning
-            document.getElementById('reasoning-text').textContent = finalResult.reasoning;
-
-            // Patterns markers
-            if (finalResult.markers.length > 0) {
-                document.getElementById('patterns-found').classList.remove('hidden');
-                document.getElementById('patterns-chips').innerHTML = finalResult.markers.map(m =>
-                    `<span class="px-2 py-1 rounded-full text-[10px] bg-red-500/10 border border-red-500/20 text-red-400">${m}</span>`
-                ).join('');
-            } else {
-                document.getElementById('patterns-found').classList.add('hidden');
-            }
-
-            lastAnalyzedText = text;
-            saveEntry("Détection", text.substring(0, 40) + "...", `${s}% IA`);
-        }
-
-        // ==========================================
-        // ✅ VRAI HUMANISEUR — Prompt chirurgical
-        // ==========================================
-        async function runHumanizer(text) {
-            const style = selectedStyle;
-            const intensity = parseInt(document.getElementById('humanize-intensity')?.value || 50);
-            const preserveStructure = document.getElementById('preserve-structure')?.checked;
-            const lang = document.getElementById('opt-lang')?.value || 'fr';
-            const loadingSub = document.getElementById('loading-sub');
-            if (loadingSub) loadingSub.textContent = 'Humanisation en cours...';
-
-            // Pré-analyse locale pour cibler les patterns
-            const localAnalysis = detectAILocally(text);
-            const markersToFix = localAnalysis.markers.slice(0, 5).join(', ');
-
-            const styleGuides = {
-                naturel: "Écris de façon naturelle, conversationnelle. Utilise des contractions (c'est, j'ai). Varie les longueurs de phrases.",
-                academique: "Maintiens un registre académique mais évite les formules toutes faites. Utilise des tournures analytiques authentiques.",
-                professionnel: "Ton professionnel direct, sans jargon inutile. Phrases affirmatives courtes entrecoupées de développements.",
-                decontracte: "Ton décontracté, familier mais pas vulgaire. Expressions naturelles, phrases courtes, quelques ellipses.",
-                poétique: "Style lyrique avec métaphores originales et rythme varié. Sensibilité émotionnelle authentique.",
-                journalistique: "Style journalistique : attaque directe, faits concrets, citation ou exemple dès le début."
-            };
-
-            const intensityGuide = intensity < 33 ? "Changements minimes, préserve le maximum du texte original." :
-                                   intensity < 66 ? "Réécriture modérée, change les tournures IA en gardant le sens." :
-                                   "Réécriture profonde, transforme totalement le style.";
-
-            const systemPrompt = `Tu es un expert en réécriture humaine de textes. Ta mission : transformer ce texte généré par IA en texte à l'écriture humaine, naturelle et indétectable.
-
-RÈGLES ABSOLUES :
-1. JAMAIS de gros mots, d'insultes ou de langage vulgaire — le texte doit rester poli et professionnel.
-2. JAMAIS d'hallucinations — ne rajoute PAS de faits, chiffres ou informations absents de l'original.
-3. JAMAIS de commentaires sur le texte — retourne UNIQUEMENT le texte réécrit.
-4. PRÉSERVE le sens complet et toutes les informations importantes.
-${preserveStructure ? "5. CONSERVE la structure et les paragraphes du texte original." : "5. Tu peux réorganiser les paragraphes si ça améliore le naturel."}
-
-OBJECTIF STYLISTIQUE : ${styleGuides[style] || styleGuides.naturel}
-
-INTENSITÉ : ${intensityGuide}
-
-TECHNIQUES POUR BATTRE LES DÉTECTEURS :
-- Varier drastiquement la longueur des phrases (mélanger courtes et longues)
-- Introduire quelques légères imperfections naturelles (pas d'erreurs, mais des tournures moins parfaites)
-- Éviter absolument ces expressions IA détectées dans le texte : ${markersToFix || 'les transitions trop formelles'}
-- Utiliser des verbes actifs plutôt que passifs
-- Inclure des transitions authentiques et variées
-- Ajouter de légères nuances personnelles ou des questions rhétoriques
-- Mélanger les registres légèrement (pas uniformément formel)
-
-LANGUE : Réponds en ${lang === 'fr' ? 'français' : lang === 'en' ? 'anglais' : 'espagnol'}.
-
-Retourne UNIQUEMENT le texte réécrit, sans introduction ni commentaire.`;
-
-            const resp = await fetch('https://api.mistral.ai/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${MISTRAL_API_KEY}` },
-                body: JSON.stringify({
-                    model: "mistral-medium-latest",
-                    messages: [
-                        { role: "system", content: systemPrompt },
-                        { role: "user", content: text }
-                    ],
-                    temperature: 0.85,
-                    max_tokens: 2048
-                })
-            });
-            
-            const data = await resp.json();
-            const result = data.choices[0].message.content.trim();
-
-            document.getElementById('state-loading').classList.add('hidden');
-            document.getElementById('state-result-humanize').classList.remove('hidden');
-            document.getElementById('output-humanized').value = result;
-
-            // Estimate post-humanization score
-            const postAnalysis = detectAILocally(result);
-            const estimatedScore = Math.max(3, Math.min(25, Math.round(postAnalysis.score * 0.35)));
-            document.querySelector('#state-result-humanize .bg-green-500\\/10').innerHTML = 
-                `<i class="fa-solid fa-chart-line mr-1"></i>Score IA estimé : ~${estimatedScore}%`;
-
-            const styleName = style.charAt(0).toUpperCase() + style.slice(1);
-            document.getElementById('humanize-style-badge').textContent = `Style: ${styleName}`;
-
-            saveEntry("Humanisation", text.substring(0, 40) + "...", `~${estimatedScore}% IA`);
-        }
-
-        // ==========================================
-        // MAIN ACTION
-        // ==========================================
-        actionBtn.addEventListener('click', async () => {
-            const text = inputText.value.trim();
-            if (!text) { showToast("Veuillez entrer du texte.", 'error'); return; }
-            if (text.length < 80 && currentMode === 'detect') { showToast("Minimum 80 caractères pour une analyse fiable.", 'error'); return; }
-            if (text.length < 30 && currentMode === 'humanize') { showToast("Minimum 30 caractères pour l'humaniseur.", 'error'); return; }
-
-            ['state-empty','state-result-detect','state-result-humanize'].forEach(id => document.getElementById(id).classList.add('hidden'));
-            document.getElementById('state-loading').classList.remove('hidden');
-            document.getElementById('loading-text').textContent = currentMode === 'detect' ? 'Analyse neuronale...' : 'Humanisation en cours...';
-
-            try {
-                if (currentMode === 'detect') await runDetector(text);
-                else await runHumanizer(text);
-            } catch (err) {
-                console.error(err);
-                showToast("Erreur API : " + (err.message || 'Inconnue'), 'error');
-                document.getElementById('state-loading').classList.add('hidden');
-                document.getElementById('state-empty').classList.remove('hidden');
-            }
-        });
-
-        // ==========================================
-        // HISTORY
-        // ==========================================
-        const historyList = document.getElementById('history-list');
-
-        function saveEntry(type, excerpt, result) {
-            const entry = { type, excerpt, result, timestamp: Date.now() };
-            if (currentUser) {
-                push(ref(db, 'ai_history/' + currentUser.uid), entry);
-            } else {
-                let local = JSON.parse(localStorage.getItem('wm_ai_history') || '[]');
-                local.push(entry);
-                if (local.length > 50) local = local.slice(-50);
-                localStorage.setItem('wm_ai_history', JSON.stringify(local));
-                loadHistoryFromLocal();
-            }
-        }
-
-        function loadHistoryFromDB() {
-            if (!currentUser) return;
-            const q = query(ref(db, 'ai_history/' + currentUser.uid), limitToLast(15));
-            onValue(q, (snap) => {
-                const data = snap.val();
-                if (!data) { renderHistory([]); return; }
-                renderHistory(Object.values(data).sort((a,b) => b.timestamp - a.timestamp));
-            });
-        }
-
-        function loadHistoryFromLocal() {
-            let local = JSON.parse(localStorage.getItem('wm_ai_history') || '[]');
-            const threeDays = Date.now() - 259200000;
-            local = local.filter(i => i.timestamp > threeDays).sort((a,b) => b.timestamp - a.timestamp);
-            localStorage.setItem('wm_ai_history', JSON.stringify(local));
-            renderHistory(local);
-        }
-
-        function renderHistory(items) {
-            if (!historyList) return;
-            historyList.innerHTML = '';
-            if (!items.length) {
-                historyList.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-white/20 text-sm">Aucun historique récent.</td></tr>';
-                return;
-            }
-            items.forEach(item => {
-                const date = new Date(item.timestamp).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-                const isHum = item.type === "Humanisation";
-                const badgeClass = isHum ? "bg-purple-500/20 text-purple-300 border border-purple-500/30" : "bg-brand-500/20 text-brand-glow border border-brand-500/30";
-                historyList.innerHTML += `
-                    <tr class="border-b border-white/5 hover:bg-white/3 transition-colors">
-                        <td class="p-4"><span class="px-2 py-1 rounded text-[10px] font-bold ${badgeClass}">${item.type}</span></td>
-                        <td class="p-4 text-white/50 text-xs truncate max-w-[150px]">${item.excerpt}</td>
-                        <td class="p-4 font-bold text-sm text-white">${item.result}</td>
-                        <td class="p-4 text-right text-white/30 text-xs">${date}</td>
-                    </tr>`;
-            });
-        }
-
-        window.clearLocalHistory = () => {
-            if (confirm("Effacer l'historique local ?")) {
-                localStorage.removeItem('wm_ai_history');
-                loadHistoryFromLocal();
-                showToast("Historique effacé", 'success');
-            }
-        };
-
-        // ==========================================
-        // GLOBAL UI
-        // ==========================================
-        window.showToast = function(msg, type = 'info') {
-            const container = document.getElementById('toast-container');
-            if (!container) return;
-            const toast = document.createElement('div');
-            const colors = { error: 'bg-red-500/20 text-red-200 border-red-500/30', success: 'bg-green-500/20 text-green-200 border-green-500/30', info: 'bg-white/10 text-white border-white/10' };
-            const icons = { error: 'fa-triangle-exclamation', success: 'fa-check-circle', info: 'fa-info-circle' };
-            toast.className = `px-4 py-3 rounded-lg text-sm font-medium shadow-xl flex items-center gap-3 toast-anim backdrop-blur-md border ${colors[type] || colors.info}`;
-            toast.innerHTML = `<i class="fa-solid ${icons[type]}"></i> <span>${msg}</span>`;
-            container.appendChild(toast);
-            setTimeout(() => { toast.style.animation = 'toastLeave 0.3s ease-in forwards'; setTimeout(() => toast.remove(), 300); }, 4000);
-        };
-
-        window.switchOptTab = function(tab) {
-            document.querySelectorAll('.opt-tab').forEach((t,i) => {
-                const tabs = ['detect','humanize','options'];
-                t.classList.toggle('active', tabs[i] === tab);
-            });
-            document.querySelectorAll('.opt-panel').forEach(p => p.classList.remove('active'));
-            const panel = document.getElementById('opt-' + tab);
-            if (panel) panel.classList.add('active');
-        };
-
-        window.openUpgradeModal = function(msg) {
-            document.getElementById('upgrade-modal-text').textContent = msg || 'Cette fonctionnalité est réservée aux membres Premium.';
-            document.getElementById('upgrade-modal').classList.add('open');
-        };
-        window.closeUpgradeModal = function() {
-            document.getElementById('upgrade-modal').classList.remove('open');
-        };
-
-    </script>
-
-    <!-- AURORA BG -->
-    <script>
-        const canvas = document.getElementById('aurora-bg');
-        if (canvas) {
-            const ctx = canvas.getContext('2d');
-            let w, h;
-            const orbs = [
-                { x: 0.2, y: 0.2, r: 0.4, color: [79, 70, 229], vx: 0.0005, vy: 0.0005 },
-                { x: 0.8, y: 0.3, r: 0.5, color: [168, 85, 247], vx: -0.0006, vy: 0.0004 },
-                { x: 0.5, y: 0.8, r: 0.3, color: [99, 102, 241], vx: 0.0004, vy: -0.0003 }
-            ];
-            function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
-            function animate() {
-                ctx.clearRect(0, 0, w, h);
-                ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, w, h);
-                orbs.forEach(orb => {
-                    orb.x += orb.vx; orb.y += orb.vy;
-                    if (orb.x < -0.2 || orb.x > 1.2) orb.vx *= -1;
-                    if (orb.y < -0.2 || orb.y > 1.2) orb.vy *= -1;
-                    const g = ctx.createRadialGradient(orb.x*w, orb.y*h, 0, orb.x*w, orb.y*h, orb.r*w);
-                    g.addColorStop(0, `rgba(${orb.color.join(',')},0.18)`);
-                    g.addColorStop(1, 'rgba(0,0,0,0)');
-                    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
-                });
-                requestAnimationFrame(animate);
-            }
-            window.addEventListener('resize', resize); resize(); animate();
-        }
-    </script>
+        requestAnimationFrame(draw);
+    }
+    window.addEventListener('resize',resize);resize();draw();
+}
+</script>
 </body>
 </html>
