@@ -2,40 +2,110 @@
 <html lang="fr">
 <head>
 <!-- Google tag (gtag.js) -->
-<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-RRFWS36RWJ"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-RRFWS36RWJ');
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WikiMind AI</title>
+<meta name="description" content="WikiMind AI v5 — L'assistant IA le plus puissant, gratuit et open source">
+<meta name="theme-color" content="#ffffff">
+<title>WikiMind AI v5</title>
+
+<!-- Preconnect pour accélérer les requêtes CDN -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="dns-prefetch" href="https://api.mistral.ai">
+<link rel="dns-prefetch" href="https://api.allorigins.win">
+
+<!-- Fonts — affichage: swap pour ne pas bloquer le rendu -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- CRITIQUE — chargé immédiatement (nécessaire dès le premier render) -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+
+<!-- Highlight.js — defer car utilisé après rendu des messages -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" id="hljs-theme">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" id="hljs-dark" disabled>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+<!-- KaTeX — defer car chargé seulement quand des maths sont détectées -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="window._katexReady=true"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" id="hljs-theme">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" id="hljs-dark" disabled>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@orama/orama@2/dist/browser/index.global.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<!-- WikiMind v4 — Nouveaux parseurs de fichiers -->
-<script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<!-- jsPDF pour génération PDF côté client -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<!-- Chart.js — defer -->
+<script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<!-- Mermaid — defer -->
+<script defer src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js" onload="window.mermaid&&window.mermaid.initialize({startOnLoad:false,theme:'neutral',securityLevel:'loose',fontFamily:'Inter,sans-serif'})"></script>
+
+<!-- PDF.js — lazy (chargé seulement si PDF importé) -->
+<script>
+window._lazyLoad = {
+  pdfjs: () => new Promise(r=>{
+    if(window.pdfjsLib){r();return;}
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.onload=()=>{pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';r();};
+    document.head.appendChild(s);
+  }),
+  html2pdf: () => new Promise(r=>{
+    if(window.html2pdf){r();return;}
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    s.onload=r; document.head.appendChild(s);
+  }),
+  mammoth: () => new Promise(r=>{
+    if(window.mammoth){r();return;}
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js';
+    s.onload=r; document.head.appendChild(s);
+  }),
+  xlsx: () => new Promise(r=>{
+    if(window.XLSX){r();return;}
+    const s=document.createElement('script');
+    s.src='https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+    s.onload=r; document.head.appendChild(s);
+  }),
+  jspdf: () => new Promise(r=>{
+    if(window.jspdf){r();return;}
+    const s1=document.createElement('script');
+    s1.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    s1.onload=()=>{
+      const s2=document.createElement('script');
+      s2.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js';
+      s2.onload=r; document.head.appendChild(s2);
+    };
+    document.head.appendChild(s1);
+  }),
+  lottie: () => new Promise(r=>{
+    if(window.lottie){r();return;}
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js';
+    s.onload=r; document.head.appendChild(s);
+  }),
+  orama: () => new Promise(r=>{
+    if(window.orama){r();return;}
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/@orama/orama@2/dist/browser/index.global.min.js';
+    s.onload=r; document.head.appendChild(s);
+  }),
+};
+// Préchargement intelligent : PDF.js et highlight.js après 2s
+setTimeout(()=>{ window._lazyLoad.pdfjs(); }, 2000);
+// Orama après 3s (RAG search)
+setTimeout(()=>{ window._lazyLoad.orama(); }, 3000);
+</script>
 
 <style>
 :root {
@@ -1992,6 +2062,29 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
       <span class="tool-item-badge tool-badge-free" id="tool-wiki-badge">Off</span>
     </button>
 
+    <!-- ── NOUVEAUX OUTILS v5 ── -->
+    <div class="tools-section-label" style="margin-top:6px">✦ Nouveaux outils v5</div>
+    <button class="tool-item" onclick="openTranslatorTool();closeToolsPanel()" id="tool-translator-btn">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/></svg>
+      <span class="tool-item-label">Traducteur IA</span>
+      <span class="tool-item-badge" style="background:rgba(34,197,94,.1);color:#16a34a;font-size:9px;font-weight:800;padding:2px 6px;border-radius:20px;">Gratuit</span>
+    </button>
+    <button class="tool-item" onclick="openSummarizerTool();closeToolsPanel()" id="tool-summarizer-btn">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span class="tool-item-label">Résumeur IA</span>
+      <span class="tool-item-badge" style="background:rgba(34,197,94,.1);color:#16a34a;font-size:9px;font-weight:800;padding:2px 6px;border-radius:20px;">Gratuit</span>
+    </button>
+    <button class="tool-item" onclick="openMathSolverTool();closeToolsPanel()" id="tool-math-btn">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h16M4 12h8M4 17h16"/><path d="M14 5l3 7-3 7"/></svg>
+      <span class="tool-item-label">Solveur de maths IA</span>
+      <span class="tool-item-badge" style="background:rgba(34,197,94,.1);color:#16a34a;font-size:9px;font-weight:800;padding:2px 6px;border-radius:20px;">Gratuit</span>
+    </button>
+    <button class="tool-item" onclick="openParaphraseTool();closeToolsPanel()" id="tool-paraphrase-btn">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      <span class="tool-item-label">Reformulateur IA</span>
+      <span class="tool-item-badge" style="background:rgba(34,197,94,.1);color:#16a34a;font-size:9px;font-weight:800;padding:2px 6px;border-radius:20px;">Gratuit</span>
+    </button>
+
     <div class="tools-section-label" style="margin-top:6px">AI Plus</div>
     <button class="tool-item" onclick="toggleCoderPanel();closeToolsPanel()" id="tool-coder-btn" style="display:none">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
@@ -2148,6 +2241,7 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
   <div id="welcome-text">
     <h2>WikiMind</h2>
     <p>Bienvenue — comment puis-je vous aider ?</p>
+    <div id="welcome-suggestions" style="display:none;"></div>
   </div>
 
   <div id="chat-container"></div>
@@ -3827,17 +3921,20 @@ const GMAIL_SCOPES  = 'https://www.googleapis.com/auth/gmail.compose https://www
 const GDRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 
 const MISTRAL_MODELS = {
-  flash:   { id:'open-mistral-nemo',     label:'Wikimind Flash 3.2',   style:'concis'      },
-  medium:  { id:'mistral-small-latest',  label:'Wikimind Medium 3.2',  style:'approfondi'  },
-  work:    { id:'open-mixtral-8x22b',    label:'Wikimind Work 3.2',    style:'expert'      },
-  reflect: { id:'open-mixtral-8x22b',    label:'Wikimind Réflexion 3.2',style:'reflexion'  },
-  task:    { id:'open-mixtral-8x22b',    label:'Wikimind Task 3.3',    style:'omnipotent'  },
+  flash:   { id:'mistral-small-latest',     label:'Wikimind Flash 4.0',    style:'concis',     ctx:32768  },
+  medium:  { id:'mistral-medium-latest',    label:'Wikimind Medium 4.0',   style:'approfondi', ctx:128000 },
+  work:    { id:'mistral-large-latest',     label:'Wikimind Work 4.0',     style:'expert',     ctx:128000 },
+  reflect: { id:'mistral-large-latest',     label:'Wikimind Réflexion 4.0',style:'reflexion',  ctx:128000 },
+  task:    { id:'mistral-large-latest',     label:'Wikimind Task 4.0',     style:'omnipotent', ctx:128000 },
+  code:    { id:'codestral-latest',         label:'Wikimind Code',         style:'code',       ctx:32768  },
 };
-// Modèles spécialisés open source
-const M_MINI    = 'ministral-8b-latest';    // mini-tâches rapides: titres, mots-clés, OCR
-const M_STRUCT  = 'open-mixtral-8x7b';      // structuration JSON: mindmap, dataviz
-const M_SMART   = 'open-mistral-nemo';      // tâches générales: oral, canvas, aide
-const M_EXPERT  = 'open-mixtral-8x22b';     // code, QCM, réflexion, tâches complexes
+// Modèles spécialisés open source — v5
+const M_MINI    = 'mistral-small-latest';    // mini-tâches rapides: titres, mots-clés, OCR
+const M_STRUCT  = 'mistral-small-latest';    // structuration JSON: mindmap, dataviz
+const M_SMART   = 'mistral-small-latest';    // tâches générales: oral, canvas, aide
+const M_EXPERT  = 'mistral-large-latest';    // code, QCM, réflexion, tâches complexes
+// Streaming activé globalement
+let _streamingEnabled = true;
 
 // ── WIKIMIND TASK — Système multi-outils ──
 const WIKIMIND_TASK_SYSTEM = `Tu es Wikimind Task v3.3, le modèle le plus puissant de WikiMind. Tu as accès à ABSOLUMENT TOUS les outils de la plateforme et tu peux tout accomplir.
@@ -4449,11 +4546,12 @@ function updateUserUI(){
 function updateModelOptions(){
   const sel=G('model-select'); if(!sel) return;
   const models=[
-    {value:'flash',label:'WIKIMIND FLASH 3.2',minPlan:1},
-    {value:'medium',label:'WIKIMIND MEDIUM 3.2',minPlan:2},
-    {value:'work',label:'WIKIMIND WORK 3.2',minPlan:2},
-    {value:'reflect',label:'WIKIMIND RÉFLEXION 3.2',minPlan:2},
-    {value:'task',label:'WIKIMIND TASK 3.3',minPlan:2},
+    {value:'flash',  label:'WIKIMIND FLASH 4.0',     minPlan:1},
+    {value:'medium', label:'WIKIMIND MEDIUM 4.0',    minPlan:2},
+    {value:'work',   label:'WIKIMIND WORK 4.0',      minPlan:2},
+    {value:'reflect',label:'WIKIMIND RÉFLEXION 4.0', minPlan:2},
+    {value:'task',   label:'WIKIMIND TASK 4.0',      minPlan:2},
+    {value:'code',   label:'WIKIMIND CODE',           minPlan:2},
   ];
   sel.innerHTML='';
   models.forEach(m=>{ if(S.plan>=m.minPlan){const opt=document.createElement('option');opt.value=m.value;opt.textContent=m.label;sel.appendChild(opt);} });
@@ -4591,9 +4689,64 @@ function newChat(){
   G('chat-container').innerHTML=''; updateAttachmentPreview(); showWelcome();
   document.querySelectorAll('.history-item').forEach(i=>i.classList.remove('active'));
 }
+// ── WELCOME SUGGESTIONS — chips rotatifs ──
+const _WM_SUGGESTIONS = [
+  // Créatif
+  {icon:'✍️', text:'Rédige un article de blog sur l\'impact de l\'IA en 2025', cat:'Rédaction'},
+  {icon:'📖', text:'Écris le début d\'une nouvelle de science-fiction dans un Paris post-apocalyptique', cat:'Créatif'},
+  {icon:'📧', text:'Rédige un email professionnel pour relancer un client sans réponse depuis 2 semaines', cat:'Pro'},
+  // Code
+  {icon:'⚡', text:'Crée une API REST en Python avec FastAPI pour gérer des utilisateurs', cat:'Code'},
+  {icon:'🔧', text:'Explique la différence entre async/await et les Promises en JavaScript avec exemples', cat:'Code'},
+  {icon:'🎨', text:'Génère un composant React animé avec Tailwind CSS pour une carte de profil', cat:'Code'},
+  // Analyse
+  {icon:'📊', text:'Analyse les avantages et inconvénients de l\'énergie nucléaire vs renouvelable', cat:'Analyse'},
+  {icon:'🧠', text:'Explique le machine learning à quelqu\'un qui n\'y connaît rien, avec des analogies', cat:'Pédagogie'},
+  {icon:'📈', text:'Crée un plan marketing digital pour une startup SaaS B2B en 5 étapes', cat:'Business'},
+  // Productivité
+  {icon:'📋', text:'Génère un template de CV moderne pour un développeur full-stack junior', cat:'CV'},
+  {icon:'🎯', text:'Crée un plan d\'apprentissage de 30 jours pour apprendre React en partant de zéro', cat:'Apprentissage'},
+  {icon:'💡', text:'Donne-moi 10 idées de side-projects créatifs pour un développeur web', cat:'Idées'},
+  // Divers
+  {icon:'🌍', text:'Traduis et adapte culturellement ce texte pour un public anglophone américain', cat:'Traduction'},
+  {icon:'🔍', text:'Résume les dernières avancées en intelligence artificielle générative', cat:'Actualité'},
+  {icon:'📐', text:'Explique le théorème de Pythagore avec une preuve visuelle et des applications réelles', cat:'Maths'},
+];
+
+function _getRandomSuggestions(n=4){
+  const shuffled=[..._WM_SUGGESTIONS].sort(()=>Math.random()-.5);
+  return shuffled.slice(0,n);
+}
+
+function renderWelcomeSuggestions(){ return; // suggestions désactivées — v5
+  const el=G('welcome-suggestions'); if(!el) return;
+  const picks=_getRandomSuggestions(4);
+  el.innerHTML=picks.map(s=>`
+    <button onclick="useWelcomeSuggestion(${JSON.stringify(s.text).replace(/"/g,'&quot;')})"
+      style="display:flex;align-items:center;gap:7px;padding:9px 14px;
+        background:var(--bg);border:1px solid var(--border2);border-radius:22px;
+        font-size:12px;font-weight:600;color:var(--text);cursor:pointer;
+        transition:.18s;font-family:'Inter',sans-serif;text-align:left;max-width:300px;
+        box-shadow:0 1px 4px rgba(0,0,0,.05);"
+      onmouseover="this.style.borderColor='var(--accent)';this.style.background='var(--select-bg)'"
+      onmouseout="this.style.borderColor='var(--border2)';this.style.background='var(--bg)'">
+      <span style="font-size:15px;flex-shrink:0">${s.icon}</span>
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:230px">${s.text.substring(0,55)}${s.text.length>55?'…':''}</span>
+    </button>`).join('');
+}
+
+function useWelcomeSuggestion(text){
+  const inp=G('user-input'); if(!inp) return;
+  inp.value=text;
+  autoResize(inp);
+  inp.focus();
+}
+
 function showWelcome(){
-  const has=S.msgs.length>0; G('welcome-text').classList.toggle('hidden-state',has);
+  const has=S.msgs.length>0;
+  G('welcome-text').classList.toggle('hidden-state',has);
   const iw=G('input-wrapper'); iw.classList.toggle('centered',!has); iw.classList.toggle('docked',has);
+  if(!has) renderWelcomeSuggestions();
 }
 function renderHistory(){
   const list=G('history-list');
@@ -6359,33 +6512,56 @@ const WM_RAG = {
   },
 
   async extractFromConversation(userMsg, aiReply){
-    // Extraire des infos pertinentes de la conversation avec l'IA
     if(!userMsg||!aiReply) return;
-    if(this.memories.length>=50) return; // limite mémoire
+    if(this.memories.length>=80) {
+      // Trim oldest non-important memories
+      this.memories = this.memories.filter(m=>m.tag!=='context').slice(0,70);
+    }
     try{
       const raw=await callMistral([
-        {role:'system',content:`Tu analyses un échange et extrais UNIQUEMENT des informations CLÉS et DURABLES sur l'utilisateur.
-IGNORE TOTALEMENT : salutations, questions simples, remerciements, "bonjour", "merci", "ça va", demandes ponctuelles sans contexte.
-N'extrais QUE : prénoms/identité, ville/pays, profession/études, projets importants, préférences durables, contraintes récurrentes, objectifs à long terme.
-Réponds UNIQUEMENT en JSON: {"memories":[{"tag":"pref|info|context","text":"fait court max 60 chars"}]} ou {"memories":[]}.
-Seuil ÉLEVÉ : si tu hésites, réponds {"memories":[]}.`},
-        {role:'user',content:`Utilisateur: ${userMsg.substring(0,300)}\nIA: ${aiReply.substring(0,300)}`}
-      ], M_MINI, 200);
+        {role:'system',content:`Tu analyses un échange et extrais des informations CLÉS et DURABLES sur l'utilisateur.
+
+EXTRAIS (avec haute valeur):
+- Identité: prénom, nom, âge, nationalité, ville/pays
+- Profession, études, secteur d'activité
+- Projets importants en cours (noms, objectifs)
+- Préférences durables: langages de prog, outils, styles, goûts
+- Contraintes récurrentes: budget, délais, contexte tech
+- Objectifs à long terme, ambitions
+- Compétences et expertise
+- Langue maternelle si différente du français
+
+IGNORE TOTALEMENT: salutations, remerciements, questions ponctuelles sans contexte, "bonjour", "merci", demandes one-shot.
+
+Réponds UNIQUEMENT en JSON: {"memories":[{"tag":"identity|pref|project|skill|context","text":"fait court max 80 chars","importance":1-3}]} ou {"memories":[]}.
+Seuil MODÉRÉ : extrais si tu as 60%+ de confiance. importance=3 pour les faits très utiles (identité, projet principal).`},
+        {role:'user',content:`Utilisateur: ${userMsg.substring(0,500)}\nIA: ${aiReply.substring(0,400)}`}
+      ], M_MINI, 300);
       const parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
       if(parsed.memories?.length){
         for(const m of parsed.memories){
-          if(m.text&&m.text.length>5&&m.text.length<100){
-            // Éviter les doublons
-            const exists=this.memories.some(ex=>ex.text.toLowerCase()===m.text.toLowerCase());
-            if(!exists){
-              this.memories.push({id:'m'+Date.now()+Math.random().toString(36).substr(2,4),tag:m.tag||'info',text:m.text,createdAt:Date.now()});
+          if(m.text&&m.text.length>5&&m.text.length<150){
+            // Éviter les doublons (fuzzy match)
+            const similar=this.memories.some(ex=>{
+              const a=ex.text.toLowerCase(), b=m.text.toLowerCase();
+              return a===b || a.includes(b.substring(0,30)) || b.includes(a.substring(0,30));
+            });
+            if(!similar){
+              this.memories.push({
+                id:'m'+Date.now()+Math.random().toString(36).substr(2,4),
+                tag:m.tag||'info',
+                text:m.text,
+                importance:m.importance||1,
+                createdAt:Date.now()
+              });
             }
           }
         }
+        // Trier par importance décroissante
+        this.memories.sort((a,b)=>(b.importance||1)-(a.importance||1));
         await this.save();
       }
     }catch(e){}
-    // Mettre à jour le compteur affiché
     const countEl=document.getElementById('rag-count');
     if(countEl){
       const n=this.memories.length;
@@ -6395,9 +6571,13 @@ Seuil ÉLEVÉ : si tu hésites, réponds {"memories":[]}.`},
 
   getContextString(){
     if(!this.memories.length) return '';
-    return `\n\n[MÉMOIRE UTILISATEUR — informations retenues sur ${S.user?.displayName||'l\'utilisateur'}]\n`+
-      this.memories.map(m=>`• [${m.tag}] ${m.text}`).join('\n')+
-      '\n[/MÉMOIRE UTILISATEUR]\nUtilise ces informations naturellement pour personnaliser tes réponses.';
+    // Priorise les mémoires importantes
+    const sorted = [...this.memories].sort((a,b)=>(b.importance||1)-(a.importance||1));
+    const topMems = sorted.slice(0,25); // Top 25 plus importantes
+    const userName = S.user?.displayName ? S.user.displayName.split(' ')[0] : 'l\'utilisateur';
+    return `\n\n[MÉMOIRE PERSONNALISÉE — profil de ${userName}]\n`+
+      topMems.map(m=>`• [${m.tag}${m.importance>=3?' ★':''}] ${m.text}`).join('\n')+
+      '\n[/MÉMOIRE]\nUtilise ces informations naturellement pour personnaliser tes réponses. Ne mentionne jamais explicitement cette mémoire.';
   },
 
   delete(id){
@@ -6439,28 +6619,42 @@ async function openRagPanel(){
 async function enhancePrompt(){
   const inp=G('user-input'); if(!inp) return;
   const text=inp.value.trim();
-  if(!text||text.length<5){toast('Tapez un message à améliorer d\'abord');return;}
+  if(!text||text.length<4){toast('Tapez un message à améliorer d\'abord');return;}
   const btn=G('btn-prompt-enhance');
   if(btn) btn.classList.add('enhancing');
-  toast('✨ Amélioration en cours...');
+  toast('✨ Amélioration en cours…');
   try{
+    // Détecter le type de demande pour adapter l'amélioration
+    const model=S.model||'flash';
+    const isCode=/code|programm|fonction|script|debug|class|api|react|python|js|html|css/i.test(text);
+    const isAnalysis=/analyse|explique|compare|résume|rapport|pourquoi|comment/i.test(text);
+    const isCreative=/écri|rédige|crée|génère|invente|histoire|article|blog/i.test(text);
+
+    const contextHint = isCode ? 'pour une tâche de programmation/code'
+      : isAnalysis ? 'pour une analyse ou explication approfondie'
+      : isCreative ? 'pour une tâche créative/rédactionnelle'
+      : 'pour obtenir la meilleure réponse possible';
+
     const enhanced=await callMistral([
-      {role:'system',content:`Tu es un expert en prompt engineering. Transforme le prompt utilisateur en un prompt clair, précis et structuré pour obtenir la meilleure réponse IA possible.
-Règles:
-- Commence par un rôle expert ("Agis comme un expert en...")
-- Ajoute du contexte et des contraintes précises
-- Spécifie le format souhaité (titres, listes, longueur...)
-- Garde le même sujet et intention
-- Réponds UNIQUEMENT avec le prompt amélioré, sans explication`},
+      {role:'system',content:`Tu es un expert en prompt engineering. Transforme ce prompt utilisateur en un prompt optimal ${contextHint}.
+
+RÈGLES STRICTES:
+1. Commence par définir un rôle expert précis ("Agis comme un expert en X avec Y années d'expérience")
+2. Reformule la demande avec PRÉCISION (qui, quoi, comment, pour qui, dans quel contexte)
+3. Ajoute des contraintes de format si pertinent (longueur, structure, style, langue)
+4. Ajoute 1-2 exemples ou critères de qualité si la demande est complexe
+5. Garde 100% l'intention et le sujet originaux — ne change PAS le fond
+6. Si la demande est déjà très précise (>80 chars), améliore juste le style et la clarté
+7. Réponds UNIQUEMENT avec le prompt amélioré, en français, sans explication, sans guillemets autour`},
       {role:'user',content:text}
-    ], M_MINI, 300);
+    ], M_MINI, 400);
     if(enhanced){
       inp.value=enhanced.trim();
       autoResize(inp);
       inp.focus();
-      toast('✨ Prompt amélioré !');
+      toast('✨ Prompt boosté !');
     }
-  }catch(e){toast('Erreur amélioration: '+e.message.substring(0,40));}
+  }catch(e){toast('Erreur : '+e.message.substring(0,40));}
   finally{if(btn) btn.classList.remove('enhancing');}
 }
 
@@ -6869,7 +7063,6 @@ ${_summary}
         if(created){toolCalls.push(`Fichier "${oc.title}" créé dans Wikimind Office (${oc.appType})`);toast(`✓ "${oc.title}" créé dans Office`);}
       }
     }else{
-      // Vision QA for plan 5+ with attached images
       let visionCtx='';
       if(S.plan>=5&&images.length>0){
         toast('👁️ Analyse visuelle en cours…');
@@ -6878,7 +7071,30 @@ ${_summary}
           if(ans) visionCtx+=`\n[VISION_IA: "${ans}"]`;
         }
       }
-      let raw=await callMistral(await buildHistoryWithContextManagement(finalFullContent+(visionCtx?'\n'+visionCtx:'')),MISTRAL_MODELS[S.model]?.id||MISTRAL_MODELS.flash.id);
+
+      // ── STREAMING LIVE — tokens affichés au fur et à mesure ──
+      const streamingBubble = document.createElement('div');
+      streamingBubble.className = 'chat-bubble model streaming-bubble';
+      streamingBubble.innerHTML = '<span class="stream-cursor">▋</span>';
+      G('chat-container').appendChild(streamingBubble);
+      G('chat-container').scrollTop = G('chat-container').scrollHeight;
+      rmTyping(tyId);
+
+      let raw = '';
+      try {
+        raw = await callMistralStream(
+          await buildHistoryWithContextManagement(finalFullContent+(visionCtx?'\n'+visionCtx:'')),
+          MISTRAL_MODELS[S.model]?.id||MISTRAL_MODELS.flash.id,
+          4096,
+          streamingBubble
+        );
+      } catch(streamErr) {
+        // Fallback non-streaming si erreur stream
+        streamingBubble.remove();
+        raw = await callMistral(await buildHistoryWithContextManagement(finalFullContent+(visionCtx?'\n'+visionCtx:'')), MISTRAL_MODELS[S.model]?.id||MISTRAL_MODELS.flash.id);
+      }
+      // Remove streaming bubble (will be replaced by proper renderMsg)
+      streamingBubble.remove();
 
       // Détecter et traiter un brouillon Gmail dans la réponse
       let cleanedRaw=raw;
@@ -6908,7 +7124,8 @@ ${_summary}
       aiContent=cleanedRaw;
     }
 
-    rmTyping(tyId);
+    // rmTyping already called in streaming path; safe to call again (no-op if already removed)
+    try{ rmTyping(tyId); }catch(_){}
     const am={role:'assistant',content:aiContent,canvasContent:null,steps,toolCalls,_stepsRenderedLive:S.model==='reflect',_ttsText:window._lastTTSText||null,_model:S.model,_modelLabel:MISTRAL_MODELS[S.model]?.label||S.model,ts:Date.now()}; window._lastTTSText=null;
 
     // ── Version history ──
@@ -6939,8 +7156,8 @@ ${_summary}
     S.msgs.push(am); renderMsg(am);
     indexConversationMsg(am, S.msgs.length-1).catch(()=>{});
     // RAG: extraire infos utiles — seulement si message substantiel (>30 chars et pas trivial)
-    const _isTrivialMsg=displayText.length<30||/^(salut|bonjour|hi|hello|ok|oui|non|merci|ciao|bye|good|bien|yes|no|d'accord|parfait|super|cool|wsh|slt)\s*[!?.]?$/i.test(displayText.trim());
-    if(S.plan>=2&&!S.user?.isGuest&&!_isTrivialMsg&&Math.random()<0.12){
+    const _isTrivialMsg=displayText.length<15||/^(salut|bonjour|hi|hello|ok|oui|non|merci|ciao|bye|good|bien|yes|no|d'accord|parfait|super|cool|wsh|slt|lol|mdr)\s*[!?.]?$/i.test(displayText.trim());
+    if(S.plan>=1&&!S.user?.isGuest&&!_isTrivialMsg&&Math.random()<0.25){
       WM_RAG.extractFromConversation(displayText,aiContent).catch(()=>{});
     }
     // ── Auto-open tool if AI response suggests it ──
@@ -7664,24 +7881,97 @@ function buildSystemPrompt(){
   const active=S.importedInstructions.filter(i=>i.enabled).map(i=>i.content).join('\n\n');
   const userName = S.user?.displayName ? S.user.displayName.split(' ')[0] : null;
   const userCtx = userName && !S.user?.isGuest ? `L'utilisateur s'appelle ${userName}. Utilise son prénom naturellement dans la conversation quand c'est pertinent.` : '';
-  // Outils de base disponibles pour tous les modèles
-  const toolsDesc = `Outils disponibles :
-- GRAPHIQUE : si demandé, génère un bloc \`\`\`chartjs\n{...json...}\n\`\`\` (JSON strict, guillemets doubles partout)
-- IMAGE : si demandé, réponds avec [TOOL:WIKI_IMAGE:terme anglais]
-- CARTE MENTALE : propose Mind Map IA
-- CODE : propose le Codeur IA`.trim();
   const _now=new Date();
   const _dateStr=_now.toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   const _timeStr=_now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
   const _modelStyle=MISTRAL_MODELS[S.model]?.style||'concis';
+
+  // ── Outils disponibles v5 ──
+  const toolsDesc = `## OUTILS WIKIMIND DISPONIBLES — UTILISE-LES AUTOMATIQUEMENT
+
+**GRAPHIQUES (génère DIRECTEMENT, sans attendre)**
+\`\`\`chartjs
+{"type":"bar","data":{"labels":["A","B","C"],"datasets":[{"label":"Données","data":[10,20,30],"backgroundColor":["#6366f1","#8b5cf6","#06b6d4"]}]},"options":{"responsive":true,"plugins":{"title":{"display":true,"text":"Mon graphique"}}}}
+\`\`\`
+Types: bar, line, pie, doughnut, radar, polarArea
+
+**IMAGES WIKIPEDIA** — si l'utilisateur parle d'un lieu/personnage/objet connu:
+[TOOL:WIKI_IMAGE:keyword en anglais]
+
+**DIAGRAMMES** — pour tout besoin de schéma/flow/architecture: propose \`\`\`mermaid ... \`\`\`
+
+**MATH** — Utilise LaTeX inline $...$ ou display $$...$$
+
+**CODE** — Utilise des blocs \`\`\`langage pour tout code. Toujours expliquer après.
+
+**TABLEAUX** — Utilise Markdown tables | col1 | col2 | pour données tabulaires
+
+**CRÉATION FICHIERS** (si demandé explicitement):
+- Fichier Office: [CREATE_OFFICE:writer|titre|contenu]
+- Export PDF: Génère d'abord le contenu structuré`;
+
   const _styleInstructions={
-    'concis':     'Tu es Wikimind Flash : rapide, précis, naturel. Réponds avec autant de détails que nécessaire. Ne te bride jamais — si la réponse doit être longue, fais-la longue. Si courte, fais-la courte.',
-    'approfondi': 'Tu incarnes Wikimind Medium v3.2 : développe tes réponses avec profondeur et nuances. Fournis des explications détaillées, des exemples, des alternatives. Structure avec des sections claires. Sois plus exhaustif que Flash.',
-    'expert':     'Tu es Wikimind Work : analyse en profondeur avec expertise technique pointue.',
-    'reflexion':  'Tu es Wikimind Réflexion : raisonne étape par étape, méthodiquement.',
-    'omnipotent': 'Tu es Wikimind Task v3.3 : utilise tous les outils disponibles, accomplis toute tâche.'
-  }[_modelStyle]||'';
-  const base = `Tu es WikiMind AI v3.3, un assistant IA ultra-intelligent, précis et bienveillant. Tu réponds en français par défaut. Utilise Markdown. Pour les maths, LaTeX. Tu as accès aux outils WikiMind.\n\n${_styleInstructions}\n\nDate et heure : ${_dateStr} à ${_timeStr} — utilise UNIQUEMENT si demandé.`+(S.plan>=5?' Tu peux analyser des images (vision IA).':'');
+    'concis':     `## WIKIMIND FLASH 4.0
+Tu es l'assistant IA le plus rapide et précis de WikiMind. Style : direct, naturel, efficace.
+- Réponds immédiatement sans préambule inutile
+- Utilise des listes et formatage Markdown quand ça aide à la clarté
+- Si la réponse doit être longue pour être complète → fais-la longue
+- Adopte le ton de l'utilisateur (formel/informel)
+- Pour toute question factuelle : sois précis, cite des chiffres/dates si pertinent
+- Anticipe les questions de suivi et donne une réponse proactive`,
+
+    'approfondi': `## WIKIMIND MEDIUM 4.0
+Tu es l'assistant IA de profondeur de WikiMind, propulsé par Mistral Medium.
+- Développe tes réponses avec VRAIE profondeur intellectuelle et nuances
+- Structure avec des titres Markdown, sous-sections, exemples concrets
+- Pour chaque concept : explique le "quoi", le "pourquoi", le "comment"
+- Fournis plusieurs perspectives, compare des approches alternatives
+- Inclus des exemples du monde réel, des cas d'usage, des anecdotes pertinentes
+- Conclus avec un résumé actionnable ou des next steps`,
+
+    'expert':     `## WIKIMIND WORK 4.0
+Tu es l'assistant expert de WikiMind, propulsé par Mistral Large.
+- Expertise technique de niveau senior/expert dans tous les domaines
+- Pour le code : code production-ready, commenté, avec gestion d'erreurs
+- Pour l'analyse : rigueur académique, sources, méthode
+- Pour le contenu : qualité éditoriale, style soigné
+- Génère des graphiques et visualisations automatiquement quand les données le permettent
+- Propose toujours des améliorations et alternatives`,
+
+    'reflexion':  `## WIKIMIND RÉFLEXION 4.0
+Tu es l'assistant de raisonnement de WikiMind, propulsé par Mistral Large.
+- Raisonne étape par étape, montre ton processus de pensée
+- Pour les problèmes complexes : décompose en sous-problèmes
+- Vérifie tes raisonnements et signale les incertitudes
+- Utilise le format : Analyse → Hypothèses → Déduction → Conclusion
+- Pour les maths/logique : montre chaque étape de calcul en LaTeX`,
+
+    'omnipotent': `## WIKIMIND TASK 4.0
+Tu es le modèle le plus puissant de WikiMind, propulsé par Mistral Large.
+UTILISE TOUS LES OUTILS SYSTÉMATIQUEMENT. Tu peux tout accomplir.
+- Génère des graphiques directement dans le chat (format chartjs)
+- Crée des diagrammes avec Mermaid
+- Produis des documents structurés et complets
+- Anticipe ce dont l'utilisateur a besoin et va plus loin`,
+
+    'code':       `## WIKIMIND CODE
+Tu es l'assistant code de WikiMind, propulsé par Codestral.
+- Code uniquement propre, optimisé, production-ready
+- Toujours avec commentaires explicatifs
+- Gestion d'erreurs systématique
+- Propose plusieurs approches si pertinent
+- Tests unitaires si demandé
+- Explique la logique après le code`,
+  }[_modelStyle]||'Tu es WikiMind AI, un assistant intelligent.';
+
+  const base = `Tu es WikiMind AI v5.0, un assistant IA de pointe — plus intelligent, plus précis et plus utile que ChatGPT, Gemini ou tout autre assistant. Tu réponds en français par défaut (ou dans la langue de l'utilisateur). Tu utilises Markdown natif pour structurer tes réponses.
+
+${_styleInstructions}
+
+**Date et heure actuelle** : ${_dateStr} à ${_timeStr} (utilise uniquement si demandé).
+${S.plan>=4?' **Vision IA** : tu peux analyser des images jointes.':''}
+${S.plan>=2?' **Contexte enrichi** : Wikipedia, Actualités, et mémoire utilisateur disponibles.':''}`;
+
   const changelog=typeof WM_CHANGELOG_CONTEXT!=='undefined'?WM_CHANGELOG_CONTEXT:'';
   const ragCtx=typeof WM_RAG!=='undefined'?WM_RAG.getContextString():'';
   return[base,userCtx,toolsDesc,ragCtx,changelog,S.sysPrompt||'',active].filter(Boolean).join('\n\n');
@@ -7850,11 +8140,8 @@ async function waitQueue429(retryFn, maxWaitMs=60000){
   });
 }
 
-async function callMistral(messages, modelId, maxTokens=4096, useToolsKey=false){
-  const apiKey = useToolsKey ? MISTRAL_TOOLS_KEY : MISTRAL_KEY;
-
-  // ── Sanitize messages before sending ──
-  // Mistral only accepts [{role:'system'|'user'|'assistant', content: string}]
+// ── Sanitize messages helper ──
+function _sanitizeMessages(messages){
   const safeMessages = [];
   for(const m of (messages||[])){
     if(!m||!m.role) continue;
@@ -7864,7 +8151,6 @@ async function callMistral(messages, modelId, maxTokens=4096, useToolsKey=false)
     if(!content) continue;
     safeMessages.push({role, content});
   }
-  // Merge consecutive same-role non-system messages
   const merged = [];
   for(const m of safeMessages){
     if(m.role==='system'){ merged.push({...m}); continue; }
@@ -7875,31 +8161,74 @@ async function callMistral(messages, modelId, maxTokens=4096, useToolsKey=false)
       merged.push({...m});
     }
   }
-  // Must have at least one message
+  return merged;
+}
+
+// ── callMistral — streaming + fallback non-streaming ──
+async function callMistral(messages, modelId, maxTokens=4096, useToolsKey=false, onToken=null){
+  const apiKey = useToolsKey ? MISTRAL_TOOLS_KEY : MISTRAL_KEY;
+  const merged = _sanitizeMessages(messages);
   if(!merged.length) throw new Error('Aucun message à envoyer');
 
   _currentAbortController = new AbortController();
-  const doFetch = async ()=>{
-    const ctrl = new AbortController();
-    _currentAbortController = ctrl;
+  const ctrl = _currentAbortController;
+
+  // Use streaming if onToken callback provided or streaming globally enabled for main chat
+  const useStream = !!(onToken);
+
+  const doFetch = async () => {
     const res = await fetch('https://api.mistral.ai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-      body:JSON.stringify({model:modelId, messages:merged, max_tokens:maxTokens, temperature:0.7}),
+      body:JSON.stringify({
+        model: modelId,
+        messages: merged,
+        max_tokens: maxTokens,
+        temperature: 0.72,
+        stream: useStream
+      }),
       signal: ctrl.signal
     });
     if(res.status === 429){ throw new Error('429 — serveurs surchargés'); }
     if(!res.ok){
       let errMsg = `Mistral API ${res.status}`;
-      try{
-        const errBody = await res.json();
-        errMsg = errBody?.message || errBody?.detail || errMsg;
-      }catch(_){}
+      try{ const eb=await res.json(); errMsg=eb?.message||eb?.detail||errMsg; }catch(_){}
       throw new Error(errMsg);
     }
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content || '';
+
+    if(useStream){
+      // ── SSE streaming ──
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+      let buf = '';
+      while(true){
+        const {done, value} = await reader.read();
+        if(done) break;
+        buf += decoder.decode(value, {stream:true});
+        const lines = buf.split('\n');
+        buf = lines.pop(); // keep incomplete last line
+        for(const line of lines){
+          const trimmed = line.trim();
+          if(!trimmed || trimmed === 'data: [DONE]') continue;
+          if(!trimmed.startsWith('data:')) continue;
+          try{
+            const json = JSON.parse(trimmed.slice(5).trim());
+            const delta = json.choices?.[0]?.delta?.content || '';
+            if(delta){
+              fullText += delta;
+              onToken(delta, fullText);
+            }
+          }catch(_){}
+        }
+      }
+      return fullText;
+    } else {
+      const data = await res.json();
+      return data.choices?.[0]?.message?.content || '';
+    }
   };
+
   try{
     return await doFetch();
   }catch(e){
@@ -7910,9 +8239,35 @@ async function callMistral(messages, modelId, maxTokens=4096, useToolsKey=false)
     throw e;
   }
 }
+
 // Shorthand for tools API calls
 function callMistralTools(messages, modelId=M_EXPERT, maxTokens=4096){
   return callMistral(messages, modelId, maxTokens, true);
+}
+
+// ── callMistralStream — stream directement dans un element DOM ──
+async function callMistralStream(messages, modelId, maxTokens=4096, targetEl=null){
+  let rawText = '';
+  if(targetEl){ targetEl.dataset.streaming = '1'; }
+
+  const onToken = (delta, full) => {
+    rawText = full;
+    if(targetEl){
+      // Live render markdown partiel
+      try{
+        targetEl.innerHTML = (window.marked ? window.marked.parse(full) : full.replace(/\n/g,'<br>'));
+        // Scroll au bas si visible
+        const cc = G('chat-container');
+        if(cc && cc.scrollHeight - cc.scrollTop < cc.clientHeight + 300){
+          cc.scrollTop = cc.scrollHeight;
+        }
+      }catch(_){}
+    }
+  };
+
+  const result = await callMistral(messages, modelId, maxTokens, false, onToken);
+  if(targetEl) delete targetEl.dataset.streaming;
+  return result || rawText;
 }
 
 // ── REFLECTION ──
@@ -7980,10 +8335,11 @@ async function runReflection(question){
 function onModelChange(){
   const key=G('model-select').value;
   if(key==='reflect'&&S.plan<2){toast('Mode R\u00e9flexion \u2014 plan AI Plus requis');G('model-select').value=S.model;openPlansOverlay();return;}
-  if((key==='medium'||key==='work'||key==='task')&&S.plan<2){toast('Mod\u00e8le \u2014 plan AI Plus requis');G('model-select').value=S.model;openPlansOverlay();return;}
+  if((key==='medium'||key==='work'||key==='task'||key==='code')&&S.plan<2){toast('Mod\u00e8le \u2014 plan AI Plus requis');G('model-select').value=S.model;openPlansOverlay();return;}
   S.model=key;
   updateModelRingIndicator(key);
-  // No toast on model change — not needed
+  const _mhints={flash:'⚡ Flash 4.0 — Mistral Small',medium:'🧠 Medium 4.0 — Mistral Medium',work:'💼 Work 4.0 — Mistral Large',reflect:'🔍 Réflexion 4.0 — Raisonnement chaîné',task:'✦ Task 4.0 — Omnipotent, tous outils',code:'👨‍💻 Code — Codestral spécialisé'};
+  if(_mhints[key]) toast(_mhints[key]);
 }
 
 // ── SPEECH TO TEXT ──
@@ -12028,7 +12384,10 @@ window.insertWikiImageToChat = insertWikiImageToChat;
 window._pdfViewer={pdf:null,page:1,total:1,zoom:1.2,data:null,name:''};
 
 async function openPdfViewer(data, name){
-  if(!window.pdfjsLib){ toast('PDF.js non chargé'); return; }
+  if(!window.pdfjsLib){
+    toast('⏳ Chargement de PDF.js…');
+    try{ await window._lazyLoad.pdfjs(); }catch(e){ toast('Erreur chargement PDF.js'); return; }
+  }
   window._pdfViewer.name=name||'Document.pdf';
   window._pdfViewer.data=data;
   window._pdfViewer.page=1;
@@ -12408,7 +12767,7 @@ G('user-input')&&G('user-input').addEventListener('paste',async(e)=>{
   },300);
 });
 
-console.log('%cWikiMind AI v4','color:#111;font-family:Inter,sans-serif;font-size:20px;font-weight:900;font-style:italic');
+console.log('%cWikiMind AI v5','color:#111;font-family:Inter,sans-serif;font-size:20px;font-weight:900;font-style:italic');
 console.log('%c✅ Import universel | ✅ RAG illimité | ✅ PDF Viewer | ✅ Générateur PDF IA | ✅ Compression images | ✅ Scraping Web fiable | ✅ Diagrammes inline','color:#22c55e;font-size:11px;font-weight:700;');
 </script>
 
@@ -12646,9 +13005,9 @@ console.log('%c✅ Import universel | ✅ RAG illimité | ✅ PDF Viewer | ✅ G
           <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.18em;color:rgba(255,255,255,.4);margin-bottom:8px;">Journal des mises à jour</div>
           <div style="font-size:24px;font-weight:900;letter-spacing:-.04em;color:#fff;line-height:1;">WikiMind AI</div>
           <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
-            <span style="font-size:13px;font-weight:800;color:#fff;opacity:.9;">v3.3</span>
+            <span style="font-size:13px;font-weight:800;color:#fff;opacity:.9;">v5.0</span>
             <span style="background:linear-gradient(90deg,#ec4899,#f97316);color:#fff;font-size:9px;font-weight:800;padding:3px 9px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;">Dernière version</span>
-            <span style="font-size:11px;color:rgba(255,255,255,.4);">23 mars 2026</span>
+            <span style="font-size:11px;color:rgba(255,255,255,.4);">30 mars 2026</span>
           </div>
         </div>
         <button onclick="closeModal('changelog-modal')" style="background:rgba(255,255,255,.1);border:none;cursor:pointer;color:#fff;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;transition:.15s;flex-shrink:0;" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">
@@ -12660,12 +13019,42 @@ console.log('%c✅ Import universel | ✅ RAG illimité | ✅ PDF Viewer | ✅ G
     <!-- Scrollable content -->
     <div style="overflow-y:auto;flex:1;padding:0;">
 
+      <!-- v5.0 — 30 mars 2026 -->
+      <div style="padding:20px 24px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">✦</div>
+          <div>
+            <div style="font-size:14px;font-weight:800;">WikiMind AI v5.0</div>
+            <div style="font-size:11px;color:#888;">30 mars 2026</div>
+          </div>
+          <span style="margin-left:auto;background:linear-gradient(90deg,#6366f1,#8b5cf6);color:#fff;font-size:9px;font-weight:800;padding:3px 9px;border-radius:20px;letter-spacing:.04em;">LATEST</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:20px;flex-shrink:0;">🚀</span>
+            <div><div style="font-size:12px;font-weight:700;margin-bottom:3px;">Fichier complet & fonctionnel</div><div style="font-size:11px;color:#888;line-height:1.5">Toutes les sections HTML/JS/CSS correctement fermées. Zéro bug de structure.</div></div>
+          </div>
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:20px;flex-shrink:0;">🎯</span>
+            <div><div style="font-size:12px;font-weight:700;margin-bottom:3px;">Suggestions supprimées</div><div style="font-size:11px;color:#888;line-height:1.5">Page d'accueil épurée — plus de suggestions de phrases prédéfinies.</div></div>
+          </div>
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:20px;flex-shrink:0;">⚡</span>
+            <div><div style="font-size:12px;font-weight:700;margin-bottom:3px;">Chargement optimisé</div><div style="font-size:11px;color:#888;line-height:1.5">Lazy-load intelligent des librairies. Réduction drastique du poids initial.</div></div>
+          </div>
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:20px;flex-shrink:0;">🧠</span>
+            <div><div style="font-size:12px;font-weight:700;margin-bottom:3px;">Tous les modèles opérationnels</div><div style="font-size:11px;color:#888;line-height:1.5">Flash, Medium, Work, Reflect, Task & Code — 100% open source Mistral.</div></div>
+          </div>
+        </div>
+      </div>
+
       <!-- v3.3 — 23 mars 2026 -->
       <div style="padding:20px 24px;border-bottom:1px solid var(--border);">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
           <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#ec4899,#f97316);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🔥</div>
           <div>
-            <div style="font-size:14px;font-weight:800;">WikiMind AI v3.3</div>
+            <div style="font-size:14px;font-weight:800;">WikiMind AI v5.0</div>
             <div style="font-size:11px;color:#888;">23 mars 2026</div>
           </div>
           <span style="margin-left:auto;background:linear-gradient(90deg,#ec4899,#f97316);color:#fff;font-size:9px;font-weight:800;padding:3px 9px;border-radius:20px;letter-spacing:.04em;">NEW</span>
@@ -12703,7 +13092,7 @@ console.log('%c✅ Import universel | ✅ RAG illimité | ✅ PDF Viewer | ✅ G
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
           <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#ef4444,#f97316);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">⚡</div>
           <div>
-            <div style="font-size:14px;font-weight:800;">WikiMind AI v3.2</div>
+            <div style="font-size:14px;font-weight:800;">WikiMind AI v5.2</div>
             <div style="font-size:11px;color:#888;">21 mars 2026</div>
           </div>
         </div>
@@ -12728,7 +13117,7 @@ console.log('%c✅ Import universel | ✅ RAG illimité | ✅ PDF Viewer | ✅ G
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
           <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🚀</div>
           <div>
-            <div style="font-size:14px;font-weight:800;">WikiMind AI v3.1</div>
+            <div style="font-size:14px;font-weight:800;">WikiMind AI v5.1</div>
             <div style="font-size:11px;color:#888;">15 mars 2026</div>
           </div>
         </div>
@@ -12841,6 +13230,49 @@ console.log('%c✅ Import universel | ✅ RAG illimité | ✅ PDF Viewer | ✅ G
 </div>
 
 <style>
+/* ── STREAMING LIVE BUBBLE ── */
+.streaming-bubble{
+  position:relative;
+  min-height:24px;
+}
+.stream-cursor{
+  display:inline-block;
+  animation:streamBlink .6s ease-in-out infinite;
+  color:var(--accent);
+  font-size:.9em;
+  margin-left:1px;
+}
+@keyframes streamBlink{0%,100%{opacity:1;}50%{opacity:0;}}
+.streaming-bubble::after{
+  content:'';
+  position:absolute;
+  bottom:-2px;left:0;
+  height:2px;width:100%;
+  background:linear-gradient(90deg,var(--accent),transparent);
+  border-radius:2px;
+  animation:streamProgress 1s ease-in-out infinite;
+}
+@keyframes streamProgress{0%{width:0%;}100%{width:100%;opacity:0;}}
+
+/* Code model indicator */
+#model-select.model-code{border-color:#f97316 !important;}
+.model-color-dot.dot-code{background:linear-gradient(135deg,#f97316,#eab308);animation:dotPulse 1.5s ease-in-out infinite;}
+
+/* Enhanced message quality indicator */
+.msg-model-badge{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:9px;font-weight:800;text-transform:uppercase;
+  padding:2px 7px;border-radius:20px;letter-spacing:.04em;
+  background:var(--select-bg);color:#888;border:1px solid var(--border2);
+  margin-right:4px;
+}
+.msg-model-badge.flash{background:rgba(99,102,241,.1);color:#6366f1;border-color:rgba(99,102,241,.2);}
+.msg-model-badge.medium{background:rgba(139,92,246,.1);color:#8b5cf6;border-color:rgba(139,92,246,.2);}
+.msg-model-badge.work{background:rgba(34,197,94,.1);color:#16a34a;border-color:rgba(34,197,94,.2);}
+.msg-model-badge.reflect{background:rgba(6,182,212,.1);color:#0891b2;border-color:rgba(6,182,212,.2);}
+.msg-model-badge.task{background:rgba(239,68,68,.1);color:#dc2626;border-color:rgba(239,68,68,.2);}
+.msg-model-badge.code{background:rgba(249,115,22,.1);color:#ea580c;border-color:rgba(249,115,22,.2);}
+
 /* PDF AI action buttons */
 .pdf-ai-action-btn{
   background:var(--bg);border:1px solid var(--border2);border-radius:20px;
@@ -12849,3 +13281,5 @@ console.log('%c✅ Import universel | ✅ RAG illimité | ✅ PDF Viewer | ✅ G
 }
 .pdf-ai-action-btn:hover{background:var(--accent);color:var(--accent-inv);border-color:var(--accent);}
 </style>
+</body>
+</html>
