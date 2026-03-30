@@ -7072,29 +7072,20 @@ ${_summary}
         }
       }
 
-      // ── STREAMING LIVE — tokens affichés au fur et à mesure ──
-      const streamingBubble = document.createElement('div');
-      streamingBubble.className = 'chat-bubble model streaming-bubble';
-      streamingBubble.innerHTML = '<span class="stream-cursor">▋</span>';
-      G('chat-container').appendChild(streamingBubble);
-      G('chat-container').scrollTop = G('chat-container').scrollHeight;
-      rmTyping(tyId);
+      // ── MODE NON-STREAMING — attendre la réponse complète avant affichage ──
+      // tyId reste visible (indicateur de chargement) pendant toute la génération
 
       let raw = '';
       try {
-        raw = await callMistralStream(
+        raw = await callMistral(
           await buildHistoryWithContextManagement(finalFullContent+(visionCtx?'\n'+visionCtx:'')),
           MISTRAL_MODELS[S.model]?.id||MISTRAL_MODELS.flash.id,
-          4096,
-          streamingBubble
+          4096
         );
-      } catch(streamErr) {
-        // Fallback non-streaming si erreur stream
-        streamingBubble.remove();
-        raw = await callMistral(await buildHistoryWithContextManagement(finalFullContent+(visionCtx?'\n'+visionCtx:'')), MISTRAL_MODELS[S.model]?.id||MISTRAL_MODELS.flash.id);
+      } catch(fetchErr) {
+        raw = 'Erreur lors de la génération : ' + (fetchErr.message||'inconnue');
       }
-      // Remove streaming bubble (will be replaced by proper renderMsg)
-      streamingBubble.remove();
+      rmTyping(tyId);
 
       // Détecter et traiter un brouillon Gmail dans la réponse
       let cleanedRaw=raw;
