@@ -30,6 +30,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<!-- WikiMind v4 — Nouveaux parseurs de fichiers -->
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<!-- jsPDF pour génération PDF côté client -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
 <style>
 :root {
@@ -264,10 +270,8 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 /* Attachment preview */
 #attachment-preview{display:none;padding:8px 20px 4px;gap:8px;flex-wrap:wrap;}
 #attachment-preview.has-files{display:flex;}
-.attach-chip{display:flex;align-items:center;gap:6px;background:var(--select-bg);border:1px solid var(--border2);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;}
+/* .attach-chip — see v4 enhanced section */
 .attach-chip span{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.attach-chip-del{cursor:pointer;color:#aaa;font-size:14px;flex-shrink:0;}
-.attach-chip-del:hover{color:#ef4444;}
 .chat-image{max-width:320px;max-height:240px;border-radius:12px;margin-bottom:8px;object-fit:cover;}
 .user-images-wrap{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-bottom:6px;}
 
@@ -1213,10 +1217,15 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 
 /* ── LOTTIE UPLOAD ANIM ── */
 #lottie-upload-wrap{
-  position:fixed;bottom:130px;right:24px;width:80px;height:80px;
+  position:fixed;bottom:130px;right:24px;width:100px;
   pointer-events:none;display:none;z-index:999;
+  background:rgba(17,17,17,.85);backdrop-filter:blur(12px);
+  border-radius:16px;padding:10px 12px 12px;
+  box-shadow:0 8px 32px rgba(0,0,0,.3);
+  border:1px solid rgba(255,255,255,.1);
 }
 #lottie-upload-wrap.show{display:block;}
+#lottie-anim-inner{width:60px;height:60px;margin:0 auto;}
 
 /* ── FILE PREVIEW IN CHAT (enhanced) ── */
 .chat-file-preview{
@@ -1233,10 +1242,97 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 .chat-file-name{font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .chat-file-meta{font-size:10px;color:#aaa;margin-top:2px;}
 
-/* Enhanced attach chip */
-.attach-chip{display:flex;align-items:center;gap:6px;background:var(--select-bg);border:1px solid var(--border2);border-radius:10px;padding:5px 12px;font-size:11px;font-weight:600;position:relative;overflow:hidden;}
-.attach-chip-type{font-size:14px;flex-shrink:0;}
-.attach-chip-img-preview{width:28px;height:28px;border-radius:5px;object-fit:cover;flex-shrink:0;}
+/* ── ATTACH CHIP v4 — beautiful ── */
+.attach-chip{
+  display:flex;align-items:center;gap:8px;
+  background:var(--select-bg);border:1px solid var(--border2);border-radius:12px;
+  padding:6px 8px 6px 8px;transition:.15s;position:relative;max-width:200px;min-width:120px;
+}
+.attach-chip:hover{border-color:var(--text);}
+.attach-chip-image{border-color:rgba(16,185,129,.25);}
+.attach-chip-pdf{border-color:rgba(239,68,68,.2);}
+.attach-chip-info{flex:1;min-width:0;}
+.attach-chip-name{font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);}
+.attach-chip-type-row{display:flex;align-items:center;margin-top:2px;flex-wrap:wrap;gap:2px;}
+.attach-chip-del{
+  color:#ccc;font-size:14px;cursor:pointer;flex-shrink:0;transition:.15s;
+  width:18px;height:18px;display:flex;align-items:center;justify-content:center;
+  border-radius:50%;font-size:10px;font-weight:900;
+}
+.attach-chip-del:hover{color:#ef4444;background:rgba(239,68,68,.1);}
+
+/* ── PDF VIEWER MODAL ── */
+#pdf-viewer-modal .modal-content{
+  max-width:900px;width:95vw;padding:0;overflow:hidden;
+  max-height:94vh;display:flex;flex-direction:column;
+  border-radius:20px;
+}
+.pdf-viewer-hdr{
+  display:flex;align-items:center;gap:10px;padding:14px 18px;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+  background:var(--sidebar);
+}
+.pdf-viewer-title{font-size:13px;font-weight:800;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pdf-viewer-body{flex:1;overflow:hidden;display:flex;flex-direction:column;background:#525659;}
+#pdf-viewer-canvas-wrap{
+  flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;
+  padding:16px;
+}
+#pdf-viewer-canvas{
+  box-shadow:0 4px 32px rgba(0,0,0,.5);border-radius:4px;max-width:100%;
+  display:block;
+}
+.pdf-viewer-footer{
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  padding:10px 18px;background:var(--sidebar);border-top:1px solid var(--border);
+  flex-shrink:0;
+}
+.pdf-nav-btn{
+  background:var(--select-bg);border:1px solid var(--border2);border-radius:8px;
+  padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;color:var(--text);
+  transition:.15s;font-family:Inter,sans-serif;
+}
+.pdf-nav-btn:hover{background:var(--border);} 
+.pdf-nav-btn:disabled{opacity:.4;cursor:not-allowed;}
+#pdf-page-info{font-size:12px;font-weight:700;color:#888;min-width:80px;text-align:center;}
+.pdf-zoom-btn{
+  background:none;border:1px solid var(--border2);border-radius:8px;
+  padding:4px 10px;font-size:16px;cursor:pointer;color:var(--text);transition:.15s;
+}
+.pdf-zoom-btn:hover{background:var(--select-bg);}
+
+/* ── INLINE DIAGRAM in chat ── */
+.wm-diagram-block{
+  background:var(--select-bg);border:1px solid var(--border2);border-radius:14px;
+  padding:14px 16px;margin:10px 0;overflow:hidden;
+}
+.wm-diagram-label{
+  font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;
+  color:#888;margin-bottom:10px;display:flex;align-items:center;gap:6px;
+}
+.wm-diagram-svg-wrap{overflow:auto;max-height:500px;}
+.wm-diagram-actions{display:flex;gap:8px;margin-top:10px;}
+
+/* ── BEAUTIFUL PDF GENERATION ── */
+.pdf-gen-preview{
+  background:#fff;border-radius:12px;overflow:hidden;
+  box-shadow:0 8px 40px rgba(0,0,0,.15);margin:10px 0;
+}
+
+/* ── IN-CHAT FILE PREVIEW (message) ── */
+.msg-file-chip{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--select-bg);border:1px solid var(--border2);border-radius:12px;
+  padding:8px 12px;margin:4px 4px 4px 0;cursor:pointer;transition:.15s;max-width:220px;
+}
+.msg-file-chip:hover{border-color:var(--text);transform:translateY(-1px);box-shadow:0 2px 12px rgba(0,0,0,.08);}
+.msg-file-chip-icon{font-size:20px;flex-shrink:0;}
+.msg-file-chip-info{flex:1;min-width:0;}
+.msg-file-chip-name{font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.msg-file-chip-type{font-size:9px;color:#aaa;margin-top:1px;font-weight:600;text-transform:uppercase;}
+
+/* attach-chip styles are defined in WikiMind v4 enhanced section below */
+.attach-chip-old-compat{display:flex;align-items:center;gap:6px;}
 
 /* ── ORAMA STATUS ── */
 .orama-indicator{
@@ -1849,7 +1945,9 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
 </div>
 
 <!-- LOTTIE UPLOAD ANIMATION -->
-<div id="lottie-upload-wrap"></div>
+<div id="lottie-upload-wrap">
+  <div id="lottie-upload-label" style="font-size:11px;font-weight:700;color:#fff;text-align:center;margin-top:6px;letter-spacing:.04em;opacity:.9;min-height:16px;transition:opacity .2s;">Chargement…</div>
+</div>
 
 <div id="main-area">
 
@@ -1951,6 +2049,19 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
       <span class="tool-item-label">YouTube sous-titres</span>
       <span class="tool-item-badge tool-badge-pro" id="tool-youtube-badge">Pro</span>
+    </button>
+
+    <!-- ── PDF TOOLS (gratuit tous forfaits) ── -->
+    <div class="tools-section-label" style="margin-top:6px">PDF Tools ✨ Gratuit</div>
+    <button class="tool-item" onclick="openPdfGenTool();closeToolsPanel()" id="tool-pdfgen-btn">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/><line x1="12" y1="12" x2="12" y2="18"/></svg>
+      <span class="tool-item-label">Générateur PDF IA</span>
+      <span class="tool-item-badge" style="background:rgba(34,197,94,.1);color:#16a34a;font-size:9px;font-weight:800;padding:2px 6px;border-radius:20px;">Gratuit</span>
+    </button>
+    <button class="tool-item" onclick="document.getElementById('file-input-docs').click();closeToolsPanel()" id="tool-pdfviewer-btn">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><circle cx="12" cy="15" r="2"/><path d="M9 15s0-3 3-3 3 3 3 3"/></svg>
+      <span class="tool-item-label">PDF Viewer IA</span>
+      <span class="tool-item-badge" style="background:rgba(34,197,94,.1);color:#16a34a;font-size:9px;font-weight:800;padding:2px 6px;border-radius:20px;">Gratuit</span>
     </button>
 
     <div class="tools-section-label" style="margin-top:6px">AI Premium+</div>
@@ -2056,7 +2167,7 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
           </button>
 
           <!-- Bouton + pour les imports -->
-          <button class="inp-icon-btn" id="btn-import-plus" onclick="toggleImportInline(event)" title="Importer" style="display:none">
+          <button class="inp-icon-btn" id="btn-import-plus" onclick="toggleImportInline(event)" title="Importer" style="display:inline-flex">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
           </button>
 
@@ -2077,11 +2188,25 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
               <span class="imp-tooltip">Drive</span>
             </div>
             <!-- Fichier appareil — tous formats selon forfait -->
-            <div class="imp-btn-wrap" id="imp-wrap-device" style="display:none">
+            <div class="imp-btn-wrap" id="imp-wrap-device">
               <button class="inp-icon-btn" onclick="triggerSmartImport();closeImportInline()" title="Importer un fichier">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               </button>
               <span class="imp-tooltip">Fichier</span>
+            </div>
+            <!-- Image -->
+            <div class="imp-btn-wrap">
+              <button class="inp-icon-btn" onclick="triggerImageImport();closeImportInline()" title="Importer une image">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </button>
+              <span class="imp-tooltip">Image</span>
+            </div>
+            <!-- Audio/Vidéo -->
+            <div class="imp-btn-wrap">
+              <button class="inp-icon-btn" onclick="triggerMediaImport();closeImportInline()" title="Importer audio/vidéo">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </button>
+              <span class="imp-tooltip">Média</span>
             </div>
           </div><!-- end import-inline-group -->
 
@@ -2135,7 +2260,7 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
     <div id="canvas-mode-bar" style="display:none"></div>
   </div>
 
-  <input type="file" id="file-input-docs" accept=".pdf,.odt,.ods,.odp,.txt,.md,.csv,.docx,.xlsx,.pptx" style="display:none" multiple onchange="onFileImport(event)">
+  <input type="file" id="file-input-docs" accept=".pdf,.odt,.ods,.odp,.txt,.md,.csv,.tsv,.docx,.xlsx,.xls,.pptx,.ppt,.doc,.rtf,.epub,.json,.xml,.html,.htm,.svg,.py,.js,.ts,.jsx,.tsx,.css,.scss,.java,.c,.cpp,.h,.rs,.go,.php,.rb,.sh,.yaml,.yml,.toml,.ini,.log,.conf,.cfg,.env" style="display:none" multiple onchange="onFileImport(event)">
   <input type="file" id="file-input-images" accept="image/*" style="display:none" multiple onchange="onImageImport(event)">
   <input type="file" id="file-input-media" accept="video/*,audio/*" style="display:none" multiple onchange="onMediaImport(event)">
 </div>
@@ -4636,9 +4761,32 @@ function renderMsg(msg, doScroll=true){
     }
     const div=document.createElement('div'); div.className='chat-bubble user'; div.innerHTML=esc(msg.content).replace(/\n/g,'<br>'); wrap.appendChild(div);
     if(msg.attachmentName){
-      const pill=document.createElement('div'); pill.style.cssText='display:flex;align-items:center;gap:5px;font-size:10px;color:#aaa;margin-top:4px;justify-content:flex-end';
-      pill.innerHTML=`<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>${esc(msg.attachmentName)}`;
-      wrap.appendChild(pill);
+      // Beautiful file chip(s) in message
+      const names=Array.isArray(msg.attachmentName)?msg.attachmentName:[msg.attachmentName];
+      const attRow=document.createElement('div');
+      attRow.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;justify-content:flex-end;';
+      names.forEach(name=>{
+        const ext=(name||'').split('.').pop().toLowerCase();
+        const meta=getFileMeta(name,'text');
+        const chip=document.createElement('div');
+        chip.className='msg-file-chip';
+        chip.title=name;
+        chip.innerHTML=`<div class="msg-file-chip-icon">${meta.icon}</div>
+          <div class="msg-file-chip-info">
+            <div class="msg-file-chip-name">${esc(name)}</div>
+            <div class="msg-file-chip-type" style="color:${meta.color}">${meta.label}</div>
+          </div>`;
+        // If PDF, clicking opens viewer
+        if(ext==='pdf'){
+          chip.onclick=()=>{
+            const att=S.attachments.find(a=>a.name===name);
+            if(att&&att.pdfData) openPdfViewer(att.pdfData, name);
+            else toast('Ré-importez le PDF pour l\'aperçu interactif');
+          };
+        }
+        attRow.appendChild(chip);
+      });
+      wrap.appendChild(attRow);
     }
     const ua=document.createElement('div'); ua.className='user-msg-actions';
     const hasBranches=msg._branchHistory&&msg._branchHistory.length>0;
@@ -5097,23 +5245,90 @@ function showTyping(){
 }
 function rmTyping(id){const el=G(id);if(el)el.remove();}
 
-// ── ATTACHMENTS ──
+// ── FORMAT ICONS & COLORS for attachments ──
+const FILE_META={
+  pdf:{icon:'📕',color:'#ef4444',bg:'rgba(239,68,68,.1)',label:'PDF'},
+  docx:{icon:'📘',color:'#2563eb',bg:'rgba(37,99,235,.1)',label:'DOCX'},
+  doc:{icon:'📘',color:'#2563eb',bg:'rgba(37,99,235,.1)',label:'DOC'},
+  xlsx:{icon:'📗',color:'#16a34a',bg:'rgba(22,163,74,.1)',label:'XLSX'},
+  xls:{icon:'📗',color:'#16a34a',bg:'rgba(22,163,74,.1)',label:'XLS'},
+  ods:{icon:'📗',color:'#16a34a',bg:'rgba(22,163,74,.1)',label:'ODS'},
+  csv:{icon:'🗂️',color:'#0891b2',bg:'rgba(8,145,178,.1)',label:'CSV'},
+  tsv:{icon:'🗂️',color:'#0891b2',bg:'rgba(8,145,178,.1)',label:'TSV'},
+  pptx:{icon:'📙',color:'#ea580c',bg:'rgba(234,88,12,.1)',label:'PPTX'},
+  ppt:{icon:'📙',color:'#ea580c',bg:'rgba(234,88,12,.1)',label:'PPT'},
+  txt:{icon:'📄',color:'#6b7280',bg:'rgba(107,114,128,.1)',label:'TXT'},
+  md:{icon:'📝',color:'#7c3aed',bg:'rgba(124,58,237,.1)',label:'MD'},
+  json:{icon:'🔧',color:'#d97706',bg:'rgba(217,119,6,.1)',label:'JSON'},
+  py:{icon:'🐍',color:'#3b82f6',bg:'rgba(59,130,246,.1)',label:'PY'},
+  js:{icon:'⚡',color:'#eab308',bg:'rgba(234,179,8,.1)',label:'JS'},
+  ts:{icon:'💎',color:'#3b82f6',bg:'rgba(59,130,246,.1)',label:'TS'},
+  html:{icon:'🌐',color:'#f97316',bg:'rgba(249,115,22,.1)',label:'HTML'},
+  css:{icon:'🎨',color:'#8b5cf6',bg:'rgba(139,92,246,.1)',label:'CSS'},
+  xml:{icon:'📋',color:'#6b7280',bg:'rgba(107,114,128,.1)',label:'XML'},
+  svg:{icon:'🖼️',color:'#ec4899',bg:'rgba(236,72,153,.1)',label:'SVG'},
+  epub:{icon:'📚',color:'#0ea5e9',bg:'rgba(14,165,233,.1)',label:'EPUB'},
+  rtf:{icon:'📄',color:'#9ca3af',bg:'rgba(156,163,175,.1)',label:'RTF'},
+  odt:{icon:'📄',color:'#2563eb',bg:'rgba(37,99,235,.1)',label:'ODT'},
+  mp3:{icon:'🎵',color:'#ec4899',bg:'rgba(236,72,153,.1)',label:'MP3'},
+  mp4:{icon:'🎬',color:'#7c3aed',bg:'rgba(124,58,237,.1)',label:'MP4'},
+  wav:{icon:'🎵',color:'#ec4899',bg:'rgba(236,72,153,.1)',label:'WAV'},
+  image:{icon:'🖼️',color:'#10b981',bg:'rgba(16,185,129,.1)',label:'IMG'},
+};
+function getFileMeta(name, type){
+  if(type==='image') return FILE_META.image;
+  if(type==='media'){
+    const ext=(name||'').split('.').pop().toLowerCase();
+    return FILE_META[ext]||{icon:'🎬',color:'#7c3aed',bg:'rgba(124,58,237,.1)',label:ext.toUpperCase()};
+  }
+  const ext=(name||'').split('.').pop().toLowerCase();
+  return FILE_META[ext]||{icon:'📄',color:'#6b7280',bg:'rgba(107,114,128,.1)',label:ext.toUpperCase()||'FILE'};
+}
+
 function updateAttachmentPreview(){
   const prev=G('attachment-preview');
   if(!S.attachments.length){prev.classList.remove('has-files');prev.innerHTML='';return;}
   prev.classList.add('has-files');
   prev.innerHTML=S.attachments.map((a,i)=>{
+    const meta=getFileMeta(a.name, a.type);
     const isImage=a.type==='image';
-    const isMedia=a.type==='media';
     const isPdf=a.name&&a.name.toLowerCase().endsWith('.pdf');
-    const icon=isMedia?'\u{1F3AC}':isImage?'':'\u{1F4C4}';
-    if(isPdf&&a.pdfThumb){return `<div class="attach-chip"><img src="${a.pdfThumb}" class="attach-chip-img-preview" style="width:32px;height:40px;object-fit:cover;border-radius:4px;" alt="PDF"><span class="attach-chip-type" style="font-size:10px;">PDF</span><span style="font-size:11px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(a.name)}</span><span onclick="S.attachments.splice(${i},1);updateAttachmentPreview()" style="cursor:pointer;color:#aaa;font-size:16px;flex-shrink:0;">×</span></div>`;}
-    const imgTag=isImage?`<img src="${a.content}" class="attach-chip-img-preview" alt="">`:'';
-    const typeLabel=isImage?'Image':isMedia?'Média':a.name.split('.').pop().toUpperCase()||'Fichier';
-    return `<div class="attach-chip">
-      ${isImage?imgTag:`<span class="attach-chip-type">${icon}</span>`}
-      <span style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.name)}</span>
-      <span style="font-size:9px;color:#aaa;font-weight:700;text-transform:uppercase">${typeLabel}</span>
+
+    if(isImage){
+      return `<div class="attach-chip attach-chip-image" title="${esc(a.name)}">
+        <img src="${a.content}" class="attach-chip-img-preview" alt="${esc(a.name)}" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0;">
+        <div class="attach-chip-info">
+          <div class="attach-chip-name">${esc(a.name)}</div>
+          <div class="attach-chip-type-row">
+            <span style="background:${meta.bg};color:${meta.color};font-size:9px;font-weight:800;padding:1px 6px;border-radius:20px;letter-spacing:.04em">${a.compressed?'Compressé':'Image'}</span>
+          </div>
+        </div>
+        <span class="attach-chip-del" onclick="removeAttachment(${i})">✕</span>
+      </div>`;
+    }
+    if(isPdf&&a.pdfThumb){
+      return `<div class="attach-chip attach-chip-pdf" title="${esc(a.name)}" onclick="openAttachmentPreview(${i})" style="cursor:pointer;">
+        <img src="${a.pdfThumb}" alt="PDF" style="width:36px;height:46px;object-fit:cover;border-radius:6px;flex-shrink:0;border:1px solid rgba(239,68,68,.2);">
+        <div class="attach-chip-info">
+          <div class="attach-chip-name">${esc(a.name)}</div>
+          <div class="attach-chip-type-row">
+            <span style="background:rgba(239,68,68,.1);color:#ef4444;font-size:9px;font-weight:800;padding:1px 6px;border-radius:20px;">PDF</span>
+            <span style="font-size:9px;color:#aaa;margin-left:4px;">👁 Aperçu</span>
+          </div>
+        </div>
+        <span class="attach-chip-del" onclick="event.stopPropagation();removeAttachment(${i})">✕</span>
+      </div>`;
+    }
+    return `<div class="attach-chip" title="${esc(a.name)}">
+      <div style="width:38px;height:38px;border-radius:10px;background:${meta.bg};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${meta.icon}</div>
+      <div class="attach-chip-info">
+        <div class="attach-chip-name">${esc(a.name)}</div>
+        <div class="attach-chip-type-row">
+          <span style="background:${meta.bg};color:${meta.color};font-size:9px;font-weight:800;padding:1px 6px;border-radius:20px;letter-spacing:.04em">${meta.label}</span>
+          ${a.type==='media'?'<span style="font-size:9px;color:#aaa;margin-left:4px;">🎙 Transcrit</span>':''}
+          ${a.content&&a.content.includes('Orama')&&a.content.includes('indexé')?'<span style="font-size:9px;color:#7c3aed;margin-left:4px;">🧠 RAG</span>':''}
+        </div>
+      </div>
       <span class="attach-chip-del" onclick="removeAttachment(${i})">✕</span>
     </div>`;
   }).join('');
@@ -5174,92 +5389,342 @@ function importOfficeFile(id){
 }
 
 // ── FILE / IMAGE IMPORT ──
-function triggerFileImport(){if(S.plan<3){toast('Import fichiers — plan AI Pro requis');openPlansOverlay();return;}G('file-input-docs').click();}
+function triggerFileImport(){G('file-input-docs').click();}
+function triggerSmartImport(){G('file-input-docs').click();}
 async function onFileImport(e){
+  const files=Array.from(e.target.files);
+  if(!files.length) return;
   showLottieUpload();
-  for(const file of Array.from(e.target.files)){
+  for(const file of files){
+    const ext=file.name.split('.').pop().toLowerCase();
+    // Images → flux image compressé
+    if(['jpg','jpeg','png','webp','gif','bmp','avif','svg','tiff'].includes(ext)){
+      setUploadLabel('Compression image…');
+      try{
+        const dataUrl=await compressImage(file);
+        S.attachments.push({type:'image',name:file.name,content:dataUrl,compressed:true});
+        toast(`✓ Image compressée : ${file.name}`);
+      }catch(err){ toast(`Erreur image ${file.name}: ${err.message.substring(0,40)}`); }
+      continue;
+    }
+    // Audio/Vidéo → Whisper
+    if(['mp3','wav','ogg','m4a','mp4','webm','mov','avi'].includes(ext)){
+      if(!window._transformersPipeline){ openModal('whisper-modal'); continue; }
+      setUploadLabel('Transcription…');
+      try{
+        const transcript=await transcribeWithWhisper(file);
+        S.attachments.push({type:'media',name:file.name,content:transcript,hidden:true});
+        toast(`✓ ${file.name} transcrit`);
+      }catch(err){ toast(`Erreur transcription: ${err.message.substring(0,40)}`); }
+      continue;
+    }
+    // Tous les autres formats → readFileContent
     try{
       const content=await readFileContent(file);
-      const att={type:'text',name:file.name,content};
-      // Generate PDF thumbnail
-      if(file.name.toLowerCase().endsWith('.pdf')&&window.pdfjsLib){
+      if(content===null) continue; // géré ailleurs
+      const att={type:'text',name:file.name,content,fileExt:ext};
+      // Thumbnail PDF
+      if(ext==='pdf'&&window.pdfjsLib){
         try{
           const ab=await file.arrayBuffer();
           const pdf=await pdfjsLib.getDocument({data:ab}).promise;
           const page=await pdf.getPage(1);
-          const vp=page.getViewport({scale:0.4});
+          const vp=page.getViewport({scale:0.5});
           const canvas=document.createElement('canvas');
-          canvas.width=vp.width;canvas.height=vp.height;
+          canvas.width=vp.width; canvas.height=vp.height;
           await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
-          att.pdfThumb=canvas.toDataURL('image/jpeg',0.7);
+          att.pdfThumb=canvas.toDataURL('image/jpeg',0.75);
+          att.pdfData=await file.arrayBuffer();
+          att.pdfName=file.name;
         }catch(te){}
       }
       S.attachments.push(att);
-    }catch(err){toast(`Erreur lecture ${file.name}: ${err.message.substring(0,40)}`);}
+    }catch(err){
+      toast(`Erreur lecture ${file.name}: ${err.message.substring(0,50)}`);
+    }
   }
   hideLottieUpload();
-  updateAttachmentPreview(); e.target.value='';
+  updateAttachmentPreview();
+  e.target.value='';
 }
+// ══════════════════════════════════════════════════════════════
+// WIKIMIND v4 — SYSTÈME D'IMPORT UNIVERSEL
+// ══════════════════════════════════════════════════════════════
+
+// Mise à jour du label de progression Lottie
+function setUploadLabel(txt){
+  const el=document.getElementById('lottie-upload-label');
+  if(el) el.textContent=txt;
+}
+
 async function readFileContent(file){
   const ext=file.name.split('.').pop().toLowerCase();
+  const name=file.name;
+
+  // ── PDF : illimité + RAG Orama obligatoire si >10k chars ──
   if(ext==='pdf'){
     if(typeof pdfjsLib==='undefined') throw new Error('PDF.js non chargé');
-    const ab=await file.arrayBuffer(); const pdf=await pdfjsLib.getDocument({data:ab}).promise;
-    const totalPages = pdf.numPages;
-    // Plan-based PDF page limits
-    // Free/Plus: no PDF. Pro: ≤10 pages. Premium: ≤50 pages with Orama. Premium+: unlimited with Orama
-    const planLimits = {1:0, 2:0, 3:10, 4:50, 5:9999};
-    const limit = planLimits[S.plan] ?? 0;
-    if(limit === 0){ throw new Error('Import PDF — plan AI Pro requis minimum'); }
-    const pagesToRead = Math.min(totalPages, limit);
-    if(totalPages > limit){
-      toast(`📄 PDF tronqué à ${limit} pages (votre forfait). ${totalPages} pages au total.`);
-    }
-    // Show Lottie animation
-    showLottieUpload();
+    setUploadLabel('Lecture PDF…');
+    const ab=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:ab}).promise;
+    const totalPages=pdf.numPages;
+    setUploadLabel(`Extraction PDF… (0/${totalPages} pages)`);
     let text='';
-    for(let p=1;p<=pagesToRead;p++){
+    for(let p=1;p<=totalPages;p++){
+      setUploadLabel(`Extraction PDF… (${p}/${totalPages} pages)`);
       const page=await pdf.getPage(p);
       const tc=await page.getTextContent();
       text+=tc.items.map(i=>i.str).join(' ')+'\n';
     }
-    // For Premium (plan 4) and Premium+ (plan 5): use Orama for chunking & indexing
-    if(S.plan >= 4 && totalPages > 5){
+    // RAG obligatoire si >10 000 chars
+    if(text.length>10000){
+      setUploadLabel('Indexation RAG Orama…');
       try{
-        const oramaText = await indexPdfWithOrama(file.name, text);
-        hideLottieUpload();
-        return `[PDF: ${file.name} — ${pagesToRead}/${totalPages} pages — indexé avec Orama]\n${oramaText}`;
+        const summary=await indexPdfWithOrama(name, text);
+        return summary;
       }catch(oe){ console.warn('Orama index failed:', oe); }
     }
-    hideLottieUpload();
-    return `[PDF: ${file.name} — ${pagesToRead}/${totalPages} pages]\n${text}`;
+    return `[PDF: ${name} — ${totalPages} pages]\n${text}`;
   }
-  showLottieUpload();
-  const result = await new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>res(`[Fichier: ${file.name}]\n${ev.target.result}`);r.onerror=()=>rej(new Error('Lecture impossible'));r.readAsText(file,'UTF-8');});
-  hideLottieUpload();
-  return result;
+
+  // ── DOCX (Word) — Mammoth.js ──
+  if(ext==='docx'||ext==='doc'){
+    if(typeof mammoth==='undefined') throw new Error('Mammoth.js non chargé');
+    setUploadLabel('Lecture Word…');
+    const ab=await file.arrayBuffer();
+    const result=await mammoth.extractRawText({arrayBuffer:ab});
+    const text=result.value||'';
+    return `[Document Word: ${name}]\n${text}`;
+  }
+
+  // ── XLSX / XLS (Excel) — SheetJS ──
+  if(ext==='xlsx'||ext==='xls'||ext==='ods'){
+    if(typeof XLSX==='undefined') throw new Error('SheetJS non chargé');
+    setUploadLabel('Lecture Excel…');
+    const ab=await file.arrayBuffer();
+    const wb=XLSX.read(ab,{type:'array'});
+    const sheets=wb.SheetNames;
+    let allText='';
+    for(const sheetName of sheets){
+      const ws=wb.Sheets[sheetName];
+      const csv=XLSX.utils.sheet_to_csv(ws);
+      allText+=`\n=== Feuille : ${sheetName} ===\n${csv}\n`;
+    }
+    return `[Fichier Excel: ${name} — ${sheets.length} feuille(s)]\n${allText}`;
+  }
+
+  // ── CSV ──
+  if(ext==='csv'||ext==='tsv'){
+    setUploadLabel('Lecture CSV…');
+    const text=await file.text();
+    // Si CSV volumineux, résume
+    if(text.length>15000){
+      const lines=text.split('\n');
+      const header=lines[0]||'';
+      const preview=lines.slice(0,50).join('\n');
+      return `[CSV: ${name} — ${lines.length} lignes]\nEn-tête: ${header}\n\nAperçu (50 premières lignes):\n${preview}\n\n[... ${lines.length-50} lignes supplémentaires — posez des questions sur les données]`;
+    }
+    return `[CSV: ${name}]\n${text}`;
+  }
+
+  // ── PPTX (PowerPoint) — extraction texte basique ──
+  if(ext==='pptx'||ext==='ppt'){
+    setUploadLabel('Lecture PowerPoint…');
+    try{
+      const ab=await file.arrayBuffer();
+      // Extraction via ZIP (PPTX = ZIP)
+      const text=await extractPptxText(ab, name);
+      return text;
+    }catch(e){
+      // Fallback texte
+      const text=await file.text().catch(()=>'');
+      return `[PowerPoint: ${name}]\n${text.replace(/<[^>]+>/g,' ').substring(0,20000)}`;
+    }
+  }
+
+  // ── Images — compression Canvas avant stockage ──
+  if(['jpg','jpeg','png','webp','gif','bmp','tiff','avif','svg'].includes(ext)){
+    setUploadLabel('Compression image…');
+    const compressed=await compressImage(file);
+    return compressed; // retourne dataURL compressé (stocké comme pièce jointe image)
+  }
+
+  // ── Audio / Vidéo — retourner null (géré séparément par Whisper) ──
+  if(['mp3','wav','ogg','m4a','mp4','webm','mov','avi'].includes(ext)){
+    return null; // Whisper gère ça
+  }
+
+  // ── JSON ──
+  if(ext==='json'){
+    setUploadLabel('Lecture JSON…');
+    const text=await file.text();
+    try{
+      const parsed=JSON.parse(text);
+      const pretty=JSON.stringify(parsed,null,2);
+      return `[JSON: ${name}]\n${pretty.substring(0,30000)}`;
+    }catch(e){
+      return `[JSON (invalide): ${name}]\n${text.substring(0,30000)}`;
+    }
+  }
+
+  // ── XML / HTML / SVG — extraction texte ──
+  if(['xml','html','htm','svg'].includes(ext)){
+    setUploadLabel('Lecture fichier…');
+    const text=await file.text();
+    const stripped=text.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+    return `[${ext.toUpperCase()}: ${name}]\n${stripped.substring(0,20000)}`;
+  }
+
+  // ── EPUB — extraction basique ──
+  if(ext==='epub'){
+    setUploadLabel('Lecture EPUB…');
+    try{
+      const ab=await file.arrayBuffer();
+      const text=await extractEpubText(ab, name);
+      return text;
+    }catch(e){
+      return `[EPUB: ${name}]\nErreur d'extraction: ${e.message}`;
+    }
+  }
+
+  // ── RTF ──
+  if(ext==='rtf'){
+    setUploadLabel('Lecture RTF…');
+    const text=await file.text();
+    const stripped=text.replace(/\{\\[^}]+\}|\\[a-z]+\d*\s?|[{}]/g,' ').replace(/\s+/g,' ').trim();
+    return `[RTF: ${name}]\n${stripped.substring(0,20000)}`;
+  }
+
+  // ── ODT / ODS / ODP — LibreOffice (texte brut) ──
+  if(['odt','ods','odp','odg'].includes(ext)){
+    setUploadLabel('Lecture OpenDocument…');
+    try{
+      const ab=await file.arrayBuffer();
+      // ODT = ZIP avec content.xml
+      const text=await extractOdtText(ab, name);
+      return text;
+    }catch(e){
+      const t=await file.text().catch(()=>'');
+      return `[${ext.toUpperCase()}: ${name}]\n${t.replace(/<[^>]+>/g,' ').substring(0,15000)}`;
+    }
+  }
+
+  // ── Fichiers texte standards ──
+  if(['txt','md','markdown','log','py','js','ts','jsx','tsx','css','scss','html','java','c','cpp','h','rs','go','php','rb','sh','bash','yaml','yml','toml','ini','env','conf','cfg'].includes(ext)){
+    setUploadLabel(`Lecture ${ext.toUpperCase()}…`);
+    const text=await file.text();
+    const label=ext==='md'||ext==='markdown'?'Markdown':ext==='txt'?'Texte':ext.toUpperCase();
+    // RAG si >10k
+    if(text.length>10000){
+      setUploadLabel('Indexation RAG…');
+      try{ await indexPdfWithOrama(name, text); }catch(e){}
+    }
+    return `[${label}: ${name}]\n${text}`;
+  }
+
+  // ── Fallback universel ──
+  setUploadLabel('Lecture fichier…');
+  try{
+    const text=await file.text();
+    return `[Fichier: ${name}]\n${text.substring(0,20000)}`;
+  }catch(e){
+    throw new Error(`Impossible de lire ${name}: format non supporté`);
+  }
 }
 
-// ── ORAMA PDF INDEXING ──
+// ── COMPRESSION IMAGE (Canvas API) ──
+async function compressImage(file){
+  return new Promise((resolve, reject)=>{
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      const MAX=1024;
+      let w=img.naturalWidth, h=img.naturalHeight;
+      if(w>MAX||h>MAX){
+        const ratio=Math.min(MAX/w,MAX/h);
+        w=Math.round(w*ratio); h=Math.round(h*ratio);
+      }
+      const canvas=document.createElement('canvas');
+      canvas.width=w; canvas.height=h;
+      const ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      const ext=file.name.split('.').pop().toLowerCase();
+      const mimeType=ext==='png'?'image/png':'image/jpeg';
+      const quality=mimeType==='image/jpeg'?0.75:undefined;
+      resolve(quality!==undefined?canvas.toDataURL(mimeType,quality):canvas.toDataURL(mimeType));
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(url); reject(new Error('Impossible de lire l\'image')); };
+    img.src=url;
+  });
+}
+
+// ── EXTRACTION TEXTE PPTX (ZIP parsing) ──
+async function extractPptxText(arrayBuffer, name){
+  // Utilise JSZip si disponible, sinon texte brut
+  if(typeof JSZip!=='undefined'){
+    const zip=await JSZip.loadAsync(arrayBuffer);
+    let text='';
+    const slideFiles=Object.keys(zip.files).filter(f=>f.match(/ppt\/slides\/slide\d+\.xml$/)).sort();
+    for(const sf of slideFiles){
+      const xml=await zip.files[sf].async('string');
+      const clean=xml.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+      text+=clean+'\n';
+    }
+    return `[PowerPoint: ${name} — ${slideFiles.length} diapositives]\n${text.substring(0,25000)}`;
+  }
+  throw new Error('JSZip non disponible');
+}
+
+// ── EXTRACTION TEXTE ODT (ZIP parsing) ──
+async function extractOdtText(arrayBuffer, name){
+  if(typeof JSZip!=='undefined'){
+    const zip=await JSZip.loadAsync(arrayBuffer);
+    if(zip.files['content.xml']){
+      const xml=await zip.files['content.xml'].async('string');
+      const clean=xml.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+      return `[ODT: ${name}]\n${clean.substring(0,25000)}`;
+    }
+  }
+  throw new Error('JSZip non disponible');
+}
+
+// ── EXTRACTION TEXTE EPUB (ZIP parsing) ──
+async function extractEpubText(arrayBuffer, name){
+  if(typeof JSZip!=='undefined'){
+    const zip=await JSZip.loadAsync(arrayBuffer);
+    let text='';
+    const htmlFiles=Object.keys(zip.files).filter(f=>f.match(/\.(html|xhtml|htm)$/i));
+    for(const hf of htmlFiles.slice(0,20)){
+      const html=await zip.files[hf].async('string');
+      const clean=html.replace(/<[^>]+>/g,' ').replace(/&[a-z]+;/g,' ').replace(/\s+/g,' ').trim();
+      text+=clean+'\n';
+    }
+    return `[EPUB: ${name}]\n${text.substring(0,30000)}`;
+  }
+  throw new Error('JSZip non disponible');
+}
+
+// ── ORAMA PDF/DOC INDEXING — illimité tous forfaits ──
 window._oramaDb = null;
 async function indexPdfWithOrama(filename, text){
   try{
-    if(!window.orama) return text;
+    if(!window.orama) return text.substring(0,8000);
     const {create, insert, search} = window.orama;
-    // Create fresh DB for this document
     const db = await create({ schema: { id:'string', content:'string', page:'number' } });
-    // Split into chunks ~500 chars
-    const chunkSize = 500;
+    const chunkSize = 800;
     const chunks = [];
     for(let i=0;i<text.length;i+=chunkSize){
       chunks.push({id:'chunk_'+i, content:text.substring(i,i+chunkSize), page:Math.floor(i/(chunkSize*5))+1});
     }
     for(const chunk of chunks){ await insert(db, chunk); }
     window._oramaDb = { db, filename, search };
-    toast(`✓ PDF indexé (${chunks.length} segments Orama)`);
-    // Return first 8000 chars + note about Orama
-    return text.substring(0,8000) + (text.length>8000 ? `\n\n[... ${text.length-8000} caractères supplémentaires indexés par Orama — posez des questions pour interroger le document complet]`:'');
-  }catch(e){ console.warn('Orama:', e); return text; }
+    const charCount=text.length;
+    const wc=Math.round(charCount/5);
+    toast(`✓ Document indexé — ${chunks.length} segments Orama (${wc.toLocaleString()} mots)`);
+    const summary=text.substring(0,6000);
+    return `[Document: ${filename} — ${charCount.toLocaleString()} caractères — ${chunks.length} segments indexés par Orama RAG]\n\nRésumé du début du document :\n${summary}\n\n⚠️ Ce document est volumineux. Posez vos questions dessus — l'IA utilisera automatiquement la recherche RAG pour trouver les passages pertinents.`;
+  }catch(e){ console.warn('Orama:', e); return text.substring(0,8000); }
 }
 
 async function queryOramaForContext(question){
@@ -5332,12 +5797,19 @@ async function initConvMemory(){
 }
 // Start on page load
 setTimeout(()=>initConvMemory().catch(()=>{}), 3000);
-function triggerImageImport(){if(S.plan<4){toast('Import images — plan AI Premium requis');openPlansOverlay();return;}G('file-input-images').click();}
+function triggerImageImport(){G('file-input-images').click();}
 async function onImageImport(e){
   showLottieUpload();
   for(const file of Array.from(e.target.files)){
-    const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>res(ev.target.result);r.onerror=()=>rej();r.readAsDataURL(file);});
-    S.attachments.push({type:'image',name:file.name,content:dataUrl});
+    setUploadLabel('Compression image…');
+    try{
+      const dataUrl=await compressImage(file);
+      S.attachments.push({type:'image',name:file.name,content:dataUrl,compressed:true});
+    }catch(err){
+      // Fallback non compressé
+      const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>res(ev.target.result);r.onerror=()=>rej();r.readAsDataURL(file);});
+      S.attachments.push({type:'image',name:file.name,content:dataUrl});
+    }
   }
   hideLottieUpload();
   updateAttachmentPreview(); e.target.value='';
@@ -5345,7 +5817,6 @@ async function onImageImport(e){
 
 // ── MEDIA IMPORT (Whisper / Transformers.js) ──
 function triggerMediaImport(){
-  if(S.plan<4){toast('Analyse vidéo/audio — plan AI Premium requis');openPlansOverlay();return;}
   // Si le modèle est déjà chargé, ouvrir directement
   if(window._transformersPipeline){G('file-input-media').click();return;}
   // Sinon afficher la popup de téléchargement
@@ -6249,7 +6720,7 @@ async function sendMsg(overrideText, _prevAssistantMsg=null){
   const mediaDocs=S.attachments.filter(a=>a.type==='media');
   if(docs.length) fullContent+='\n\n'+docs.map(d=>`--- ${d.name} ---\n${d.content.substring(0,8000)}`).join('\n\n');
   if(mediaDocs.length) fullContent+='\n\n[CONTEXTE_MÉDIA — contenu audio/vidéo transcrit automatiquement, invisible pour l\'utilisateur, à utiliser comme contexte]\n'+mediaDocs.map(d=>`--- ${d.name} ---\n${d.content.substring(0,12000)}`).join('\n\n')+'\n[/CONTEXTE_MÉDIA]';
-  const attachmentName=S.attachments.length?S.attachments.map(a=>a.name).join(', '):null;
+  const attachmentName=S.attachments.length?S.attachments.map(a=>a.name):(null);
 
   // Détecter intent Gmail — si connecté et intent détecté, on informe
   const gmailIntent=S.connectors.gmail&&S.gmailToken&&detectEmailIntent(displayText);
@@ -7950,13 +8421,19 @@ function showLottieUpload(){
   const wrap = G('lottie-upload-wrap');
   if(!wrap) return;
   wrap.classList.add('show');
+  // Create inner anim container if not exists
+  if(!G('lottie-anim-inner')){
+    const inner=document.createElement('div');
+    inner.id='lottie-anim-inner';
+    wrap.insertBefore(inner,wrap.firstChild);
+  }
   if(window.lottie && !window._lottieAnim){
     try{
       window._lottieAnim = window.lottie.loadAnimation({
-        container: wrap, renderer: 'svg', loop: true, autoplay: true,
+        container: G('lottie-anim-inner')||wrap, renderer: 'svg', loop: true, autoplay: true,
         path: 'https://assets2.lottiefiles.com/packages/lf20_u4yrau84.json'
       });
-    }catch(e){ wrap.innerHTML='<div style="font-size:28px;display:inline-block">⬆️</div>'; }
+    }catch(e){ const inner=G('lottie-anim-inner'); if(inner) inner.innerHTML='<div style="font-size:28px;text-align:center">⬆️</div>'; }
   } else if(window._lottieAnim){ try{ window._lottieAnim.play(); }catch(e){} }
 }
 function hideLottieUpload(){
@@ -7964,6 +8441,7 @@ function hideLottieUpload(){
   if(!wrap) return;
   wrap.classList.remove('show');
   if(window._lottieAnim) try{ window._lottieAnim.stop(); }catch(e){}
+  setUploadLabel('Chargement…');
 }
 
 // ── NEWS TOOL ──
@@ -11544,7 +12022,394 @@ window.openWikipediaImageSearch = openWikipediaImageSearch;
 window.searchWikipediaImages = searchWikipediaImages;
 window.insertWikiImageToChat = insertWikiImageToChat;
 
-console.log('%cWikiMind AI','color:#111;font-family:Inter,sans-serif;font-size:20px;font-weight:900;font-style:italic');
+// ══════════════════════════════════════════════════════════════
+// WIKIMIND v4 — PDF VIEWER
+// ══════════════════════════════════════════════════════════════
+window._pdfViewer={pdf:null,page:1,total:1,zoom:1.2,data:null,name:''};
+
+async function openPdfViewer(data, name){
+  if(!window.pdfjsLib){ toast('PDF.js non chargé'); return; }
+  window._pdfViewer.name=name||'Document.pdf';
+  window._pdfViewer.data=data;
+  window._pdfViewer.page=1;
+  window._pdfViewer.zoom=1.2;
+  G('pdf-viewer-filename').textContent=name||'Document PDF';
+  try{
+    showLottieUpload(); setUploadLabel('Ouverture PDF…');
+    let ab=data;
+    if(typeof data==='string'&&data.startsWith('data:')){
+      const b64=data.split(',')[1];
+      const bin=atob(b64);
+      ab=new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++) ab[i]=bin.charCodeAt(i);
+    }
+    const pdf=await pdfjsLib.getDocument({data:ab}).promise;
+    window._pdfViewer.pdf=pdf;
+    window._pdfViewer.total=pdf.numPages;
+    hideLottieUpload();
+    openModal('pdf-viewer-modal');
+    await renderPdfPage(1);
+  }catch(e){ hideLottieUpload(); toast('Erreur ouverture PDF: '+e.message); }
+}
+
+async function renderPdfPage(pageNum){
+  const v=window._pdfViewer;
+  if(!v.pdf) return;
+  pageNum=Math.max(1,Math.min(pageNum,v.total));
+  v.page=pageNum;
+  const page=await v.pdf.getPage(pageNum);
+  const vp=page.getViewport({scale:v.zoom});
+  const canvas=G('pdf-viewer-canvas');
+  const ctx=canvas.getContext('2d');
+  canvas.width=vp.width; canvas.height=vp.height;
+  await page.render({canvasContext:ctx,viewport:vp}).promise;
+  G('pdf-page-info').textContent=`Page ${pageNum}/${v.total}`;
+  G('pdf-prev-btn').disabled=(pageNum<=1);
+  G('pdf-next-btn').disabled=(pageNum>=v.total);
+}
+
+function pdfViewerPage(delta){
+  const v=window._pdfViewer;
+  renderPdfPage(v.page+delta);
+}
+function pdfViewerZoom(delta){
+  const v=window._pdfViewer;
+  v.zoom=Math.max(0.5,Math.min(3.0,v.zoom+delta));
+  renderPdfPage(v.page);
+}
+function downloadCurrentPdf(){
+  const v=window._pdfViewer;
+  if(!v.data) return;
+  let url;
+  if(v.data instanceof ArrayBuffer||v.data instanceof Uint8Array){
+    url=URL.createObjectURL(new Blob([v.data],{type:'application/pdf'}));
+  } else if(typeof v.data==='string'&&v.data.startsWith('data:')){
+    url=v.data;
+  } else return;
+  const a=document.createElement('a'); a.href=url; a.download=v.name||'document.pdf'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+function pdfAIAction(prompt){
+  const v=window._pdfViewer;
+  closeModal('pdf-viewer-modal');
+  // Find the PDF attachment
+  const pdfAtt=S.attachments.find(a=>a.name===v.name)||S.attachments.find(a=>a.name&&a.name.endsWith('.pdf'));
+  const ctx=pdfAtt?`[En référence au PDF "${v.name}"]\n`:'';
+  const inp=G('user-input');
+  if(inp){ inp.value=ctx+prompt; inp.dispatchEvent(new Event('input')); inp.focus(); }
+}
+function openPdfAIChat(){
+  closeModal('pdf-viewer-modal');
+  const inp=G('user-input');
+  if(inp){ inp.focus(); inp.value=`Analyse le PDF "${window._pdfViewer.name}" : `; inp.dispatchEvent(new Event('input')); }
+}
+
+// ── Open attachment preview (click on PDF chip) ──
+function openAttachmentPreview(idx){
+  const att=S.attachments[idx];
+  if(!att) return;
+  if(att.name&&att.name.toLowerCase().endsWith('.pdf')){
+    if(att.pdfData){ openPdfViewer(att.pdfData, att.name); return; }
+    if(att.content){
+      // Re-extract from content string (fallback)
+      toast('Aperçu PDF disponible après ré-import du fichier');
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// WIKIMIND v4 — GÉNÉRATEUR PDF IA BEAU
+// ══════════════════════════════════════════════════════════════
+window._lastGeneratedPdfHtml='';
+window._lastGeneratedPdfTitle='';
+
+const PDF_TEMPLATES={
+  professional:{
+    headerBg:'#1e293b',headerColor:'#fff',accentColor:'#3b82f6',
+    bodyFont:'Helvetica Neue, Arial, sans-serif',
+    titleSize:'28px',bodySize:'14px',
+  },
+  report:{
+    headerBg:'linear-gradient(135deg,#0f766e,#0284c7)',headerColor:'#fff',accentColor:'#0ea5e9',
+    bodyFont:'Georgia, serif', titleSize:'26px',bodySize:'13px',
+  },
+  invoice:{
+    headerBg:'#f8fafc',headerColor:'#1e293b',accentColor:'#22c55e',
+    bodyFont:'Helvetica Neue, Arial, sans-serif', titleSize:'24px',bodySize:'13px',
+  },
+  contract:{
+    headerBg:'#1e293b',headerColor:'#f8fafc',accentColor:'#8b5cf6',
+    bodyFont:'Georgia, serif', titleSize:'22px',bodySize:'13px',
+  },
+  creative:{
+    headerBg:'linear-gradient(135deg,#ec4899,#f97316)',headerColor:'#fff',accentColor:'#ec4899',
+    bodyFont:'Helvetica Neue, Arial, sans-serif', titleSize:'32px',bodySize:'14px',
+  },
+  minimal:{
+    headerBg:'#fff',headerColor:'#111',accentColor:'#111',
+    bodyFont:'Helvetica Neue, Arial, sans-serif', titleSize:'24px',bodySize:'13px',
+  },
+};
+
+async function generateAIPDF(){
+  const title=G('pdfgen-title').value.trim()||'Document WikiMind AI';
+  const content=G('pdfgen-content').value.trim();
+  const template=G('pdfgen-template').value;
+  if(!content){ toast('Entrez un contenu à transformer'); return; }
+  const btn=G('pdfgen-btn');
+  btn.disabled=true; btn.textContent='⏳ Génération en cours…';
+  try{
+    // Call AI to generate structured document content
+    const aiPrompt=`Tu es un générateur de document professionnel. Génère le contenu HTML d'un document PDF élégant basé sur :
+Titre: "${title}"
+Template: ${template}
+Contenu demandé: "${content}"
+
+Retourne UNIQUEMENT du HTML propre (pas de <html><body><head>) avec :
+- Contenu structuré (h2, h3, p, ul, ol, table si pertinent)
+- Des classes: .doc-section, .doc-table, .doc-highlight
+- Données réalistes et professionnelles
+- Structure logique et complète
+Ne retourne QUE le HTML, sans code block markdown.`;
+
+    const html=await callMistral([
+      {role:'user',content:aiPrompt}
+    ],M_MINI,2000);
+
+    const cleanHtml=html.replace(/```html|```/g,'').trim();
+    window._lastGeneratedPdfHtml=cleanHtml;
+    window._lastGeneratedPdfTitle=title;
+
+    const tpl=PDF_TEMPLATES[template]||PDF_TEMPLATES.professional;
+    const previewHtml=buildPdfHtml(title,cleanHtml,tpl);
+    G('pdfgen-preview-content').innerHTML=previewHtml;
+    G('pdfgen-preview').style.display='block';
+    btn.textContent='✦ Régénérer';
+    btn.disabled=false;
+  }catch(e){
+    toast('Erreur génération: '+e.message);
+    btn.textContent='✦ Générer le PDF avec l\'IA';
+    btn.disabled=false;
+  }
+}
+
+function buildPdfHtml(title,bodyHtml,tpl){
+  const date=new Date().toLocaleDateString('fr-FR',{year:'numeric',month:'long',day:'numeric'});
+  return `
+<div style="font-family:${tpl.bodyFont||'Arial,sans-serif'};color:#111;line-height:1.65;">
+  <div style="background:${tpl.headerBg};color:${tpl.headerColor};padding:32px 36px;margin:-32px -32px 28px;">
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.15em;opacity:.6;margin-bottom:8px;">WikiMind AI · Document généré le ${date}</div>
+    <h1 style="font-size:${tpl.titleSize};font-weight:900;letter-spacing:-.02em;margin:0;line-height:1.1;">${title}</h1>
+    <div style="width:48px;height:3px;background:${tpl.accentColor};border-radius:2px;margin-top:14px;"></div>
+  </div>
+  <div style="font-size:${tpl.bodySize};padding:0 4px;">
+    <style>
+      .doc-section{margin:20px 0;}
+      .doc-section h2{font-size:16px;font-weight:800;color:${tpl.accentColor};border-bottom:2px solid ${tpl.accentColor};padding-bottom:6px;margin-bottom:10px;}
+      .doc-section h3{font-size:14px;font-weight:700;margin:12px 0 6px;}
+      .doc-highlight{background:rgba(59,130,246,.08);border-left:3px solid ${tpl.accentColor};padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0;}
+      .doc-table{width:100%;border-collapse:collapse;margin:12px 0;}
+      .doc-table th{background:${tpl.accentColor};color:#fff;padding:9px 12px;text-align:left;font-size:12px;}
+      .doc-table td{padding:8px 12px;border-bottom:1px solid #e5e7eb;font-size:12px;}
+      .doc-table tr:last-child td{border-bottom:none;}
+      ul{padding-left:1.4em;} li{margin-bottom:5px;}
+      p{margin-bottom:10px;}
+    </style>
+    ${bodyHtml}
+  </div>
+  <div style="margin-top:32px;padding-top:14px;border-top:1px solid #e5e7eb;text-align:center;font-size:10px;color:#9ca3af;">
+    Généré par WikiMind AI — ${date} · wikimind.ai
+  </div>
+</div>`;
+}
+
+async function downloadGeneratedPDF(){
+  const title=window._lastGeneratedPdfTitle||'document-wikimind';
+  const html=window._lastGeneratedPdfHtml;
+  const tpl=PDF_TEMPLATES[G('pdfgen-template')?.value]||PDF_TEMPLATES.professional;
+  const fullHtml=buildPdfHtml(title,html,tpl);
+  const container=document.createElement('div');
+  container.innerHTML=fullHtml;
+  container.style.cssText='position:fixed;left:-9999px;top:0;width:794px;padding:32px;font-family:Arial,sans-serif;background:#fff;';
+  document.body.appendChild(container);
+  try{
+    if(window.html2pdf){
+      await html2pdf().set({
+        margin:[10,10,10,10],
+        filename:title.replace(/[^a-zA-Z0-9\-_àéèêëîïôùûç ]/g,'_')+'.pdf',
+        image:{type:'jpeg',quality:0.95},
+        html2canvas:{scale:2,useCORS:true,letterRendering:true},
+        jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+        pagebreak:{mode:['avoid-all','css','legacy']}
+      }).from(container).save();
+      toast('✓ PDF téléchargé !');
+    }else throw new Error('html2pdf non disponible');
+  }catch(e){
+    // Fallback print
+    const win=window.open('','_blank');
+    win.document.write(`<html><head><title>${title}</title><style>body{margin:0;padding:32px;font-family:Arial,sans-serif;}</style></head><body>${container.innerHTML}</body></html>`);
+    win.document.close(); win.print();
+  }
+  document.body.removeChild(container);
+}
+
+function sendPdfToChat(){
+  closeModal('pdf-gen-modal');
+  const title=window._lastGeneratedPdfTitle||'Document';
+  const html=window._lastGeneratedPdfHtml;
+  const tpl=PDF_TEMPLATES[G('pdfgen-template')?.value]||PDF_TEMPLATES.professional;
+  const fullHtml=buildPdfHtml(title,html,tpl);
+  // Store as attachment for visual display
+  S.attachments.push({type:'text',name:title+'.pdf',content:`[PDF généré: ${title}]\n${html.replace(/<[^>]+>/g,' ')}`,pdfGeneratedHtml:fullHtml,isPdfGenerated:true});
+  updateAttachmentPreview();
+  toast('✓ PDF ajouté comme pièce jointe');
+}
+
+// ── Auto-detect PDF generation request in AI response ──
+function detectAndRenderGeneratedPdf(text){
+  // If AI generates a code block with type "pdf-document" or mentions PDF generation
+  const pdfBlockMatch=text.match(/```pdf-document\n([\s\S]*?)```/);
+  if(pdfBlockMatch){
+    const content=pdfBlockMatch[1];
+    // Open PDF gen modal with content pre-filled
+    G('pdfgen-content').value=content;
+    generateAIPDF();
+    openModal('pdf-gen-modal');
+    return true;
+  }
+  return false;
+}
+
+// ══════════════════════════════════════════════════════════════
+// WIKIMIND v4 — WEB SCRAPING FIABLE (corsproxy.io + Readability)
+// ══════════════════════════════════════════════════════════════
+async function scrapeUrlReliable(url){
+  const proxies=[
+    `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    `https://cors-anywhere.herokuapp.com/${url}`,
+  ];
+  let html='';
+  for(const proxy of proxies){
+    try{
+      const resp=await fetch(proxy,{headers:{'User-Agent':'Mozilla/5.0 WikiMindBot/4.0'}});
+      if(!resp.ok) continue;
+      html=await resp.text();
+      if(html.length>500) break;
+    }catch(e){ continue; }
+  }
+  if(!html) throw new Error('Impossible de récupérer l\'URL (proxies épuisés)');
+  // Extract readable content via DOMParser (Readability-like)
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  // Remove noise elements
+  ['script','style','nav','header','footer','aside','iframe','noscript','figure',
+   '[class*="ad"]','[class*="banner"]','[class*="cookie"]','[id*="ad"]','[id*="sidebar"]'
+  ].forEach(sel=>{ try{ doc.querySelectorAll(sel).forEach(el=>el.remove()); }catch(e){} });
+  // Try to find main content
+  const mainEl=doc.querySelector('article, main, [role="main"], .post-content, .article-body, .content, #content, .entry-content')||doc.body;
+  const title=doc.title||'';
+  const text=(mainEl?.innerText||mainEl?.textContent||'').replace(/\s+/g,' ').trim();
+  return `[URL: ${url}]\nTitre: ${title}\n\n${text.substring(0,15000)}`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// WIKIMIND v4 — INLINE DIAGRAMS IN CHAT (auto-render Mermaid)
+// ══════════════════════════════════════════════════════════════
+function renderInlineDiagrams(container){
+  if(!window.mermaid) return;
+  container.querySelectorAll('pre code.language-mermaid, code.language-mermaid').forEach(async (el,idx)=>{
+    const code=el.textContent||el.innerText;
+    const wrap=el.closest('pre')||el;
+    const id='mmd_inline_'+Date.now()+'_'+idx;
+    const div=document.createElement('div');
+    div.className='wm-diagram-block';
+    div.innerHTML=`<div class="wm-diagram-label">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="9.5" y="16" width="5" height="5" rx="1"/><path d="M5.5 8v3a2 2 0 002 2h9a2 2 0 002-2V8"/><line x1="12" y1="13" x2="12" y2="16"/></svg>
+      Diagramme IA
+    </div>
+    <div class="wm-diagram-svg-wrap" id="${id}"></div>
+    <div class="wm-diagram-actions">
+      <button class="pdf-ai-action-btn" onclick="downloadDiagramSvgInline('${id}')">⬇ SVG</button>
+      <button class="pdf-ai-action-btn" onclick="copyDiagramCode('${id}','${id}_code')" data-code-id="${id}_code" style="display:none"></button>
+    </div>
+    <textarea id="${id}_code" style="display:none">${esc(code)}</textarea>`;
+    wrap.parentNode.replaceChild(div,wrap);
+    try{
+      const {svg}=await mermaid.render(id+'_svg', code);
+      G(id).innerHTML=svg;
+    }catch(e){
+      G(id).innerHTML=`<div style="color:#ef4444;font-size:11px;padding:8px;">Erreur diagramme: ${e.message.substring(0,80)}</div>`;
+    }
+  });
+}
+
+function downloadDiagramSvgInline(containerId){
+  const el=G(containerId);
+  if(!el) return;
+  const svg=el.querySelector('svg');
+  if(!svg) return;
+  const blob=new Blob([svg.outerHTML],{type:'image/svg+xml'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='diagram-wikimind.svg'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+
+// Hook into the existing renderMsg / post-stream processing to catch Mermaid blocks
+const _origApplyHljs=window.applyHljs||function(){};
+window.applyHljs=function(el){
+  _origApplyHljs(el);
+  if(el) renderInlineDiagrams(el);
+};
+
+// ══════════════════════════════════════════════════════════════
+// WIKIMIND v4 — SMART PDF TRIGGER
+// Auto-open PDF generator when AI responds with pdf-document block
+// ══════════════════════════════════════════════════════════════
+function openPdfGenTool(){
+  openModal('pdf-gen-modal');
+}
+
+// Add PDF viewer tool to sidebar tools panel
+document.addEventListener('DOMContentLoaded',()=>{
+  // Add PDF viewer + PDF gen tool button in tools panel if the list exists
+  const toolsList=document.querySelector('.tools-list');
+  if(toolsList){
+    const pdfSection=document.createElement('div');
+    pdfSection.innerHTML=`
+      <div class="tools-section-label" style="margin-top:6px">PDF Tools</div>
+      <button class="tool-item" onclick="openPdfGenTool();closeToolsPanel()" id="tool-pdfgen-btn">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/><line x1="12" y1="12" x2="12" y2="18"/></svg>
+        <span class="tool-item-label">Générateur PDF IA</span>
+        <span class="tool-item-badge" style="background:rgba(34,197,94,.1);color:#16a34a;font-size:9px;font-weight:800;padding:2px 6px;border-radius:20px;">Gratuit</span>
+      </button>`;
+    toolsList.appendChild(pdfSection);
+  }
+});
+
+// ══════════════════════════════════════════════════════════════
+// WIKIMIND v4 — SYSTÈME SCRAPING URL dans l'input
+// Si l'utilisateur colle une URL, on la scrappe en arrière-plan
+// ══════════════════════════════════════════════════════════════
+G('user-input')&&G('user-input').addEventListener('paste',async(e)=>{
+  const text=(e.clipboardData||window.clipboardData).getData('text');
+  const urlMatch=text.match(/^https?:\/\/[^\s]{10,}$/);
+  if(!urlMatch) return;
+  // Petite notification
+  setTimeout(async()=>{
+    toast('🔍 Lecture de l\'URL en cours…');
+    try{
+      const scraped=await scrapeUrlReliable(text);
+      if(scraped&&scraped.length>100){
+        S.attachments.push({type:'text',name:'Page web',content:scraped,fileExt:'url',isUrl:true,url:text});
+        updateAttachmentPreview();
+        toast('✓ Page web importée comme contexte');
+      }
+    }catch(err){ /* silent */ }
+  },300);
+});
+
+console.log('%cWikiMind AI v4','color:#111;font-family:Inter,sans-serif;font-size:20px;font-weight:900;font-style:italic');
+console.log('%c✅ Import universel | ✅ RAG illimité | ✅ PDF Viewer | ✅ Générateur PDF IA | ✅ Compression images | ✅ Scraping Web fiable | ✅ Diagrammes inline','color:#22c55e;font-size:11px;font-weight:700;');
 </script>
 
 <!-- ══════════════════════════════════════════
@@ -11880,4 +12745,107 @@ console.log('%cWikiMind AI','color:#111;font-family:Inter,sans-serif;font-size:2
     </div>
   </div>
 </div>
->
+
+<!-- ══════════════════════════════════════════════════════
+     WIKIMIND v4 — PDF VIEWER MODAL (outil IA, tous forfaits)
+     ══════════════════════════════════════════════════════ -->
+<div class="modal" id="pdf-viewer-modal" onclick="if(event.target===this)closeModal('pdf-viewer-modal')">
+  <div class="modal-content" id="pdf-viewer-modal-content" onclick="event.stopPropagation()" style="max-width:900px;width:95vw;padding:0;overflow:hidden;max-height:94vh;display:flex;flex-direction:column;border-radius:20px;">
+    <div class="pdf-viewer-hdr">
+      <div style="width:32px;height:32px;background:rgba(239,68,68,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">📕</div>
+      <div class="pdf-viewer-title" id="pdf-viewer-filename">Document PDF</div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+        <span style="font-size:9px;font-weight:800;text-transform:uppercase;padding:2px 8px;border-radius:20px;background:rgba(239,68,68,.1);color:#ef4444;letter-spacing:.04em;">PDF Viewer</span>
+        <span style="font-size:9px;font-weight:800;padding:2px 8px;border-radius:20px;background:rgba(34,197,94,.1);color:#16a34a;letter-spacing:.04em;">Gratuit</span>
+        <button onclick="downloadCurrentPdf()" style="background:var(--select-bg);border:1px solid var(--border2);border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text);font-family:Inter,sans-serif;transition:.15s;" title="Télécharger">⬇ PDF</button>
+        <button onclick="closeModal('pdf-viewer-modal')" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;transition:.2s;" onmouseover="this.style.background='var(--select-bg)'" onmouseout="this.style.background='none'">✕</button>
+      </div>
+    </div>
+    <!-- AI Tools bar -->
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--sidebar);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;">
+      <span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#aaa;white-space:nowrap;">IA :</span>
+      <button class="pdf-ai-action-btn" onclick="pdfAIAction('résume ce PDF en 5 points clés')">📋 Résumer</button>
+      <button class="pdf-ai-action-btn" onclick="pdfAIAction('extrais les données importantes sous forme de tableau')">📊 Extraire données</button>
+      <button class="pdf-ai-action-btn" onclick="pdfAIAction('génère 5 questions de quiz sur ce document')">🎯 Quiz</button>
+      <button class="pdf-ai-action-btn" onclick="pdfAIAction('traduis ce document en français')">🌍 Traduire</button>
+      <button class="pdf-ai-action-btn" onclick="openPdfAIChat()">💬 Chat avec le PDF</button>
+    </div>
+    <div class="pdf-viewer-body">
+      <div id="pdf-viewer-canvas-wrap">
+        <canvas id="pdf-viewer-canvas"></canvas>
+      </div>
+    </div>
+    <div class="pdf-viewer-footer">
+      <button class="pdf-nav-btn" id="pdf-prev-btn" onclick="pdfViewerPage(-1)">← Précédent</button>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="pdf-zoom-btn" onclick="pdfViewerZoom(-0.2)">−</button>
+        <span id="pdf-page-info">Page 1/1</span>
+        <button class="pdf-zoom-btn" onclick="pdfViewerZoom(0.2)">+</button>
+      </div>
+      <button class="pdf-nav-btn" id="pdf-next-btn" onclick="pdfViewerPage(1)">Suivant →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     WIKIMIND v4 — GÉNÉRATEUR PDF IA
+     ══════════════════════════════════════════════════════ -->
+<div class="modal" id="pdf-gen-modal" onclick="if(event.target===this)closeModal('pdf-gen-modal')">
+  <div class="modal-content" onclick="event.stopPropagation()" style="max-width:760px;padding:0;overflow:hidden;max-height:94vh;display:flex;flex-direction:column;">
+    <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:34px;height:34px;background:linear-gradient(135deg,#ef4444,#f97316);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;">📄</div>
+        <div>
+          <div style="font-size:14px;font-weight:800;letter-spacing:-.02em;">Générateur PDF IA</div>
+          <div style="font-size:10px;color:#888;">Créez de beaux documents PDF avec l'intelligence artificielle</div>
+        </div>
+        <span style="font-size:9px;font-weight:800;padding:2px 8px;border-radius:20px;background:rgba(34,197,94,.1);color:#16a34a;letter-spacing:.04em;">Gratuit</span>
+      </div>
+      <button onclick="closeModal('pdf-gen-modal')" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;" onmouseover="this.style.background='var(--select-bg)'" onmouseout="this.style.background='none'">✕</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:6px;">Titre du document</div>
+          <input id="pdfgen-title" type="text" placeholder="Ex: Rapport d'analyse, Contrat, Guide…" style="width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13px;font-family:Inter,sans-serif;outline:none;box-sizing:border-box;">
+        </div>
+        <div>
+          <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:6px;">Template</div>
+          <select id="pdfgen-template" style="width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:12px;font-family:Inter,sans-serif;outline:none;appearance:none;">
+            <option value="professional">💼 Professionnel</option>
+            <option value="report">📊 Rapport</option>
+            <option value="invoice">🧾 Facture/Devis</option>
+            <option value="contract">📜 Contrat</option>
+            <option value="creative">🎨 Créatif</option>
+            <option value="minimal">⬜ Minimaliste</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:6px;">Contenu à transformer en PDF</div>
+        <textarea id="pdfgen-content" placeholder="Décrivez ce que vous voulez dans votre PDF, ou collez votre contenu directement…&#10;&#10;Exemples :&#10;• 'Génère un rapport de ventes pour Q1 2025 avec 3 sections'&#10;• 'Crée une facture pour 3 prestations de développement web'&#10;• 'Rédige un guide d'utilisation pour notre logiciel'" style="width:100%;min-height:120px;padding:12px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13px;font-family:Inter,sans-serif;outline:none;resize:vertical;box-sizing:border-box;line-height:1.6;"></textarea>
+      </div>
+      <div id="pdfgen-preview" style="display:none;">
+        <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#999;margin-bottom:8px;">Aperçu</div>
+        <div id="pdfgen-preview-content" style="background:#fff;color:#111;border-radius:12px;box-shadow:0 4px 32px rgba(0,0,0,.12);overflow:hidden;padding:32px;max-height:400px;overflow-y:auto;font-family:'Helvetica Neue',Arial,sans-serif;line-height:1.6;"></div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button onclick="downloadGeneratedPDF()" style="flex:1;padding:10px;background:linear-gradient(135deg,#ef4444,#f97316);color:#fff;border:none;border-radius:10px;font-size:12px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;letter-spacing:.04em;">⬇ TÉLÉCHARGER PDF</button>
+          <button onclick="sendPdfToChat()" style="flex:1;padding:10px;background:var(--select-bg);border:1px solid var(--border2);border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;color:var(--text);font-family:Inter,sans-serif;">→ Envoyer dans le chat</button>
+        </div>
+      </div>
+    </div>
+    <div style="padding:14px 20px;border-top:1px solid var(--border);flex-shrink:0;">
+      <button id="pdfgen-btn" onclick="generateAIPDF()" style="width:100%;padding:12px;background:var(--accent);color:var(--accent-inv);border:none;border-radius:12px;font-size:13px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;letter-spacing:.04em;transition:.2s;">✦ Générer le PDF avec l'IA</button>
+    </div>
+  </div>
+</div>
+
+<style>
+/* PDF AI action buttons */
+.pdf-ai-action-btn{
+  background:var(--bg);border:1px solid var(--border2);border-radius:20px;
+  padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text);
+  transition:.15s;font-family:Inter,sans-serif;white-space:nowrap;
+}
+.pdf-ai-action-btn:hover{background:var(--accent);color:var(--accent-inv);border-color:var(--accent);}
+</style>
