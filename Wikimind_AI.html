@@ -1861,10 +1861,10 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 <script type="module">
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import{getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,GoogleAuthProvider,signInWithPopup,sendPasswordResetEmail}from'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import{getDatabase,ref,set,get,remove,push,runTransaction}from'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+import{getDatabase,ref,set,get,remove,push,runTransaction,onValue,off,serverTimestamp,query,orderByChild,limitToLast}from'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 const app=initializeApp({apiKey:"AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",authDomain:"wikimind-3-comments.firebaseapp.com",databaseURL:"https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",projectId:"wikimind-3-comments",storageBucket:"wikimind-3-comments.firebasestorage.app",messagingSenderId:"137479541640",appId:"1:137479541640:web:4ed2510a9908055052e03d"});
 const auth=getAuth(app);const db=getDatabase(app);
-window._fb={auth,db,ref,set,get,remove,push,runTransaction,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,GoogleAuthProvider,signInWithPopup,sendPasswordResetEmail};
+window._fb={auth,db,ref,set,get,remove,push,runTransaction,onValue,off,serverTimestamp,query,orderByChild,limitToLast,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,GoogleAuthProvider,signInWithPopup,sendPasswordResetEmail};
 onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('auth-modal');if(am)am.style.display='none';document.querySelectorAll('.modal.show').forEach(m=>{if(m.id!=='auth-modal')m.classList.remove('show');});await bootUser(user);}});
 </script>
 
@@ -2180,6 +2180,9 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
     </div>
     <div class="float-btn" onclick="newChat()" title="Nouveau chat">
       <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    </div>
+    <div class="float-btn" id="btn-share-chat" onclick="openShareChatModal()" title="Partager cette conversation" style="display:none">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
     </div>
   </div>
 
@@ -4688,6 +4691,7 @@ function newChat(){
   S.chatId=null; S.msgs=[]; S.attachments=[];
   G('chat-container').innerHTML=''; updateAttachmentPreview(); showWelcome();
   document.querySelectorAll('.history-item').forEach(i=>i.classList.remove('active'));
+  if(typeof syncShareBtn==='function') syncShareBtn();
 }
 // ── WELCOME SUGGESTIONS — chips rotatifs ──
 const _WM_SUGGESTIONS = [
@@ -4833,6 +4837,7 @@ function loadChat(id){
   }
   S.chatId=id; S.msgs=c.messages||[];
   G('chat-container').innerHTML=''; S.msgs.forEach(m=>renderMsg(m,false)); showWelcome(); renderHistory();
+  if(typeof syncShareBtn==='function') syncShareBtn();
 }
 async function delChat(e,id){
   e.stopPropagation(); deleteChat(id);
@@ -7154,6 +7159,7 @@ ${_summary}
     // ── Auto-open tool if AI response suggests it ──
     autoDetectAndOpenTool(aiContent, displayText);
     if(S.chats[S.chatId]){S.chats[S.chatId].messages=S.msgs;S.chats[S.chatId].updatedAt=Date.now();await persistChat();}
+    if(typeof syncShareBtn==='function') syncShareBtn();
   }catch(ex){
     rmTyping(tyId);
     const err={role:'assistant',content:`**Erreur :** ${ex.message||'Inconnue'}\n\nVérifiez votre connexion.`,ts:Date.now()};
@@ -12162,120 +12168,309 @@ if(typeof buildHistoryWithContextManagement === 'function'){
   };
 }
 
-// ══════════════════════════════════════════════
-// PARTAGE DE CONVERSATION (Firebase Public Link)
-// ══════════════════════════════════════════════
-async function shareConversation(){
-  if(!S.chatId || !S.msgs.length){ toast('Aucune conversation à partager'); return; }
-  toast('🔗 Génération du lien de partage…');
-  try{
-    const fb = window._fb;
-    // Build shareable snapshot (clean messages, no sensitive data)
-    const shareable = {
-      title: S.chats[S.chatId]?.title || 'Conversation WikiMind',
-      messages: S.msgs.map(m=>({
-        role: m.role,
-        content: m.content || '',
-        ts: m.ts || Date.now()
-      })).slice(-80), // max 80 messages
-      createdAt: Date.now(),
-      model: S.model,
-      sharedBy: S.user?.displayName || 'Utilisateur WikiMind'
-    };
+// ══════════════════════════════════════════════════════════════
+// PARTAGE DE CONVERSATION v2 — Copie privée OU Chat public live
+// ══════════════════════════════════════════════════════════════
 
-    let shareId;
-    if(fb?.db){
-      // Save to Firebase public shared conversations
-      const sharedRef = fb.ref(fb.db, 'shared_conversations');
-      const newRef = await fb.push(sharedRef, shareable);
-      shareId = newRef.key;
-    } else {
-      // Fallback: encode in URL (for guests)
-      shareId = 'local_' + btoa(encodeURIComponent(JSON.stringify(shareable).substring(0,2000))).substring(0,50);
-    }
-
-    // Build share URL
-    const shareUrl = `${window.location.origin}${window.location.pathname}?share=${shareId}`;
-
-    // Copy to clipboard
-    try{
-      await navigator.clipboard.writeText(shareUrl);
-      toast('✓ Lien copié ! Partagez-le — la conversation sera en lecture seule pour votre ami.');
-    }catch(e){
-      // Fallback: show in prompt
-      window.prompt('Copiez ce lien de partage :', shareUrl);
-    }
-
-    // Show share modal
-    showShareModal(shareUrl, shareable.title);
-  }catch(e){
-    toast('Erreur partage : '+e.message.substring(0,50));
-  }
+// Affiche/masque le bouton partage selon s'il y a des messages
+function syncShareBtn(){
+  const btn = G('btn-share-chat');
+  if(btn) btn.style.display = (S.msgs && S.msgs.length > 0) ? 'flex' : 'none';
 }
 
-function showShareModal(url, title){
-  // Create inline modal
+// Ouvre le modal de choix de partage
+function openShareChatModal(){
+  if(!S.msgs.length){ toast('Aucune conversation à partager'); return; }
   const existing = G('wm-share-modal');
   if(existing) existing.remove();
   const modal = document.createElement('div');
   modal.id = 'wm-share-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
   modal.innerHTML = `
-    <div onclick="event.stopPropagation()" style="background:var(--bg);border-radius:20px;padding:28px;max-width:480px;width:90%;box-shadow:0 24px 80px rgba(0,0,0,.25)">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+    <div onclick="event.stopPropagation()" style="background:var(--bg);border-radius:20px;padding:28px;max-width:500px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,.3)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         <span style="font-size:16px;font-weight:800">Partager la conversation</span>
       </div>
-      <div style="font-size:12px;color:#888;margin-bottom:12px">${esc(title)}</div>
-      <div style="display:flex;gap:8px;margin-bottom:16px">
-        <input id="share-url-inp" readonly value="${esc(url)}" style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--select-bg);color:var(--text);font-size:11px;font-family:Inter,sans-serif;outline:none">
-        <button onclick="navigator.clipboard.writeText('${esc(url)}').then(()=>toast('✓ Copié!'))" style="padding:10px 16px;border-radius:10px;background:var(--accent);color:var(--accent-inv);border:none;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap">📋 Copier</button>
+      <div style="font-size:12px;color:#888;margin-bottom:20px">${esc(S.chats[S.chatId]?.title||'Conversation')}</div>
+
+      <div style="display:grid;gap:12px;margin-bottom:20px">
+        <!-- Option 1 : Copie dans le compte -->
+        <div onclick="shareAsReadOnly()" style="cursor:pointer;border:1.5px solid var(--border2);border-radius:14px;padding:16px 18px;transition:.2s;display:flex;gap:14px;align-items:flex-start" onmouseover="this.style.borderColor='var(--accent)';this.style.background='var(--card-hover)'" onmouseout="this.style.borderColor='var(--border2)';this.style.background=''">
+          <div style="font-size:24px;flex-shrink:0">📎</div>
+          <div>
+            <div style="font-weight:800;font-size:13px;margin-bottom:4px">Lien de lecture</div>
+            <div style="font-size:11px;color:#888;line-height:1.5">La conversation s'ouvre en lecture seule. Ton ami peut continuer à discuter de son côté dans son propre compte — les réponses ne remontent pas chez toi.</div>
+          </div>
+        </div>
+        <!-- Option 2 : Chat public live -->
+        <div onclick="shareAsLiveChat()" style="cursor:pointer;border:1.5px solid var(--border2);border-radius:14px;padding:16px 18px;transition:.2s;display:flex;gap:14px;align-items:flex-start" onmouseover="this.style.borderColor='#22c55e';this.style.background='var(--card-hover)'" onmouseout="this.style.borderColor='var(--border2)';this.style.background=''">
+          <div style="font-size:24px;flex-shrink:0">🌐</div>
+          <div>
+            <div style="font-weight:800;font-size:13px;margin-bottom:4px">Chat public en direct <span style="font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;background:rgba(34,197,94,.12);color:#16a34a;margin-left:4px">LIVE</span></div>
+            <div style="font-size:11px;color:#888;line-height:1.5">N'importe qui avec le lien peut envoyer des messages. Tout le monde voit les réponses en temps réel. Limite : 4 messages/minute.</div>
+          </div>
+        </div>
       </div>
-      <div style="font-size:11px;color:#888;margin-bottom:16px">📖 Lecture seule — votre ami verra une copie de la conversation et pourra continuer à discuter de son côté.</div>
-      <button onclick="G('wm-share-modal').remove()" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border2);background:none;color:var(--text);font-size:12px;font-weight:700;cursor:pointer">Fermer</button>
+
+      <button onclick="G('wm-share-modal').remove()" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border2);background:none;color:var(--text);font-size:12px;font-weight:700;cursor:pointer">Annuler</button>
     </div>`;
   modal.onclick = () => modal.remove();
   document.body.appendChild(modal);
 }
 
-// Load shared conversation on page load if ?share= param present
+// ── Option 1 : lien lecture seule (copie dans compte destinataire) ──
+async function shareAsReadOnly(){
+  G('wm-share-modal')?.remove();
+  toast('🔗 Génération du lien…');
+  try{
+    const fb = window._fb;
+    const shareable = _buildShareablePayload('readonly');
+    let shareId;
+    if(fb?.db){
+      const newRef = await fb.push(fb.ref(fb.db,'shared_conversations'), shareable);
+      shareId = newRef.key;
+    } else {
+      shareId = 'local_'+Date.now();
+    }
+    const url = `${location.origin}${location.pathname}?share=${shareId}`;
+    _showShareLinkModal(url, '📎 Lien de lecture', '📖 En lecture seule — ton ami verra la conversation et pourra continuer de son côté.');
+  }catch(e){ toast('Erreur : '+e.message.substring(0,50)); }
+}
+
+// ── Option 2 : chat public live ──
+async function shareAsLiveChat(){
+  G('wm-share-modal')?.remove();
+  toast('🌐 Création du chat public…');
+  try{
+    const fb = window._fb;
+    const shareable = _buildShareablePayload('live');
+    shareable.live = true;
+    shareable.liveMessages = {}; // messages en temps réel (séparés des messages initiaux)
+    shareable.rateMap = {};       // throttle : {ip_or_uid : [timestamps]}
+    if(!fb?.db){ toast('Firebase non disponible'); return; }
+    const newRef = await fb.push(fb.ref(fb.db,'shared_conversations'), shareable);
+    const shareId = newRef.key;
+    const url = `${location.origin}${location.pathname}?share=${shareId}`;
+    _showShareLinkModal(url, '🌐 Chat public en direct', '🔴 LIVE — Tout le monde avec ce lien peut envoyer des messages en temps réel.');
+  }catch(e){ toast('Erreur : '+e.message.substring(0,50)); }
+}
+
+function _buildShareablePayload(mode){
+  return {
+    title: S.chats[S.chatId]?.title || 'Conversation WikiMind',
+    messages: S.msgs.map(m=>({role:m.role, content:(m.content||'').substring(0,8000), ts:m.ts||Date.now()})).slice(-80),
+    createdAt: Date.now(),
+    model: S.model,
+    sharedBy: S.user?.displayName || S.user?.email || 'Utilisateur WikiMind',
+    mode
+  };
+}
+
+function _showShareLinkModal(url, modeLabel, hint){
+  const existing = G('wm-share-link-modal');
+  if(existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'wm-share-link-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  modal.innerHTML = `
+    <div onclick="event.stopPropagation()" style="background:var(--bg);border-radius:20px;padding:28px;max-width:480px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,.3)">
+      <div style="font-size:15px;font-weight:800;margin-bottom:4px">${modeLabel}</div>
+      <div style="font-size:11px;color:#888;margin-bottom:14px">${hint}</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input id="share-url-final" readonly value="${url}" style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--select-bg);color:var(--text);font-size:11px;font-family:Inter,sans-serif;outline:none;overflow:hidden;text-overflow:ellipsis">
+        <button onclick="navigator.clipboard.writeText('${url}').then(()=>{toast('✓ Lien copié !');this.textContent='✓';setTimeout(()=>this.textContent='📋 Copier',1500)})" style="padding:10px 14px;border-radius:10px;background:var(--accent);color:var(--accent-inv);border:none;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap">📋 Copier</button>
+      </div>
+      <button onclick="G('wm-share-link-modal').remove()" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border2);background:none;color:var(--text);font-size:12px;font-weight:700;cursor:pointer">Fermer</button>
+    </div>`;
+  modal.onclick = () => modal.remove();
+  document.body.appendChild(modal);
+  // Auto-copy
+  try{ navigator.clipboard.writeText(url); toast('✓ Lien copié dans le presse-papiers !'); }catch(e){}
+}
+
+// ══════════════════════════════════════════════════════════════
+// CHARGEMENT D'UNE CONVERSATION PARTAGÉE AU DÉMARRAGE
+// ══════════════════════════════════════════════════════════════
+let _liveUnsubscribe = null; // ref au listener Firebase live
+
 (function loadSharedConversationIfNeeded(){
   const params = new URLSearchParams(window.location.search);
   const shareId = params.get('share');
   if(!shareId) return;
-  // Remove param from URL without reload
   window.history.replaceState({}, '', window.location.pathname);
-  // Load from Firebase
   const tryLoad = async () => {
     const fb = window._fb;
-    if(!fb?.db){ setTimeout(tryLoad, 1000); return; }
+    if(!fb?.db){ setTimeout(tryLoad, 800); return; }
     try{
       const snap = await fb.get(fb.ref(fb.db, `shared_conversations/${shareId}`));
       if(!snap.exists()){ toast('Lien de partage invalide ou expiré'); return; }
       const data = snap.val();
-      // Load into a new conversation (read-only copy)
-      newChat();
-      await new Promise(r=>setTimeout(r,100));
-      S.msgs = (data.messages||[]).map(m=>({...m}));
-      S.chatId = 'shared_' + shareId;
-      S.chats[S.chatId] = {
-        title: '📎 ' + (data.title||'Conversation partagée'),
-        messages: S.msgs,
-        createdAt: data.createdAt||Date.now(),
-        updatedAt: Date.now(),
-        isShared: true
-      };
-      // Re-render
-      const cc = G('chat-container');
-      if(cc) cc.innerHTML='';
-      S.msgs.forEach(m=>renderMsg(m,false));
-      showWelcome();
-      renderHistory();
-      toast(`📎 Conversation partagée chargée — "${data.sharedBy||'WikiMind'}" l'a partagée avec vous`);
-    }catch(e){ toast('Erreur chargement partage: '+e.message.substring(0,40)); }
+
+      if(data.live){
+        // ── Mode LIVE ──
+        _openLiveChatView(shareId, data);
+      } else {
+        // ── Mode lecture seule ──
+        newChat();
+        await new Promise(r=>setTimeout(r,100));
+        S.msgs = (data.messages||[]).map(m=>({...m}));
+        S.chatId = 'shared_' + shareId;
+        S.chats[S.chatId] = {
+          title: '📎 ' + (data.title||'Conversation partagée'),
+          messages: S.msgs,
+          createdAt: data.createdAt||Date.now(),
+          updatedAt: Date.now(),
+          isShared: true
+        };
+        const cc = G('chat-container');
+        if(cc) cc.innerHTML='';
+        S.msgs.forEach(m=>renderMsg(m,false));
+        showWelcome(); renderHistory();
+        toast(`📎 Conversation partagée par ${data.sharedBy||'WikiMind'}`);
+      }
+    }catch(e){ toast('Erreur chargement: '+e.message.substring(0,40)); }
   };
-  setTimeout(tryLoad, 2000); // wait for Firebase init
+  setTimeout(tryLoad, 1800);
 })();
+
+// ── Vue LIVE : chat public en temps réel ──
+function _openLiveChatView(shareId, data){
+  // Désabonner tout listener précédent
+  if(_liveUnsubscribe){ _liveUnsubscribe(); _liveUnsubscribe=null; }
+
+  const fb = window._fb;
+  // Masquer l'interface normale, afficher la vue live
+  const liveContainer = document.createElement('div');
+  liveContainer.id = 'wm-live-chat';
+  liveContainer.style.cssText = 'position:fixed;inset:0;background:var(--bg);z-index:8888;display:flex;flex-direction:column;font-family:Inter,sans-serif;';
+
+  const title = esc(data.title||'Chat public');
+  const sharedBy = esc(data.sharedBy||'WikiMind');
+
+  liveContainer.innerHTML = `
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--bg);">
+      <span style="font-size:8px;background:#ef4444;color:#fff;padding:2px 7px;border-radius:20px;font-weight:800;letter-spacing:.06em;animation:livePulse 1.5s infinite">● LIVE</span>
+      <span style="font-weight:800;font-size:14px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${title}</span>
+      <span style="font-size:11px;color:#888">par ${sharedBy}</span>
+      <button onclick="document.getElementById('wm-live-chat').remove();if(window._liveUnsubscribe){window._liveUnsubscribe();window._liveUnsubscribe=null;}" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:18px;padding:4px 8px">✕</button>
+    </div>
+    <div id="wm-live-msgs" style="flex:1;overflow-y:auto;padding:16px 18px 8px;display:flex;flex-direction:column;gap:10px;"></div>
+    <div id="wm-live-rate-warn" style="display:none;text-align:center;font-size:11px;color:#e67e22;padding:4px 16px;font-weight:700;">⏱ Limite : 4 messages / minute. Patientez…</div>
+    <div style="padding:10px 14px 14px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;background:var(--bg);">
+      <input id="wm-live-inp" placeholder="Votre message…" maxlength="2000" style="flex:1;padding:10px 14px;border-radius:16px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13px;font-family:Inter,sans-serif;outline:none;" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendLiveMessage('${shareId}');}">
+      <button onclick="sendLiveMessage('${shareId}')" style="padding:10px 18px;background:var(--accent);color:var(--accent-inv);border:none;border-radius:16px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;font-family:Inter,sans-serif;">Envoyer</button>
+    </div>`;
+
+  document.body.appendChild(liveContainer);
+
+  // Injecter style animation live
+  if(!G('wm-live-style')){
+    const s = document.createElement('style');
+    s.id='wm-live-style';
+    s.textContent=`@keyframes livePulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+    .wm-live-bubble{max-width:85%;padding:8px 14px;border-radius:14px;font-size:13px;line-height:1.5;word-break:break-word;animation:fadeInUp .2s ease;}
+    .wm-live-bubble.user-bubble{background:var(--bubble-user);color:#fff;align-self:flex-end;border-bottom-right-radius:4px;}
+    .wm-live-bubble.ai-bubble{background:var(--select-bg);align-self:flex-start;border-bottom-left-radius:4px;}
+    .wm-live-bubble.other-bubble{background:var(--select-bg);align-self:flex-start;border-bottom-left-radius:4px;}
+    .wm-live-ts{font-size:9px;color:#aaa;margin-top:2px;align-self:center;}
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}`;
+    document.head.appendChild(s);
+  }
+
+  // Rendre les messages initiaux (read-only)
+  const msgWrap = G('wm-live-msgs');
+  (data.messages||[]).forEach(m=>{
+    _appendLiveMsg(msgWrap, m.role==='user'?'user-bubble':'ai-bubble', m.content, null, true);
+  });
+
+  // Abonnement temps réel aux nouveaux messages live
+  const liveRef = fb.ref(fb.db, `shared_conversations/${shareId}/liveMessages`);
+  const liveQ = fb.query(liveRef, fb.orderByChild('ts'), fb.limitToLast(200));
+  let _knownKeys = new Set();
+
+  const unsubFn = fb.onValue(liveQ, snap=>{
+    if(!snap.exists()) return;
+    snap.forEach(child=>{
+      const key = child.key;
+      if(_knownKeys.has(key)) return;
+      _knownKeys.add(key);
+      const msg = child.val();
+      const cls = msg.role==='ai' ? 'ai-bubble' : (msg.uid===fb.auth?.currentUser?.uid ? 'user-bubble' : 'other-bubble');
+      _appendLiveMsg(msgWrap, cls, msg.content, msg.senderName||'Anonyme', false);
+    });
+  });
+  _liveUnsubscribe = () => fb.off(liveQ, 'value', unsubFn);
+}
+
+function _appendLiveMsg(wrap, cls, content, senderName, silent){
+  const div = document.createElement('div');
+  div.style.cssText='display:flex;flex-direction:column;';
+  if(senderName && cls!=='user-bubble'){
+    const name = document.createElement('div');
+    name.style.cssText='font-size:9px;color:#aaa;font-weight:700;padding-left:4px;margin-bottom:2px;';
+    name.textContent = senderName;
+    div.appendChild(name);
+  }
+  const bubble = document.createElement('div');
+  bubble.className = 'wm-live-bubble ' + cls;
+  bubble.textContent = content;
+  div.appendChild(bubble);
+  wrap.appendChild(div);
+  if(!silent) wrap.scrollTop = wrap.scrollHeight;
+}
+
+// Envoi d'un message dans le chat live
+// Rate limit côté client : 4 msg/min par session
+const _liveRateLog = [];
+async function sendLiveMessage(shareId){
+  const inp = G('wm-live-inp');
+  const text = inp?.value?.trim();
+  if(!text) return;
+
+  // Rate limit : 4/min
+  const now = Date.now();
+  while(_liveRateLog.length && now - _liveRateLog[0] > 60000) _liveRateLog.shift();
+  if(_liveRateLog.length >= 4){
+    const warn = G('wm-live-rate-warn');
+    if(warn){ warn.style.display='block'; setTimeout(()=>{warn.style.display='none';},3000); }
+    return;
+  }
+  _liveRateLog.push(now);
+  inp.value = '';
+
+  const fb = window._fb;
+  if(!fb?.db) return;
+
+  const uid = fb.auth?.currentUser?.uid || 'anon_'+Math.random().toString(36).slice(2,8);
+  const senderName = fb.auth?.currentUser?.displayName || fb.auth?.currentUser?.email?.split('@')[0] || 'Anonyme';
+
+  const msgRef = fb.ref(fb.db, `shared_conversations/${shareId}/liveMessages`);
+  const userMsg = { role:'user', content:text, ts:now, uid, senderName };
+  await fb.push(msgRef, userMsg);
+
+  // IA répond (appel Mistral sur les derniers messages)
+  const snap = await fb.get(fb.ref(fb.db, `shared_conversations/${shareId}`));
+  if(!snap.exists()) return;
+  const chatData = snap.val();
+  const history = [
+    ...(chatData.messages||[]).slice(-10),
+    ...Object.values(chatData.liveMessages||{}).slice(-10),
+    {role:'user',content:text}
+  ].map(m=>({role:m.role==='ai'?'assistant':m.role, content:m.content}));
+
+  try{
+    const reply = await callMistral(history, S.model||'flash', 800);
+    if(reply){
+      await fb.push(msgRef, {role:'ai', content:reply, ts:Date.now(), uid:'ai', senderName:'WikiMind AI'});
+    }
+  }catch(e){ console.warn('Live AI reply error:',e); }
+}
+
+// Sync bouton partage quand messages changent
+const _origRenderMsg2 = typeof renderMsg !== 'undefined' ? renderMsg : null;
+document.addEventListener('wm:msgsUpdated', syncShareBtn);
+
 // ══════════════════════════════════════════════
 function openWikipediaImageSearch(){
   openModal('wiki-img-modal');
