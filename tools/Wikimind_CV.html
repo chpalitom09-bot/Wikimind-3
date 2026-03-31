@@ -3526,6 +3526,270 @@ async function aiGenerateCertifications(){
 window.toggleAIPanel=toggleAIPanel; window.aiChatSend=aiChatSend; window.aiQuick=aiQuick;
 window.aiGenerateInterests=aiGenerateInterests; window.aiGenerateCertifications=aiGenerateCertifications;
 
+// ═══════════════════════════════════════════════════════════════════
+// WIKIMIND CV — PATCH v2.0 (Undo/Redo, Autosave, Fixes, UI)
+// ═══════════════════════════════════════════════════════════════════
+
+// ── [NEW 1] UNDO / REDO ──
+const _history = { stack: [], future: [], maxSize: 50, paused: false };
+
+function historyPush() {
+  if (_history.paused || !_S.currentCV) return;
+  const snapshot = JSON.stringify(_S.currentCV);
+  if (_history.stack.length && _history.stack[_history.stack.length - 1] === snapshot) return;
+  _history.stack.push(snapshot);
+  if (_history.stack.length > _history.maxSize) _history.stack.shift();
+  _history.future = [];
+  updateUndoRedoUI();
+}
+
+function undo() {
+  if (!_history.stack.length || !_S.currentCV) { toast('⚠️ Rien à annuler.'); return; }
+  _history.paused = true;
+  _history.future.push(JSON.stringify(_S.currentCV));
+  _S.currentCV = JSON.parse(_history.stack.pop());
+  populateForm(); updatePreview();
+  _history.paused = false;
+  updateUndoRedoUI();
+  toast('↩️ Modification annulée.');
+}
+
+function redo() {
+  if (!_history.future.length || !_S.currentCV) { toast('⚠️ Rien à rétablir.'); return; }
+  _history.paused = true;
+  _history.stack.push(JSON.stringify(_S.currentCV));
+  _S.currentCV = JSON.parse(_history.future.pop());
+  populateForm(); updatePreview();
+  _history.paused = false;
+  updateUndoRedoUI();
+  toast('↪️ Modification rétablie.');
+}
+
+function updateUndoRedoUI() {
+  const bu = G('btn-undo'), br = G('btn-redo');
+  if (bu) bu.disabled = !_history.stack.length;
+  if (br) br.disabled = !_history.future.length;
+}
+
+window.undo = undo; window.redo = redo; window.historyPush = historyPush;
+
+// ── [FIX 2] escMultiline — \n → <br> ──
+function escMultiline(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+window.escMultiline = escMultiline;
+
+// ── [FIX 1+2+3] Patch updatePreview — photo, multiligne, desc formation ──
+const _origUpdatePreview = updatePreview;
+function updatePreview(){
+  if(!_S.currentCV) return;
+  getFormData();
+  const html = buildCVHTML(_S.currentCV.template, _S.currentCV.data, _S.currentCV.color, false);
+  const frame = G('cv-preview-frame');
+  if(frame) frame.innerHTML = html;
+  const wrapper = G('cv-preview-wrapper');
+  if(wrapper) wrapper.style.transform = `scale(${_S.zoom/100})`;
+
+  // [FIX 3] Ajouter description formations manquante
+  const d = _S.currentCV.data;
+  if(d.education && d.education.length){
+    const eduDivs = frame ? frame.querySelectorAll('[class$="-edu"]') : [];
+    eduDivs.forEach((div, i) => {
+      const edu = d.education[i];
+      if(edu && edu.desc && !div.querySelector('.edu-desc-text')){
+        const descEl = document.createElement('div');
+        descEl.className = 'edu-desc-text';
+        descEl.style.cssText = 'font-size:11px;color:#6b7280;font-style:italic;margin-top:3px;line-height:1.5;';
+        descEl.innerHTML = escMultiline(edu.desc);
+        div.appendChild(descEl);
+      }
+    });
+  }
+
+  // [FIX 2] Fixer le multiligne dans extras (recherche les conteneurs connus)
+  if(frame){
+    frame.querySelectorAll('[style*="line-height:1.7"]').forEach(el => {
+      if(el.innerHTML.includes('\n')){
+        el.innerHTML = el.innerHTML.replace(/\n/g,'<br>');
+      }
+    });
+  }
+}
+window.updatePreview = updatePreview;
+
+// ── [FIX 4] AUTOSAVE ──
+let _autosaveTimer = null;
+
+function scheduleAutosave(){
+  clearTimeout(_autosaveTimer);
+  setSaveIndicator('unsaved');
+  _autosaveTimer = setTimeout(async () => {
+    if(!_S.currentCV) return;
+    getFormData();
+    _S.currentCV.updatedAt = Date.now();
+    _S.cvList[_S.currentCV.id] = JSON.parse(JSON.stringify(_S.currentCV));
+    await saveCVList();
+    renderCVList();
+    setSaveIndicator('saved');
+  }, 3000);
+}
+
+function setSaveIndicator(state){
+  const el = G('save-indicator'); if(!el) return;
+  if(state === 'saved'){ el.className='si-saved'; el.textContent='✓ Sauvegardé'; }
+  else if(state === 'unsaved'){ el.className='si-unsaved'; el.textContent='● Non sauvegardé'; }
+  else { el.className=''; el.textContent=''; }
+}
+window.scheduleAutosave = scheduleAutosave;
+
+// Observer les inputs du formulaire pour autosave + historique
+document.addEventListener('input', (e) => {
+  const fp = G('form-panel');
+  if(fp && fp.contains(e.target)){ historyPush(); scheduleAutosave(); }
+});
+
+// Wrapper des opérations destructives pour historique + autosave
+['saveExpEntry','deleteExp','saveEduEntry','deleteEdu','saveSkillEntry','deleteSkill',
+ 'saveLangEntry','deleteLang','setAccentColor','selectTemplate','removePhoto'].forEach(fn => {
+  const orig = window[fn];
+  if(typeof orig === 'function'){
+    window[fn] = function(...a){ historyPush(); const r=orig.apply(this,a); scheduleAutosave(); return r; };
+  }
+});
+
+// [FIX 1] Patch handlePhotoUpload — validation + fix src + historique
+const _origHandlePhoto = window.handlePhotoUpload;
+window.handlePhotoUpload = function(event){
+  const file = event.target.files[0]; if(!file) return;
+  const valid = ['image/jpeg','image/png','image/webp','image/gif'];
+  if(!valid.includes(file.type)){ toast('⚠️ Format non supporté. Utilisez JPG, PNG ou WebP.'); return; }
+  if(file.size > 5*1024*1024){ toast('⚠️ Image trop lourde (max 5 Mo).'); return; }
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const dataUrl = e.target.result;
+    if(!dataUrl || !dataUrl.startsWith('data:')){ toast('❌ Erreur lecture image.'); return; }
+    if(_S.currentCV){
+      historyPush();
+      _S.currentCV.data.photoData = dataUrl;
+      updatePhotoPreview(dataUrl);
+      updatePreview();
+      try{
+        const sp = (await localforage.getItem('wm_saved_photos')) || [];
+        sp.unshift({name:file.name, data:dataUrl, date:Date.now()});
+        if(sp.length>10) sp.length=10;
+        await localforage.setItem('wm_saved_photos', sp);
+        toast('✅ Photo importée et sauvegardée !');
+      }catch(err){ toast('✅ Photo importée !'); }
+      scheduleAutosave();
+    }
+  };
+  reader.onerror = () => toast('❌ Impossible de lire l\'image.');
+  reader.readAsDataURL(file);
+};
+
+// Patch saveCV pour indicateur
+const _origSaveCV = window.saveCV;
+window.saveCV = async function(){
+  await _origSaveCV.call(this);
+  setSaveIndicator('saved');
+};
+
+// Patch openCV pour reset historique
+const _origOpenCV = window.openCV;
+window.openCV = function(id){
+  _history.stack = []; _history.future = [];
+  updateUndoRedoUI();
+  setSaveIndicator('saved');
+  return _origOpenCV.call(this, id);
+};
+
+// ── [NEW 2] PALETTE MINIMALISTE ──
+const ACCENT_COLORS_MINIMAL = [
+  '#0a0a0a','#1a1a1a','#374151','#4b5563','#6b7280','#9ca3af','#d1d5db','#f3f4f6',
+  '#1e40af','#064e3b','#7c2d12','#4c1d95'
+];
+// Override la palette (la variable ACCENT_COLORS est utilisée dans renderColorPalette)
+// On redéfinit après le chargement
+setTimeout(() => {
+  // Patch renderColorPalette pour utiliser la nouvelle palette
+  const _origRenderPalette = window.renderColorPalette;
+  window.renderColorPalette = function(){
+    const pal = G('color-palette'); if(!pal) return;
+    const cur = _S.currentCV?.color || '#0a0a0a';
+    pal.innerHTML = ACCENT_COLORS_MINIMAL.map(clr => `
+      <div onclick="setAccentColor('${clr}')" title="${clr}" style="
+        width:26px;height:26px;border-radius:50%;background:${clr};cursor:pointer;
+        border:2px solid ${clr===cur?'var(--text)':'rgba(128,128,128,0.25)'};
+        transform:scale(${clr===cur?1.25:1});transition:.2s;flex-shrink:0;
+        box-shadow:${clr==='#f3f4f6'||clr==='#d1d5db'?'0 0 0 1px #ccc inset':'none'};
+      "></div>`).join('');
+  };
+  if(typeof renderColorPalette === 'function' && _S.currentCV) renderColorPalette();
+}, 100);
+
+// ── [UX 2] RACCOURCIS CLAVIER ──
+document.addEventListener('keydown', (e) => {
+  if(e.ctrlKey || e.metaKey){
+    if(e.key==='s'){ e.preventDefault(); saveCV(); setSaveIndicator('saved'); }
+    else if(e.key==='z' && !e.shiftKey){ e.preventDefault(); undo(); }
+    else if(e.key==='y' || (e.key==='z' && e.shiftKey)){ e.preventDefault(); redo(); }
+  }
+});
+
+// ── [UX 3] Injection boutons Undo/Redo + indicateur dans toolbar ──
+// ── [UX 1] Indicateur de sauvegarde ──
+(function injectToolbarUI(){
+  function tryInject(){
+    const toolbar = document.querySelector('.editor-toolbar'); if(!toolbar) { setTimeout(tryInject, 300); return; }
+    if(G('btn-undo')) return; // déjà injecté
+
+    // Style pour indicateur
+    const st = document.createElement('style');
+    st.textContent = `
+      #btn-undo,#btn-redo { padding:6px 8px; }
+      #btn-undo:disabled,#btn-redo:disabled { opacity:.3; cursor:not-allowed; }
+      #save-indicator { font-size:10px; font-weight:700; padding:0 6px; white-space:nowrap; }
+      .si-saved { color:#22c55e; }
+      .si-unsaved { color:#f59e0b; }
+    `;
+    document.head.appendChild(st);
+
+    // Trouver la séparation après "Modèle" + "IA Optimiser"
+    const seps = toolbar.querySelectorAll('.et-sep');
+    const insertPoint = seps[1]; // après le 2ème sep
+    if(!insertPoint) return;
+
+    const sep2 = document.createElement('div'); sep2.className = 'et-sep';
+    const undoBtn = document.createElement('button');
+    undoBtn.className='et-btn'; undoBtn.id='btn-undo'; undoBtn.disabled=true;
+    undoBtn.setAttribute('data-tip','Annuler (Ctrl+Z)');
+    undoBtn.onclick = () => undo();
+    undoBtn.innerHTML = `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.27"/></svg>`;
+
+    const redoBtn = document.createElement('button');
+    redoBtn.className='et-btn'; redoBtn.id='btn-redo'; redoBtn.disabled=true;
+    redoBtn.setAttribute('data-tip','Rétablir (Ctrl+Y)');
+    redoBtn.onclick = () => redo();
+    redoBtn.innerHTML = `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.49-3.27"/></svg>`;
+
+    insertPoint.after(sep2, undoBtn, redoBtn);
+
+    // Indicateur
+    const indicator = document.createElement('span');
+    indicator.id = 'save-indicator';
+    const saveBtn = toolbar.querySelector('button[onclick="saveCV()"]');
+    if(saveBtn) saveBtn.before(indicator);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', tryInject);
+  else tryInject();
+})();
+
+// Init final
+window.addEventListener('load', () => {
+  updateUndoRedoUI();
+  console.log('[WikiMind CV Patch v2.0] ✅ Undo/Redo · Autosave · Photo fix · Multiligne · Formation desc · Palette minimaliste');
+});
+
 function renderPlanCards(){
   const el=G('plan-cards-cv'); if(!el) return;
   const plans=[
