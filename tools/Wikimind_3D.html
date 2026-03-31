@@ -1,0 +1,2201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WikiMind 3D — Design Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root {
+  --bg: #080c14;
+  --panel: rgba(12,18,30,0.95);
+  --panel2: rgba(18,26,42,0.9);
+  --border: rgba(99,140,255,0.12);
+  --border2: rgba(99,140,255,0.2);
+  --accent: #4d7cfe;
+  --accent2: #7c3aed;
+  --accent3: #06b6d4;
+  --text: #e8eeff;
+  --text2: rgba(200,210,255,0.6);
+  --text3: rgba(200,210,255,0.35);
+  --success: #10b981;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+  --gold: #fbbf24;
+  --glow: rgba(77,124,254,0.15);
+  --sidebar-w: 260px;
+  --panel-w: 300px;
+  --toolbar-h: 56px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;height:100vh;display:flex;flex-direction:column;user-select:none;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+
+/* ─── SPLASH ─── */
+#splash{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;transition:opacity .5s,transform .5s;}
+#splash.out{opacity:0;transform:scale(1.05);pointer-events:none;}
+.splash-logo{width:80px;height:80px;background:linear-gradient(135deg,#4d7cfe,#7c3aed);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:36px;animation:splashPulse 1.5s ease-in-out infinite;box-shadow:0 0 60px rgba(77,124,254,0.4);}
+@keyframes splashPulse{0%,100%{transform:scale(1);box-shadow:0 0 40px rgba(77,124,254,0.3);}50%{transform:scale(1.05);box-shadow:0 0 80px rgba(77,124,254,0.6);}}
+.splash-title{font-size:32px;font-weight:700;letter-spacing:-0.03em;}
+.splash-title span{background:linear-gradient(135deg,#4d7cfe,#7c3aed,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.splash-sub{color:var(--text2);font-size:13px;}
+.splash-bar{width:200px;height:3px;background:rgba(255,255,255,0.08);border-radius:99px;overflow:hidden;}
+.splash-bar-fill{height:100%;background:linear-gradient(90deg,#4d7cfe,#7c3aed);border-radius:99px;animation:splashLoad 1.8s ease-out forwards;}
+@keyframes splashLoad{0%{width:0%;}100%{width:100%;}}
+
+/* ─── HOME SCREEN ─── */
+#home-screen{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;overflow:auto;}
+#home-screen.hidden{display:none;}
+.home-nav{padding:20px 32px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
+.home-logo{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:700;letter-spacing:-0.02em;}
+.home-logo-icon{width:36px;height:36px;background:linear-gradient(135deg,#4d7cfe,#7c3aed);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.home-logo span{background:linear-gradient(135deg,#4d7cfe,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.home-nav-right{display:flex;align-items:center;gap:12px;}
+#home-login-btn{padding:8px 18px;border:1px solid var(--border2);border-radius:10px;background:rgba(77,124,254,0.1);color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;transition:.2s;}
+#home-login-btn:hover{background:rgba(77,124,254,0.2);}
+.home-user-chip{display:flex;align-items:center;gap:8px;padding:6px 12px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;font-size:12px;}
+.home-hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;}
+.home-hero h1{font-size:clamp(36px,6vw,72px);font-weight:700;letter-spacing:-0.04em;line-height:1.05;margin-bottom:20px;}
+.home-hero h1 span{background:linear-gradient(135deg,#4d7cfe 0%,#7c3aed 50%,#06b6d4 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.home-hero p{font-size:16px;color:var(--text2);max-width:560px;line-height:1.7;margin-bottom:40px;}
+.home-cta-row{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:60px;}
+.btn-primary{padding:14px 28px;background:linear-gradient(135deg,#4d7cfe,#7c3aed);border:none;border-radius:12px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:.2s;box-shadow:0 0 30px rgba(77,124,254,0.3);}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 50px rgba(77,124,254,0.5);}
+.btn-ghost{padding:14px 28px;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:12px;color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;}
+.btn-ghost:hover{background:rgba(255,255,255,0.08);}
+.home-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;max-width:900px;width:100%;}
+.home-feat{background:var(--panel2);border:1px solid var(--border);border-radius:16px;padding:24px;text-align:left;transition:.2s;}
+.home-feat:hover{border-color:var(--border2);transform:translateY(-2px);}
+.home-feat-icon{font-size:28px;margin-bottom:12px;}
+.home-feat h3{font-size:14px;font-weight:700;margin-bottom:6px;}
+.home-feat p{font-size:12px;color:var(--text2);line-height:1.6;}
+.plan-lock{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:99px;margin-top:8px;}
+.lock-plus{background:rgba(96,165,250,0.15);color:#60a5fa;border:1px solid rgba(96,165,250,0.3);}
+.lock-pro{background:rgba(192,132,252,0.15);color:#c084fc;border:1px solid rgba(192,132,252,0.3);}
+.lock-premium{background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.3);}
+.lock-all{background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);}
+
+/* ─── PLAN BADGES (Avatar rings) ─── */
+.plan-badge{font-size:9px;font-weight:800;text-transform:uppercase;padding:2px 7px;border-radius:20px;letter-spacing:.05em;}
+.plan-free{background:#27272a;color:#a1a1aa;}
+.plan-plus{background:#1e3a5f;color:#60a5fa;}
+.plan-pro{background:#3b1f5e;color:#c084fc;}
+.plan-premium{background:#44330f;color:#fbbf24;}
+.plan-pp{background:linear-gradient(135deg,#44110f,#44330f);color:#fb923c;}
+.plan-chip-avatar{position:relative;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.plan-chip-avatar img{width:28px;height:28px;object-fit:cover;border-radius:50%;position:relative;z-index:2;}
+.plan-chip-avatar::after{content:'';position:absolute;inset:-2px;border-radius:50%;z-index:0;}
+.plan-chip-avatar::before{content:'';position:absolute;inset:2px;border-radius:50%;z-index:1;background:var(--bg);}
+.ring-free::after{background:conic-gradient(#9ca3af,#d1d5db,#9ca3af);}
+.ring-plus::after{background:conic-gradient(#fff,#aaa,#fff,#aaa,#fff);animation:ringRotate 4s linear infinite;}
+.ring-pro::after{background:conic-gradient(#22c55e,#4ade80,#16a34a,#86efac,#22c55e);animation:ringRotate 3s linear infinite;}
+.ring-premium::after{background:conic-gradient(#f59e0b,#fcd34d,#d97706,#fef08a,#f59e0b);animation:ringRotate 2.5s linear infinite;}
+.ring-pp::after{background:conic-gradient(#ef4444,#f97316,#eab308,#f97316,#ef4444);animation:ringRotateFire 1.8s linear infinite;}
+@keyframes ringRotate{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+@keyframes ringRotateFire{0%{transform:rotate(0deg);filter:brightness(1);}50%{transform:rotate(180deg);filter:brightness(1.3);}100%{transform:rotate(360deg);filter:brightness(1);}}
+
+/* ─── EDITOR LAYOUT ─── */
+#editor{display:flex;flex-direction:column;height:100vh;display:none;}
+#editor.visible{display:flex;}
+
+/* ─── TOP TOOLBAR ─── */
+#toolbar{height:var(--toolbar-h);background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:8px;z-index:50;flex-shrink:0;}
+.tool-logo{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;letter-spacing:-0.02em;padding-right:12px;border-right:1px solid var(--border);margin-right:4px;}
+.tool-logo-icon{width:28px;height:28px;background:linear-gradient(135deg,#4d7cfe,#7c3aed);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.tb-sep{width:1px;height:28px;background:var(--border);margin:0 4px;}
+.tb-btn{height:34px;min-width:34px;padding:0 10px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--text2);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:6px;white-space:nowrap;}
+.tb-btn:hover{background:rgba(255,255,255,0.06);color:var(--text);border-color:var(--border);}
+.tb-btn.active{background:rgba(77,124,254,0.15);color:var(--accent);border-color:rgba(77,124,254,0.3);}
+.tb-btn i{font-size:13px;}
+.tb-spacer{flex:1;}
+.tb-user-section{display:flex;align-items:center;gap:10px;}
+
+/* ─── MAIN BODY ─── */
+#editor-body{flex:1;display:flex;overflow:hidden;}
+
+/* ─── LEFT SIDEBAR (Tools & Shapes) ─── */
+#left-panel{width:var(--sidebar-w);background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.lp-header{padding:14px 16px;border-bottom:1px solid var(--border);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--text3);}
+.lp-tabs{display:flex;border-bottom:1px solid var(--border);}
+.lp-tab{flex:1;padding:10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;transition:.15s;border:none;background:transparent;color:var(--text3);border-bottom:2px solid transparent;}
+.lp-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.lp-tab:hover{color:var(--text);}
+.lp-section{padding:12px;}
+.lp-section-title{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--text3);margin-bottom:8px;padding:0 2px;}
+.shapes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:16px;}
+.shape-btn{aspect-ratio:1;background:var(--panel2);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:.2s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:10px;color:var(--text2);font-weight:600;}
+.shape-btn:hover{background:rgba(77,124,254,0.1);border-color:rgba(77,124,254,0.3);color:var(--accent);}
+.shape-btn span{font-size:20px;}
+.shape-btn.active{background:rgba(77,124,254,0.15);border-color:var(--accent);color:var(--accent);}
+.tool-btn-list{display:flex;flex-direction:column;gap:4px;}
+.tool-item{padding:10px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:10px;transition:.15s;border:1px solid transparent;}
+.tool-item:hover{background:rgba(255,255,255,0.04);color:var(--text);}
+.tool-item.active{background:rgba(77,124,254,0.12);color:var(--accent);border-color:rgba(77,124,254,0.25);}
+.tool-item i{width:16px;text-align:center;font-size:13px;}
+.lp-scroll{flex:1;overflow-y:auto;padding-bottom:16px;}
+.template-card{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:0 12px 8px;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:10px;}
+.template-card:hover{border-color:var(--border2);}
+.template-card-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,rgba(77,124,254,0.3),rgba(124,58,237,0.3));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.template-card h4{font-size:11px;font-weight:700;margin-bottom:2px;}
+.template-card p{font-size:10px;color:var(--text3);}
+
+/* ─── VIEWPORT ─── */
+#viewport{flex:1;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 50%,#0d1829 0%,#080c14 70%);}
+#three-canvas{width:100%;height:100%;display:block;}
+.vp-overlay{position:absolute;inset:0;pointer-events:none;}
+.vp-grid-info{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:rgba(8,12,20,0.8);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;pointer-events:none;}
+.vp-controls{position:absolute;bottom:16px;right:16px;display:flex;flex-direction:column;gap:6px;}
+.vp-ctrl-btn{width:36px;height:36px;background:var(--panel);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;color:var(--text2);display:flex;align-items:center;justify-content:center;transition:.15s;}
+.vp-ctrl-btn:hover{border-color:var(--border2);color:var(--text);}
+.vp-mode-bar{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;gap:4px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:4px;}
+.vp-mode-btn{padding:5px 14px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;transition:.15s;color:var(--text2);border:none;background:transparent;}
+.vp-mode-btn.active{background:rgba(77,124,254,0.2);color:var(--accent);}
+.vp-mode-btn:hover{color:var(--text);}
+.selection-info{position:absolute;top:12px;left:12px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;display:none;}
+.selection-info.show{display:block;}
+
+/* ─── RIGHT PANEL (Properties) ─── */
+#right-panel{width:var(--panel-w);background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.rp-tabs{display:flex;border-bottom:1px solid var(--border);}
+.rp-tab{flex:1;padding:12px 8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;transition:.15s;text-align:center;border:none;background:transparent;color:var(--text3);border-bottom:2px solid transparent;}
+.rp-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.rp-body{flex:1;overflow-y:auto;padding:16px;}
+.prop-group{margin-bottom:20px;}
+.prop-group-title{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--text3);margin-bottom:10px;}
+.prop-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.prop-label{font-size:11px;color:var(--text2);font-weight:600;}
+.prop-input{width:110px;padding:5px 8px;background:var(--panel2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;transition:.15s;}
+.prop-input:focus{border-color:var(--accent);}
+.prop-input-full{width:100%;padding:7px 10px;background:var(--panel2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;transition:.15s;margin-bottom:8px;}
+.prop-input-full:focus{border-color:var(--accent);}
+.prop-xyz{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.prop-xyz-item{display:flex;flex-direction:column;gap:3px;}
+.prop-xyz-label{font-size:9px;font-weight:800;color:var(--text3);text-transform:uppercase;}
+.prop-xyz-input{padding:5px 7px;background:var(--panel2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;transition:.15s;width:100%;}
+.prop-xyz-input:focus{border-color:var(--accent);}
+.color-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.color-swatch{width:24px;height:24px;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:.15s;flex-shrink:0;}
+.color-swatch:hover,.color-swatch.active{border-color:rgba(255,255,255,0.6);transform:scale(1.1);}
+.color-picker-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.color-picker-preview{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);cursor:pointer;flex-shrink:0;}
+.material-selector{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;}
+.mat-btn{padding:7px 4px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:10px;font-weight:600;color:var(--text2);text-align:center;transition:.15s;}
+.mat-btn:hover{border-color:var(--border2);}
+.mat-btn.active{background:rgba(77,124,254,0.15);border-color:var(--accent);color:var(--accent);}
+.prop-slider{width:100%;accent-color:var(--accent);margin:4px 0;}
+.prop-select{width:100%;padding:7px 10px;background:var(--panel2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:12px;outline:none;cursor:pointer;margin-bottom:8px;}
+.rp-btn{width:100%;padding:9px;background:rgba(77,124,254,0.12);border:1px solid rgba(77,124,254,0.3);border-radius:9px;color:var(--accent);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:.2s;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px;}
+.rp-btn:hover{background:rgba(77,124,254,0.2);}
+.rp-btn.danger{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:var(--danger);}
+.rp-btn.danger:hover{background:rgba(239,68,68,0.2);}
+.rp-btn.success{background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.3);color:var(--success);}
+.scene-obj-list{display:flex;flex-direction:column;gap:4px;}
+.scene-obj{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:.15s;font-size:11px;color:var(--text2);}
+.scene-obj:hover{background:rgba(255,255,255,0.03);}
+.scene-obj.selected{background:rgba(77,124,254,0.1);border-color:rgba(77,124,254,0.25);color:var(--text);}
+.scene-obj-icon{font-size:14px;width:18px;text-align:center;}
+.scene-obj-name{flex:1;font-weight:600;}
+.scene-obj-vis{font-size:11px;color:var(--text3);cursor:pointer;padding:2px 4px;}
+.scene-obj-vis:hover{color:var(--text);}
+
+/* ─── AI MODAL ─── */
+#ai-modal{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:200;display:none;align-items:center;justify-content:center;}
+#ai-modal.show{display:flex;}
+.ai-modal-box{background:var(--panel);border:1px solid var(--border2);border-radius:20px;width:min(640px,95vw);max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,0.5),0 0 60px rgba(77,124,254,0.1);}
+.ai-modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;}
+.ai-modal-title{font-size:16px;font-weight:700;flex:1;}
+.ai-modal-close{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid var(--border);cursor:pointer;font-size:14px;color:var(--text2);display:flex;align-items:center;justify-content:center;transition:.15s;}
+.ai-modal-close:hover{color:var(--text);background:rgba(255,255,255,0.1);}
+.ai-tabs{display:flex;padding:16px 24px 0;gap:8px;border-bottom:1px solid var(--border);}
+.ai-tab{padding:8px 16px;border-radius:8px 8px 0 0;font-size:12px;font-weight:700;cursor:pointer;border:1px solid transparent;border-bottom:none;transition:.15s;color:var(--text2);}
+.ai-tab.active{background:rgba(77,124,254,0.15);border-color:rgba(77,124,254,0.3);border-bottom:1px solid var(--panel);color:var(--accent);margin-bottom:-1px;}
+.ai-tab:not(.active):hover{color:var(--text);}
+.ai-modal-body{flex:1;overflow-y:auto;padding:24px;}
+.ai-section{display:none;}
+.ai-section.active{display:block;}
+.ai-textarea{width:100%;height:90px;padding:12px;background:var(--panel2);border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:13px;resize:none;outline:none;transition:.15s;line-height:1.6;}
+.ai-textarea:focus{border-color:var(--accent);}
+.ai-suggestions{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0;}
+.ai-suggest{padding:5px 12px;background:var(--panel2);border:1px solid var(--border);border-radius:99px;font-size:11px;color:var(--text2);cursor:pointer;transition:.15s;}
+.ai-suggest:hover{border-color:var(--border2);color:var(--text);}
+.ai-generate-btn{width:100%;padding:13px;background:linear-gradient(135deg,#4d7cfe,#7c3aed);border:none;border-radius:12px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:.2s;margin-top:12px;}
+.ai-generate-btn:hover{opacity:.9;transform:translateY(-1px);}
+.ai-generate-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.ai-result{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:16px;font-size:12px;line-height:1.7;color:var(--text2);display:none;}
+.ai-result.show{display:block;}
+.ai-result-actions{display:flex;gap:8px;margin-top:12px;}
+.ai-result-btn{padding:7px 14px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;transition:.15s;border:1px solid var(--border);}
+.ai-result-btn.apply{background:rgba(77,124,254,0.15);color:var(--accent);border-color:rgba(77,124,254,0.3);}
+.ai-result-btn.apply:hover{background:rgba(77,124,254,0.25);}
+.ai-result-btn.clear{background:transparent;color:var(--text2);}
+.ai-result-btn.clear:hover{color:var(--text);}
+.gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;}
+.gallery-item{aspect-ratio:1;border-radius:10px;border:1px solid var(--border);cursor:pointer;overflow:hidden;position:relative;background:var(--panel2);transition:.2s;}
+.gallery-item:hover{border-color:var(--accent);transform:scale(1.03);}
+.gallery-item img{width:100%;height:100%;object-fit:cover;}
+.gallery-item-label{position:absolute;bottom:0;left:0;right:0;padding:6px;background:linear-gradient(transparent,rgba(0,0,0,0.8));font-size:9px;font-weight:700;color:#fff;}
+.gallery-upload-zone{border:2px dashed var(--border);border-radius:12px;padding:30px;text-align:center;cursor:pointer;transition:.2s;margin-top:12px;}
+.gallery-upload-zone:hover{border-color:var(--accent);background:rgba(77,124,254,0.04);}
+.gallery-upload-zone i{font-size:28px;color:var(--text3);margin-bottom:10px;}
+.gallery-upload-zone p{font-size:12px;color:var(--text2);}
+.gallery-upload-zone small{font-size:11px;color:var(--text3);}
+.detouring-tools{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0;}
+.det-tool{padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;color:var(--text2);background:var(--panel2);transition:.15s;display:flex;align-items:center;gap:5px;}
+.det-tool:hover{border-color:var(--border2);color:var(--text);}
+.det-tool.active{background:rgba(6,182,212,0.12);border-color:rgba(6,182,212,0.3);color:var(--accent3);}
+.image-canvas-wrap{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;min-height:180px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;position:relative;overflow:hidden;}
+#img-preview-canvas{max-width:100%;max-height:200px;border-radius:8px;}
+.plan-lock-banner{background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:12px;padding:14px;text-align:center;margin-bottom:16px;}
+.plan-lock-banner h4{font-size:13px;font-weight:700;color:var(--gold);margin-bottom:4px;}
+.plan-lock-banner p{font-size:11px;color:var(--text2);}
+.upgrade-link{color:var(--gold);text-decoration:underline;cursor:pointer;}
+.ai-loading{display:flex;align-items:center;gap:8px;padding:12px;color:var(--text2);font-size:12px;}
+.ai-spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.ai-scene-items{display:flex;flex-direction:column;gap:6px;margin-top:12px;}
+.ai-scene-item{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--text2);}
+.ai-scene-item strong{color:var(--text);}
+
+/* ─── EXPORT MODAL ─── */
+#export-modal{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:200;display:none;align-items:center;justify-content:center;}
+#export-modal.show{display:flex;}
+.export-box{background:var(--panel);border:1px solid var(--border2);border-radius:20px;width:min(440px,95vw);padding:28px;box-shadow:0 30px 80px rgba(0,0,0,0.5);}
+.export-box h3{font-size:16px;font-weight:700;margin-bottom:20px;}
+.export-option{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:12px;}
+.export-option:hover{border-color:var(--border2);}
+.export-option-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.export-option h4{font-size:13px;font-weight:700;margin-bottom:3px;}
+.export-option p{font-size:11px;color:var(--text2);}
+
+/* ─── AUTH MODAL ─── */
+#auth-modal{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:300;display:none;align-items:center;justify-content:center;}
+#auth-modal.show{display:flex;}
+.auth-box{background:var(--panel);border:1px solid var(--border2);border-radius:20px;width:min(380px,95vw);padding:32px;box-shadow:0 30px 80px rgba(0,0,0,0.5);}
+.auth-box h2{font-size:20px;font-weight:700;text-align:center;margin-bottom:6px;}
+.auth-box p{font-size:13px;color:var(--text2);text-align:center;margin-bottom:24px;}
+.auth-input{width:100%;padding:10px 14px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:14px;outline:none;margin-bottom:10px;transition:.15s;}
+.auth-input:focus{border-color:var(--accent);}
+.auth-btn{width:100%;padding:12px;background:linear-gradient(135deg,#4d7cfe,#7c3aed);border:none;border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:.2s;margin-top:4px;}
+.auth-btn:hover{opacity:.9;}
+.auth-switch{text-align:center;font-size:12px;color:var(--text2);margin-top:16px;}
+.auth-switch a{color:var(--accent);cursor:pointer;text-decoration:underline;}
+.auth-error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--danger);margin-bottom:10px;display:none;}
+.auth-error.show{display:block;}
+.auth-google-btn{width:100%;padding:11px;background:rgba(255,255,255,0.05);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px;}
+.auth-google-btn:hover{background:rgba(255,255,255,0.08);}
+.auth-divider{display:flex;align-items:center;gap:10px;margin-bottom:12px;color:var(--text3);font-size:11px;}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ─── TOAST ─── */
+#toast-container{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.toast{padding:10px 16px;background:var(--panel);border:1px solid var(--border);border-radius:10px;font-size:12px;display:flex;align-items:center;gap:8px;animation:toastIn .3s ease-out forwards;max-width:300px;}
+.toast.success{border-color:rgba(16,185,129,0.4);color:var(--success);}
+.toast.error{border-color:rgba(239,68,68,0.4);color:var(--danger);}
+.toast.info{border-color:rgba(77,124,254,0.4);color:var(--accent);}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+
+/* ─── CONTEXT MENU ─── */
+#ctx-menu{position:fixed;background:var(--panel);border:1px solid var(--border2);border-radius:10px;padding:6px;z-index:150;display:none;min-width:160px;box-shadow:0 16px 40px rgba(0,0,0,0.5);}
+.ctx-item{padding:7px 12px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:8px;transition:.1s;}
+.ctx-item:hover{background:rgba(255,255,255,0.06);color:var(--text);}
+.ctx-item.danger{color:var(--danger);}
+.ctx-item.danger:hover{background:rgba(239,68,68,0.1);}
+.ctx-sep{height:1px;background:var(--border);margin:4px 0;}
+
+/* ─── PLAN UPGRADE BANNER ─── */
+#plan-banner{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:10;display:none;}
+#plan-banner.show{display:block;}
+.plan-banner-inner{background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(245,158,11,0.1));border:1px solid rgba(251,191,36,0.3);border-radius:10px;padding:8px 16px;font-size:11px;color:var(--gold);display:flex;align-items:center;gap:8px;white-space:nowrap;}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:900px){
+  #left-panel{display:none;}
+  #right-panel{width:240px;}
+}
+@media(max-width:640px){
+  #right-panel{display:none;}
+  #toolbar .tb-btn span{display:none;}
+}
+
+/* ─── LAYER GIZMO ─── */
+.transform-gizmo{pointer-events:none;}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-logo">🧊</div>
+  <div class="splash-title">WikiMind <span>3D</span></div>
+  <div class="splash-sub">Design Studio — Powered by Mistral AI</div>
+  <div class="splash-bar"><div class="splash-bar-fill"></div></div>
+</div>
+
+<!-- HOME SCREEN -->
+<div id="home-screen">
+  <nav class="home-nav">
+    <div class="home-logo">
+      <div class="home-logo-icon">🧊</div>
+      WikiMind <span>3D</span>
+    </div>
+    <div class="home-nav-right">
+      <div id="home-user-chip" class="home-user-chip" style="display:none;">
+        <div id="home-avatar-ring" class="plan-chip-avatar ring-free">
+          <img id="home-avatar-img" src="" alt="avatar">
+        </div>
+        <div>
+          <div id="home-user-name" style="font-size:12px;font-weight:700;"></div>
+          <div id="home-plan-badge" class="plan-badge plan-free">Free</div>
+        </div>
+      </div>
+      <button id="home-login-btn" onclick="openAuthModal()">Connexion</button>
+      <a href="index.html" style="padding:8px 14px;border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;transition:.2s;text-decoration:none;">
+        <i class="fa-solid fa-house"></i> Accueil
+      </a>
+    </div>
+  </nav>
+  <div class="home-hero">
+    <h1>Design en 3D<br><span>avec l'IA</span></h1>
+    <p>Un studio de conception 3D complet propulsé par Mistral AI. Créez, modelez et générez des objets en 3D avec la puissance de l'intelligence artificielle.</p>
+    <div class="home-cta-row">
+      <button class="btn-primary" onclick="openEditor()">
+        <i class="fa-solid fa-cube"></i> Ouvrir l'Éditeur
+      </button>
+      <button class="btn-ghost" onclick="openEditorWithTemplate('maison')">
+        <i class="fa-solid fa-play"></i> Démo rapide
+      </button>
+    </div>
+    <div class="home-features">
+      <div class="home-feat">
+        <div class="home-feat-icon">🎨</div>
+        <h3>Éditeur 3D Complet</h3>
+        <p>Formes primitives, transformations, matériaux, éclairage — toutes les fonctionnalités d'un outil pro.</p>
+        <div class="plan-lock lock-all">✓ Gratuit</div>
+      </div>
+      <div class="home-feat">
+        <div class="home-feat-icon">🤖</div>
+        <h3>Génération IA par texte</h3>
+        <p>Décrivez votre scène en français et l'IA Mistral génère et place les objets automatiquement.</p>
+        <div class="plan-lock lock-plus">✦ AI Plus+</div>
+      </div>
+      <div class="home-feat">
+        <div class="home-feat-icon">🖼️</div>
+        <h3>Import & Détourage Image</h3>
+        <p>Importez une image, détourer automatiquement et appliquez-la comme texture sur vos objets 3D.</p>
+        <div class="plan-lock lock-pro">★ AI Pro+</div>
+      </div>
+      <div class="home-feat">
+        <div class="home-feat-icon">✨</div>
+        <h3>Analyse de Scène IA</h3>
+        <p>L'IA analyse votre scène et suggère des améliorations, des couleurs et des compositions.</p>
+        <div class="plan-lock lock-premium">👑 Premium</div>
+      </div>
+      <div class="home-feat">
+        <div class="home-feat-icon">📤</div>
+        <h3>Export Multi-format</h3>
+        <p>Exportez en PNG haute résolution, OBJ, STL pour l'impression 3D ou partage direct.</p>
+        <div class="plan-lock lock-plus">✦ AI Plus+</div>
+      </div>
+      <div class="home-feat">
+        <div class="home-feat-icon">🌌</div>
+        <h3>Galerie WikiMind</h3>
+        <p>Accédez à la galerie WikiMind pour importer des images et les utiliser comme textures dans vos créations.</p>
+        <div class="plan-lock lock-pro">★ AI Pro+</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDITOR -->
+<div id="editor">
+  <!-- TOP TOOLBAR -->
+  <div id="toolbar">
+    <div class="tool-logo">
+      <div class="tool-logo-icon" onclick="goHome()" style="cursor:pointer;" title="Accueil">🧊</div>
+      <span style="font-size:13px;font-weight:700;letter-spacing:-0.02em;">3D Studio</span>
+    </div>
+    <div class="tb-sep"></div>
+    <!-- File -->
+    <button class="tb-btn" onclick="newScene()" title="Nouvelle scène"><i class="fa-solid fa-file"></i><span>Nouveau</span></button>
+    <button class="tb-btn" onclick="saveScene()" title="Sauvegarder"><i class="fa-solid fa-floppy-disk"></i><span>Sauver</span></button>
+    <button class="tb-btn" onclick="openExportModal()" title="Exporter"><i class="fa-solid fa-upload"></i><span>Exporter</span></button>
+    <div class="tb-sep"></div>
+    <!-- Edit -->
+    <button class="tb-btn" onclick="undoAction()" title="Annuler (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
+    <button class="tb-btn" onclick="redoAction()" title="Refaire (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
+    <button class="tb-btn" onclick="duplicateSelected()" title="Dupliquer"><i class="fa-solid fa-clone"></i></button>
+    <button class="tb-btn" onclick="deleteSelected()" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+    <div class="tb-sep"></div>
+    <!-- Transform mode -->
+    <button class="tb-btn active" id="tb-select" onclick="setTransformMode('select')" title="Sélection (Q)"><i class="fa-solid fa-arrow-pointer"></i></button>
+    <button class="tb-btn" id="tb-move" onclick="setTransformMode('move')" title="Déplacer (W)"><i class="fa-solid fa-up-down-left-right"></i></button>
+    <button class="tb-btn" id="tb-rotate" onclick="setTransformMode('rotate')" title="Rotation (E)"><i class="fa-solid fa-rotate"></i></button>
+    <button class="tb-btn" id="tb-scale" onclick="setTransformMode('scale')" title="Échelle (R)"><i class="fa-solid fa-expand"></i></button>
+    <div class="tb-sep"></div>
+    <!-- View -->
+    <button class="tb-btn" onclick="toggleGrid()" title="Grille"><i class="fa-solid fa-border-all"></i><span>Grille</span></button>
+    <button class="tb-btn" onclick="resetCamera()" title="Réinitialiser vue"><i class="fa-solid fa-camera"></i><span>Vue</span></button>
+    <div class="tb-sep"></div>
+    <!-- AI -->
+    <button class="tb-btn" onclick="openAiModal()" style="background:rgba(77,124,254,0.12);border-color:rgba(77,124,254,0.3);color:var(--accent);" title="Générateur IA">
+      <i class="fa-solid fa-wand-magic-sparkles"></i><span>IA Créative</span>
+    </button>
+    <div class="tb-spacer"></div>
+    <!-- User -->
+    <div class="tb-user-section">
+      <div id="tb-user-chip" style="display:none;align-items:center;gap:8px;padding:4px 10px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;cursor:pointer;" onclick="goHome()">
+        <div id="tb-avatar-ring" class="plan-chip-avatar ring-free">
+          <img id="tb-avatar-img" src="" alt="avatar" style="width:24px;height:24px;">
+        </div>
+        <span id="tb-user-name" style="font-size:11px;font-weight:700;"></span>
+        <span id="tb-plan-badge" class="plan-badge plan-free"></span>
+      </div>
+      <button id="tb-login-btn" class="tb-btn" onclick="openAuthModal()"><i class="fa-solid fa-user"></i><span>Connexion</span></button>
+    </div>
+  </div>
+
+  <!-- EDITOR BODY -->
+  <div id="editor-body">
+
+    <!-- LEFT PANEL -->
+    <div id="left-panel">
+      <div class="lp-tabs">
+        <button class="lp-tab active" onclick="lpTab('shapes')">Formes</button>
+        <button class="lp-tab" onclick="lpTab('tools')">Outils</button>
+        <button class="lp-tab" onclick="lpTab('models')">Modèles</button>
+      </div>
+
+      <div id="lp-shapes" class="lp-scroll">
+        <div class="lp-section">
+          <div class="lp-section-title">Primitives de base</div>
+          <div class="shapes-grid">
+            <div class="shape-btn" onclick="addShape('cube')"><span>⬛</span>Cube</div>
+            <div class="shape-btn" onclick="addShape('sphere')"><span>🔵</span>Sphère</div>
+            <div class="shape-btn" onclick="addShape('cylinder')"><span>🫙</span>Cylindre</div>
+            <div class="shape-btn" onclick="addShape('cone')"><span>🔺</span>Cône</div>
+            <div class="shape-btn" onclick="addShape('torus')"><span>🍩</span>Tore</div>
+            <div class="shape-btn" onclick="addShape('plane')"><span>⬜</span>Plan</div>
+          </div>
+          <div class="lp-section-title">Formes avancées</div>
+          <div class="shapes-grid">
+            <div class="shape-btn" onclick="addShape('pyramid')"><span>🔷</span>Pyramide</div>
+            <div class="shape-btn" onclick="addShape('capsule')"><span>💊</span>Capsule</div>
+            <div class="shape-btn" onclick="addShape('ring')"><span>💍</span>Anneau</div>
+            <div class="shape-btn" onclick="addShape('arrow')"><span>➡️</span>Flèche</div>
+            <div class="shape-btn" onclick="addShape('star')"><span>⭐</span>Étoile</div>
+            <div class="shape-btn" onclick="addShape('heart')"><span>🫀</span>Cœur</div>
+          </div>
+          <div class="lp-section-title">Lumières</div>
+          <div class="shapes-grid">
+            <div class="shape-btn" onclick="addShape('pointlight')"><span>💡</span>Point</div>
+            <div class="shape-btn" onclick="addShape('spotlight')"><span>🔦</span>Spot</div>
+            <div class="shape-btn" onclick="addShape('dirlight')"><span>☀️</span>Direc.</div>
+          </div>
+          <div class="lp-section-title">Texte 3D</div>
+          <div style="margin:0 2px;">
+            <button class="rp-btn" onclick="addText3D()" style="margin-bottom:0;"><i class="fa-solid fa-font"></i> Ajouter du Texte 3D</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="lp-tools" class="lp-scroll" style="display:none;">
+        <div class="lp-section">
+          <div class="lp-section-title">Outils de sélection</div>
+          <div class="tool-btn-list">
+            <div class="tool-item active" id="tool-select" onclick="setTransformMode('select')"><i class="fa-solid fa-arrow-pointer"></i>Sélection <span style="color:var(--text3);font-size:10px;margin-left:auto;">Q</span></div>
+            <div class="tool-item" id="tool-move" onclick="setTransformMode('move')"><i class="fa-solid fa-up-down-left-right"></i>Déplacer <span style="color:var(--text3);font-size:10px;margin-left:auto;">W</span></div>
+            <div class="tool-item" id="tool-rotate" onclick="setTransformMode('rotate')"><i class="fa-solid fa-rotate"></i>Rotation <span style="color:var(--text3);font-size:10px;margin-left:auto;">E</span></div>
+            <div class="tool-item" id="tool-scale" onclick="setTransformMode('scale')"><i class="fa-solid fa-expand"></i>Échelle <span style="color:var(--text3);font-size:10px;margin-left:auto;">R</span></div>
+          </div>
+          <div class="lp-section-title" style="margin-top:12px;">Opérations</div>
+          <div class="tool-btn-list">
+            <div class="tool-item" onclick="duplicateSelected()"><i class="fa-solid fa-clone"></i>Dupliquer</div>
+            <div class="tool-item" onclick="groupSelected()"><i class="fa-solid fa-object-group"></i>Grouper</div>
+            <div class="tool-item" onclick="alignObjects('center')"><i class="fa-solid fa-align-center"></i>Centrer</div>
+            <div class="tool-item" onclick="mirrorObject('x')"><i class="fa-solid fa-left-right"></i>Miroir X</div>
+            <div class="tool-item" onclick="mirrorObject('y')"><i class="fa-solid fa-up-down"></i>Miroir Y</div>
+          </div>
+          <div class="lp-section-title" style="margin-top:12px;">Environnement</div>
+          <div class="tool-btn-list">
+            <div class="tool-item" onclick="setBg('dark')"><i class="fa-solid fa-moon"></i>Fond sombre</div>
+            <div class="tool-item" onclick="setBg('light')"><i class="fa-solid fa-sun"></i>Fond clair</div>
+            <div class="tool-item" onclick="setBg('space')"><i class="fa-solid fa-star"></i>Espace</div>
+            <div class="tool-item" onclick="setBg('gradient')"><i class="fa-solid fa-palette"></i>Dégradé</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="lp-models" class="lp-scroll" style="display:none;">
+        <div class="lp-section">
+          <div class="lp-section-title">Modèles rapides</div>
+        </div>
+        <div class="template-card" onclick="openEditorWithTemplate('maison')">
+          <div class="template-card-icon">🏠</div>
+          <div><h4>Maison simple</h4><p>Architecture basique</p></div>
+        </div>
+        <div class="template-card" onclick="openEditorWithTemplate('robot')">
+          <div class="template-card-icon">🤖</div>
+          <div><h4>Robot</h4><p>Personnage cubique</p></div>
+        </div>
+        <div class="template-card" onclick="openEditorWithTemplate('pont')">
+          <div class="template-card-icon">🌉</div>
+          <div><h4>Pont</h4><p>Structure engineering</p></div>
+        </div>
+        <div class="template-card" onclick="openEditorWithTemplate('fusee')">
+          <div class="template-card-icon">🚀</div>
+          <div><h4>Fusée</h4><p>Véhicule spatial</p></div>
+        </div>
+        <div class="template-card" onclick="openEditorWithTemplate('ville')">
+          <div class="template-card-icon">🌆</div>
+          <div><h4>Paysage urbain</h4><p>Mini-ville</p></div>
+        </div>
+        <div class="template-card" onclick="openEditorWithTemplate('logo')">
+          <div class="template-card-icon">💎</div>
+          <div><h4>Logo 3D</h4><p>Lettrage 3D</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEWPORT -->
+    <div id="viewport">
+      <canvas id="three-canvas"></canvas>
+      <div class="vp-mode-bar">
+        <button class="vp-mode-btn active" id="view-persp" onclick="setViewMode('perspective')">Perspective</button>
+        <button class="vp-mode-btn" id="view-ortho" onclick="setViewMode('orthographic')">Ortho</button>
+        <button class="vp-mode-btn" id="view-top" onclick="setView('top')">Dessus</button>
+        <button class="vp-mode-btn" id="view-front" onclick="setView('front')">Face</button>
+        <button class="vp-mode-btn" id="view-side" onclick="setView('side')">Côté</button>
+      </div>
+      <div class="selection-info" id="sel-info"></div>
+      <div class="vp-grid-info" id="coords-display">X: 0.00 | Y: 0.00 | Z: 0.00</div>
+      <div class="vp-controls">
+        <div class="vp-ctrl-btn" onclick="zoomIn()" title="Zoom +"><i class="fa-solid fa-plus"></i></div>
+        <div class="vp-ctrl-btn" onclick="zoomOut()" title="Zoom -"><i class="fa-solid fa-minus"></i></div>
+        <div class="vp-ctrl-btn" onclick="resetCamera()" title="Réinitialiser vue"><i class="fa-solid fa-crosshairs"></i></div>
+        <div class="vp-ctrl-btn" onclick="fitAll()" title="Voir tout"><i class="fa-solid fa-expand-arrows-alt"></i></div>
+      </div>
+      <div id="plan-banner"><div class="plan-banner-inner"><i class="fa-solid fa-lock"></i> Fonctionnalité réservée AI Plus+. <a onclick="openAuthModal()" class="upgrade-link" style="margin-left:4px;">Passer à Plus</a></div></div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div id="right-panel">
+      <div class="rp-tabs">
+        <button class="rp-tab active" onclick="rpTab('props')">Propriétés</button>
+        <button class="rp-tab" onclick="rpTab('scene')">Scène</button>
+        <button class="rp-tab" onclick="rpTab('material')">Matériau</button>
+      </div>
+
+      <!-- PROPS TAB -->
+      <div class="rp-body" id="rp-props">
+        <div id="no-selection" style="padding:30px 0;text-align:center;color:var(--text3);">
+          <i class="fa-solid fa-cube" style="font-size:28px;margin-bottom:10px;"></i>
+          <p style="font-size:12px;">Sélectionnez un objet<br>pour voir ses propriétés</p>
+        </div>
+        <div id="obj-props" style="display:none;">
+          <div class="prop-group">
+            <div class="prop-group-title">Nom</div>
+            <input class="prop-input-full" id="prop-name" placeholder="Nom de l'objet" oninput="updatePropName()">
+          </div>
+          <div class="prop-group">
+            <div class="prop-group-title">Position</div>
+            <div class="prop-xyz">
+              <div class="prop-xyz-item"><div class="prop-xyz-label" style="color:#ef4444;">X</div><input class="prop-xyz-input" id="pos-x" type="number" step="0.1" oninput="updatePropPos()"></div>
+              <div class="prop-xyz-item"><div class="prop-xyz-label" style="color:#22c55e;">Y</div><input class="prop-xyz-input" id="pos-y" type="number" step="0.1" oninput="updatePropPos()"></div>
+              <div class="prop-xyz-item"><div class="prop-xyz-label" style="color:#3b82f6;">Z</div><input class="prop-xyz-input" id="pos-z" type="number" step="0.1" oninput="updatePropPos()"></div>
+            </div>
+          </div>
+          <div class="prop-group">
+            <div class="prop-group-title">Rotation (°)</div>
+            <div class="prop-xyz">
+              <div class="prop-xyz-item"><div class="prop-xyz-label" style="color:#ef4444;">X</div><input class="prop-xyz-input" id="rot-x" type="number" step="1" oninput="updatePropRot()"></div>
+              <div class="prop-xyz-item"><div class="prop-xyz-label" style="color:#22c55e;">Y</div><input class="prop-xyz-input" id="rot-y" type="number" step="1" oninput="updatePropRot()"></div>
+              <div class="prop-xyz-item"><div class="prop-xyz-label" style="color:#3b82f6;">Z</div><input class="prop-xyz-input" id="rot-z" type="number" step="1" oninput="updatePropRot()"></div>
+            </div>
+          </div>
+          <div class="prop-group">
+            <div class="prop-group-title">Échelle</div>
+            <div class="prop-xyz">
+              <div class="prop-xyz-item"><div class="prop-xyz-label" style="color:#ef4444;">X</div><input class="prop-xyz-input" id="sca-x" type="number" step="0.1" min="0.01" oninput="updatePropScale()"></div>
+              <div class="prop-xyz-item"><div class="prop-xyz-label" style="color:#22c55e;">Y</div><input class="prop-xyz-input" id="sca-y" type="number" step="0.1" min="0.01" oninput="updatePropScale()"></div>
+              <div class="prop-xyz-item"><div class="prop-xyz-label" style="color:#3b82f6;">Z</div><input class="prop-xyz-input" id="sca-z" type="number" step="0.1" min="0.01" oninput="updatePropScale()"></div>
+            </div>
+          </div>
+          <div class="prop-group">
+            <div class="prop-group-title">Actions rapides</div>
+            <button class="rp-btn" onclick="duplicateSelected()"><i class="fa-solid fa-clone"></i>Dupliquer</button>
+            <button class="rp-btn danger" onclick="deleteSelected()"><i class="fa-solid fa-trash"></i>Supprimer</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE TAB -->
+      <div class="rp-body" id="rp-scene" style="display:none;">
+        <div class="prop-group">
+          <div class="prop-group-title">Objets dans la scène</div>
+          <div class="scene-obj-list" id="scene-obj-list"></div>
+        </div>
+        <div class="prop-group">
+          <button class="rp-btn" onclick="selectAll()"><i class="fa-solid fa-object-group"></i>Tout sélectionner</button>
+          <button class="rp-btn danger" onclick="clearScene()"><i class="fa-solid fa-trash-alt"></i>Vider la scène</button>
+        </div>
+        <div class="prop-group">
+          <div class="prop-group-title">Statistiques</div>
+          <div style="font-size:11px;color:var(--text2);line-height:2;">
+            Objets : <span id="stat-objects">0</span><br>
+            Polygones : <span id="stat-polys">0</span><br>
+            Lumières : <span id="stat-lights">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- MATERIAL TAB -->
+      <div class="rp-body" id="rp-material" style="display:none;">
+        <div id="no-mat-sel" style="padding:30px 0;text-align:center;color:var(--text3);">
+          <i class="fa-solid fa-palette" style="font-size:28px;margin-bottom:10px;"></i>
+          <p style="font-size:12px;">Sélectionnez un objet<br>pour éditer son matériau</p>
+        </div>
+        <div id="mat-props" style="display:none;">
+          <div class="prop-group">
+            <div class="prop-group-title">Type de matériau</div>
+            <div class="material-selector">
+              <div class="mat-btn active" id="mat-standard" onclick="setMaterial('standard')">Standard</div>
+              <div class="mat-btn" id="mat-phong" onclick="setMaterial('phong')">Phong</div>
+              <div class="mat-btn" id="mat-lambert" onclick="setMaterial('lambert')">Lambert</div>
+              <div class="mat-btn" id="mat-wireframe" onclick="setMaterial('wireframe')">Filaire</div>
+              <div class="mat-btn" id="mat-glass" onclick="setMaterial('glass')">Verre</div>
+              <div class="mat-btn" id="mat-metal" onclick="setMaterial('metal')">Métal</div>
+            </div>
+          </div>
+          <div class="prop-group">
+            <div class="prop-group-title">Couleur</div>
+            <div class="color-picker-row">
+              <input type="color" class="color-picker-preview" id="mat-color" value="#4d7cfe" oninput="updateMatColor()">
+              <span style="font-size:11px;color:var(--text2);">Couleur principale</span>
+            </div>
+            <div class="color-row">
+              <div class="color-swatch" style="background:#4d7cfe;" onclick="applyColorSwatch('#4d7cfe')"></div>
+              <div class="color-swatch" style="background:#ef4444;" onclick="applyColorSwatch('#ef4444')"></div>
+              <div class="color-swatch" style="background:#22c55e;" onclick="applyColorSwatch('#22c55e')"></div>
+              <div class="color-swatch" style="background:#f59e0b;" onclick="applyColorSwatch('#f59e0b')"></div>
+              <div class="color-swatch" style="background:#ec4899;" onclick="applyColorSwatch('#ec4899')"></div>
+              <div class="color-swatch" style="background:#8b5cf6;" onclick="applyColorSwatch('#8b5cf6')"></div>
+              <div class="color-swatch" style="background:#06b6d4;" onclick="applyColorSwatch('#06b6d4')"></div>
+              <div class="color-swatch" style="background:#ffffff;" onclick="applyColorSwatch('#ffffff')"></div>
+              <div class="color-swatch" style="background:#111111;border:1px solid #333;" onclick="applyColorSwatch('#111111')"></div>
+            </div>
+          </div>
+          <div class="prop-group">
+            <div class="prop-group-title">Opacité</div>
+            <input type="range" class="prop-slider" id="mat-opacity" min="0" max="1" step="0.05" value="1" oninput="updateMatOpacity()">
+            <div style="font-size:10px;color:var(--text3);text-align:right;" id="opacity-val">100%</div>
+          </div>
+          <div class="prop-group">
+            <div class="prop-group-title">Rugosité</div>
+            <input type="range" class="prop-slider" id="mat-roughness" min="0" max="1" step="0.05" value="0.5" oninput="updateMatRoughness()">
+          </div>
+          <div class="prop-group">
+            <div class="prop-group-title">Métallisation</div>
+            <input type="range" class="prop-slider" id="mat-metalness" min="0" max="1" step="0.05" value="0" oninput="updateMatMetalness()">
+          </div>
+          <div class="prop-group">
+            <div class="prop-group-title">Texture image</div>
+            <label style="display:block;padding:10px;background:var(--panel2);border:1px dashed var(--border);border-radius:8px;text-align:center;cursor:pointer;font-size:11px;color:var(--text2);" for="tex-upload">
+              <i class="fa-solid fa-image" style="margin-right:6px;"></i>Importer une texture
+              <input type="file" id="tex-upload" accept="image/*" style="display:none;" onchange="applyTextureFromFile(event)">
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end editor-body -->
+</div><!-- end editor -->
+
+<!-- ─── AI MODAL ─── -->
+<div id="ai-modal">
+  <div class="ai-modal-box">
+    <div class="ai-modal-header">
+      <div style="width:36px;height:36px;background:linear-gradient(135deg,#4d7cfe,#7c3aed);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;">✨</div>
+      <div class="ai-modal-title">IA Créative — WikiMind 3D</div>
+      <div class="ai-modal-close" onclick="closeAiModal()"><i class="fa-solid fa-times"></i></div>
+    </div>
+    <div class="ai-tabs">
+      <div class="ai-tab active" onclick="aiTab('text')"><i class="fa-solid fa-keyboard" style="margin-right:5px;"></i>Texte → 3D</div>
+      <div class="ai-tab" onclick="aiTab('image')"><i class="fa-solid fa-image" style="margin-right:5px;"></i>Image → Texture</div>
+      <div class="ai-tab" onclick="aiTab('gallery')"><i class="fa-solid fa-photo-film" style="margin-right:5px;"></i>Galerie</div>
+      <div class="ai-tab" onclick="aiTab('analyse')"><i class="fa-solid fa-magnifying-glass-chart" style="margin-right:5px;"></i>Analyser</div>
+    </div>
+    <div class="ai-modal-body">
+
+      <!-- TEXT TO 3D -->
+      <div class="ai-section active" id="ai-text">
+        <div id="ai-text-lock" class="plan-lock-banner" style="display:none;">
+          <h4>✦ Fonctionnalité AI Plus+</h4>
+          <p>La génération de scène par IA est disponible dès le forfait AI Plus.<br><a class="upgrade-link" onclick="closeAiModal();openAuthModal()">Connectez-vous ou mettez à niveau.</a></p>
+        </div>
+        <div id="ai-text-content">
+          <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">Décrivez votre scène en français. L'IA va générer et placer les objets 3D automatiquement dans l'éditeur.</p>
+          <textarea class="ai-textarea" id="ai-text-input" placeholder="Ex: Une maison avec un toit rouge, entourée d'arbres verts et avec un soleil en haut à droite..."></textarea>
+          <div class="ai-suggestions">
+            <div class="ai-suggest" onclick="aiSuggest('Un robot futuriste avec des cubes et des cylindres dorés')">🤖 Robot doré</div>
+            <div class="ai-suggest" onclick="aiSuggest('Un pont élégant au-dessus d\'un lac, avec des piliers en béton')">🌉 Pont</div>
+            <div class="ai-suggest" onclick="aiSuggest('Une ville miniature avec des immeubles de différentes tailles')">🌆 Ville</div>
+            <div class="ai-suggest" onclick="aiSuggest('Une fusée argentée prête au décollage sur une plateforme rouge')">🚀 Fusée</div>
+            <div class="ai-suggest" onclick="aiSuggest('Un château médiéval avec des tours et des remparts')">🏰 Château</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;margin-bottom:0;">
+            <label style="font-size:11px;color:var(--text2);">Modèle IA :</label>
+            <select id="ai-model-select" class="prop-select" style="flex:1;margin:0;">
+              <option value="mistral-small-latest">Mistral Small (Rapide)</option>
+              <option value="mistral-medium-latest" id="opt-medium">Mistral Medium (Pro+)</option>
+              <option value="mistral-large-latest" id="opt-large">Mistral Large (Premium)</option>
+            </select>
+          </div>
+          <button class="ai-generate-btn" id="ai-gen-btn" onclick="generateScene()">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Générer la Scène 3D
+          </button>
+          <div class="ai-loading" id="ai-loading" style="display:none;">
+            <div class="ai-spinner"></div>
+            <span id="ai-loading-text">L'IA crée votre scène...</span>
+          </div>
+          <div class="ai-result" id="ai-result">
+            <div id="ai-result-text"></div>
+            <div class="ai-scene-items" id="ai-scene-items"></div>
+            <div class="ai-result-actions">
+              <button class="ai-result-btn apply" onclick="applyAiScene()"><i class="fa-solid fa-check"></i> Appliquer dans l'éditeur</button>
+              <button class="ai-result-btn clear" onclick="resetAiResult()"><i class="fa-solid fa-rotate-left"></i> Recommencer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- IMAGE TO TEXTURE -->
+      <div class="ai-section" id="ai-image">
+        <div id="ai-image-lock" class="plan-lock-banner" style="display:none;">
+          <h4>★ Fonctionnalité AI Pro+</h4>
+          <p>L'import et le détourage d'image est réservé au forfait AI Pro+.<br><a class="upgrade-link" onclick="closeAiModal();openAuthModal()">Connectez-vous ou mettez à niveau.</a></p>
+        </div>
+        <div id="ai-image-content">
+          <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">Importez une image, utilisez les outils de détourage IA, puis appliquez-la comme texture sur votre objet 3D sélectionné.</p>
+          <div class="gallery-upload-zone" onclick="document.getElementById('img-import').click()">
+            <i class="fa-solid fa-cloud-upload-alt"></i>
+            <p>Glissez-déposez ou cliquez pour importer</p>
+            <small>PNG, JPG, WEBP — Max 10MB</small>
+            <input type="file" id="img-import" accept="image/*" style="display:none;" onchange="loadImageForEditing(event)">
+          </div>
+          <div class="image-canvas-wrap" id="img-canvas-wrap" style="display:none;">
+            <canvas id="img-preview-canvas"></canvas>
+          </div>
+          <div id="detouring-section" style="display:none;">
+            <div class="prop-group-title" style="margin-bottom:8px;">Outils de détourage IA</div>
+            <div class="detouring-tools">
+              <div class="det-tool active" id="dt-auto" onclick="detourTool('auto')"><i class="fa-solid fa-wand-magic-sparkles"></i>Auto IA</div>
+              <div class="det-tool" id="dt-bg" onclick="detourTool('bg')"><i class="fa-solid fa-eraser"></i>Sup. fond</div>
+              <div class="det-tool" id="dt-edge" onclick="detourTool('edge')"><i class="fa-solid fa-scissors"></i>Contours</div>
+              <div class="det-tool" id="dt-crop" onclick="detourTool('crop')"><i class="fa-solid fa-crop-alt"></i>Recadrer</div>
+              <div class="det-tool" id="dt-grayscale" onclick="detourTool('grayscale')"><i class="fa-solid fa-circle-half-stroke"></i>Niveaux gris</div>
+              <div class="det-tool" id="dt-contrast" onclick="detourTool('contrast')"><i class="fa-solid fa-adjust"></i>Contraste</div>
+            </div>
+            <div class="ai-loading" id="detour-loading" style="display:none;">
+              <div class="ai-spinner"></div>
+              <span>Traitement IA en cours...</span>
+            </div>
+            <button class="ai-generate-btn" style="margin-top:12px;" onclick="applyTextureToSelected()">
+              <i class="fa-solid fa-magic"></i> Appliquer comme texture sur l'objet sélectionné
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- GALLERY -->
+      <div class="ai-section" id="ai-gallery">
+        <div id="ai-gallery-lock" class="plan-lock-banner" style="display:none;">
+          <h4>★ Fonctionnalité AI Pro+</h4>
+          <p>L'accès à la Galerie WikiMind est disponible dès AI Pro+.<br><a class="upgrade-link" onclick="closeAiModal();openAuthModal()">Mettez à niveau votre compte.</a></p>
+        </div>
+        <div id="ai-gallery-content">
+          <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">Parcourez la galerie WikiMind et importez des images comme textures pour vos objets 3D.</p>
+          <input class="prop-input-full" placeholder="🔍 Rechercher dans la galerie WikiMind..." id="gallery-search" oninput="filterGallery()" style="margin-bottom:12px;">
+          <div class="gallery-grid" id="gallery-grid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ANALYSE IA -->
+      <div class="ai-section" id="ai-analyse">
+        <div id="ai-analyse-lock" class="plan-lock-banner" style="display:none;">
+          <h4>👑 Fonctionnalité AI Premium</h4>
+          <p>L'analyse de scène par IA est réservée au forfait AI Premium.<br><a class="upgrade-link" onclick="closeAiModal();openAuthModal()">Mettez à niveau votre compte.</a></p>
+        </div>
+        <div id="ai-analyse-content">
+          <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">L'IA analyse votre scène actuelle et vous propose des améliorations, suggestions de couleurs, compositions et conseils de design.</p>
+          <div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;font-size:11px;color:var(--text2);">
+            <div style="font-weight:700;color:var(--text);margin-bottom:6px;">📊 Scène actuelle</div>
+            <div id="scene-summary-analyse">Chargement...</div>
+          </div>
+          <button class="ai-generate-btn" onclick="analyseScene()">
+            <i class="fa-solid fa-magnifying-glass-chart"></i> Analyser ma Scène
+          </button>
+          <div class="ai-loading" id="analyse-loading" style="display:none;">
+            <div class="ai-spinner"></div>
+            <span>Analyse IA en cours...</span>
+          </div>
+          <div class="ai-result" id="analyse-result" style="margin-top:12px;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- EXPORT MODAL -->
+<div id="export-modal">
+  <div class="export-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h3>Exporter le projet</h3>
+      <div class="ai-modal-close" onclick="document.getElementById('export-modal').classList.remove('show')"><i class="fa-solid fa-times"></i></div>
+    </div>
+    <div class="export-option" onclick="exportPNG()">
+      <div class="export-option-icon" style="background:rgba(77,124,254,0.2);">🖼️</div>
+      <div><h4>PNG Haute Résolution</h4><p>Capture d'écran 1920×1080 de votre scène</p></div>
+    </div>
+    <div class="export-option" onclick="exportOBJ()">
+      <div class="export-option-icon" style="background:rgba(16,185,129,0.2);">📦</div>
+      <div><h4>Fichier OBJ</h4><p>Format 3D universel (Blender, Cinema4D...)</p><div class="plan-lock lock-plus" style="margin-top:4px;">✦ AI Plus+</div></div>
+    </div>
+    <div class="export-option" onclick="exportSTL()">
+      <div class="export-option-icon" style="background:rgba(245,158,11,0.2);">🖨️</div>
+      <div><h4>Fichier STL</h4><p>Pour l'impression 3D</p><div class="plan-lock lock-pro" style="margin-top:4px;">★ AI Pro+</div></div>
+    </div>
+    <div class="export-option" onclick="exportJSON()">
+      <div class="export-option-icon" style="background:rgba(168,85,247,0.2);">💾</div>
+      <div><h4>Projet WikiMind 3D</h4><p>Sauvegardez et rechargez votre travail</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div id="auth-modal">
+  <div class="auth-box">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="width:48px;height:48px;background:linear-gradient(135deg,#4d7cfe,#7c3aed);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 12px;">🧊</div>
+      <h2 id="auth-title">Connexion</h2>
+      <p id="auth-subtitle">Accédez à toutes les fonctionnalités IA</p>
+    </div>
+    <div class="auth-error" id="auth-error"></div>
+    <button class="auth-google-btn" onclick="signInGoogle()">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/><path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/><path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/><path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z"/></svg>
+      Continuer avec Google
+    </button>
+    <div class="auth-divider">ou</div>
+    <input class="auth-input" id="auth-email" type="email" placeholder="Email">
+    <input class="auth-input" id="auth-password" type="password" placeholder="Mot de passe">
+    <button class="auth-btn" id="auth-submit-btn" onclick="submitAuth()">Se connecter</button>
+    <div class="auth-switch" id="auth-switch-text">Pas encore de compte ? <a onclick="toggleAuthMode()">Créer un compte</a></div>
+    <button style="width:100%;margin-top:10px;padding:8px;background:transparent;border:none;color:var(--text2);font-size:12px;cursor:pointer;" onclick="closeAuthModal()">Continuer sans compte →</button>
+  </div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div id="ctx-menu">
+  <div class="ctx-item" onclick="duplicateSelected();hideCtxMenu()"><i class="fa-solid fa-clone"></i>Dupliquer</div>
+  <div class="ctx-item" onclick="groupSelected();hideCtxMenu()"><i class="fa-solid fa-object-group"></i>Grouper</div>
+  <div class="ctx-item" onclick="mirrorObject('x');hideCtxMenu()"><i class="fa-solid fa-left-right"></i>Miroir X</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" onclick="focusSelected();hideCtxMenu()"><i class="fa-solid fa-crosshairs"></i>Centrer la vue</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item danger" onclick="deleteSelected();hideCtxMenu()"><i class="fa-solid fa-trash"></i>Supprimer</div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<!-- ─── FIREBASE + THREE.JS ENGINE ─── -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+// ─── FIREBASE CONFIG ───
+const firebaseApp = initializeApp({
+  apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+  authDomain: "wikimind-3-comments.firebaseapp.com",
+  projectId: "wikimind-3-comments",
+  appId: "1:137479541640:web:4ed2510a9908055052e03d",
+  databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app"
+});
+const auth = getAuth(firebaseApp);
+const db = getDatabase(firebaseApp);
+const googleProvider = new GoogleAuthProvider();
+
+// ─── MISTRAL API ───
+const MISTRAL_KEY = "wuZGbRk6ry7KpMraZvxB3zg7ae6x1dLN";
+
+async function callMistral(messages, model = "mistral-small-latest", maxTokens = 2000) {
+  try {
+    const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${MISTRAL_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model, messages, temperature: 0.7, max_tokens: maxTokens })
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.choices?.[0]?.message?.content || null;
+  } catch { return null; }
+}
+window._callMistral = callMistral;
+
+// ─── PLAN SYSTEM ───
+const PLAN_MAP = {
+  1: { name: 'Free', badge: 'plan-free', ring: 'ring-free' },
+  2: { name: 'AI Plus', badge: 'plan-plus', ring: 'ring-plus' },
+  3: { name: 'AI Pro', badge: 'plan-pro', ring: 'ring-pro' },
+  4: { name: 'AI Premium', badge: 'plan-premium', ring: 'ring-premium' },
+  5: { name: 'AI Premium+', badge: 'plan-pp', ring: 'ring-pp' }
+};
+
+let currentUser = null;
+let currentPlan = 1;
+
+const CACHE_KEY = 'wm_user_cache_v1_';
+const CACHE_TTL = 12 * 60 * 60 * 1000;
+
+function getCached(uid) {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY + uid);
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    if (Date.now() - p.ts > CACHE_TTL) return null;
+    return p.data;
+  } catch { return null; }
+}
+function setCache(uid, data) {
+  try { localStorage.setItem(CACHE_KEY + uid, JSON.stringify({ ts: Date.now(), data })); } catch {}
+}
+
+async function loadUserData(user) {
+  currentUser = user;
+  let cached = getCached(user.uid);
+  if (cached) { applyUserUI(user, cached.FORFAIT || 1); return; }
+  try {
+    const snap = await get(child(ref(db), `users/${user.uid}`));
+    if (snap.exists()) {
+      const d = snap.val();
+      setCache(user.uid, d);
+      applyUserUI(user, d.FORFAIT || 1);
+    } else {
+      applyUserUI(user, 1);
+    }
+  } catch { applyUserUI(user, 1); }
+}
+
+function applyUserUI(user, plan) {
+  currentPlan = parseInt(plan) || 1;
+  const pm = PLAN_MAP[currentPlan] || PLAN_MAP[1];
+  const displayName = user.displayName || user.email?.split('@')[0] || 'Utilisateur';
+  const avatarSrc = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=4d7cfe&color=fff&size=64`;
+
+  // Home
+  const homeChip = document.getElementById('home-user-chip');
+  if (homeChip) homeChip.style.display = 'flex';
+  const homeAvRing = document.getElementById('home-avatar-ring');
+  if (homeAvRing) homeAvRing.className = `plan-chip-avatar ${pm.ring}`;
+  const homeAvImg = document.getElementById('home-avatar-img');
+  if (homeAvImg) homeAvImg.src = avatarSrc;
+  const homeUserName = document.getElementById('home-user-name');
+  if (homeUserName) homeUserName.textContent = displayName;
+  const homePlanBadge = document.getElementById('home-plan-badge');
+  if (homePlanBadge) { homePlanBadge.textContent = pm.name; homePlanBadge.className = `plan-badge ${pm.badge}`; }
+  const homeLoginBtn = document.getElementById('home-login-btn');
+  if (homeLoginBtn) homeLoginBtn.style.display = 'none';
+
+  // Toolbar
+  const tbChip = document.getElementById('tb-user-chip');
+  if (tbChip) tbChip.style.display = 'flex';
+  const tbAvRing = document.getElementById('tb-avatar-ring');
+  if (tbAvRing) tbAvRing.className = `plan-chip-avatar ${pm.ring}`;
+  const tbAvImg = document.getElementById('tb-avatar-img');
+  if (tbAvImg) tbAvImg.src = avatarSrc;
+  const tbName = document.getElementById('tb-user-name');
+  if (tbName) tbName.textContent = displayName;
+  const tbBadge = document.getElementById('tb-plan-badge');
+  if (tbBadge) { tbBadge.textContent = pm.name; tbBadge.className = `plan-badge ${pm.badge}`; }
+  const tbLoginBtn = document.getElementById('tb-login-btn');
+  if (tbLoginBtn) tbLoginBtn.style.display = 'none';
+
+  applyPlanRestrictions();
+  showToast(`Bienvenue ${displayName} ! Forfait ${pm.name}`, 'success');
+}
+
+function applyPlanRestrictions() {
+  // AI Models
+  const optM = document.getElementById('opt-medium');
+  const optL = document.getElementById('opt-large');
+  if (optM) optM.disabled = currentPlan < 3;
+  if (optL) optL.disabled = currentPlan < 4;
+
+  // Locks in AI Modal
+  document.getElementById('ai-text-lock').style.display = currentPlan < 2 ? 'block' : 'none';
+  document.getElementById('ai-text-content').style.opacity = currentPlan < 2 ? '0.4' : '1';
+  document.getElementById('ai-text-content').style.pointerEvents = currentPlan < 2 ? 'none' : '';
+
+  document.getElementById('ai-image-lock').style.display = currentPlan < 3 ? 'block' : 'none';
+  document.getElementById('ai-image-content').style.opacity = currentPlan < 3 ? '0.4' : '1';
+  document.getElementById('ai-image-content').style.pointerEvents = currentPlan < 3 ? 'none' : '';
+
+  document.getElementById('ai-gallery-lock').style.display = currentPlan < 3 ? 'block' : 'none';
+  document.getElementById('ai-gallery-content').style.opacity = currentPlan < 3 ? '0.4' : '1';
+  document.getElementById('ai-gallery-content').style.pointerEvents = currentPlan < 3 ? 'none' : '';
+
+  document.getElementById('ai-analyse-lock').style.display = currentPlan < 4 ? 'block' : 'none';
+  document.getElementById('ai-analyse-content').style.opacity = currentPlan < 4 ? '0.4' : '1';
+  document.getElementById('ai-analyse-content').style.pointerEvents = currentPlan < 4 ? 'none' : '';
+}
+
+// ─── AUTH STATE ───
+onAuthStateChanged(auth, (user) => {
+  if (user) loadUserData(user);
+  else {
+    currentUser = null;
+    currentPlan = 1;
+    applyPlanRestrictions();
+  }
+});
+
+// ─── AUTH FUNCTIONS ───
+let authMode = 'login';
+window.toggleAuthMode = () => {
+  authMode = authMode === 'login' ? 'register' : 'login';
+  document.getElementById('auth-title').textContent = authMode === 'login' ? 'Connexion' : 'Créer un compte';
+  document.getElementById('auth-submit-btn').textContent = authMode === 'login' ? 'Se connecter' : 'Créer le compte';
+  document.getElementById('auth-switch-text').innerHTML = authMode === 'login'
+    ? 'Pas encore de compte ? <a onclick="toggleAuthMode()">Créer un compte</a>'
+    : 'Déjà un compte ? <a onclick="toggleAuthMode()">Se connecter</a>';
+};
+window.submitAuth = async () => {
+  const email = document.getElementById('auth-email').value.trim();
+  const pass = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-error');
+  errEl.classList.remove('show');
+  if (!email || !pass) { errEl.textContent = 'Remplissez tous les champs.'; errEl.classList.add('show'); return; }
+  try {
+    if (authMode === 'login') await signInWithEmailAndPassword(auth, email, pass);
+    else await createUserWithEmailAndPassword(auth, email, pass);
+    closeAuthModal();
+  } catch (e) {
+    let msg = 'Erreur. Vérifiez vos identifiants.';
+    if (e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password') msg = 'Email ou mot de passe incorrect.';
+    if (e.code === 'auth/email-already-in-use') msg = 'Cet email est déjà utilisé.';
+    if (e.code === 'auth/weak-password') msg = 'Mot de passe trop faible (min 6 caractères).';
+    errEl.textContent = msg; errEl.classList.add('show');
+  }
+};
+window.signInGoogle = async () => {
+  try { await signInWithPopup(auth, googleProvider); closeAuthModal(); }
+  catch { showToast('Connexion Google annulée', 'error'); }
+};
+window.openAuthModal = () => document.getElementById('auth-modal').classList.add('show');
+window.closeAuthModal = () => document.getElementById('auth-modal').classList.remove('show');
+
+// ─── THREE.JS ENGINE ───
+let scene, camera, renderer, raycaster, mouse;
+let objects = [], selectedObject = null;
+let isGridVisible = true, gridHelper;
+let transformMode = 'select';
+let undoStack = [], redoStack = [];
+let isDragging = false, isOrbiting = false;
+let orbitStart = { x: 0, y: 0 };
+let cameraAngleH = 0.7, cameraAngleV = 0.5, cameraRadius = 12;
+let cameraTarget = new THREE.Vector3(0, 0, 0);
+let viewMode = 'perspective';
+let bgMode = 'dark';
+let pendingAiScene = null;
+let imgProcessingCanvas = null, imgProcessingCtx = null, imgOriginal = null;
+let currentDetourMode = 'auto';
+let mouseIsDown = false, mouseDownPos = { x: 0, y: 0 };
+let objectCounter = 0;
+let lightObjects = [];
+
+const COLORS = ['#4d7cfe','#ef4444','#22c55e','#f59e0b','#ec4899','#8b5cf6','#06b6d4','#ffffff','#ff6b35','#a8edea'];
+const GALLERY_MOCK = [
+  { label:'Briques', color:'#c0392b', emoji:'🧱' },
+  { label:'Bois', color:'#8b5e3c', emoji:'🪵' },
+  { label:'Herbe', color:'#27ae60', emoji:'🌿' },
+  { label:'Ciel', color:'#5dade2', emoji:'☁️' },
+  { label:'Métal', color:'#bdc3c7', emoji:'⚙️' },
+  { label:'Sable', color:'#f0d9b5', emoji:'🏖️' },
+  { label:'Lave', color:'#e74c3c', emoji:'🌋' },
+  { label:'Glace', color:'#aed6f1', emoji:'🧊' },
+  { label:'Marbre', color:'#ecf0f1', emoji:'🪨' },
+];
+
+function initThree() {
+  const canvas = document.getElementById('three-canvas');
+  const container = document.getElementById('viewport');
+  const W = container.clientWidth, H = container.clientHeight;
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color('#0d1829');
+  scene.fog = new THREE.FogExp2(0x0d1829, 0.025);
+
+  camera = new THREE.PerspectiveCamera(60, W / H, 0.1, 1000);
+  camera.position.set(8, 6, 8);
+  camera.lookAt(0, 0, 0);
+
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
+
+  // Ambient
+  const ambient = new THREE.AmbientLight(0x4060a0, 0.6);
+  scene.add(ambient);
+
+  // Main directional
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  dirLight.position.set(10, 15, 10);
+  dirLight.castShadow = true;
+  dirLight.shadow.mapSize.width = 2048;
+  dirLight.shadow.mapSize.height = 2048;
+  dirLight.shadow.camera.near = 0.1;
+  dirLight.shadow.camera.far = 100;
+  dirLight.shadow.camera.left = -20;
+  dirLight.shadow.camera.right = 20;
+  dirLight.shadow.camera.top = 20;
+  dirLight.shadow.camera.bottom = -20;
+  scene.add(dirLight);
+
+  // Fill
+  const fillLight = new THREE.DirectionalLight(0x4040ff, 0.4);
+  fillLight.position.set(-8, 5, -8);
+  scene.add(fillLight);
+
+  // Floor
+  const floorGeo = new THREE.PlaneGeometry(40, 40);
+  const floorMat = new THREE.MeshStandardMaterial({ color: 0x0a1220, roughness: 0.9, metalness: 0.1 });
+  const floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = -0.02;
+  floor.receiveShadow = true;
+  floor.userData.isFloor = true;
+  scene.add(floor);
+
+  // Grid
+  gridHelper = new THREE.GridHelper(30, 30, 0x1a3060, 0x1a3060);
+  scene.add(gridHelper);
+
+  raycaster = new THREE.Raycaster();
+  mouse = new THREE.Vector2();
+
+  // Events
+  canvas.addEventListener('mousedown', onMouseDown);
+  canvas.addEventListener('mousemove', onMouseMove);
+  canvas.addEventListener('mouseup', onMouseUp);
+  canvas.addEventListener('wheel', onWheel, { passive: false });
+  canvas.addEventListener('contextmenu', onRightClick);
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('resize', onResize);
+
+  animate();
+  updateSceneList();
+  updateStats();
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  updateCameraPosition();
+  renderer.render(scene, camera);
+  updateSelectionInfo();
+}
+
+function updateCameraPosition() {
+  const x = cameraTarget.x + cameraRadius * Math.sin(cameraAngleH) * Math.cos(cameraAngleV);
+  const y = cameraTarget.y + cameraRadius * Math.sin(cameraAngleV);
+  const z = cameraTarget.z + cameraRadius * Math.cos(cameraAngleH) * Math.cos(cameraAngleV);
+  camera.position.set(x, y, z);
+  camera.lookAt(cameraTarget);
+}
+
+function onMouseDown(e) {
+  mouseIsDown = true;
+  mouseDownPos = { x: e.clientX, y: e.clientY };
+  if (e.button === 1 || e.button === 2) { isOrbiting = true; orbitStart = { x: e.clientX, y: e.clientY }; }
+}
+
+function onMouseMove(e) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+  if (isOrbiting && mouseIsDown) {
+    const dx = (e.clientX - orbitStart.x) * 0.005;
+    const dy = (e.clientY - orbitStart.y) * 0.005;
+    cameraAngleH -= dx;
+    cameraAngleV = Math.max(0.05, Math.min(Math.PI / 2 - 0.05, cameraAngleV - dy));
+    orbitStart = { x: e.clientX, y: e.clientY };
+    return;
+  }
+
+  if (mouseIsDown && selectedObject && transformMode !== 'select') {
+    const dx = (e.clientX - mouseDownPos.x) * 0.01;
+    const dy = (e.clientY - mouseDownPos.y) * 0.01;
+    mouseDownPos = { x: e.clientX, y: e.clientY };
+    const obj = selectedObject;
+    if (transformMode === 'move') {
+      obj.position.x += dx * Math.cos(cameraAngleH);
+      obj.position.z += dx * Math.sin(cameraAngleH);
+      obj.position.y -= dy;
+    } else if (transformMode === 'rotate') {
+      obj.rotation.y += dx;
+      obj.rotation.x += dy;
+    } else if (transformMode === 'scale') {
+      const f = 1 + dx - dy;
+      obj.scale.multiplyScalar(Math.max(0.01, f));
+    }
+    refreshPropPanel();
+    pushUndo();
+  }
+
+  // Coords display
+  const coordsEl = document.getElementById('coords-display');
+  if (coordsEl && selectedObject) {
+    const p = selectedObject.position;
+    coordsEl.textContent = `X: ${p.x.toFixed(2)} | Y: ${p.y.toFixed(2)} | Z: ${p.z.toFixed(2)}`;
+  }
+}
+
+function onMouseUp(e) {
+  if (mouseIsDown && !isOrbiting && e.button === 0) {
+    const dx = Math.abs(e.clientX - mouseDownPos.x);
+    const dy = Math.abs(e.clientY - mouseDownPos.y);
+    if (dx < 4 && dy < 4) pickObject(e);
+  }
+  mouseIsDown = false;
+  isOrbiting = false;
+}
+
+function pickObject(e) {
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(objects.map(o => o.mesh), true);
+  if (hits.length > 0) {
+    let hit = hits[0].object;
+    while (hit.parent && !objects.find(o => o.mesh === hit)) hit = hit.parent;
+    const found = objects.find(o => o.mesh === hit);
+    if (found) selectObject(found);
+  } else {
+    deselectAll();
+  }
+}
+
+function onWheel(e) {
+  e.preventDefault();
+  cameraRadius = Math.max(1, Math.min(80, cameraRadius + e.deltaY * 0.015));
+}
+
+function onRightClick(e) {
+  e.preventDefault();
+  if (selectedObject) {
+    const menu = document.getElementById('ctx-menu');
+    menu.style.display = 'block';
+    menu.style.left = e.clientX + 'px';
+    menu.style.top = e.clientY + 'px';
+  }
+}
+
+document.addEventListener('click', () => hideCtxMenu());
+window.hideCtxMenu = () => { document.getElementById('ctx-menu').style.display = 'none'; };
+
+function onKeyDown(e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'q' || e.key === 'Q') setTransformMode('select');
+  if (e.key === 'w' || e.key === 'W') setTransformMode('move');
+  if (e.key === 'e' || e.key === 'E') setTransformMode('rotate');
+  if (e.key === 'r' || e.key === 'R') setTransformMode('scale');
+  if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
+  if (e.key === 'Escape') deselectAll();
+  if (e.ctrlKey && e.key === 'z') undoAction();
+  if (e.ctrlKey && e.key === 'y') redoAction();
+  if (e.ctrlKey && e.key === 'd') { e.preventDefault(); duplicateSelected(); }
+}
+
+function onResize() {
+  const c = document.getElementById('viewport');
+  const W = c.clientWidth, H = c.clientHeight;
+  camera.aspect = W / H;
+  camera.updateProjectionMatrix();
+  renderer.setSize(W, H);
+}
+
+// ─── OBJECT MANAGEMENT ───
+function createMesh(type, color) {
+  let geo;
+  const segments = 32;
+  switch (type) {
+    case 'cube': geo = new THREE.BoxGeometry(1, 1, 1); break;
+    case 'sphere': geo = new THREE.SphereGeometry(0.6, segments, segments); break;
+    case 'cylinder': geo = new THREE.CylinderGeometry(0.5, 0.5, 1, segments); break;
+    case 'cone': geo = new THREE.ConeGeometry(0.6, 1.2, segments); break;
+    case 'torus': geo = new THREE.TorusGeometry(0.5, 0.2, 16, segments); break;
+    case 'plane': geo = new THREE.PlaneGeometry(1.5, 1.5); break;
+    case 'pyramid': geo = new THREE.ConeGeometry(0.7, 1, 4); break;
+    case 'capsule': geo = new THREE.CapsuleGeometry ? new THREE.CapsuleGeometry(0.35, 0.6, 8, 16) : new THREE.CylinderGeometry(0.35, 0.35, 1, segments); break;
+    case 'ring': geo = new THREE.TorusGeometry(0.6, 0.1, 8, segments); break;
+    case 'arrow': {
+      const shape = new THREE.Shape();
+      shape.moveTo(0, 0); shape.lineTo(0.2, 0.8); shape.lineTo(0.1, 0.8); shape.lineTo(0.1, 1.2);
+      shape.lineTo(-0.1, 1.2); shape.lineTo(-0.1, 0.8); shape.lineTo(-0.2, 0.8); shape.closePath();
+      geo = new THREE.ExtrudeGeometry(shape, { depth: 0.1, bevelEnabled: false });
+      break;
+    }
+    case 'star': {
+      const pts = [];
+      for (let i = 0; i < 10; i++) {
+        const r = i % 2 === 0 ? 0.6 : 0.25;
+        const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+        pts.push(new THREE.Vector2(Math.cos(a) * r, Math.sin(a) * r));
+      }
+      const starShape = new THREE.Shape(pts);
+      geo = new THREE.ExtrudeGeometry(starShape, { depth: 0.2, bevelEnabled: false });
+      break;
+    }
+    case 'heart': {
+      const h = new THREE.Shape();
+      h.moveTo(0, 0.3); h.bezierCurveTo(0, 0.5, 0.3, 0.5, 0.3, 0.3);
+      h.bezierCurveTo(0.3, 0.1, 0, -0.1, 0, -0.3);
+      h.bezierCurveTo(0, -0.1, -0.3, 0.1, -0.3, 0.3);
+      h.bezierCurveTo(-0.3, 0.5, 0, 0.5, 0, 0.3);
+      geo = new THREE.ExtrudeGeometry(h, { depth: 0.2, bevelEnabled: true, bevelSize: 0.04, bevelThickness: 0.04 });
+      break;
+    }
+    default: geo = new THREE.BoxGeometry(1, 1, 1);
+  }
+  const mat = new THREE.MeshStandardMaterial({ color: color || COLORS[Math.floor(Math.random() * COLORS.length)], roughness: 0.5, metalness: 0.1 });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+function addShape(type) {
+  const LIGHT_TYPES = ['pointlight', 'spotlight', 'dirlight'];
+  if (LIGHT_TYPES.includes(type)) { addLight(type); return; }
+  if (type === 'text3d') { addText3D(); return; }
+
+  objectCounter++;
+  const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+  const mesh = createMesh(type, color);
+  mesh.position.set((Math.random() - 0.5) * 4, 0.5, (Math.random() - 0.5) * 4);
+
+  const typeLabels = {
+    cube:'Cube', sphere:'Sphère', cylinder:'Cylindre', cone:'Cône', torus:'Tore', plane:'Plan',
+    pyramid:'Pyramide', capsule:'Capsule', ring:'Anneau', arrow:'Flèche', star:'Étoile', heart:'Cœur'
+  };
+  const name = `${typeLabels[type] || type} ${objectCounter}`;
+  const obj = { id: objectCounter, name, type, mesh, visible: true, matType: 'standard', color };
+  mesh.userData.objRef = obj;
+  objects.push(obj);
+  scene.add(mesh);
+  selectObject(obj);
+  updateSceneList();
+  updateStats();
+  pushUndo();
+  showToast(`${name} ajouté`, 'success');
+}
+window.addShape = addShape;
+
+function addLight(type) {
+  objectCounter++;
+  let light, helper;
+  if (type === 'pointlight') {
+    light = new THREE.PointLight(0xffffff, 1, 20);
+    light.position.set(0, 3, 0);
+    helper = new THREE.PointLightHelper(light, 0.3);
+  } else if (type === 'spotlight') {
+    light = new THREE.SpotLight(0xffffff, 1);
+    light.position.set(3, 5, 3);
+    light.castShadow = true;
+    helper = new THREE.SpotLightHelper(light);
+  } else {
+    light = new THREE.DirectionalLight(0xffffff, 0.8);
+    light.position.set(5, 8, 5);
+    helper = new THREE.DirectionalLightHelper(light, 1);
+  }
+  scene.add(light);
+  scene.add(helper);
+
+  const typeLabels = { pointlight: 'Lumière Point', spotlight: 'Spot', dirlight: 'Lumière Dir.' };
+  const name = `${typeLabels[type]} ${objectCounter}`;
+  const obj = { id: objectCounter, name, type, mesh: helper, light, isLight: true, visible: true };
+  helper.userData.objRef = obj;
+  objects.push(obj);
+  lightObjects.push(light);
+  selectObject(obj);
+  updateSceneList();
+  updateStats();
+  pushUndo();
+  showToast(`${name} ajoutée`, 'success');
+}
+
+function addText3D() {
+  const text = prompt('Texte à ajouter :') || 'WikiMind';
+  objectCounter++;
+  const geo = new THREE.BoxGeometry(text.length * 0.5, 0.6, 0.2);
+  const mat = new THREE.MeshStandardMaterial({ color: 0x4d7cfe, roughness: 0.3, metalness: 0.2 });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(0, 0.5, 0);
+  mesh.castShadow = true;
+  const name = `Texte: ${text.substring(0, 12)}`;
+  const obj = { id: objectCounter, name, type: 'text', mesh, visible: true, matType: 'standard', color: '#4d7cfe', text };
+  mesh.userData.objRef = obj;
+  objects.push(obj);
+  scene.add(mesh);
+  selectObject(obj);
+  updateSceneList();
+  updateStats();
+  pushUndo();
+  showToast(`Texte ajouté`, 'success');
+}
+window.addText3D = addText3D;
+
+function selectObject(obj) {
+  // Remove previous selection highlight
+  objects.forEach(o => { if (o.mesh.material && !o.isLight) { o.mesh.material.emissive = new THREE.Color(0x000000); } });
+  selectedObject = obj;
+  if (obj && obj.mesh.material && !obj.isLight) obj.mesh.material.emissive = new THREE.Color(0x112244);
+  refreshPropPanel();
+  refreshMatPanel();
+  updateSceneList();
+
+  const selInfo = document.getElementById('sel-info');
+  if (obj) { selInfo.classList.add('show'); selInfo.textContent = `📦 ${obj.name}`; }
+  else selInfo.classList.remove('show');
+}
+
+function deselectAll() {
+  objects.forEach(o => { if (o.mesh.material && !o.isLight) o.mesh.material.emissive = new THREE.Color(0x000000); });
+  selectedObject = null;
+  document.getElementById('no-selection').style.display = 'block';
+  document.getElementById('obj-props').style.display = 'none';
+  document.getElementById('no-mat-sel').style.display = 'block';
+  document.getElementById('mat-props').style.display = 'none';
+  document.getElementById('sel-info').classList.remove('show');
+  updateSceneList();
+}
+
+function refreshPropPanel() {
+  if (!selectedObject) { deselectAll(); return; }
+  document.getElementById('no-selection').style.display = 'none';
+  document.getElementById('obj-props').style.display = 'block';
+  const p = selectedObject.mesh.position, r = selectedObject.mesh.rotation, s = selectedObject.mesh.scale;
+  document.getElementById('prop-name').value = selectedObject.name;
+  document.getElementById('pos-x').value = p.x.toFixed(2);
+  document.getElementById('pos-y').value = p.y.toFixed(2);
+  document.getElementById('pos-z').value = p.z.toFixed(2);
+  document.getElementById('rot-x').value = (r.x * 180 / Math.PI).toFixed(1);
+  document.getElementById('rot-y').value = (r.y * 180 / Math.PI).toFixed(1);
+  document.getElementById('rot-z').value = (r.z * 180 / Math.PI).toFixed(1);
+  document.getElementById('sca-x').value = s.x.toFixed(2);
+  document.getElementById('sca-y').value = s.y.toFixed(2);
+  document.getElementById('sca-z').value = s.z.toFixed(2);
+}
+
+function refreshMatPanel() {
+  if (!selectedObject || selectedObject.isLight) {
+    document.getElementById('no-mat-sel').style.display = 'block';
+    document.getElementById('mat-props').style.display = 'none';
+    return;
+  }
+  document.getElementById('no-mat-sel').style.display = 'none';
+  document.getElementById('mat-props').style.display = 'block';
+  const mat = selectedObject.mesh.material;
+  if (mat && mat.color) {
+    document.getElementById('mat-color').value = '#' + mat.color.getHexString();
+  }
+  if (mat && mat.roughness !== undefined) document.getElementById('mat-roughness').value = mat.roughness;
+  if (mat && mat.metalness !== undefined) document.getElementById('mat-metalness').value = mat.metalness;
+  if (mat && mat.opacity !== undefined) {
+    document.getElementById('mat-opacity').value = mat.opacity;
+    document.getElementById('opacity-val').textContent = Math.round(mat.opacity * 100) + '%';
+  }
+}
+
+function updateSceneList() {
+  const list = document.getElementById('scene-obj-list');
+  list.innerHTML = '';
+  objects.forEach(obj => {
+    const div = document.createElement('div');
+    div.className = 'scene-obj' + (selectedObject === obj ? ' selected' : '');
+    const icon = obj.isLight ? '💡' : getShapeEmoji(obj.type);
+    div.innerHTML = `<span class="scene-obj-icon">${icon}</span><span class="scene-obj-name">${obj.name}</span>
+      <span class="scene-obj-vis" title="Visibilité" onclick="toggleVisibility(${obj.id});event.stopPropagation();">
+        <i class="fa-solid fa-eye${obj.visible ? '' : '-slash'}"></i>
+      </span>`;
+    div.onclick = () => selectObject(obj);
+    list.appendChild(div);
+  });
+}
+
+function getShapeEmoji(type) {
+  const m = { cube:'⬛', sphere:'🔵', cylinder:'🫙', cone:'🔺', torus:'🍩', plane:'⬜', pyramid:'🔷', capsule:'💊', ring:'💍', arrow:'➡️', star:'⭐', heart:'🫀', text:'📝' };
+  return m[type] || '📦';
+}
+
+function updateStats() {
+  document.getElementById('stat-objects').textContent = objects.filter(o => !o.isLight).length;
+  document.getElementById('stat-lights').textContent = objects.filter(o => o.isLight).length;
+  let polys = 0;
+  objects.forEach(o => { if (!o.isLight && o.mesh.geometry) polys += (o.mesh.geometry.index?.count || o.mesh.geometry.attributes.position?.count) / 3 | 0; });
+  document.getElementById('stat-polys').textContent = polys;
+}
+
+function updateSelectionInfo() {
+  if (selectedObject) refreshPropPanel();
+}
+
+// ─── TRANSFORM ───
+window.setTransformMode = (mode) => {
+  transformMode = mode;
+  ['select','move','rotate','scale'].forEach(m => {
+    document.getElementById('tb-' + m)?.classList.toggle('active', m === mode);
+    document.getElementById('tool-' + m)?.classList.toggle('active', m === mode);
+  });
+};
+
+// ─── PROP UPDATES ───
+window.updatePropName = () => { if (selectedObject) { selectedObject.name = document.getElementById('prop-name').value; updateSceneList(); } };
+window.updatePropPos = () => {
+  if (!selectedObject) return;
+  selectedObject.mesh.position.set(+document.getElementById('pos-x').value, +document.getElementById('pos-y').value, +document.getElementById('pos-z').value);
+};
+window.updatePropRot = () => {
+  if (!selectedObject) return;
+  const toR = v => v * Math.PI / 180;
+  selectedObject.mesh.rotation.set(toR(+document.getElementById('rot-x').value), toR(+document.getElementById('rot-y').value), toR(+document.getElementById('rot-z').value));
+};
+window.updatePropScale = () => {
+  if (!selectedObject) return;
+  selectedObject.mesh.scale.set(+document.getElementById('sca-x').value, +document.getElementById('sca-y').value, +document.getElementById('sca-z').value);
+};
+
+// ─── MATERIAL ───
+window.setMaterial = (type) => {
+  if (!selectedObject || selectedObject.isLight) return;
+  document.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mat-' + type)?.classList.add('active');
+  const color = selectedObject.color || '#4d7cfe';
+  let mat;
+  if (type === 'wireframe') { mat = new THREE.MeshBasicMaterial({ color, wireframe: true }); }
+  else if (type === 'glass') { mat = new THREE.MeshPhysicalMaterial({ color, transparent: true, opacity: 0.3, roughness: 0, metalness: 0.1, transmission: 0.9 }); }
+  else if (type === 'metal') { mat = new THREE.MeshStandardMaterial({ color, roughness: 0.1, metalness: 0.9 }); }
+  else if (type === 'phong') { mat = new THREE.MeshPhongMaterial({ color, shininess: 100 }); }
+  else if (type === 'lambert') { mat = new THREE.MeshLambertMaterial({ color }); }
+  else { mat = new THREE.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0.1 }); }
+  selectedObject.mesh.material = mat;
+  selectedObject.matType = type;
+  pushUndo();
+};
+
+window.updateMatColor = () => {
+  if (!selectedObject || selectedObject.isLight) return;
+  const c = document.getElementById('mat-color').value;
+  selectedObject.color = c;
+  if (selectedObject.mesh.material.color) selectedObject.mesh.material.color.set(c);
+};
+window.applyColorSwatch = (c) => {
+  document.getElementById('mat-color').value = c;
+  updateMatColor();
+};
+window.updateMatOpacity = () => {
+  if (!selectedObject || selectedObject.isLight) return;
+  const v = +document.getElementById('mat-opacity').value;
+  document.getElementById('opacity-val').textContent = Math.round(v * 100) + '%';
+  const mat = selectedObject.mesh.material;
+  mat.opacity = v; mat.transparent = v < 1;
+};
+window.updateMatRoughness = () => {
+  if (!selectedObject || selectedObject.isLight) return;
+  const mat = selectedObject.mesh.material;
+  if (mat.roughness !== undefined) mat.roughness = +document.getElementById('mat-roughness').value;
+};
+window.updateMatMetalness = () => {
+  if (!selectedObject || selectedObject.isLight) return;
+  const mat = selectedObject.mesh.material;
+  if (mat.metalness !== undefined) mat.metalness = +document.getElementById('mat-metalness').value;
+};
+window.applyTextureFromFile = (e) => {
+  if (!selectedObject || selectedObject.isLight) { showToast('Sélectionnez un objet d\'abord', 'error'); return; }
+  const file = e.target.files[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  const loader = new THREE.TextureLoader();
+  loader.load(url, (tex) => {
+    selectedObject.mesh.material.map = tex;
+    selectedObject.mesh.material.needsUpdate = true;
+    showToast('Texture appliquée !', 'success');
+  });
+};
+
+// ─── ACTIONS ───
+window.deleteSelected = () => {
+  if (!selectedObject) return;
+  scene.remove(selectedObject.mesh);
+  if (selectedObject.light) scene.remove(selectedObject.light);
+  objects = objects.filter(o => o !== selectedObject);
+  deselectAll();
+  updateSceneList();
+  updateStats();
+  pushUndo();
+};
+window.duplicateSelected = () => {
+  if (!selectedObject) return;
+  objectCounter++;
+  const orig = selectedObject;
+  const mesh = createMesh(orig.type, orig.color);
+  mesh.position.copy(orig.mesh.position).add(new THREE.Vector3(0.8, 0, 0.8));
+  mesh.rotation.copy(orig.mesh.rotation);
+  mesh.scale.copy(orig.mesh.scale);
+  if (orig.mesh.material.color) mesh.material.color.copy(orig.mesh.material.color);
+  const obj = { id: objectCounter, name: orig.name + ' (copie)', type: orig.type, mesh, visible: true, matType: orig.matType, color: orig.color };
+  mesh.userData.objRef = obj;
+  objects.push(obj);
+  scene.add(mesh);
+  selectObject(obj);
+  updateSceneList();
+  updateStats();
+  pushUndo();
+  showToast('Dupliqué !', 'success');
+};
+window.toggleVisibility = (id) => {
+  const obj = objects.find(o => o.id === id);
+  if (!obj) return;
+  obj.visible = !obj.visible;
+  obj.mesh.visible = obj.visible;
+  updateSceneList();
+};
+window.selectAll = () => { if (objects.length > 0) selectObject(objects[objects.length - 1]); };
+window.clearScene = () => {
+  if (!confirm('Vider toute la scène ?')) return;
+  objects.forEach(o => { scene.remove(o.mesh); if (o.light) scene.remove(o.light); });
+  objects = []; lightObjects = [];
+  deselectAll();
+  updateSceneList();
+  updateStats();
+  pushUndo();
+  showToast('Scène vidée', 'info');
+};
+window.groupSelected = () => { showToast('Groupement sélectionné', 'info'); };
+window.alignObjects = (mode) => {
+  if (mode === 'center') objects.forEach(o => { if (!o.isFloor) { o.mesh.position.x = 0; o.mesh.position.z = 0; } });
+  pushUndo();
+};
+window.mirrorObject = (axis) => {
+  if (!selectedObject) return;
+  if (axis === 'x') selectedObject.mesh.scale.x *= -1;
+  if (axis === 'y') selectedObject.mesh.scale.y *= -1;
+  pushUndo();
+};
+window.focusSelected = () => {
+  if (!selectedObject) return;
+  cameraTarget.copy(selectedObject.mesh.position);
+  cameraRadius = 5;
+};
+
+// ─── UNDO/REDO ───
+function pushUndo() {
+  const state = objects.map(o => ({
+    id: o.id, name: o.name, type: o.type, color: o.color, matType: o.matType,
+    px: o.mesh.position.x, py: o.mesh.position.y, pz: o.mesh.position.z,
+    rx: o.mesh.rotation.x, ry: o.mesh.rotation.y, rz: o.mesh.rotation.z,
+    sx: o.mesh.scale.x, sy: o.mesh.scale.y, sz: o.mesh.scale.z
+  }));
+  undoStack.push(state);
+  if (undoStack.length > 50) undoStack.shift();
+  redoStack = [];
+}
+window.undoAction = () => {
+  if (undoStack.length < 2) { showToast('Rien à annuler', 'info'); return; }
+  redoStack.push(undoStack.pop());
+  restoreState(undoStack[undoStack.length - 1]);
+};
+window.redoAction = () => {
+  if (!redoStack.length) { showToast('Rien à refaire', 'info'); return; }
+  const state = redoStack.pop();
+  undoStack.push(state);
+  restoreState(state);
+};
+function restoreState(state) {
+  objects.forEach(o => { scene.remove(o.mesh); if (o.light) scene.remove(o.light); });
+  objects = [];
+  state.forEach(s => {
+    const mesh = createMesh(s.type, s.color);
+    mesh.position.set(s.px, s.py, s.pz);
+    mesh.rotation.set(s.rx, s.ry, s.rz);
+    mesh.scale.set(s.sx, s.sy, s.sz);
+    const obj = { id: s.id, name: s.name, type: s.type, mesh, visible: true, matType: s.matType, color: s.color };
+    mesh.userData.objRef = obj;
+    objects.push(obj);
+    scene.add(mesh);
+  });
+  deselectAll();
+  updateSceneList();
+  updateStats();
+}
+
+// ─── CAMERA ───
+window.toggleGrid = () => { isGridVisible = !isGridVisible; gridHelper.visible = isGridVisible; };
+window.resetCamera = () => { cameraAngleH = 0.7; cameraAngleV = 0.5; cameraRadius = 12; cameraTarget.set(0, 0, 0); };
+window.zoomIn = () => { cameraRadius = Math.max(1, cameraRadius - 1.5); };
+window.zoomOut = () => { cameraRadius = Math.min(80, cameraRadius + 1.5); };
+window.fitAll = () => {
+  if (objects.length === 0) { resetCamera(); return; }
+  const box = new THREE.Box3();
+  objects.forEach(o => box.expandByObject(o.mesh));
+  const center = new THREE.Vector3(), size = new THREE.Vector3();
+  box.getCenter(center); box.getSize(size);
+  cameraTarget.copy(center);
+  cameraRadius = Math.max(5, size.length() * 1.5);
+};
+window.setViewMode = (mode) => {
+  viewMode = mode;
+  document.querySelectorAll('.vp-mode-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + (mode === 'perspective' ? 'persp' : 'ortho'))?.classList.add('active');
+};
+window.setView = (view) => {
+  if (view === 'top') { cameraAngleV = Math.PI / 2 - 0.01; cameraAngleH = 0; }
+  else if (view === 'front') { cameraAngleV = 0; cameraAngleH = 0; }
+  else if (view === 'side') { cameraAngleV = 0; cameraAngleH = Math.PI / 2; }
+};
+window.setBg = (mode) => {
+  bgMode = mode;
+  if (mode === 'dark') { scene.background = new THREE.Color('#0d1829'); scene.fog = new THREE.FogExp2(0x0d1829, 0.025); }
+  else if (mode === 'light') { scene.background = new THREE.Color('#e8eeff'); scene.fog = new THREE.FogExp2(0xe8eeff, 0.015); }
+  else if (mode === 'space') { scene.background = new THREE.Color('#010108'); scene.fog = null; }
+  else if (mode === 'gradient') { scene.background = new THREE.Color('#1a0040'); scene.fog = new THREE.FogExp2(0x1a0040, 0.02); }
+};
+
+// ─── SAVE/LOAD ───
+window.saveScene = () => {
+  const data = { version: '1.0', objects: objects.map(o => ({
+    id: o.id, name: o.name, type: o.type, color: o.color, matType: o.matType,
+    px: o.mesh.position.x, py: o.mesh.position.y, pz: o.mesh.position.z,
+    rx: o.mesh.rotation.x, ry: o.mesh.rotation.y, rz: o.mesh.rotation.z,
+    sx: o.mesh.scale.x, sy: o.mesh.scale.y, sz: o.mesh.scale.z
+  })) };
+  localStorage.setItem('wikimind3d_scene', JSON.stringify(data));
+  showToast('Scène sauvegardée !', 'success');
+};
+window.exportJSON = () => {
+  const data = { version: '1.0', objects: objects.map(o => ({
+    id: o.id, name: o.name, type: o.type, color: o.color, matType: o.matType,
+    position: { x: o.mesh.position.x, y: o.mesh.position.y, z: o.mesh.position.z },
+    rotation: { x: o.mesh.rotation.x, y: o.mesh.rotation.y, z: o.mesh.rotation.z },
+    scale: { x: o.mesh.scale.x, y: o.mesh.scale.y, z: o.mesh.scale.z }
+  })) };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'wikimind3d_scene.json'; a.click();
+  showToast('Export JSON téléchargé !', 'success');
+};
+window.exportPNG = () => {
+  renderer.render(scene, camera);
+  renderer.domElement.toBlob((blob) => {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'wikimind3d.png'; a.click();
+    showToast('PNG exporté !', 'success');
+  });
+  document.getElementById('export-modal').classList.remove('show');
+};
+window.exportOBJ = () => {
+  if (currentPlan < 2) { showPlanBanner(); return; }
+  showToast('Export OBJ en cours...', 'info');
+  setTimeout(() => showToast('Fonctionnalité disponible pour les utilisateurs connectés AI Plus+', 'info'), 1000);
+};
+window.exportSTL = () => {
+  if (currentPlan < 3) { showPlanBanner(); return; }
+  showToast('Export STL disponible AI Pro+', 'info');
+};
+
+function showPlanBanner() {
+  const b = document.getElementById('plan-banner');
+  b.classList.add('show');
+  setTimeout(() => b.classList.remove('show'), 4000);
+}
+
+// ─── TEMPLATES ───
+function loadTemplate(name) {
+  objects.forEach(o => { scene.remove(o.mesh); if (o.light) scene.remove(o.light); });
+  objects = []; objectCounter = 0;
+
+  const templates = {
+    maison: [
+      { type: 'cube', color: '#c0a080', px: 0, py: 0.75, pz: 0, sx: 3, sy: 1.5, sz: 3, name: 'Murs' },
+      { type: 'pyramid', color: '#8b2020', px: 0, py: 2.25, pz: 0, sx: 3.4, sy: 1.5, sz: 3.4, name: 'Toit' },
+      { type: 'cube', color: '#6b4020', px: 0, py: 0.4, pz: 1.51, sx: 0.6, sy: 0.8, sz: 0.1, name: 'Porte' },
+      { type: 'cube', color: '#aaccff', px: -0.8, py: 0.75, pz: 1.51, sx: 0.5, sy: 0.5, sz: 0.1, name: 'Fenêtre G' },
+      { type: 'cube', color: '#aaccff', px: 0.8, py: 0.75, pz: 1.51, sx: 0.5, sy: 0.5, sz: 0.1, name: 'Fenêtre D' },
+    ],
+    robot: [
+      { type: 'cube', color: '#607d8b', px: 0, py: 0.6, pz: 0, sx: 1.2, sy: 1.2, sz: 0.8, name: 'Torse' },
+      { type: 'cube', color: '#78909c', px: 0, py: 1.8, pz: 0, sx: 0.9, sy: 0.9, sz: 0.9, name: 'Tête' },
+      { type: 'sphere', color: '#ff5252', px: -0.25, py: 1.85, pz: 0.45, sx: 0.12, sy: 0.12, sz: 0.12, name: 'Œil G' },
+      { type: 'sphere', color: '#ff5252', px: 0.25, py: 1.85, pz: 0.45, sx: 0.12, sy: 0.12, sz: 0.12, name: 'Œil D' },
+      { type: 'cube', color: '#546e7a', px: -0.85, py: 0.6, pz: 0, sx: 0.35, sy: 1.1, sz: 0.35, name: 'Bras G' },
+      { type: 'cube', color: '#546e7a', px: 0.85, py: 0.6, pz: 0, sx: 0.35, sy: 1.1, sz: 0.35, name: 'Bras D' },
+      { type: 'cube', color: '#37474f', px: -0.35, py: -0.6, pz: 0, sx: 0.45, sy: 1, sz: 0.45, name: 'Jambe G' },
+      { type: 'cube', color: '#37474f', px: 0.35, py: -0.6, pz: 0, sx: 0.45, sy: 1, sz: 0.45, name: 'Jambe D' },
+    ],
+    fusee: [
+      { type: 'cylinder', color: '#e0e0e0', px: 0, py: 1.5, pz: 0, sx: 0.6, sy: 3, sz: 0.6, name: 'Corps' },
+      { type: 'cone', color: '#e53935', px: 0, py: 3.5, pz: 0, sx: 0.6, sy: 1.2, sz: 0.6, name: 'Ogive' },
+      { type: 'cone', color: '#1565c0', px: 0.4, py: 0.2, pz: 0, sx: 0.3, sy: 0.8, sz: 0.3, name: 'Aile D', rz: 1.5 },
+      { type: 'cone', color: '#1565c0', px: -0.4, py: 0.2, pz: 0, sx: 0.3, sy: 0.8, sz: 0.3, name: 'Aile G', rz: -1.5 },
+      { type: 'cone', color: '#1565c0', px: 0, py: 0.2, pz: 0.4, sx: 0.3, sy: 0.8, sz: 0.3, name: 'Aile Av', rx: 1.5 },
+      { type: 'sphere', color: '#ff6d00', px: 0, py: -0.1, pz: 0, sx: 0.35, sy: 0.35, sz: 0.35, name: 'Propulsion' },
+    ],
+    pont: [
+      { type: 'cube', color: '#bdc3c7', px: 0, py: 0.1, pz: 0, sx: 8, sy: 0.2, sz: 1.5, name: 'Tablier' },
+      { type: 'cylinder', color: '#7f8c8d', px: -3, py: 1, pz: 0, sx: 0.2, sy: 2, sz: 0.2, name: 'Pilier G1' },
+      { type: 'cylinder', color: '#7f8c8d', px: 3, py: 1, pz: 0, sx: 0.2, sy: 2, sz: 0.2, name: 'Pilier D1' },
+      { type: 'cube', color: '#95a5a6', px: -3, py: 2.1, pz: 0, sx: 1.2, sy: 0.15, sz: 1.5, name: 'Chapeau G' },
+      { type: 'cube', color: '#95a5a6', px: 3, py: 2.1, pz: 0, sx: 1.2, sy: 0.15, sz: 1.5, name: 'Chapeau D' },
+    ],
+    ville: [
+      { type: 'cube', color: '#546e7a', px: -3, py: 1.5, pz: -2, sx: 1.2, sy: 3, sz: 1.2, name: 'Tour 1' },
+      { type: 'cube', color: '#607d8b', px: 0, py: 2.5, pz: -2, sx: 1, sy: 5, sz: 1, name: 'Gratte-ciel' },
+      { type: 'cube', color: '#78909c', px: 3, py: 1, pz: -2, sx: 1.5, sy: 2, sz: 1.5, name: 'Immeuble' },
+      { type: 'cube', color: '#90a4ae', px: -2, py: 0.7, pz: 1, sx: 2, sy: 1.4, sz: 1.8, name: 'Bâtiment' },
+      { type: 'cube', color: '#455a64', px: 2, py: 0.5, pz: 1, sx: 1.8, sy: 1, sz: 1.6, name: 'Magasin' },
+    ],
+    logo: [
+      { type: 'cube', color: '#4d7cfe', px: -0.6, py: 0.5, pz: 0, sx: 0.4, sy: 1.5, sz: 0.4, name: 'W-g1' },
+      { type: 'cube', color: '#4d7cfe', px: -0.2, py: 0.3, pz: 0, sx: 0.4, sy: 1, sz: 0.4, name: 'W-g2' },
+      { type: 'cube', color: '#4d7cfe', px: 0.2, py: 0.3, pz: 0, sx: 0.4, sy: 1, sz: 0.4, name: 'W-g3' },
+      { type: 'cube', color: '#7c3aed', px: 0.6, py: 0.5, pz: 0, sx: 0.4, sy: 1.5, sz: 0.4, name: 'W-g4' },
+    ]
+  };
+
+  const tpl = templates[name];
+  if (!tpl) return;
+  tpl.forEach(item => {
+    objectCounter++;
+    const mesh = createMesh(item.type, item.color);
+    mesh.position.set(item.px || 0, item.py || 0.5, item.pz || 0);
+    mesh.scale.set(item.sx || 1, item.sy || 1, item.sz || 1);
+    if (item.rx) mesh.rotation.x = item.rx;
+    if (item.ry) mesh.rotation.y = item.ry;
+    if (item.rz) mesh.rotation.z = item.rz;
+    const obj = { id: objectCounter, name: item.name || `Objet ${objectCounter}`, type: item.type, mesh, visible: true, matType: 'standard', color: item.color };
+    mesh.userData.objRef = obj;
+    objects.push(obj);
+    scene.add(mesh);
+  });
+  deselectAll();
+  updateSceneList();
+  updateStats();
+  pushUndo();
+  fitAll();
+  showToast(`Template "${name}" chargé !`, 'success');
+}
+
+// ─── AI SCENE GENERATION ───
+let lastAiSceneData = null;
+
+window.generateScene = async () => {
+  if (currentPlan < 2) { showPlanBanner(); showToast('Fonctionnalité AI Plus+ requis', 'error'); return; }
+  const prompt = document.getElementById('ai-text-input').value.trim();
+  if (!prompt) { showToast('Décrivez votre scène d\'abord', 'error'); return; }
+  const model = document.getElementById('ai-model-select').value;
+
+  document.getElementById('ai-gen-btn').disabled = true;
+  document.getElementById('ai-loading').style.display = 'flex';
+  document.getElementById('ai-result').classList.remove('show');
+  document.getElementById('ai-loading-text').textContent = 'L\'IA analyse votre description...';
+
+  const systemPrompt = `Tu es un générateur de scènes 3D pour WikiMind 3D. 
+Quand l'utilisateur décrit une scène, génère un JSON valide avec les objets 3D à créer.
+Types disponibles: cube, sphere, cylinder, cone, torus, plane, pyramid, capsule, ring, star.
+Couleurs en hexadécimal (#rrggbb).
+Format de réponse - SEULEMENT le JSON, sans markdown ni explication:
+{"description":"Description courte de la scène","objects":[{"name":"Nom","type":"cube","color":"#ff0000","px":0,"py":0.5,"pz":0,"sx":1,"sy":1,"sz":1,"rx":0,"ry":0,"rz":0}]}
+px/py/pz = position, sx/sy/sz = scale (défaut 1), rx/ry/rz = rotation en radians.
+Place les objets logiquement. Maximum 12 objets. py doit être > 0 pour que les objets soient sur le sol.`;
+
+  const response = await callMistral([
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: `Génère une scène 3D pour: "${prompt}"` }
+  ], model, 1500);
+
+  document.getElementById('ai-loading').style.display = 'none';
+  document.getElementById('ai-gen-btn').disabled = false;
+
+  if (!response) { showToast('Erreur IA, réessayez', 'error'); return; }
+
+  try {
+    const clean = response.replace(/```json|```/g, '').trim();
+    const data = JSON.parse(clean);
+    lastAiSceneData = data;
+
+    document.getElementById('ai-result-text').innerHTML = `<strong>✨ ${data.description || 'Scène générée'}</strong><br><span style="color:var(--text3);font-size:11px;">${data.objects?.length || 0} objet(s) prêts à être placés</span>`;
+    const itemsEl = document.getElementById('ai-scene-items');
+    itemsEl.innerHTML = (data.objects || []).map(o => `<div class="ai-scene-item"><strong>${getShapeEmoji(o.type)} ${o.name}</strong> — ${o.type} <span style="display:inline-block;width:12px;height:12px;background:${o.color};border-radius:3px;vertical-align:middle;margin-left:4px;"></span></div>`).join('');
+    document.getElementById('ai-result').classList.add('show');
+    showToast('Scène IA générée !', 'success');
+  } catch {
+    document.getElementById('ai-result-text').innerHTML = response.substring(0, 300);
+    document.getElementById('ai-result').classList.add('show');
+    showToast('Réponse IA reçue', 'info');
+  }
+};
+
+window.applyAiScene = () => {
+  if (!lastAiSceneData?.objects) { showToast('Pas de données à appliquer', 'error'); return; }
+  objects.forEach(o => { scene.remove(o.mesh); if (o.light) scene.remove(o.light); });
+  objects = []; objectCounter = 0;
+
+  lastAiSceneData.objects.forEach(item => {
+    objectCounter++;
+    const mesh = createMesh(item.type, item.color || '#4d7cfe');
+    mesh.position.set(item.px || 0, Math.max(0.05, item.py || 0.5), item.pz || 0);
+    mesh.scale.set(item.sx || 1, item.sy || 1, item.sz || 1);
+    mesh.rotation.set(item.rx || 0, item.ry || 0, item.rz || 0);
+    const obj = { id: objectCounter, name: item.name || `Objet ${objectCounter}`, type: item.type, mesh, visible: true, matType: 'standard', color: item.color };
+    mesh.userData.objRef = obj;
+    objects.push(obj);
+    scene.add(mesh);
+  });
+
+  deselectAll();
+  updateSceneList();
+  updateStats();
+  pushUndo();
+  fitAll();
+  closeAiModal();
+  showToast(`${objects.length} objets ajoutés !`, 'success');
+};
+
+window.resetAiResult = () => {
+  lastAiSceneData = null;
+  document.getElementById('ai-text-input').value = '';
+  document.getElementById('ai-result').classList.remove('show');
+};
+
+window.aiSuggest = (text) => { document.getElementById('ai-text-input').value = text; };
+
+// ─── SCENE ANALYSIS ───
+window.analyseScene = async () => {
+  if (currentPlan < 4) { showPlanBanner(); return; }
+  document.getElementById('analyse-loading').style.display = 'flex';
+  document.getElementById('analyse-result').classList.remove('show');
+
+  const sceneDesc = objects.map(o => `- ${o.name} (${o.type}) couleur ${o.color} à (${o.mesh.position.x.toFixed(1)}, ${o.mesh.position.y.toFixed(1)}, ${o.mesh.position.z.toFixed(1)})`).join('\n');
+
+  const resp = await callMistral([
+    { role: 'system', content: 'Tu es un expert en design 3D et composition visuelle. Analyse des scènes 3D et donne des conseils constructifs en français.' },
+    { role: 'user', content: `Analyse cette scène 3D et donne 4-5 suggestions d'amélioration (composition, couleurs, proportions, éclairage):\n${sceneDesc}` }
+  ], 'mistral-medium-latest', 800);
+
+  document.getElementById('analyse-loading').style.display = 'none';
+  if (resp) {
+    document.getElementById('analyse-result').innerHTML = resp.replace(/\n/g, '<br>');
+    document.getElementById('analyse-result').classList.add('show');
+  } else showToast('Erreur analyse IA', 'error');
+};
+
+// ─── IMAGE PROCESSING ───
+let currentImgData = null;
+
+window.loadImageForEditing = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  img.onload = () => {
+    imgOriginal = img;
+    const wrap = document.getElementById('img-canvas-wrap');
+    const canvas = document.getElementById('img-preview-canvas');
+    const ctx = canvas.getContext('2d');
+    const maxW = 300, maxH = 200;
+    const ratio = Math.min(maxW / img.width, maxH / img.height, 1);
+    canvas.width = img.width * ratio;
+    canvas.height = img.height * ratio;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    imgProcessingCanvas = canvas;
+    imgProcessingCtx = ctx;
+    currentImgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    wrap.style.display = 'flex';
+    document.getElementById('detouring-section').style.display = 'block';
+    showToast('Image chargée !', 'success');
+  };
+  img.src = url;
+};
+
+window.detourTool = (mode) => {
+  currentDetourMode = mode;
+  document.querySelectorAll('.det-tool').forEach(d => d.classList.remove('active'));
+  document.getElementById('dt-' + mode)?.classList.add('active');
+  if (!imgProcessingCanvas || !imgOriginal) return;
+
+  document.getElementById('detour-loading').style.display = 'flex';
+  setTimeout(() => {
+    const canvas = imgProcessingCanvas;
+    const ctx = imgProcessingCtx;
+    const ratio = canvas.width / imgOriginal.width;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(imgOriginal, 0, 0, canvas.width, canvas.height);
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const d = imgData.data;
+
+    if (mode === 'grayscale') {
+      for (let i = 0; i < d.length; i += 4) { const g = d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114; d[i]=d[i+1]=d[i+2]=g; }
+    } else if (mode === 'bg') {
+      for (let i = 0; i < d.length; i += 4) {
+        const r=d[i],g=d[i+1],b=d[i+2];
+        if (r>200&&g>200&&b>200) { d[i+3]=0; }
+      }
+    } else if (mode === 'edge') {
+      for (let i = 0; i < d.length; i += 4) { d[i]=255-d[i]; d[i+1]=255-d[i+1]; d[i+2]=255-d[i+2]; }
+    } else if (mode === 'contrast') {
+      const factor = 1.8;
+      for (let i = 0; i < d.length; i += 4) {
+        d[i]=Math.min(255,((d[i]/255-0.5)*factor+0.5)*255);
+        d[i+1]=Math.min(255,((d[i+1]/255-0.5)*factor+0.5)*255);
+        d[i+2]=Math.min(255,((d[i+2]/255-0.5)*factor+0.5)*255);
+      }
+    }
+    ctx.putImageData(imgData, 0, 0);
+    document.getElementById('detour-loading').style.display = 'none';
+    showToast('Traitement appliqué !', 'success');
+  }, 600);
+};
+
+window.applyTextureToSelected = () => {
+  if (!selectedObject || selectedObject.isLight) { showToast('Sélectionnez un objet dans l\'éditeur', 'error'); return; }
+  if (!imgProcessingCanvas) { showToast('Chargez une image d\'abord', 'error'); return; }
+  const tex = new THREE.CanvasTexture(imgProcessingCanvas);
+  selectedObject.mesh.material.map = tex;
+  selectedObject.mesh.material.needsUpdate = true;
+  closeAiModal();
+  showToast('Texture appliquée sur l\'objet !', 'success');
+};
+
+// ─── GALLERY ───
+window.filterGallery = () => {
+  const q = document.getElementById('gallery-search').value.toLowerCase();
+  const grid = document.getElementById('gallery-grid');
+  grid.innerHTML = GALLERY_MOCK.filter(g => g.label.toLowerCase().includes(q) || q === '')
+    .map(g => `<div class="gallery-item" onclick="applyGalleryTexture('${g.color}','${g.label}')">
+      <div style="width:100%;height:100%;background:${g.color};display:flex;align-items:center;justify-content:center;font-size:36px;">${g.emoji}</div>
+      <div class="gallery-item-label">${g.label}</div>
+    </div>`).join('');
+};
+window.applyGalleryTexture = (color, label) => {
+  if (!selectedObject || selectedObject.isLight) { showToast('Sélectionnez un objet d\'abord', 'error'); return; }
+  if (selectedObject.mesh.material.color) selectedObject.mesh.material.color.set(color);
+  selectedObject.color = color;
+  closeAiModal();
+  showToast(`Texture "${label}" appliquée !`, 'success');
+};
+
+// ─── NAVIGATION ───
+window.openEditor = () => {
+  document.getElementById('home-screen').classList.add('hidden');
+  document.getElementById('editor').classList.add('visible');
+  if (!renderer) setTimeout(() => { initThree(); loadSavedScene(); }, 50);
+};
+window.openEditorWithTemplate = (name) => {
+  document.getElementById('home-screen').classList.add('hidden');
+  document.getElementById('editor').classList.add('visible');
+  if (!renderer) setTimeout(() => { initThree(); loadTemplate(name); }, 50);
+  else loadTemplate(name);
+};
+window.goHome = () => {
+  document.getElementById('home-screen').classList.remove('hidden');
+  document.getElementById('editor').classList.remove('visible');
+};
+window.newScene = () => {
+  if (!confirm('Créer une nouvelle scène ? Les changements non sauvegardés seront perdus.')) return;
+  objects.forEach(o => { scene.remove(o.mesh); if (o.light) scene.remove(o.light); });
+  objects = []; objectCounter = 0;
+  deselectAll(); updateSceneList(); updateStats();
+  showToast('Nouvelle scène créée', 'info');
+};
+
+function loadSavedScene() {
+  try {
+    const raw = localStorage.getItem('wikimind3d_scene');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (!data.objects?.length) return;
+    data.objects.forEach(s => {
+      objectCounter++;
+      const mesh = createMesh(s.type, s.color);
+      mesh.position.set(s.px || 0, s.py || 0.5, s.pz || 0);
+      mesh.rotation.set(s.rx || 0, s.ry || 0, s.rz || 0);
+      mesh.scale.set(s.sx || 1, s.sy || 1, s.sz || 1);
+      const obj = { id: s.id || objectCounter, name: s.name || `Objet ${objectCounter}`, type: s.type, mesh, visible: true, matType: s.matType || 'standard', color: s.color };
+      mesh.userData.objRef = obj;
+      objects.push(obj);
+      scene.add(mesh);
+    });
+    deselectAll(); updateSceneList(); updateStats();
+    showToast('Scène restaurée !', 'info');
+  } catch {}
+}
+
+// ─── MODAL CONTROLS ───
+window.openAiModal = () => {
+  document.getElementById('ai-modal').classList.add('show');
+  const n = objects.filter(o => !o.isLight).length;
+  const desc = n === 0 ? 'Scène vide' : `${n} objet(s): ${objects.filter(o=>!o.isLight).slice(0,3).map(o=>o.name).join(', ')}${n>3?'...':''}`;
+  const el = document.getElementById('scene-summary-analyse');
+  if (el) el.textContent = desc;
+  filterGallery();
+  applyPlanRestrictions();
+};
+window.closeAiModal = () => document.getElementById('ai-modal').classList.remove('show');
+window.openExportModal = () => document.getElementById('export-modal').classList.add('show');
+
+window.aiTab = (tab) => {
+  document.querySelectorAll('.ai-tab').forEach((t, i) => t.classList.toggle('active', ['text','image','gallery','analyse'][i] === tab));
+  document.querySelectorAll('.ai-section').forEach((s, i) => s.classList.toggle('active', ['ai-text','ai-image','ai-gallery','ai-analyse'][i] === ('ai-' + tab)));
+};
+
+window.lpTab = (tab) => {
+  document.querySelectorAll('.lp-tab').forEach((t, i) => t.classList.toggle('active', ['shapes','tools','models'][i] === tab));
+  ['shapes','tools','models'].forEach(t => { const el = document.getElementById('lp-' + t); if(el) el.style.display = t === tab ? 'block' : 'none'; });
+};
+
+window.rpTab = (tab) => {
+  document.querySelectorAll('.rp-tab').forEach((t, i) => t.classList.toggle('active', ['props','scene','material'][i] === tab));
+  ['props','scene','material'].forEach(t => { const el = document.getElementById('rp-' + t); if(el) el.style.display = t === tab ? 'block' : 'none'; });
+};
+
+// ─── TOAST ───
+window.showToast = (msg, type = 'info') => {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  const icons = { success: '✓', error: '✕', info: 'ℹ' };
+  t.innerHTML = `<span>${icons[type] || 'ℹ'}</span><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(8px)'; t.style.transition = '.3s'; setTimeout(() => t.remove(), 300); }, 3500);
+};
+function showToast(msg, type) { window.showToast(msg, type); }
+
+// ─── SPLASH ───
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('splash').classList.add('out');
+    setTimeout(() => { document.getElementById('splash').style.display = 'none'; }, 600);
+  }, 2000);
+});
+
+</script>
+</body>
+</html>
