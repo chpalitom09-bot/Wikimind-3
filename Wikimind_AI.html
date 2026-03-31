@@ -2181,16 +2181,19 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
     <div class="float-btn" onclick="newChat()" title="Nouveau chat">
       <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
     </div>
-    <div class="float-btn" id="btn-share-chat" onclick="openShareChatModal()" title="Partager cette conversation" style="display:none">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-    </div>
   </div>
 
-  <!-- Top-right: ephemeral + avatar — properly structured -->
+  <!-- Top-right: ephemeral / share + avatar — properly structured -->
   <div id="top-right-bar" style="position:absolute;top:18px;right:18px;z-index:50;display:flex;align-items:center;gap:8px;">
+    <!-- Bouton Éphémère — visible quand pas de messages -->
     <button id="btn-ephemeral-chat" onclick="startEphemeralChat()" title="Chat éphémère — non sauvegardé" style="display:inline-flex;align-items:center;gap:5px;background:var(--select-bg);border:1px solid var(--border2);border-radius:20px;padding:0 12px 0 10px;font-size:11px;font-weight:700;color:#888;cursor:pointer;transition:.2s;font-family:Inter,sans-serif;height:34px;white-space:nowrap;" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='var(--select-bg)'">
       <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><line x1="9" y1="10" x2="15" y2="10" stroke-dasharray="2 2"/></svg>
       Éphémère
+    </button>
+    <!-- Bouton Partager — visible quand il y a des messages, remplace Éphémère -->
+    <button id="btn-share-chat" onclick="openShareChatModal()" title="Partager cette conversation" style="display:none;align-items:center;gap:5px;background:var(--select-bg);border:1px solid var(--border2);border-radius:20px;padding:0 12px 0 10px;font-size:11px;font-weight:700;color:var(--text);cursor:pointer;transition:.2s;font-family:Inter,sans-serif;height:34px;white-space:nowrap;" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='var(--select-bg)'">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      Partager
     </button>
     <div id="plan-chip" onclick="togglePlanChipMenu(event)" style="position:relative;width:34px;height:34px;cursor:pointer;flex-shrink:0;">
       <div class="plan-chip-avatar ring-free" id="tb-avatar" style="width:34px;height:34px;font-size:13px;"><span id="tb-avatar-initials">?</span></div>
@@ -4832,6 +4835,7 @@ function loadChat(id){
       G('chat-container').innerHTML='';
       S.msgs.forEach(m=>renderMsg(m,false));
       showWelcome();renderHistory();
+      if(typeof syncShareBtn==='function') syncShareBtn();
     });
     return;
   }
@@ -6971,6 +6975,7 @@ ${_summary}
 
   const um={role:'user',content:displayText,fullContent,images,attachmentName,_canvasMode:S.canvasMode,_newsMode:S_news.active,_oramaMode:!!window._oramaDb,ts:now};
   S.msgs.push(um); renderMsg(um);
+  if(typeof syncShareBtn==='function') syncShareBtn();
   // Index new message in Orama conv memory (background)
   indexConversationMsg(um, S.msgs.length-1).catch(()=>{});
   S.attachments=[]; updateAttachmentPreview();
@@ -12172,10 +12177,13 @@ if(typeof buildHistoryWithContextManagement === 'function'){
 // PARTAGE DE CONVERSATION v2 — Copie privée OU Chat public live
 // ══════════════════════════════════════════════════════════════
 
-// Affiche/masque le bouton partage selon s'il y a des messages
+// Affiche le bouton Partager et masque Éphémère quand il y a des messages, et inversement
 function syncShareBtn(){
-  const btn = G('btn-share-chat');
-  if(btn) btn.style.display = (S.msgs && S.msgs.length > 0) ? 'flex' : 'none';
+  const hasMessages = S.msgs && S.msgs.length > 0;
+  const btnEphemeral = G('btn-ephemeral-chat');
+  const btnShare = G('btn-share-chat');
+  if(btnEphemeral) btnEphemeral.style.display = hasMessages ? 'none' : 'inline-flex';
+  if(btnShare)     btnShare.style.display     = hasMessages ? 'inline-flex' : 'none';
 }
 
 // Ouvre le modal de choix de partage
