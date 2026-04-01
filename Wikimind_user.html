@@ -138,8 +138,12 @@
         .plan-card.selected { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.08); }
 
         /* ── FRIEND CARD ── */
-        .friend-card { transition: all 0.2s; }
-        .friend-card:hover { transform: translateY(-2px); }
+        .friend-card { transition: all 0.25s cubic-bezier(0.34,1.3,0.64,1); cursor: pointer; position: relative; overflow: hidden; }
+        .friend-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(236,72,153,0.05), transparent); opacity: 0; transition: opacity 0.2s; border-radius: 16px; pointer-events: none; }
+        .friend-card:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,0,0,0.35); }
+        .friend-card:hover::before { opacity: 1; }
+        .friend-card-enter { animation: friendSlideIn 0.4s cubic-bezier(0.34,1.3,0.64,1) forwards; }
+        @keyframes friendSlideIn { from { opacity: 0; transform: translateX(-16px) scale(0.97); } to { opacity: 1; transform: translateX(0) scale(1); } }
 
         /* ── NOTIF DOT ── */
         .ndot { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid var(--bg); position: absolute; top: -1px; right: -1px; animation: pulseSoft 1.5s ease-in-out infinite; }
@@ -460,26 +464,58 @@
         <!-- ── PAGE FRIENDS ── -->
         <div id="page-friends" class="page">
             <!-- Search -->
-            <div class="glass rounded-3xl p-6 mb-5 animate-fade-in-up">
-                <h3 class="font-display font-bold text-base mb-4 flex items-center gap-2"><i class="fa-solid fa-magnifying-glass" style="color:#a5b4fc;"></i>Rechercher un ami</h3>
-                <div class="flex gap-3">
-                    <input type="text" id="fsearch" class="inp flex-1" placeholder="Recherche par email ou nom...">
-                    <button onclick="searchFriends()" class="btn-brand" style="width:auto;padding:13px 20px;white-space:nowrap;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-search"></i>Chercher</button>
+            <div class="glass rounded-3xl p-6 mb-5 animate-fade-in-up" style="border-color:rgba(99,102,241,0.15);">
+                <div class="flex items-center gap-3 mb-5">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-base flex-shrink-0" style="background:rgba(99,102,241,0.18);color:#a5b4fc;">
+                        <i class="fa-solid fa-user-plus"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-display font-bold text-base leading-tight">Trouver un ami</h3>
+                        <p class="text-[11px] text-white/30 mt-0.5">Recherche par nom ou adresse email</p>
+                    </div>
+                </div>
+                <div class="flex gap-2.5">
+                    <div class="relative flex-1">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-white/20 text-sm pointer-events-none"></i>
+                        <input type="text" id="fsearch" class="inp pl-11" placeholder="Nom d'utilisateur ou email...">
+                    </div>
+                    <button onclick="searchFriends()" class="btn-brand flex items-center gap-2" style="width:auto;padding:13px 20px;white-space:nowrap;font-size:13px;">
+                        <i class="fa-solid fa-search"></i><span class="hidden sm:inline">Chercher</span>
+                    </button>
                 </div>
                 <div id="search-results" class="mt-4 space-y-2 hidden"></div>
             </div>
 
             <!-- Pending requests received -->
-            <div id="req-section" class="glass rounded-3xl p-6 mb-5 animate-fade-in-up hidden">
-                <h3 class="font-display font-bold text-base mb-4 flex items-center gap-2" style="color:#fdba74;"><i class="fa-solid fa-bell"></i>Demandes reçues</h3>
+            <div id="req-section" class="glass rounded-3xl p-6 mb-5 animate-fade-in-up hidden" style="border-color:rgba(251,146,60,0.2);">
+                <div class="flex items-center gap-3 mb-5">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center relative flex-shrink-0" style="background:rgba(251,146,60,0.15);color:#fb923c;">
+                        <i class="fa-solid fa-bell text-base"></i>
+                        <span class="absolute -top-1 -right-1 w-3 h-3 bg-orange-400 rounded-full border-2" style="border-color:var(--bg);animation:pulseSoft 1.5s infinite;"></span>
+                    </div>
+                    <div>
+                        <h3 class="font-display font-bold text-base leading-tight" style="color:#fdba74;">Demandes reçues</h3>
+                        <p class="text-[11px] text-white/30 mt-0.5">En attente de votre réponse</p>
+                    </div>
+                </div>
                 <div id="req-list" class="space-y-3"></div>
             </div>
 
             <!-- Friends list -->
-            <div class="glass rounded-3xl p-6 animate-fade-in-up" style="animation-delay:0.08s;">
-                <h3 class="font-display font-bold text-base mb-5 flex items-center gap-2"><i class="fa-solid fa-users text-pink-400"></i>Mes amis <span id="friends-badge" class="ml-1 text-xs bg-white/8 px-2 py-0.5 rounded-full text-white/30">0</span></h3>
-                <div id="friends-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div class="text-white/15 text-center text-sm py-10 col-span-2"><i class="fa-solid fa-user-group text-3xl mb-3 opacity-20 block"></i>Aucun ami pour l'instant.</div>
+            <div class="glass rounded-3xl p-6 animate-fade-in-up" style="animation-delay:0.08s;border-color:rgba(236,72,153,0.12);">
+                <div class="flex items-center justify-between mb-5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-base flex-shrink-0" style="background:rgba(236,72,153,0.15);color:#f472b6;">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-display font-bold text-base leading-tight">Mes amis</h3>
+                            <p class="text-[11px] text-white/30 mt-0.5"><span id="friends-badge">0</span> connexions</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="friends-list" style="display:flex;flex-direction:column;gap:12px;">
+                    <div class="text-white/15 text-center text-sm py-10"><i class="fa-solid fa-user-group text-3xl mb-3 opacity-20 block"></i>Aucun ami pour l'instant.</div>
                 </div>
             </div>
         </div>
@@ -996,7 +1032,10 @@ Réponds UNIQUEMENT en JSON valide sans rien d'autre :
         } catch(e) { toast(e.message, 'error'); }
     };
 
-    document.getElementById('logout-btn').onclick = () => signOut(auth);
+    document.getElementById('logout-btn').onclick = () => {
+        if (CU) cacheClear(CU.uid);
+        signOut(auth);
+    };
 
     // ─── AUTH STATE ───
     onAuthStateChanged(auth, (user) => {
@@ -1049,34 +1088,87 @@ Réponds UNIQUEMENT en JSON valide sans rien d'autre :
 
     function setText(id, val) { const el = document.getElementById(id); if (el) el.innerText = val; }
 
+    // ─── CACHE SYSTEM (12h TTL) ───
+    const CACHE_TTL = 12 * 60 * 60 * 1000; // 12h en ms
+
+    function cacheSet(key, data) {
+        try { localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); } catch(e) {}
+    }
+    function cacheGet(key) {
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw) return null;
+            const { ts, data } = JSON.parse(raw);
+            if (Date.now() - ts > CACHE_TTL) { localStorage.removeItem(key); return null; }
+            return data;
+        } catch(e) { return null; }
+    }
+    function cacheClear(uid) {
+        ['tokens','forfait','profile','community','decks'].forEach(k => {
+            try { localStorage.removeItem(`wm_${uid}_${k}`); } catch(e) {}
+        });
+    }
+
     // ─── LOAD USER DATA ───
     function loadUserData(uid) {
-        // Tokens — key is top-level `tokens`
+        // Tokens — cached, avec listener live pour les mises à jour de transaction
+        const cachedTok = cacheGet(`wm_${uid}_tokens`);
+        if (cachedTok !== null) {
+            const bal = parseInt(cachedTok) || 0;
+            TOKEN_BAL = bal;
+            animNum('tb-home', 0, bal); animNum('tb-main', 0, bal);
+            const val = (bal * 1.16).toFixed(2);
+            setText('tv-home', '≈ ' + val + ' €'); setText('tv-main', val + ' €');
+            setText('plan-tok-display', bal);
+            renderPlanList();
+        }
         onValue(ref(db, `users/${uid}/tokens`), (snap) => {
             let bal = snap.val();
             if (bal === null || bal === undefined) { bal = 100; set(ref(db, `users/${uid}/tokens`), bal); }
             bal = parseInt(bal) || 0;
-            animNum('tb-home', TOKEN_BAL, bal);
-            animNum('tb-main', TOKEN_BAL, bal);
-            TOKEN_BAL = bal;
-            const val = (bal * 1.16).toFixed(2);
-            setText('tv-home', '≈ ' + val + ' €');
-            setText('tv-main', val + ' €');
-            setText('plan-tok-display', bal);
-            renderPlanList();
+            if (bal !== TOKEN_BAL) {
+                animNum('tb-home', TOKEN_BAL, bal);
+                animNum('tb-main', TOKEN_BAL, bal);
+                TOKEN_BAL = bal;
+                const val = (bal * 1.16).toFixed(2);
+                setText('tv-home', '≈ ' + val + ' €'); setText('tv-main', val + ' €');
+                setText('plan-tok-display', bal);
+                renderPlanList();
+                cacheSet(`wm_${uid}_tokens`, bal);
+            }
         });
 
-        // FORFAIT — key is top-level `FORFAIT` (same as Wikimind_AI.html)
+        // FORFAIT — cached
+        const cachedForfait = cacheGet(`wm_${uid}_forfait`);
+        if (cachedForfait !== null) {
+            applyPlanEverywhere(parseInt(cachedForfait) || 1);
+            renderPlanList();
+        }
         onValue(ref(db, `users/${uid}/FORFAIT`), (snap) => {
             const planId = parseInt(snap.val()) || 1;
-            applyPlanEverywhere(planId);
-            renderPlanList();
+            if (planId !== PLAN_ID) {
+                applyPlanEverywhere(planId);
+                renderPlanList();
+                cacheSet(`wm_${uid}_forfait`, planId);
+            } else if (cachedForfait === null) {
+                applyPlanEverywhere(planId);
+                renderPlanList();
+                cacheSet(`wm_${uid}_forfait`, planId);
+            }
         });
 
-        // Decks
-        onValue(ref(db, `users/${uid}/decks`), (snap) => { setText('deck-count', snap.size || 0); });
+        // Decks — cached 12h
+        const cachedDecks = cacheGet(`wm_${uid}_decks`);
+        if (cachedDecks !== null) setText('deck-count', cachedDecks);
+        else {
+            onValue(ref(db, `users/${uid}/decks`), (snap) => {
+                const c = snap.size || 0;
+                setText('deck-count', c);
+                cacheSet(`wm_${uid}_decks`, c);
+            }, { onlyOnce: true });
+        }
 
-        // Transactions (user's own)
+        // Transactions (user's own) — pas de cache, données financières
         onValue(ref(db, 'transactions'), (snap) => {
             const list = document.getElementById('tx-list');
             if (!list) return;
@@ -1107,32 +1199,49 @@ Réponds UNIQUEMENT en JSON valide sans rien d'autre :
             });
         });
 
-        // Community stats
-        get(ref(dbComm, 'comments')).then(snap => {
-            let msgs = 0, likes = 0;
-            if (snap.exists()) snap.forEach(c => {
-                const v = c.val();
-                if (v.uid === uid) { msgs++; likes += v.likes || 0; }
-                if (v.replies) Object.values(v.replies).forEach(r => { if (r.uid === uid) { msgs++; likes += r.likes || 0; } });
-            });
-            animNum('sc-msg', 0, msgs, 2000);
-            animNum('sc-likes', 0, likes, 2000);
-        }).catch(() => {});
+        // Community stats — cached 12h
+        const cachedComm = cacheGet(`wm_${uid}_community`);
+        if (cachedComm !== null) {
+            animNum('sc-msg', 0, cachedComm.msgs, 2000);
+            animNum('sc-likes', 0, cachedComm.likes, 2000);
+            setText('sc-decks', cachedComm.decksPublic || 0);
+        } else {
+            get(ref(dbComm, 'comments')).then(snap => {
+                let msgs = 0, likes = 0;
+                if (snap.exists()) snap.forEach(c => {
+                    const v = c.val();
+                    if (v.uid === uid) { msgs++; likes += v.likes || 0; }
+                    if (v.replies) Object.values(v.replies).forEach(r => { if (r.uid === uid) { msgs++; likes += r.likes || 0; } });
+                });
+                animNum('sc-msg', 0, msgs, 2000);
+                animNum('sc-likes', 0, likes, 2000);
+                get(ref(db, 'public_decks')).then(snap2 => {
+                    let c = 0; if (snap2.exists()) snap2.forEach(d => { if (d.val().uid === uid) c++; });
+                    setText('sc-decks', c);
+                    cacheSet(`wm_${uid}_community`, { msgs, likes, decksPublic: c });
+                }).catch(() => {});
+            }).catch(() => {});
+        }
 
-        get(ref(db, 'public_decks')).then(snap => {
-            let c = 0; if (snap.exists()) snap.forEach(d => { if (d.val().uid === uid) c++; });
-            setText('sc-decks', c);
-        }).catch(() => {});
-
-        // Profile info
-        get(ref(db, `users/${uid}/info`)).then(snap => {
-            if (!snap.exists()) return;
-            const info = snap.val();
+        // Profile info — cached
+        const cachedProf = cacheGet(`wm_${uid}_profile`);
+        if (cachedProf !== null) {
+            const info = cachedProf;
             if (info.firstname) { const el = document.getElementById('e-fn'); if (el) el.value = info.firstname; }
             if (info.lastname)  { const el = document.getElementById('e-ln'); if (el) el.value = info.lastname; }
             if (info.displayName) { const el = document.getElementById('e-dn'); if (el) el.value = info.displayName; }
             if (info.avatar) { const el = document.getElementById('e-av'); if (el) el.value = info.avatar; }
-        }).catch(() => {});
+        } else {
+            get(ref(db, `users/${uid}/info`)).then(snap => {
+                if (!snap.exists()) return;
+                const info = snap.val();
+                if (info.firstname) { const el = document.getElementById('e-fn'); if (el) el.value = info.firstname; }
+                if (info.lastname)  { const el = document.getElementById('e-ln'); if (el) el.value = info.lastname; }
+                if (info.displayName) { const el = document.getElementById('e-dn'); if (el) el.value = info.displayName; }
+                if (info.avatar) { const el = document.getElementById('e-av'); if (el) el.value = info.avatar; }
+                cacheSet(`wm_${uid}_profile`, info);
+            }).catch(() => {});
+        }
 
         loadFriends(uid);
     }
@@ -1159,6 +1268,7 @@ Réponds UNIQUEMENT en JSON valide sans rien d'autre :
             });
             setText('h-name', dn); setText('prof-name', dn);
             toast('Profil mis à jour !', 'success');
+            cacheSet(`wm_${CU.uid}_profile`, { firstname: fn, lastname: ln, displayName: dn });
         } catch(e) { toast(e.message, 'error'); }
     };
 
@@ -1310,7 +1420,7 @@ Réponds UNIQUEMENT en JSON valide sans rien d'autre :
     };
 
     function loadFriends(uid) {
-        // Friend requests
+        // Friend requests — ALWAYS real-time (no cache)
         onValue(ref(db, `users/${uid}/friend_requests`), snap => {
             const section = document.getElementById('req-section');
             const list    = document.getElementById('req-list');
@@ -1324,21 +1434,21 @@ Réponds UNIQUEMENT en JSON valide sans rien d'autre :
                 pending = true;
                 const av = r.fromAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(r.fromName||'?')}&background=6366f1&color=fff&size=128`;
                 const div = document.createElement('div');
-                div.className = 'flex items-center gap-3 p-3.5 rounded-xl' ;
-                div.style.cssText = 'background:rgba(251,146,60,0.07);border:1px solid rgba(217,119,6,0.2);';
+                div.className = 'flex items-center gap-3 p-4 rounded-2xl transition-all friend-card-enter';
+                div.style.cssText = 'background:rgba(251,146,60,0.08);border:1px solid rgba(217,119,6,0.22);';
                 div.innerHTML = `
-                    <img src="${av}" class="w-10 h-10 rounded-full object-cover flex-shrink-0" alt="" onerror="this.src='https://ui-avatars.com/api/?background=6366f1&color=fff&name=?'">
+                    <img src="${av}" class="w-11 h-11 rounded-full object-cover flex-shrink-0 ring-2" style="ring-color:rgba(251,146,60,0.3);" alt="" onerror="this.src='https://ui-avatars.com/api/?background=6366f1&color=fff&name=?'">
                     <div class="flex-1 min-w-0">
                         <div class="text-sm font-bold">${r.fromName || 'Anonyme'}</div>
-                        <div class="text-[10px] text-white/25">${r.fromEmail || ''}</div>
+                        <div class="text-[10px] text-white/30 flex items-center gap-1.5 mt-0.5"><i class="fa-solid fa-clock text-orange-400/60"></i>${r.fromEmail || ''}</div>
                     </div>
                     <div class="flex gap-2">
                         <button onclick="acceptFriend('${reqSnap.key}','${(r.fromName||'').replace(/'/g,"\\'")}','${(r.fromAvatar||'').replace(/'/g,"\\'")}','${r.fromEmail||''}','${r.fromPlanKey||'free'}')" 
-                            class="w-9 h-9 rounded-xl flex items-center justify-center font-bold transition" style="background:rgba(34,197,94,0.12);color:#4ade80;border:1px solid rgba(34,197,94,0.2);">
+                            class="w-9 h-9 rounded-xl flex items-center justify-center font-bold transition hover:scale-110 active:scale-95" style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.25);">
                             <i class="fa-solid fa-check text-sm"></i>
                         </button>
                         <button onclick="declineFriend('${reqSnap.key}')" 
-                            class="w-9 h-9 rounded-xl flex items-center justify-center font-bold transition" style="background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.2);">
+                            class="w-9 h-9 rounded-xl flex items-center justify-center font-bold transition hover:scale-110 active:scale-95" style="background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.2);">
                             <i class="fa-solid fa-xmark text-sm"></i>
                         </button>
                     </div>`;
@@ -1348,7 +1458,7 @@ Réponds UNIQUEMENT en JSON valide sans rien d'autre :
             dot.classList.toggle('hidden', !pending);
         });
 
-        // Friends list
+        // Friends list — ALWAYS real-time (structure is small)
         onValue(ref(db, `users/${uid}/friends`), snap => {
             const list  = document.getElementById('friends-list');
             const badge = document.getElementById('friends-badge');
@@ -1356,32 +1466,38 @@ Réponds UNIQUEMENT en JSON valide sans rien d'autre :
             list.innerHTML = '';
             if (!snap.exists()) {
                 setText('friends-badge', 0); setText('friend-count-home', 0);
-                list.innerHTML = '<div class="text-white/15 text-center text-sm py-10 col-span-2"><i class="fa-solid fa-user-group text-3xl mb-3 opacity-20 block"></i>Aucun ami pour l\'instant.</div>';
+                list.innerHTML = '<div style="text-align:center;padding:40px 0;color:rgba(255,255,255,0.12);font-size:13px;"><i class="fa-solid fa-user-group" style="font-size:2rem;opacity:0.2;display:block;margin-bottom:12px;"></i>Aucun ami pour l\'instant.</div>';
                 return;
             }
             const friends = [];
             snap.forEach(f => friends.push({ uid: f.key, ...f.val() }));
             setText('friends-badge', friends.length); setText('friend-count-home', friends.length);
-            friends.forEach(f => {
+            friends.forEach((f, idx) => {
                 const planId = f.planId || 1;
                 const plan = PLANS.find(p => p.id === planId) || PLANS[0];
                 const av = f.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(f.name||'?')}&background=6366f1&color=fff&size=128`;
                 const div = document.createElement('div');
-                div.className = 'friend-card glass-sm rounded-2xl p-4 flex items-center gap-3 cursor-pointer';
-                div.style.borderRadius = '16px';
+                div.className = 'friend-card glass-sm rounded-2xl p-4 flex items-center gap-4';
+                div.style.cssText = `border-radius:16px;animation:friendSlideIn 0.4s cubic-bezier(0.34,1.3,0.64,1) ${idx * 0.06}s both;`;
                 div.onclick = () => openFriendModal(f.uid, f.name, f.avatar, f.email, planId);
                 div.innerHTML = `
                     <div class="relative flex-shrink-0">
                         <div class="ring-wrap ${plan.ring}" style="width:54px;height:54px;">
                             <img src="${av}" class="rounded-full object-cover" style="width:46px;height:46px;" alt="" onerror="this.src='https://ui-avatars.com/api/?background=6366f1&color=fff&name=?'">
                         </div>
-                        <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[8px] font-black uppercase whitespace-nowrap ${plan.badge}">${plan.label}</div>
+                        <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[7px] font-black uppercase whitespace-nowrap ${plan.badge}" style="letter-spacing:0.04em;">${plan.label}</div>
                     </div>
                     <div class="flex-1 min-w-0">
                         <div class="text-sm font-bold truncate">${f.name || 'Anonyme'}</div>
-                        <div class="text-[10px] text-white/20 truncate">${f.email || ''}</div>
+                        <div class="text-[10px] text-white/20 truncate mt-0.5 flex items-center gap-1.5">
+                            <i class="fa-solid fa-envelope opacity-40 text-[9px]"></i>${f.email || ''}
+                        </div>
+                        ${f.since ? `<div class="text-[9px] text-white/15 mt-1 flex items-center gap-1"><i class="fa-solid fa-handshake opacity-40"></i>Ami depuis ${new Date(f.since).toLocaleDateString('fr-FR',{month:'short',year:'numeric'})}</div>` : ''}
                     </div>
-                    <button onclick="event.stopPropagation();removeFriend('${f.uid}')" class="w-8 h-8 rounded-lg flex items-center justify-center text-xs transition" style="background:rgba(239,68,68,0.07);color:rgba(248,113,113,0.5);">
+                    <button onclick="event.stopPropagation();removeFriend('${f.uid}')" 
+                        class="w-8 h-8 rounded-xl flex items-center justify-center text-xs transition hover:scale-110 active:scale-95 flex-shrink-0" 
+                        style="background:rgba(239,68,68,0.07);color:rgba(248,113,113,0.45);border:1px solid rgba(239,68,68,0.12);" 
+                        title="Retirer">
                         <i class="fa-solid fa-user-minus"></i>
                     </button>`;
                 list.appendChild(div);
