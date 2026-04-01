@@ -1887,23 +1887,83 @@ function updateUserUI(){
   renderPlanCards();
 }
 
-// ── CV LIST (IndexedDB via localforage) ──
+// ── CV LIST (IndexedDB via localforage + localStorage fallback) ──
 async function loadCVList(){
+  let loaded = {};
+
+  // 1) Essai localforage (IndexedDB)
   try{
     const raw = await localforage.getItem('wm_cv_list');
-    if(raw) _S.cvList = typeof raw==='string' ? JSON.parse(raw) : raw;
-  }catch(e){ _S.cvList = {}; }
+    if(raw){
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if(parsed && typeof parsed === 'object') loaded = parsed;
+    }
+  }catch(e){ console.warn('[loadCVList] localforage error:', e); }
+
+  // 2) Fallback localStorage (migration / secours)
+  try{
+    const lsRaw = localStorage.getItem('wm_cv_list');
+    if(lsRaw){
+      const lsParsed = JSON.parse(lsRaw);
+      if(lsParsed && typeof lsParsed === 'object'){
+        // Merge : on garde le plus recent pour chaque CV duplique
+        Object.entries(lsParsed).forEach(([id, cv]) => {
+          if(!loaded[id] || (cv.updatedAt||0) > (loaded[id].updatedAt||0)){
+            // Ignore les entrees slim (photoData='__photo__') si on a deja la vraie
+            if(cv.data && cv.data.photoData !== '__photo__') loaded[id] = cv;
+            else if(!loaded[id]) loaded[id] = cv;
+          }
+        });
+      }
+    }
+  }catch(e){}
+
+  // 3) Ne jamais ecraser des CVs deja en memoire (protection double-appel bootUser)
+  if(Object.keys(_S.cvList).length > 0){
+    Object.entries(_S.cvList).forEach(([id, cv]) => {
+      if(!loaded[id] || (cv.updatedAt||0) > (loaded[id].updatedAt||0)){
+        loaded[id] = cv;
+      }
+    });
+  }
+
+  _S.cvList = loaded;
+
+  // Sync retour vers localforage si on a recupere des donnees depuis localStorage
+  if(Object.keys(loaded).length > 0){
+    try{ await localforage.setItem('wm_cv_list', loaded); }catch(e){}
+  }
 }
 
 async function saveCVList(){
   try{ await localforage.setItem('wm_cv_list', _S.cvList); }catch(e){}
+  // Double-sauvegarde localStorage (filet de securite — sans les photoData volumineuses)
+  try{
+    const slim = {};
+    Object.entries(_S.cvList).forEach(([id, cv]) => {
+      slim[id] = Object.assign({}, cv, {
+        data: Object.assign({}, cv.data, { photoData: cv.data && cv.data.photoData ? '__photo__' : null })
+      });
+    });
+    localStorage.setItem('wm_cv_list', JSON.stringify(slim));
+  }catch(e){}
 }
+
+async function recoverCVs(){
+  toast('🔄 Tentative de récupération...');
+  await loadCVList();
+  renderCVList();
+  const n = Object.keys(_S.cvList).length;
+  if(n > 0) toast('✅ ' + n + ' CV(s) récupéré(s) !');
+  else toast('❌ Aucun CV trouvé en mémoire.');
+}
+window.recoverCVs = recoverCVs;
 
 function renderCVList(){
   const list = G('lp-list'); if(!list) return;
   const cvs = Object.values(_S.cvList).sort((a,b)=>b.updatedAt-a.updatedAt);
   if(!cvs.length){
-    list.innerHTML='<div style="font-size:12px;color:#aaa;padding:12px 4px;text-align:center">Aucun CV.<br>Créez-en un !</div>';
+    list.innerHTML='<div style="font-size:12px;color:#aaa;padding:12px 4px;text-align:center">Aucun CV.<br>Créez-en un !<br><br><button onclick="recoverCVs()" style="margin-top:6px;padding:6px 12px;border-radius:8px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;background:var(--select-bg);color:var(--text);border:1px solid var(--border2);font-family:Inter,sans-serif;">🔄 Récupérer mes CVs</button></div>';
     return;
   }
   list.innerHTML = cvs.map(cv=>{
