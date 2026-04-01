@@ -1225,6 +1225,11 @@ a{text-decoration:none;color:inherit;}
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         IA Optimiser
       </button>
+      <button class="et-btn" onclick="aiSpellCheck()" data-tip="Corriger orthographe, majuscules et ponctuation" id="btn-spellcheck" style="color:#16a34a;border:1px solid rgba(34,197,94,.3);background:rgba(34,197,94,.07);">
+        <div class="ai-spinner" id="sp-spellcheck"></div>
+        <svg id="sp-spellcheck-icon" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Orthographe
+      </button>
       <div class="et-sep"></div>
       <button class="et-btn" onclick="saveCV()" data-tip="Sauvegarder">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
@@ -3218,52 +3223,64 @@ async function exportPDF(){
   );
 
   // 3) Construction du HTML complet de la page isolée
-  const W = 794, H = 1122;
+  const W = 794, H_MIN = 1122;
   const iframeDoc = `<!DOCTYPE html><html><head>
 <meta charset="UTF-8">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 ${allStyles}
 *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;box-sizing:border-box!important;}
-html,body{margin:0;padding:0;width:${W}px;min-height:${H}px;background:#fff;overflow:visible;}
+html,body{margin:0;padding:0;width:${W}px;background:#fff;overflow:visible!important;height:auto!important;}
 .canvas-element-overlay,.canvas-toolbar,.element-handles,.canvas-resize-handle,#canvas-context-menu{display:none!important;}
-#cv-export-frame{width:${W}px;min-height:${H}px;background:#fff;overflow:visible;}
+#cv-export-frame{width:${W}px;min-height:${H_MIN}px;background:#fff;overflow:visible!important;height:auto!important;}
+/* Force all text & layout to be pixel-perfect — no clipping */
+.cv-root, .cv-root *{overflow:visible!important;}
 </style>
 </head><body>
 <div id="cv-export-frame">${cvHTML}</div>
 </body></html>`;
 
-  // 4) Crée l'iframe hors-écran (position absolue hors viewport)
+  // 4) Crée l'iframe hors-écran avec grande hauteur pour éviter tout clipping
   const iframe = document.createElement('iframe');
-  iframe.style.cssText = `position:fixed;left:0;top:-${H+200}px;width:${W}px;height:${H}px;border:none;z-index:99999;background:#fff;`;
+  iframe.style.cssText = `position:fixed;left:-${W+50}px;top:0;width:${W}px;height:4000px;border:none;z-index:99999;background:#fff;visibility:hidden;`;
   iframe.setAttribute('scrolling','no');
   document.body.appendChild(iframe);
 
   try {
-    // 5) Écrit le HTML dans l'iframe et attend le rendu complet
-    await new Promise((resolve, reject) => {
-      iframe.onload = resolve;
-      iframe.onerror = reject;
-      // Écriture directe dans l'iframe
-      const doc = iframe.contentDocument || iframe.contentWindow.document;
-      doc.open();
-      doc.write(iframeDoc);
-      doc.close();
-      // Fallback si onload ne se déclenche pas
-      setTimeout(resolve, 1500);
-    });
+    // 5) Écrit le HTML dans l'iframe
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    doc.open();
+    doc.write(iframeDoc);
+    doc.close();
 
-    // 6) Attente supplémentaire pour les fonts Google
-    await new Promise(r => setTimeout(r, 600));
+    // 6) Attendre le chargement des fonts Google + rendu DOM complet
+    await new Promise(r => setTimeout(r, 400));
+    // Attendre que les fonts soient prêtes dans l'iframe
+    try {
+      await iframe.contentDocument.fonts.ready;
+    } catch(e) {}
+    // Attente supplémentaire pour le rendu final
+    await new Promise(r => setTimeout(r, 800));
 
-    // 7) Canvas mode overlay
-    const exportFrame = iframe.contentDocument.getElementById('cv-export-frame');
+    // 7) Mesurer la hauteur RÉELLE du contenu après rendu complet
+    const exportFrame = doc.getElementById('cv-export-frame');
+    const realH = Math.max(
+      H_MIN,
+      exportFrame ? exportFrame.scrollHeight : H_MIN,
+      doc.body.scrollHeight
+    );
+
+    // Redimensionner l'iframe à la hauteur réelle
+    iframe.style.height = realH + 'px';
+    await new Promise(r => setTimeout(r, 200));
+
+    // 8) Canvas mode overlay
     if(_S.canvasMode && _S.canvasElements && _S.canvasElements.length && exportFrame){
       exportFrame.style.position = 'relative';
-      const overlay = iframe.contentDocument.createElement('div');
+      const overlay = doc.createElement('div');
       overlay.style.cssText = 'position:absolute;inset:0;pointer-events:none;';
       _S.canvasElements.forEach(el => {
-        const div = iframe.contentDocument.createElement('div');
+        const div = doc.createElement('div');
         div.style.cssText = `position:absolute;left:${el.x}px;top:${el.y}px;width:${el.w}px;height:${el.h}px;`;
         renderCanvasElementForExport(el, div);
         overlay.appendChild(div);
@@ -3272,8 +3289,8 @@ html,body{margin:0;padding:0;width:${W}px;min-height:${H}px;background:#fff;over
       await new Promise(r => setTimeout(r, 200));
     }
 
-    // 8) Capture avec html2canvas — sur le body de l'iframe, scroll=0
-    const targetEl = iframe.contentDocument.body;
+    // 9) Capture avec html2canvas — hauteur dynamique réelle
+    const targetEl = doc.body;
     const canvas = await html2canvas(targetEl, {
       scale: 3,
       useCORS: true,
@@ -3287,23 +3304,44 @@ html,body{margin:0;padding:0;width:${W}px;min-height:${H}px;background:#fff;over
       x: 0,
       y: 0,
       width: W,
-      height: H,
+      height: realH,
       windowWidth: W,
-      windowHeight: H,
+      windowHeight: realH,
     });
 
-    // 9) jsPDF — format A4 px (794×1122) sans marge
+    // 10) jsPDF — pages multiples si le contenu dépasse une page A4
     const { jsPDF } = window.jspdf;
+    const PAGE_H = H_MIN; // 1122px = A4 en px à 96dpi
+    const totalPages = Math.ceil(realH / PAGE_H);
+
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'px',
-      format: [W, H],
+      format: [W, PAGE_H],
       compress: false,
       hotfixes: ['px_scaling'],
     });
 
-    const imgData = canvas.toDataURL('image/jpeg', 1.0);
-    pdf.addImage(imgData, 'JPEG', 0, 0, W, H);
+    // Découper l'image canvas en pages A4
+    for(let i = 0; i < totalPages; i++){
+      if(i > 0) pdf.addPage([W, PAGE_H], 'portrait');
+      const srcY = i * PAGE_H * 3; // scale:3
+      const srcH = Math.min(PAGE_H * 3, canvas.height - srcY);
+      if(srcH <= 0) break;
+
+      // Créer un canvas temporaire pour la tranche de page
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = W * 3;
+      pageCanvas.height = PAGE_H * 3;
+      const ctx = pageCanvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+      ctx.drawImage(canvas, 0, srcY, W * 3, srcH, 0, 0, W * 3, srcH);
+
+      const imgData = pageCanvas.toDataURL('image/jpeg', 1.0);
+      pdf.addImage(imgData, 'JPEG', 0, 0, W, PAGE_H);
+    }
+
     pdf.save(`${_S.currentCV.name || 'CV'}.pdf`);
     toast('✅ PDF exporté avec succès !');
 
@@ -3381,6 +3419,98 @@ async function aiRephraseSummary(){
   );
   if(result){ G('f-summary').value=result; _S.currentCV.data.summary=result; updatePreview(); toast('✨ Résumé optimisé !'); }
 }
+
+// ── CORRECTEUR ORTHOGRAPHE IA ──
+async function aiSpellCheck(){
+  if(!_S.currentCV){ toast('Ouvrez un CV d abord.'); return; }
+  getFormData();
+  const d = _S.currentCV.data;
+
+  const fields = [
+    { key:'title',         label:'Titre',    id:'f-title'         },
+    { key:'summary',       label:'Résumé',   id:'f-summary'       },
+    { key:'interests',     label:'Intérêts', id:'f-interests'     },
+    { key:'certifications',label:'Certifs',  id:'f-certifications'},
+    { key:'projects',      label:'Projets',  id:'f-projects'      },
+  ];
+
+  const payload = {
+    fields: fields.reduce((acc,f)=>{ if(d[f.key]) acc[f.key]=d[f.key]; return acc; }, {}),
+    experiences: (d.experiences||[]).map((e,i)=>({ idx:i, role:e.role, company:e.company, desc:e.desc||'' })),
+    education: (d.education||[]).map((e,i)=>({ idx:i, degree:e.degree, school:e.school, desc:e.desc||'' })),
+  };
+
+  const anyContent = Object.keys(payload.fields).length || payload.experiences.length || payload.education.length;
+  if(!anyContent){ toast('Aucun contenu à corriger.'); return; }
+
+  toast('\uD83D\uDD0D Correction orthographe en cours\u2026');
+
+  const icon = G('sp-spellcheck-icon');
+  if(icon) icon.style.display='none';
+
+  const prompt = `Tu es un correcteur orthographique professionnel. Corrige UNIQUEMENT les fautes d'orthographe, de grammaire, de majuscules et de ponctuation dans ce JSON. NE CHANGE PAS le sens, le style, le vocabulaire ni la structure des phrases. Conserve exactement le même niveau de langage et les mêmes formulations. Réponds UNIQUEMENT avec le JSON corrigé valide, sans backticks ni explication.\n\nJSON à corriger:\n${JSON.stringify(payload, null, 2)}`;
+
+  const result = await callMistral(prompt, 'sp-spellcheck', 2000);
+  if(icon) icon.style.display='';
+  if(!result){ return; }
+
+  try{
+    const clean = result.replace(/```json|```/g,'').trim();
+    const fixed = JSON.parse(clean);
+    let fixes = 0;
+
+    if(fixed.fields){
+      fields.forEach(f=>{
+        if(fixed.fields[f.key] && fixed.fields[f.key] !== d[f.key]){
+          d[f.key] = fixed.fields[f.key];
+          const el = G(f.id); if(el) el.value = fixed.fields[f.key];
+          fixes++;
+        }
+      });
+    }
+
+    if(Array.isArray(fixed.experiences)){
+      fixed.experiences.forEach(fe=>{
+        const orig = d.experiences?.[fe.idx];
+        if(!orig) return;
+        if(fe.role    !== undefined && fe.role    !== orig.role)    { orig.role    = fe.role;    fixes++; }
+        if(fe.company !== undefined && fe.company !== orig.company) { orig.company = fe.company; fixes++; }
+        if(fe.desc    !== undefined && fe.desc    !== orig.desc)    { orig.desc    = fe.desc;    fixes++; }
+      });
+      renderExpList();
+    }
+
+    if(Array.isArray(fixed.education)){
+      fixed.education.forEach(fe=>{
+        const orig = d.education?.[fe.idx];
+        if(!orig) return;
+        if(fe.degree !== undefined && fe.degree !== orig.degree) { orig.degree = fe.degree; fixes++; }
+        if(fe.school !== undefined && fe.school !== orig.school) { orig.school = fe.school; fixes++; }
+        if(fe.desc   !== undefined && fe.desc   !== orig.desc)   { orig.desc   = fe.desc;   fixes++; }
+      });
+      renderEduList();
+    }
+
+    updatePreview();
+
+    if(fixes > 0){
+      toast(`\u2705 ${fixes} correction${fixes>1?'s':''} appliqu\u00e9e${fixes>1?'s':''} !`);
+      const btn = G('btn-spellcheck');
+      if(btn){
+        btn.style.background = 'rgba(34,197,94,.25)';
+        btn.style.color = '#15803d';
+        setTimeout(()=>{ btn.style.background='rgba(34,197,94,.07)'; btn.style.color='#16a34a'; }, 2500);
+      }
+    } else {
+      toast('\u2728 Aucune faute trouv\u00e9e, le CV est impeccable !');
+    }
+  }catch(e){
+    console.error('[aiSpellCheck]', e);
+    toast('\u26A0\uFE0F R\u00e9ponse IA invalide. R\u00e9essayez.');
+  }
+}
+window.aiSpellCheck = aiSpellCheck;
+
 
 async function aiGenerateExp(){
   const prompt=G('ai-exp-prompt')?.value?.trim();
