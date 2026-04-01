@@ -11,9 +11,9 @@
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="WikiMind AI v5 — L'assistant IA le plus puissant, gratuit et open source">
+<meta name="description" content="WikiMind AI v6 — L'assistant IA le plus puissant, gratuit et open source">
 <meta name="theme-color" content="#ffffff">
-<title>WikiMind AI v5</title>
+<title>WikiMind AI v6</title>
 
 <!-- Preconnect pour accélérer les requêtes CDN -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
@@ -1899,28 +1899,12 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
       Paramètres
     </button>
-    <button class="sb-btn" onclick="openFolderManager()" id="sb-btn-folders">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-      Dossiers
-    </button>
+
   </div>
-  <!-- Pinned conversations -->
-  <div id="pinned-section" style="display:none">
-    <div class="sb-section" style="display:flex;align-items:center;justify-content:space-between;padding-right:12px">
-      <span>📌 Épinglés</span>
-    </div>
-    <div id="pinned-list" style="padding:0 10px 4px"></div>
-  </div>
-  <!-- Folders -->
-  <div id="folders-section" style="display:none">
-    <div class="sb-section">Dossiers</div>
-    <div id="folders-list" style="padding:0 10px 4px"></div>
-  </div>
-  <!-- Filter bar -->
+  <!-- Filter bar — dossiers supprimés, uniquement Tous -->
   <div id="history-filter-bar" style="padding:4px 12px 0;display:flex;gap:4px;flex-wrap:wrap">
     <button class="sb-filter-btn active" id="filter-all" onclick="setHistoryFilter('all')">Tous</button>
     <button class="sb-filter-btn" id="filter-pinned" onclick="setHistoryFilter('pinned')">📌</button>
-    <span id="folder-filter-tags"></span>
   </div>
   <div class="sb-section" style="margin-top:6px" id="history-section-label">Récents</div>
   <div id="history-list"></div>
@@ -1959,6 +1943,10 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
         <span class="pcm-label">Paramètres</span>
       </button>
+      <button class="pcm-item" onclick="openWikimindGuide();G('sb-user-menu').style.display='none'">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        <span class="pcm-label">Wikimind AI — Guide</span>
+      </button>
       <button class="pcm-item" onclick="openChangelogModal();G('sb-user-menu').style.display='none'">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <span class="pcm-label">Nouveautés</span>
@@ -1975,35 +1963,9 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
 <!-- SIDEBAR BACKDROP -->
 <div id="sidebar-backdrop" onclick="toggleSidebar()"></div>
 
-<!-- FOLDER MANAGER MODAL -->
-<div class="modal" id="folder-modal" onclick="if(event.target===this)closeModal('folder-modal')">
-  <div class="modal-content" onclick="event.stopPropagation()" style="max-width:420px">
-    <h3 style="margin-bottom:4px">Dossiers &amp; Organisation</h3>
-    <p style="font-size:12px;color:#888;margin-bottom:16px">Organisez vos conversations par dossiers ou épinglez les importantes.</p>
-    <div class="settings-section-label">Créer un dossier</div>
-    <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
-      <input type="text" id="new-folder-name" class="modal-input" placeholder="Nom du dossier…" style="flex:1;padding:8px 12px;font-size:13px" onkeydown="if(event.key==='Enter')createFolder()">
-      <div id="folder-color-picker" style="display:flex;gap:4px">
-        <div class="folder-mgr-color" style="background:#3b82f6;cursor:pointer;border:2px solid transparent" onclick="selectFolderColor('#3b82f6',this)" title="Bleu"></div>
-        <div class="folder-mgr-color" style="background:#22c55e;cursor:pointer;border:2px solid transparent" onclick="selectFolderColor('#22c55e',this)" title="Vert"></div>
-        <div class="folder-mgr-color" style="background:#f59e0b;cursor:pointer;border:2px solid transparent" onclick="selectFolderColor('#f59e0b',this)" title="Ambre"></div>
-        <div class="folder-mgr-color" style="background:#ef4444;cursor:pointer;border:2px solid transparent" onclick="selectFolderColor('#ef4444',this)" title="Rouge"></div>
-        <div class="folder-mgr-color" style="background:#8b5cf6;cursor:pointer;border:2px solid transparent" onclick="selectFolderColor('#8b5cf6',this)" title="Violet"></div>
-        <div class="folder-mgr-color" style="background:#ec4899;cursor:pointer;border:2px solid transparent" onclick="selectFolderColor('#ec4899',this)" title="Rose"></div>
-      </div>
-      <button class="modal-btn primary" style="width:auto;padding:8px 14px;white-space:nowrap" onclick="createFolder()">+ Créer</button>
-    </div>
-    <div class="settings-section-label">Mes dossiers</div>
-    <div id="folder-manager-list" style="display:flex;flex-direction:column;gap:4px;max-height:240px;overflow-y:auto;margin-bottom:12px"></div>
-    <p style="font-size:11px;color:#aaa;text-align:center">Clic droit sur une conversation pour l'affecter à un dossier ou l'épingler.</p>
-  </div>
-</div>
-
 <!-- CONTEXT MENU for history items -->
 <div id="conv-context-menu" style="display:none;position:fixed;z-index:9999;background:var(--bg);border:1px solid var(--border2);border-radius:12px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.15);min-width:180px">
   <div id="ctx-pin" style="padding:8px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px;transition:.15s" onmouseenter="this.style.background='var(--select-bg)'" onmouseleave="this.style.background='none'" onclick="ctxPinConv()">📌 Épingler</div>
-  <div id="ctx-folder-label" style="padding:6px 12px 2px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#aaa">Déplacer vers</div>
-  <div id="ctx-folder-list" style="display:flex;flex-direction:column;gap:2px"></div>
   <div style="border-top:1px solid var(--border);margin:4px 0"></div>
   <div style="padding:8px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px;color:#ef4444;transition:.15s" onmouseenter="this.style.background='rgba(239,68,68,.08)'" onmouseleave="this.style.background='none'" onclick="ctxDeleteConv()">🗑 Supprimer</div>
 </div>
@@ -3915,8 +3877,9 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
 
 <!-- ========== MAIN SCRIPT ========== -->
 <script>
-const MISTRAL_KEY = 'wuZGbRk6ry7KpMraZvxB3zg7ae6x1dLN';  // Clé principale (ancienne: SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9)
-const MISTRAL_TOOLS_KEY = 'wuZGbRk6ry7KpMraZvxB3zg7ae6x1dLN';
+const MISTRAL_KEY = 'MIZklTnIR8Qj7PeFTQRAAn2vpyYGoHm7';  // Clé principale v6
+const MISTRAL_TOOLS_KEY = 'MIZklTnIR8Qj7PeFTQRAAn2vpyYGoHm7';
+const CODESTRAL_KEY = '5QLfudFOswjh37MYAq0CeXaNWY7RUwvl';  // Clé Codestral dédiée
 const PLAN_PRICES_MT = { 2: 11, 3: 22, 4: 39 };
 const PROMO_END = new Date('2025-04-14T23:59:59');
 
@@ -3927,12 +3890,12 @@ const GMAIL_SCOPES  = 'https://www.googleapis.com/auth/gmail.compose https://www
 const GDRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 
 const MISTRAL_MODELS = {
-  flash:   { id:'mistral-small-latest',     label:'Wikimind Flash 4.0',    style:'concis',     ctx:32768  },
-  medium:  { id:'mistral-medium-latest',    label:'Wikimind Medium 4.0',   style:'approfondi', ctx:128000 },
-  work:    { id:'mistral-large-latest',     label:'Wikimind Work 4.0',     style:'expert',     ctx:128000 },
-  reflect: { id:'mistral-large-latest',     label:'Wikimind Réflexion 4.0',style:'reflexion',  ctx:128000 },
-  task:    { id:'mistral-large-latest',     label:'Wikimind Task 4.0',     style:'omnipotent', ctx:128000 },
-  code:    { id:'codestral-latest',         label:'Wikimind Code',         style:'code',       ctx:32768  },
+  flash:   { id:'mistral-small-latest',     label:'Wikimind Flash 4.1',    style:'concis',     ctx:32768  },
+  medium:  { id:'mistral-medium-latest',    label:'Wikimind Medium 4.1',   style:'approfondi', ctx:128000 },
+  work:    { id:'mistral-large-latest',     label:'Wikimind Work 4.1',     style:'expert',     ctx:128000 },
+  reflect: { id:'mistral-large-latest',     label:'Wikimind Réflexion 4.1',style:'reflexion',  ctx:128000 },
+  task:    { id:'mistral-large-latest',     label:'Wikimind Task 4.1',     style:'omnipotent', ctx:128000 },
+  code:    { id:'codestral-latest',         label:'Wikimind Code 4.1',     style:'code',       ctx:32768, useCodestralKey:true },
 };
 // Modèles spécialisés open source — v5
 const M_MINI    = 'mistral-small-latest';    // mini-tâches rapides: titres, mots-clés, OCR
@@ -3957,11 +3920,17 @@ TES CAPACITÉS (utilise-les toutes selon le besoin) :
 
 2. GRAPHIQUES & DATAVIZ (GÉNÈRE TOUJOURS DIRECTEMENT)
    - Pour tout graphique : génère un bloc chartjs COMPLET, rendu visuellement dans le chat
-   - Format JSON STRICT (guillemets doubles partout, pas de commentaires, pas de virgule finale) :
+   - Format JSON STRICTEMENT VALIDE — règles ABSOLUES :
+     * Guillemets doubles obligatoires pour toutes les clés et valeurs string
+     * ZÉRO commentaire (pas de // ni de /* */)
+     * ZÉRO virgule finale avant } ou ]
+     * Nombres entiers sans guillemets
+     * Pas de trailing comma
    \`\`\`chartjs
-   {"type":"bar","data":{"labels":["A","B"],"datasets":[{"label":"Données","data":[10,20],"backgroundColor":["#3b82f6","#8b5cf6"]}]},"options":{"responsive":true,"plugins":{"title":{"display":true,"text":"Mon graphique"}}}}
+   {"type":"bar","data":{"labels":["A","B","C"],"datasets":[{"label":"Données","data":[10,20,15],"backgroundColor":["#3b82f6","#8b5cf6","#ec4899"]}]},"options":{"responsive":true,"plugins":{"title":{"display":true,"text":"Mon graphique"}}}}
    \`\`\`
-   - Types: bar, line, pie, doughnut, radar
+   - Types valides: bar, line, pie, doughnut, radar
+   - Valide mentalement ton JSON avant de l'écrire — un JSON invalide cassera le rendu
    - Ne propose JAMAIS DataViz — génère toujours directement
 
 3. GÉNÉRATION AUDIO (TEXT-TO-SPEECH)
@@ -4175,7 +4144,7 @@ function syncPlanChipNotif(){
   var dot=document.getElementById('plan-chip-notif-dot');
   var badge=document.getElementById('pcm-notif-badge');
   var seen=localStorage.getItem('wm_changelog_seen')||'0';
-  var lastUpdate='20260323';
+  var lastUpdate='20260401';
   var hasNew=seen<lastUpdate;
   if(dot) dot.classList.toggle('show',hasNew);
   if(badge) badge.style.display=hasNew?'':'none';
@@ -4261,15 +4230,100 @@ function startEphemeralChat(){
 
 // ── CHANGELOG MODAL ──
 function openChangelogModal(){
-  // Use the global openModal function if available, fallback to classList
   if(typeof openModal==='function'){
     openModal('changelog-modal');
   } else {
     var m=document.getElementById('changelog-modal');
     if(m){m.style.display='flex';m.classList.add('show');}
   }
-  localStorage.setItem('wm_changelog_seen','20260323');
+  localStorage.setItem('wm_changelog_seen','20260401');
   syncPlanChipNotif();
+}
+
+// ── WIKIMIND GUIDE ──
+function openWikimindGuide(){
+  openModal('wikimind-guide-modal');
+  // Init tab
+  wguideTab('models');
+}
+
+function wguideTab(tab){
+  const tabs=['models','tools','peaks','tips'];
+  tabs.forEach(t=>{
+    const btn=document.getElementById('wgtab-'+t);
+    const content=document.getElementById('wgcontent-'+t);
+    if(!btn||!content) return;
+    const active=(t===tab);
+    btn.style.color=active?'var(--text)':'#888';
+    btn.style.borderBottom=active?'2px solid var(--accent)':'2px solid transparent';
+    content.style.display=active?(t==='tips'?'flex':'block'):'none';
+  });
+  if(tab==='peaks') _renderPeaksChart();
+}
+
+function _renderPeaksChart(){
+  const canvas=document.getElementById('peaks-chart');
+  if(!canvas||!window.Chart) return;
+  if(canvas._wmPeaksChart){ canvas._wmPeaksChart.destroy(); }
+  const isDark=document.body.classList.contains('dark-mode');
+  const textColor=isDark?'#eeeeee':'#111111';
+  const gridColor=isDark?'rgba(255,255,255,.08)':'rgba(0,0,0,.08)';
+  // Data: % charge par heure (0h-23h) — pattern typique usage IA en France
+  const labels=['00h','01h','02h','03h','04h','05h','06h','07h','08h','09h','10h','11h',
+                '12h','13h','14h','15h','16h','17h','18h','19h','20h','21h','22h','23h'];
+  const data=[8,5,4,3,3,4,7,18,42,58,65,62,
+              55,38,32,35,48,60,68,82,90,88,75,48];
+  const bgColors=data.map(v=>{
+    if(v>=70) return 'rgba(239,68,68,0.8)';
+    if(v>=45) return 'rgba(245,158,11,0.8)';
+    return 'rgba(34,197,94,0.8)';
+  });
+  canvas._wmPeaksChart=new Chart(canvas,{
+    type:'bar',
+    data:{
+      labels:labels,
+      datasets:[{
+        label:'% d\'utilisateurs actifs',
+        data:data,
+        backgroundColor:bgColors,
+        borderRadius:6,
+        borderSkipped:false
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        title:{
+          display:true,
+          text:'Charge Wikimind AI par heure (heure de Paris)',
+          color:textColor,
+          font:{family:'Inter,sans-serif',size:11,weight:'700'}
+        },
+        tooltip:{
+          callbacks:{
+            label:function(ctx){
+              const v=ctx.parsed.y;
+              const level=v>=70?'🔴 Forte charge':v>=45?'🟡 Charge modérée':'🟢 Faible charge';
+              return [level+' — '+v+'% d\'utilisateurs actifs'];
+            }
+          }
+        }
+      },
+      scales:{
+        x:{
+          ticks:{color:textColor,font:{size:10}},
+          grid:{color:gridColor}
+        },
+        y:{
+          min:0,max:100,
+          ticks:{color:textColor,font:{size:10},callback:v=>v+'%'},
+          grid:{color:gridColor}
+        }
+      }
+    }
+  });
 }
 
 
@@ -4759,24 +4813,19 @@ function renderHistory(){
   const list=G('history-list');
   let entries=Object.entries(S.chats).sort(([,a],[,b])=>(b.updatedAt||0)-(a.updatedAt||0));
 
-  // Apply filter
+  // Apply filter — seul "pinned" est supporté (dossiers supprimés)
   const filter=S_folders.activeFilter;
   if(filter==='pinned'){
     entries=entries.filter(([id])=>S_folders.pinnedChats.includes(id));
-  }else if(filter!=='all'&&S_folders.folders[filter]){
-    const folderIds=S_folders.folders[filter].chatIds||[];
-    entries=entries.filter(([id])=>folderIds.includes(id));
   }
+  // Si filtre dossier (héritage), revenir à "all"
+  if(filter!=='all'&&filter!=='pinned'){ S_folders.activeFilter='all'; }
 
   if(!entries.length){list.innerHTML='<div style="padding:10px 10px;font-size:11px;color:#aaa">Aucune conversation</div>';return;}
 
   list.innerHTML=entries.map(([id,c])=>{
     const isPinned=S_folders.pinnedChats.includes(id);
-    // Find folder color
-    const chatFolder=Object.values(S_folders.folders).find(f=>(f.chatIds||[]).includes(id));
-    const folderDot=chatFolder?`<span style="width:6px;height:6px;border-radius:50%;background:${chatFolder.color};flex-shrink:0;display:inline-block"></span>`:'';
-    return`<div class="history-item ${id===S.chatId?'active':''} ${isPinned?'pinned-item':''}" onclick="loadChat('${id}')" ondblclick="startRenameChat(event,'${id}')" oncontextmenu="showConvContextMenu(event,'${id}')" ontouchstart="startLongPress(event,'${id}')" ontouchend="cancelLongPress(event)" ontouchmove="cancelLongPress(event)">
-      ${folderDot}
+    return`<div class="history-item ${id===S.chatId?'active':''}" onclick="loadChat('${id}')" ondblclick="startRenameChat(event,'${id}')" oncontextmenu="showConvContextMenu(event,'${id}')" ontouchstart="startLongPress(event,'${id}')" ontouchend="cancelLongPress(event)" ontouchmove="cancelLongPress(event)">
       <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
       <span class="history-item-title" id="htitle-${id}">${isPinned?'📌 ':''}${esc(c.title||'Sans titre')}</span>
       <button class="history-item-edit" title="Renommer" onclick="startRenameChat(event,'${id}')">
@@ -5320,31 +5369,36 @@ function formatMarkdown(text){
 function _renderChartJsBlock(canvasId, jsonStr){
   const canvas=document.getElementById(canvasId);
   if(!canvas) return;
-  if(!window.Chart){ console.warn('Chart.js not loaded'); return; }
+  if(!window.Chart){ setTimeout(()=>_renderChartJsBlock(canvasId,jsonStr),500); return; }
   try{
-    // Nettoyer TOUTES les entités HTML résiduelles (marked encode & en &amp;, < en &lt; etc.)
+    // Nettoyer les entités HTML résiduelles
     let clean=jsonStr
-      .replace(/&amp;/g,'&')
-      .replace(/&lt;/g,'<')
-      .replace(/&gt;/g,'>')
-      .replace(/&quot;/g,'"')
-      .replace(/&#39;/g,"'")
-      .replace(/&apos;/g,"'")
+      .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')
+      .replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&apos;/g,"'")
       .trim();
+    // Supprimer les commentaires JS // et /* */
+    clean=clean.replace(/\/\/[^\n]*/g,'').replace(/\/\*[\s\S]*?\*\//g,'');
     // Supprimer les virgules trailing avant } ou ]
     clean=clean.replace(/,(\s*[}\]])/g,'$1');
+    // Convertir les apostrophes simples en guillemets doubles pour les clés/valeurs string
+    // (seulement si pas déjà entre guillemets doubles)
     let cfg;
     try{ cfg=JSON.parse(clean); }
     catch(e1){
       // Tentative 2: réparer les clés sans guillemets
       try{
-        const fixed=clean.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g,'$1"$2":');
+        const fixed=clean.replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g,'$1"$2":');
         cfg=JSON.parse(fixed);
       }catch(e2){
-        // Tentative 3: eval sécurisé (dernier recours)
+        // Tentative 3: remplacer apostrophes simples
         try{
-          cfg=(new Function('return ('+clean+')'))();
-        }catch(e3){ throw new Error('JSON invalide: '+e1.message); }
+          const fixed2=clean.replace(/'/g,'"');
+          cfg=JSON.parse(fixed2.replace(/,(\s*[}\]])/g,'$1'));
+        }catch(e3){
+          // Tentative 4: eval sécurisé (dernier recours)
+          try{ cfg=(new Function('return ('+clean+')'))(); }
+          catch(e4){ throw new Error('JSON invalide: '+e1.message.substring(0,80)); }
+        }
       }
     }
     // Thème adaptatif (dark/light)
@@ -5357,18 +5411,23 @@ function _renderChartJsBlock(canvasId, jsonStr){
     cfg.options.responsive=true;
     cfg.options.maintainAspectRatio=false;
     cfg.options.plugins.legend={...cfg.options.plugins.legend,labels:{color:textColor,font:{family:'Inter,sans-serif',size:12}}};
-    ['x','y'].forEach(axis=>{
-      if(!cfg.options.scales[axis]) cfg.options.scales[axis]={};
-      cfg.options.scales[axis].ticks={...cfg.options.scales[axis].ticks,color:textColor};
-      cfg.options.scales[axis].grid={...cfg.options.scales[axis].grid,color:gridColor};
-    });
+    if(cfg.options.plugins.title) cfg.options.plugins.title.color=textColor;
+    // Appliquer couleurs axes seulement si le type supporte les scales (pas pie/doughnut)
+    const scaledTypes=['bar','line','radar','scatter','bubble'];
+    if(scaledTypes.includes(cfg.type)){
+      ['x','y'].forEach(axis=>{
+        if(!cfg.options.scales[axis]) cfg.options.scales[axis]={};
+        cfg.options.scales[axis].ticks={...cfg.options.scales[axis].ticks,color:textColor,font:{family:'Inter,sans-serif'}};
+        cfg.options.scales[axis].grid={...cfg.options.scales[axis].grid,color:gridColor};
+      });
+    }
     // Destroy previous chart if exists
     if(canvas._wmChart) canvas._wmChart.destroy();
     canvas._wmChart=new Chart(canvas, cfg);
   }catch(e){
     console.warn('ChartJS render error:',e);
     const parent=canvas.parentElement;
-    if(parent) parent.innerHTML='<div style="color:#ef4444;font-size:11px;padding:8px">Erreur graphique: '+e.message.substring(0,60)+'</div>';
+    if(parent) parent.innerHTML='<div style="color:#ef4444;font-size:11px;padding:12px;background:rgba(239,68,68,.05);border-radius:8px;">⚠️ Erreur graphique: '+esc(e.message.substring(0,100))+'</div>';
   }
 }
 
@@ -6522,52 +6581,45 @@ const WM_RAG = {
 
   async extractFromConversation(userMsg, aiReply){
     if(!userMsg||!aiReply) return;
-    if(this.memories.length>=80) {
-      // Trim oldest non-important memories
-      this.memories = this.memories.filter(m=>m.tag!=='context').slice(0,70);
-    }
+    // Limite stricte : max 6 souvenirs (≈7% de la capacité max de 80)
+    const MAX_MEMORIES = 6;
+    if(this.memories.length>=MAX_MEMORIES) return; // Ne pas extraire si plein
     try{
       const raw=await callMistral([
-        {role:'system',content:`Tu analyses un échange et extrais des informations CLÉS et DURABLES sur l'utilisateur.
+        {role:'system',content:`Tu analyses un échange et extrais UNIQUEMENT des informations TRÈS IMPORTANTES et DURABLES sur l'utilisateur.
 
-EXTRAIS (avec haute valeur):
-- Identité: prénom, nom, âge, nationalité, ville/pays
-- Profession, études, secteur d'activité
-- Projets importants en cours (noms, objectifs)
-- Préférences durables: langages de prog, outils, styles, goûts
-- Contraintes récurrentes: budget, délais, contexte tech
-- Objectifs à long terme, ambitions
-- Compétences et expertise
+EXTRAIS SEULEMENT (seuil très haut, importance 3 uniquement):
+- Prénom ou nom de l'utilisateur
+- Profession ou secteur d'activité principal
+- Projet majeur en cours (nom clair)
 - Langue maternelle si différente du français
+- Compétence technique principale
 
-IGNORE TOTALEMENT: salutations, remerciements, questions ponctuelles sans contexte, "bonjour", "merci", demandes one-shot.
+IGNORE ABSOLUMENT TOUT LE RESTE: salutations, sujets ponctuels, préférences mineures, contexte de conversation, questions one-shot, remerciements.
 
-Réponds UNIQUEMENT en JSON: {"memories":[{"tag":"identity|pref|project|skill|context","text":"fait court max 80 chars","importance":1-3}]} ou {"memories":[]}.
-Seuil MODÉRÉ : extrais si tu as 60%+ de confiance. importance=3 pour les faits très utiles (identité, projet principal).`},
-        {role:'user',content:`Utilisateur: ${userMsg.substring(0,500)}\nIA: ${aiReply.substring(0,400)}`}
-      ], M_MINI, 300);
+Réponds UNIQUEMENT en JSON: {"memories":[{"tag":"identity|pref|project|skill","text":"fait court max 60 chars","importance":3}]} ou {"memories":[]}.
+Seuil TRÈS ÉLEVÉ : extrais SEULEMENT si tu as 90%+ de confiance que c'est une info durable et personnelle. En cas de doute : {"memories":[]}.`},
+        {role:'user',content:`Utilisateur: ${userMsg.substring(0,400)}\nIA: ${aiReply.substring(0,300)}`}
+      ], M_MINI, 200);
       const parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
       if(parsed.memories?.length){
         for(const m of parsed.memories){
-          if(m.text&&m.text.length>5&&m.text.length<150){
-            // Éviter les doublons (fuzzy match)
+          if(m.text&&m.text.length>5&&m.text.length<100&&this.memories.length<MAX_MEMORIES){
             const similar=this.memories.some(ex=>{
               const a=ex.text.toLowerCase(), b=m.text.toLowerCase();
-              return a===b || a.includes(b.substring(0,30)) || b.includes(a.substring(0,30));
+              return a===b || a.includes(b.substring(0,25)) || b.includes(a.substring(0,25));
             });
             if(!similar){
               this.memories.push({
                 id:'m'+Date.now()+Math.random().toString(36).substr(2,4),
                 tag:m.tag||'info',
                 text:m.text,
-                importance:m.importance||1,
+                importance:3,
                 createdAt:Date.now()
               });
             }
           }
         }
-        // Trier par importance décroissante
-        this.memories.sort((a,b)=>(b.importance||1)-(a.importance||1));
         await this.save();
       }
     }catch(e){}
@@ -7156,9 +7208,9 @@ ${_summary}
 
     S.msgs.push(am); renderMsg(am);
     indexConversationMsg(am, S.msgs.length-1).catch(()=>{});
-    // RAG: extraire infos utiles — seulement si message substantiel (>30 chars et pas trivial)
-    const _isTrivialMsg=displayText.length<15||/^(salut|bonjour|hi|hello|ok|oui|non|merci|ciao|bye|good|bien|yes|no|d'accord|parfait|super|cool|wsh|slt|lol|mdr)\s*[!?.]?$/i.test(displayText.trim());
-    if(S.plan>=1&&!S.user?.isGuest&&!_isTrivialMsg&&Math.random()<0.25){
+    // RAG: extraire uniquement si message très substantiel (>80 chars, pas trivial, 7% de chance max)
+    const _isTrivialMsg=displayText.length<30||/^(salut|bonjour|hi|hello|ok|oui|non|merci|ciao|bye|good|bien|yes|no|d'accord|parfait|super|cool|wsh|slt|lol|mdr)\s*[!?.]?$/i.test(displayText.trim());
+    if(S.plan>=1&&!S.user?.isGuest&&!_isTrivialMsg&&displayText.length>80&&Math.random()<0.07){
       WM_RAG.extractFromConversation(displayText,aiContent).catch(()=>{});
     }
     // ── Auto-open tool if AI response suggests it ──
@@ -7966,7 +8018,7 @@ Tu es l'assistant code de WikiMind, propulsé par Codestral.
 - Explique la logique après le code`,
   }[_modelStyle]||'Tu es WikiMind AI, un assistant intelligent.';
 
-  const base = `Tu es WikiMind AI v5.0, un assistant IA de pointe — plus intelligent, plus précis et plus utile que ChatGPT, Gemini ou tout autre assistant. Tu réponds en français par défaut (ou dans la langue de l'utilisateur). Tu utilises Markdown natif pour structurer tes réponses.
+  const base = `Tu es WikiMind AI v6.0, un assistant IA de pointe — plus intelligent, plus précis et plus utile que ChatGPT, Gemini ou tout autre assistant. Tu réponds en français par défaut (ou dans la langue de l'utilisateur). Tu utilises Markdown natif pour structurer tes réponses.
 
 ${_styleInstructions}
 
@@ -8168,7 +8220,11 @@ function _sanitizeMessages(messages){
 
 // ── callMistral — streaming + fallback non-streaming ──
 async function callMistral(messages, modelId, maxTokens=4096, useToolsKey=false, onToken=null){
-  const apiKey = useToolsKey ? MISTRAL_TOOLS_KEY : MISTRAL_KEY;
+  // Utilise la clé Codestral pour le modèle code
+  const isCodestral = modelId && modelId.includes('codestral');
+  const apiKey = isCodestral ? CODESTRAL_KEY : (useToolsKey ? MISTRAL_TOOLS_KEY : MISTRAL_KEY);
+  // Codestral utilise un endpoint différent
+  const apiEndpoint = isCodestral ? 'https://codestral.mistral.ai/v1/chat/completions' : 'https://api.mistral.ai/v1/chat/completions';
   const merged = _sanitizeMessages(messages);
   if(!merged.length) throw new Error('Aucun message à envoyer');
 
@@ -8179,7 +8235,7 @@ async function callMistral(messages, modelId, maxTokens=4096, useToolsKey=false,
   const useStream = !!(onToken);
 
   const doFetch = async () => {
-    const res = await fetch('https://api.mistral.ai/v1/chat/completions',{
+    const res = await fetch(apiEndpoint,{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
       body:JSON.stringify({
@@ -10401,62 +10457,42 @@ function renderFolderManager(){
 }
 
 function renderFolderSidebar(){
+  // Dossiers supprimés en v6 — seul le pinned subsiste
   const foldersSection=G('folders-section');
-  const foldersList=G('folders-list');
   const pinnedSection=G('pinned-section');
   const pinnedList=G('pinned-list');
   const filterTags=G('folder-filter-tags');
 
-  const hasFolders=Object.keys(S_folders.folders).length>0;
+  // Masquer la section dossiers (supprimée)
+  if(foldersSection) foldersSection.style.display='none';
   const hasPinned=S_folders.pinnedChats.length>0;
-
-  if(foldersSection) foldersSection.style.display=hasFolders?'block':'none';
   if(pinnedSection) pinnedSection.style.display=hasPinned?'block':'none';
-
-  if(foldersList){
-    foldersList.innerHTML=Object.entries(S_folders.folders).map(([id,f])=>`
-      <div class="folder-item ${S_folders.activeFilter===id?'active-folder':''}" onclick="setHistoryFilter('${id}')">
-        <div class="folder-color-dot" style="background:${f.color}"></div>
-        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</span>
-        <span class="folder-count">${f.chatIds?.length||0}</span>
-      </div>`).join('');
-  }
 
   if(pinnedList){
     pinnedList.innerHTML=S_folders.pinnedChats.filter(id=>S.chats[id]).map(id=>{
       const c=S.chats[id];
-      return`<div class="history-item pinned-item ${S.chatId===id?'active':''}" onclick="loadChat('${id}')">
+      return`<div class="history-item ${S.chatId===id?'active':''}" onclick="loadChat('${id}')">
         <span class="history-item-title">📌 ${esc(c.title||'Sans titre')}</span>
         <span class="history-item-del" onclick="event.stopPropagation();unpinConv('${id}')">✕</span>
       </div>`;
     }).join('');
   }
-
-  if(filterTags){
-    filterTags.innerHTML=Object.entries(S_folders.folders).map(([id,f])=>
-      `<button class="sb-filter-btn ${S_folders.activeFilter===id?'active':''}" onclick="setHistoryFilter('${id}')" style="border-color:${f.color}20;color:${S_folders.activeFilter===id?'#fff':f.color};${S_folders.activeFilter===id?'background:'+f.color:''}">
-        ${esc(f.name)}
-      </button>`
-    ).join('');
-  }
+  if(filterTags) filterTags.innerHTML='';
 }
 
 function setHistoryFilter(filter){
+  // Ignore folder filters (supprimés)
+  if(filter!=='all'&&filter!=='pinned') filter='all';
   S_folders.activeFilter=filter;
-  // Update filter buttons
   ['all','pinned'].forEach(f=>{const btn=G('filter-'+f);if(btn)btn.classList.toggle('active',f===filter);});
   const label=G('history-section-label');
-  if(label){
-    if(filter==='all') label.textContent='Récents';
-    else if(filter==='pinned') label.textContent='📌 Épinglés';
-    else{ const f=S_folders.folders[filter]; label.textContent=f?`📁 ${f.name}`:'Récents'; }
-  }
+  if(label){ label.textContent=filter==='pinned'?'📌 Épinglés':'Récents'; }
   renderFolderSidebar(); renderHistory();
 }
 
 function openFolderManager(){
-  renderFolderManager();
-  openModal('folder-modal');
+  // Dossiers supprimés — ne rien faire
+  toast('Les dossiers ont été supprimés en v6. Vos conversations sont dans l\'historique.');
 }
 
 function pinConv(chatId){
@@ -10493,21 +10529,9 @@ function showConvContextMenu(e, chatId){
     const isPinned=S_folders.pinnedChats.includes(chatId);
     pinBtn.textContent=isPinned?'📌 Désépingler':'📌 Épingler';
   }
-  // Update folder list
-  const flList=G('ctx-folder-list'); if(flList){
-    const folders=Object.entries(S_folders.folders);
-    flList.innerHTML=!folders.length?'<div style="padding:4px 12px;font-size:11px;color:#aaa">Aucun dossier</div>':
-      folders.map(([id,f])=>`
-        <div style="padding:7px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px;transition:.15s"
-          onmouseenter="this.style.background='var(--select-bg)'" onmouseleave="this.style.background='none'"
-          onclick="addChatToFolder('${chatId}','${id}');hideContextMenu()">
-          <span style="width:8px;height:8px;border-radius:50%;background:${f.color};flex-shrink:0"></span>
-          ${esc(f.name)}
-        </div>`).join('');
-  }
   menu.style.display='block';
   const x=Math.min(e.clientX,window.innerWidth-200);
-  const y=Math.min(e.clientY,window.innerHeight-300);
+  const y=Math.min(e.clientY,window.innerHeight-200);
   menu.style.left=x+'px'; menu.style.top=y+'px';
 }
 function hideContextMenu(){ const m=G('conv-context-menu'); if(m) m.style.display='none'; _ctxMenuChatId=null; }
@@ -12961,7 +12985,7 @@ G('user-input')&&G('user-input').addEventListener('paste',async(e)=>{
   },300);
 });
 
-console.log('%cWikiMind AI v5','color:#111;font-family:Inter,sans-serif;font-size:20px;font-weight:900;font-style:italic');
+console.log('%cWikiMind AI v6','color:#111;font-family:Inter,sans-serif;font-size:20px;font-weight:900;font-style:italic');
 console.log('%c✅ Import universel | ✅ RAG illimité | ✅ PDF Viewer | ✅ Générateur PDF IA | ✅ Compression images | ✅ Scraping Web fiable | ✅ Diagrammes inline','color:#22c55e;font-size:11px;font-weight:700;');
 </script>
 
@@ -13186,6 +13210,192 @@ console.log('%c✅ Import universel | ✅ RAG illimité | ✅ PDF Viewer | ✅ G
   </div>
 </div>
 
+<!-- WIKIMIND AI GUIDE MODAL -->
+<div class="modal" id="wikimind-guide-modal" onclick="if(event.target===this)closeModal('wikimind-guide-modal')">
+  <div class="modal-content" onclick="event.stopPropagation()" style="max-width:680px;padding:0;overflow:hidden;display:flex;flex-direction:column;max-height:92vh;">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#0f0f0f 0%,#1a0a2e 50%,#0f1a2e 100%);padding:28px 28px 22px;position:relative;overflow:hidden;flex-shrink:0;">
+      <div style="position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,.4),transparent 70%);pointer-events:none;"></div>
+      <div style="position:absolute;bottom:-40px;left:10px;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,rgba(236,72,153,.25),transparent 70%);pointer-events:none;"></div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;position:relative;z-index:1;">
+        <div>
+          <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.18em;color:rgba(255,255,255,.4);margin-bottom:8px;">Guide complet</div>
+          <div style="font-size:26px;font-weight:900;letter-spacing:-.04em;color:#fff;line-height:1;">WikiMind AI</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+            <span style="font-size:13px;font-weight:800;color:#fff;opacity:.9;">v6.0</span>
+            <span style="background:linear-gradient(90deg,#6366f1,#ec4899);color:#fff;font-size:9px;font-weight:800;padding:3px 9px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;">Plateforme IA</span>
+          </div>
+        </div>
+        <button onclick="closeModal('wikimind-guide-modal')" style="background:rgba(255,255,255,.1);border:none;cursor:pointer;color:#fff;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;transition:.15s;flex-shrink:0;" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display:flex;border-bottom:1px solid var(--border);background:var(--sidebar);flex-shrink:0;">
+      <button onclick="wguideTab('models')" id="wgtab-models" style="flex:1;padding:12px 8px;border:none;background:none;cursor:pointer;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text);border-bottom:2px solid var(--accent);font-family:Inter,sans-serif;">🧠 Modèles</button>
+      <button onclick="wguideTab('tools')" id="wgtab-tools" style="flex:1;padding:12px 8px;border:none;background:none;cursor:pointer;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#888;border-bottom:2px solid transparent;font-family:Inter,sans-serif;">🛠 Outils</button>
+      <button onclick="wguideTab('peaks')" id="wgtab-peaks" style="flex:1;padding:12px 8px;border:none;background:none;cursor:pointer;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#888;border-bottom:2px solid transparent;font-family:Inter,sans-serif;">📊 Heures de pointe</button>
+      <button onclick="wguideTab('tips')" id="wgtab-tips" style="flex:1;padding:12px 8px;border:none;background:none;cursor:pointer;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#888;border-bottom:2px solid transparent;font-family:Inter,sans-serif;">💡 Astuces</button>
+    </div>
+
+    <!-- Content -->
+    <div style="overflow-y:auto;flex:1;">
+
+      <!-- Tab: Modèles -->
+      <div id="wgcontent-models" style="padding:20px 24px;display:flex;flex-direction:column;gap:10px;">
+        <div style="font-size:11px;color:#888;margin-bottom:4px;">Choisissez le bon modèle selon votre besoin :</div>
+        <div style="background:var(--select-bg);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">⚡</div>
+          <div><div style="font-size:13px;font-weight:800;">Wikimind Flash 4.1</div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Réponses rapides et concises. Idéal pour les questions simples, résumés courts, traductions. Modèle le plus économique.</div></div>
+        </div>
+        <div style="background:var(--select-bg);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🔮</div>
+          <div><div style="font-size:13px;font-weight:800;">Wikimind Medium 4.1</div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Équilibre parfait entre rapidité et profondeur. Analyses, rédaction, explications détaillées. Fenêtre contexte 128k tokens.</div></div>
+        </div>
+        <div style="background:var(--select-bg);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#22c55e,#16a34a);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">💼</div>
+          <div><div style="font-size:13px;font-weight:800;">Wikimind Work 4.1</div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Mode expert. Rapports approfondis, analyses complexes, documents professionnels. 128k tokens de contexte.</div></div>
+        </div>
+        <div style="background:var(--select-bg);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#06b6d4,#0891b2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🔍</div>
+          <div><div style="font-size:13px;font-weight:800;">Wikimind Réflexion 4.1</div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Raisonnement pas-à-pas visible. Mathématiques, logique, problèmes complexes. Le modèle montre son travail.</div></div>
+        </div>
+        <div style="background:var(--select-bg);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#ef4444,#f97316);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">⚔️</div>
+          <div><div style="font-size:13px;font-weight:800;">Wikimind Task 4.1</div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Multi-outils. Accès à tous les outils Wikimind simultanément. Recherche web, Wikipedia, graphiques, audio, fichiers.</div></div>
+        </div>
+        <div style="background:linear-gradient(135deg,rgba(249,115,22,.08),rgba(234,179,8,.08));border:1px solid rgba(249,115,22,.2);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#f97316,#eab308);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">💻</div>
+          <div><div style="font-size:13px;font-weight:800;">Wikimind Code 4.1 <span style="font-size:9px;background:rgba(249,115,22,.15);color:#ea580c;padding:2px 6px;border-radius:20px;">Codestral</span></div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Spécialisé code. Basé sur Codestral de Mistral — génération, débogage, refactoring, complétion de code. 32k tokens.</div></div>
+        </div>
+      </div>
+
+      <!-- Tab: Outils -->
+      <div id="wgcontent-tools" style="padding:20px 24px;display:none;">
+        <div style="font-size:11px;color:#888;margin-bottom:12px;">Tous les outils disponibles dans WikiMind AI :</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;">
+            <span style="font-size:18px;flex-shrink:0;">🎨</span>
+            <div><div style="font-size:12px;font-weight:700;">Canvas IA</div><div style="font-size:11px;color:#888;line-height:1.4;">Éditeur de texte enrichi alimenté par l'IA. Écrivez, modifiez, exportez en PDF.</div></div>
+          </div>
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;">
+            <span style="font-size:18px;flex-shrink:0;">💻</span>
+            <div><div style="font-size:12px;font-weight:700;">Codeur IA</div><div style="font-size:11px;color:#888;line-height:1.4;">IDE intégré avec prévisualisation live, multi-fichiers, export ZIP.</div></div>
+          </div>
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;">
+            <span style="font-size:18px;flex-shrink:0;">📄</span>
+            <div><div style="font-size:12px;font-weight:700;">Visionneuse PDF</div><div style="font-size:11px;color:#888;line-height:1.4;">Lisez, résumez et posez des questions sur vos PDFs directement dans le chat.</div></div>
+          </div>
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;">
+            <span style="font-size:18px;flex-shrink:0;">📊</span>
+            <div><div style="font-size:12px;font-weight:700;">DataViz</div><div style="font-size:11px;color:#888;line-height:1.4;">Créez des graphiques interactifs (bar, line, pie, radar) avec Chart.js.</div></div>
+          </div>
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;">
+            <span style="font-size:18px;flex-shrink:0;">🗺️</span>
+            <div><div style="font-size:12px;font-weight:700;">Mind Map</div><div style="font-size:11px;color:#888;line-height:1.4;">Générez des cartes mentales interactives à partir de n'importe quel sujet.</div></div>
+          </div>
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;">
+            <span style="font-size:18px;flex-shrink:0;">🔊</span>
+            <div><div style="font-size:12px;font-weight:700;">Synthèse vocale</div><div style="font-size:11px;color:#888;line-height:1.4;">Convertissez n'importe quel texte en audio. Bouton 🔊 sur chaque réponse.</div></div>
+          </div>
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;">
+            <span style="font-size:18px;flex-shrink:0;">📷</span>
+            <div><div style="font-size:12px;font-weight:700;">Vision IA</div><div style="font-size:11px;color:#888;line-height:1.4;">Analysez des images, photos, screenshots. Glissez-déposez dans le chat.</div></div>
+          </div>
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;">
+            <span style="font-size:18px;flex-shrink:0;">🌐</span>
+            <div><div style="font-size:12px;font-weight:700;">Recherche Web</div><div style="font-size:11px;color:#888;line-height:1.4;">Wikimind Task cherche sur le web et Wikipedia en temps réel.</div></div>
+          </div>
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;">
+            <span style="font-size:18px;flex-shrink:0;">✂️</span>
+            <div><div style="font-size:12px;font-weight:700;">Détourage IA</div><div style="font-size:11px;color:#888;line-height:1.4;">Supprimez l'arrière-plan d'une image automatiquement.</div></div>
+          </div>
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;">
+            <span style="font-size:18px;flex-shrink:0;">🧠</span>
+            <div><div style="font-size:12px;font-weight:700;">Mémoire IA</div><div style="font-size:11px;color:#888;line-height:1.4;">Retient vos infos essentielles entre sessions (max 6 infos clés).</div></div>
+          </div>
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;">
+            <span style="font-size:18px;flex-shrink:0;">📧</span>
+            <div><div style="font-size:12px;font-weight:700;">Gmail & Drive</div><div style="font-size:11px;color:#888;line-height:1.4;">Connectez Gmail et Google Drive pour rédiger et accéder à vos fichiers.</div></div>
+          </div>
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;">
+            <span style="font-size:18px;flex-shrink:0;">✨</span>
+            <div><div style="font-size:12px;font-weight:700;">Amélioration de prompt</div><div style="font-size:11px;color:#888;line-height:1.4;">Bouton ✨ dans la barre de saisie pour optimiser votre message.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Heures de pointe -->
+      <div id="wgcontent-peaks" style="padding:20px 24px;display:none;">
+        <div style="font-size:11px;color:#888;margin-bottom:4px;">Charge des serveurs Wikimind AI par tranche horaire (heure de Paris) :</div>
+        <div style="font-size:10px;color:#aaa;margin-bottom:14px;">% d'utilisateurs actifs simultanément — basé sur les patterns d'usage Wikimind</div>
+        <div style="background:var(--select-bg);border-radius:16px;padding:16px;margin-bottom:16px;">
+          <canvas id="peaks-chart" style="width:100%;height:220px;display:block;"></canvas>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
+          <div style="padding:12px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.15);border-radius:12px;text-align:center;">
+            <div style="font-size:20px;margin-bottom:4px;">🟢</div>
+            <div style="font-size:12px;font-weight:700;color:#16a34a;">Faible charge</div>
+            <div style="font-size:11px;color:#888;margin-top:3px;">00h–07h · 13h–15h</div>
+            <div style="font-size:10px;color:#888;">Réponses très rapides</div>
+          </div>
+          <div style="padding:12px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.15);border-radius:12px;text-align:center;">
+            <div style="font-size:20px;margin-bottom:4px;">🟡</div>
+            <div style="font-size:12px;font-weight:700;color:#d97706;">Charge modérée</div>
+            <div style="font-size:11px;color:#888;margin-top:3px;">08h–11h · 16h–18h</div>
+            <div style="font-size:10px;color:#888;">Réponses normales</div>
+          </div>
+          <div style="padding:12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.15);border-radius:12px;text-align:center;">
+            <div style="font-size:20px;margin-bottom:4px;">🔴</div>
+            <div style="font-size:12px;font-weight:700;color:#dc2626;">Forte charge</div>
+            <div style="font-size:11px;color:#888;margin-top:3px;">19h–23h</div>
+            <div style="font-size:10px;color:#888;">File possible</div>
+          </div>
+        </div>
+        <div style="background:var(--select-bg);border-radius:12px;padding:12px 14px;font-size:11px;color:#888;line-height:1.6;">
+          💡 <strong style="color:var(--text)">Conseil :</strong> Pour les tâches importantes, préférez les heures creuses (nuit ou début d'après-midi). Les serveurs Wikimind AI sont partagés — moins il y a d'utilisateurs, plus vos réponses sont rapides.
+        </div>
+      </div>
+
+      <!-- Tab: Astuces -->
+      <div id="wgcontent-tips" style="padding:20px 24px;display:none;flex-direction:column;gap:10px;">
+        <div style="background:var(--select-bg);border-radius:12px;padding:14px;display:flex;gap:10px;">
+          <span style="font-size:18px;flex-shrink:0;">🎯</span>
+          <div><div style="font-size:12px;font-weight:700;margin-bottom:3px;">Soyez précis dans vos prompts</div><div style="font-size:11px;color:#888;line-height:1.5">Donnez du contexte : "Je suis développeur Python senior, explique-moi les décorateurs avec des exemples avancés".</div></div>
+        </div>
+        <div style="background:var(--select-bg);border-radius:12px;padding:14px;display:flex;gap:10px;">
+          <span style="font-size:18px;flex-shrink:0;">🧠</span>
+          <div><div style="font-size:12px;font-weight:700;margin-bottom:3px;">Utilisez Réflexion pour les maths</div><div style="font-size:11px;color:#888;line-height:1.5">Wikimind Réflexion résout des équations et problèmes logiques en montrant chaque étape de son raisonnement.</div></div>
+        </div>
+        <div style="background:var(--select-bg);border-radius:12px;padding:14px;display:flex;gap:10px;">
+          <span style="font-size:18px;flex-shrink:0;">📎</span>
+          <div><div style="font-size:12px;font-weight:700;margin-bottom:3px;">Glissez vos fichiers directement</div><div style="font-size:11px;color:#888;line-height:1.5">PDF, images, Word, Excel — glissez dans la zone de texte. L'IA les analysera automatiquement.</div></div>
+        </div>
+        <div style="background:var(--select-bg);border-radius:12px;padding:14px;display:flex;gap:10px;">
+          <span style="font-size:18px;flex-shrink:0;">✨</span>
+          <div><div style="font-size:12px;font-weight:700;margin-bottom:3px;">Améliorez vos prompts avec ✨</div><div style="font-size:11px;color:#888;line-height:1.5">Le bouton ✨ transforme votre question en prompt optimal. Très utile pour les tâches complexes.</div></div>
+        </div>
+        <div style="background:var(--select-bg);border-radius:12px;padding:14px;display:flex;gap:10px;">
+          <span style="font-size:18px;flex-shrink:0;">⚔️</span>
+          <div><div style="font-size:12px;font-weight:700;margin-bottom:3px;">Task pour les tâches complexes</div><div style="font-size:11px;color:#888;line-height:1.5">Wikimind Task combine recherche web, graphiques, audio et fichiers en une seule réponse orchestrée.</div></div>
+        </div>
+        <div style="background:var(--select-bg);border-radius:12px;padding:14px;display:flex;gap:10px;">
+          <span style="font-size:18px;flex-shrink:0;">🌙</span>
+          <div><div style="font-size:12px;font-weight:700;margin-bottom:3px;">Mode sombre disponible</div><div style="font-size:11px;color:#888;line-height:1.5">Activez le mode sombre dans Paramètres → Apparence pour protéger vos yeux lors des longues sessions.</div></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:14px 20px;border-top:1px solid var(--border);flex-shrink:0;display:flex;justify-content:flex-end;">
+      <button onclick="closeModal('wikimind-guide-modal')" class="modal-btn primary" style="width:auto;padding:10px 24px;">Fermer</button>
+    </div>
+  </div>
+</div>
+
 <!-- CHANGELOG / DERNIÈRES NOUVEAUTÉS MODAL -->
 <div class="modal" id="changelog-modal" onclick="if(event.target===this)closeModal('changelog-modal')">
   <div class="modal-content" onclick="event.stopPropagation()" style="max-width:580px;padding:0;overflow:hidden;display:flex;flex-direction:column;max-height:88vh;">
@@ -13199,9 +13409,9 @@ console.log('%c✅ Import universel | ✅ RAG illimité | ✅ PDF Viewer | ✅ G
           <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.18em;color:rgba(255,255,255,.4);margin-bottom:8px;">Journal des mises à jour</div>
           <div style="font-size:24px;font-weight:900;letter-spacing:-.04em;color:#fff;line-height:1;">WikiMind AI</div>
           <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
-            <span style="font-size:13px;font-weight:800;color:#fff;opacity:.9;">v5.0</span>
-            <span style="background:linear-gradient(90deg,#ec4899,#f97316);color:#fff;font-size:9px;font-weight:800;padding:3px 9px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;">Dernière version</span>
-            <span style="font-size:11px;color:rgba(255,255,255,.4);">30 mars 2026</span>
+            <span style="font-size:13px;font-weight:800;color:#fff;opacity:.9;">v6.0</span>
+            <span style="background:linear-gradient(90deg,#6366f1,#ec4899);color:#fff;font-size:9px;font-weight:800;padding:3px 9px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;">Dernière version</span>
+            <span style="font-size:11px;color:rgba(255,255,255,.4);">1er avril 2026</span>
           </div>
         </div>
         <button onclick="closeModal('changelog-modal')" style="background:rgba(255,255,255,.1);border:none;cursor:pointer;color:#fff;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;transition:.15s;flex-shrink:0;" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">
@@ -13212,6 +13422,44 @@ console.log('%c✅ Import universel | ✅ RAG illimité | ✅ PDF Viewer | ✅ G
 
     <!-- Scrollable content -->
     <div style="overflow-y:auto;flex:1;padding:0;">
+
+    <!-- v6.0 — 1er avril 2026 -->
+      <div style="padding:20px 24px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#ec4899);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🚀</div>
+          <div>
+            <div style="font-size:14px;font-weight:800;">WikiMind AI v6.0</div>
+            <div style="font-size:11px;color:#888;">1er avril 2026</div>
+          </div>
+          <span style="margin-left:auto;background:linear-gradient(90deg,#6366f1,#ec4899);color:#fff;font-size:9px;font-weight:800;padding:3px 9px;border-radius:20px;letter-spacing:.04em;">LATEST</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:20px;flex-shrink:0;">🔑</span>
+            <div><div style="font-size:12px;font-weight:700;margin-bottom:3px;">Codestral dédié</div><div style="font-size:11px;color:#888;line-height:1.5">Wikimind Code utilise désormais l'API Codestral officielle avec clé dédiée et endpoint optimisé.</div></div>
+          </div>
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:20px;flex-shrink:0;">🧠</span>
+            <div><div style="font-size:12px;font-weight:700;margin-bottom:3px;">Modèles 4.1</div><div style="font-size:11px;color:#888;line-height:1.5">Tous les modèles Wikimind passés en version 4.1 — plus performants, moins d'erreurs.</div></div>
+          </div>
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:20px;flex-shrink:0;">📖</span>
+            <div><div style="font-size:12px;font-weight:700;margin-bottom:3px;">Guide Wikimind AI</div><div style="font-size:11px;color:#888;line-height:1.5">Nouveau bouton "Wikimind AI — Guide" dans le menu profil avec présentation complète de la plateforme.</div></div>
+          </div>
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:20px;flex-shrink:0;">📊</span>
+            <div><div style="font-size:12px;font-weight:700;margin-bottom:3px;">Heures de pointe</div><div style="font-size:11px;color:#888;line-height:1.5">Graphique interactif des heures de forte/faible utilisation pour optimiser votre expérience.</div></div>
+          </div>
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:20px;flex-shrink:0;">🧹</span>
+            <div><div style="font-size:12px;font-weight:700;margin-bottom:3px;">Dossiers supprimés</div><div style="font-size:11px;color:#888;line-height:1.5">Le système de dossiers a été retiré. Vos conversations restent accessibles dans l'historique global.</div></div>
+          </div>
+          <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:20px;flex-shrink:0;">💾</span>
+            <div><div style="font-size:12px;font-weight:700;margin-bottom:3px;">Mémoire IA optimisée</div><div style="font-size:11px;color:#888;line-height:1.5">RAG limité à 7% — seules les infos vraiment importantes sont retenues. Moins de bruit, plus de pertinence.</div></div>
+          </div>
+        </div>
+      </div>
 
       <!-- v5.0 — 30 mars 2026 -->
       <div style="padding:20px 24px;border-bottom:1px solid var(--border);">
