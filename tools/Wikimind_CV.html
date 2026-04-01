@@ -3205,24 +3205,25 @@ async function saveCV(){
 }
 
 // ── EXPORT PDF — iframe isolé + html2canvas + jsPDF ──
+// ── EXPORT PDF — iframe isolé + html2canvas + jsPDF ──
 async function exportPDF(){
   if(!_S.currentCV){ toast('Ouvrez un CV d\'abord.'); return; }
-  getFormData();
+  
+  // 1) On force la mise à jour de l'aperçu pour être SÛR à 100% 
+  // d'avoir la dernière version avec les couleurs et les sauts de ligne
+  updatePreview();
   toast('⏳ Génération du PDF…');
 
-  // 1) Collecte des styles du document (tous les <style> du head)
+  // 2) On récupère TOUS les styles de la page
   const allStyles = Array.from(document.querySelectorAll('style'))
     .map(s => s.textContent).join('\n');
 
-  // 2) Re-génère le HTML propre du CV
-  const cvHTML = buildCVHTML(
-    _S.currentCV.template,
-    _S.currentCV.data,
-    _S.currentCV.color,
-    false
-  );
+  // 3) LA SOLUTION MAGIQUE : On copie EXACTEMENT le code HTML affiché à l'écran !
+  // Au lieu de reconstruire le CV, on clone ce qui marche déjà visuellement.
+  const livePreview = document.getElementById('cv-preview-frame');
+  const exactHTML = livePreview ? livePreview.innerHTML : '';
 
-  // 3) Construction du HTML complet de la page isolée
+  // Construction du document HTML pour le PDF
   const W = 794, H_MIN = 1122;
   const iframeDoc = `<!DOCTYPE html><html><head>
 <meta charset="UTF-8">
@@ -3237,7 +3238,7 @@ html,body{margin:0;padding:0;width:${W}px;background:#fff;overflow:visible!impor
 .cv-root, .cv-root *{overflow:visible!important;}
 </style>
 </head><body>
-<div id="cv-export-frame">${cvHTML}</div>
+<div id="cv-export-frame">${exactHTML}</div>
 </body></html>`;
 
   // 4) Crée l'iframe hors-écran avec grande hauteur pour éviter tout clipping
@@ -3247,64 +3248,24 @@ html,body{margin:0;padding:0;width:${W}px;background:#fff;overflow:visible!impor
   document.body.appendChild(iframe);
 
   try {
-    // 5) Écrit le HTML dans l'iframe
+    // 5) Écrit le HTML cloné dans l'iframe
     const doc = iframe.contentDocument || iframe.contentWindow.document;
     doc.open();
     doc.write(iframeDoc);
     doc.close();
 
-    // =========================================================
-    // 🟢 DÉBUT DE LA CORRECTION : APPLICATION DES FIX AU PDF
-    // =========================================================
-    const exportFrame = doc.getElementById('cv-export-frame');
-    const d = _S.currentCV.data;
-
-    // FIX 3 PDF : Ajouter la description des formations manquantes
-    if(d.education && d.education.length && exportFrame){
-      // Supporte les classes en "-edu" et celles comme "t1-edu-item"
-      const eduDivs = exportFrame.querySelectorAll('[class$="-edu"], [class*="-edu-item"]');
-      eduDivs.forEach((div, i) => {
-        const edu = d.education[i];
-        if(edu && edu.desc && !div.querySelector('.edu-desc-text')){
-          const descEl = doc.createElement('div');
-          descEl.className = 'edu-desc-text';
-          descEl.style.cssText = 'font-size:11px;color:#6b7280;font-style:italic;margin-top:3px;line-height:1.5;';
-          descEl.innerHTML = window.escMultiline ? window.escMultiline(edu.desc) : edu.desc.replace(/\n/g,'<br>');
-          div.appendChild(descEl);
-        }
-      });
-    }
-
-    // FIX 2 PDF : Fixer le multiligne (\n -> <br>)
-    if(exportFrame){
-      exportFrame.querySelectorAll('[style*="line-height:1.7"], [class$="-desc"]').forEach(el => {
-        if(el.innerHTML.includes('\n')){
-          el.innerHTML = el.innerHTML.replace(/\n/g,'<br>');
-        }
-      });
-    }
-    // =========================================================
-    // 🔴 FIN DE LA CORRECTION
-    // =========================================================
-
     // 6) Attendre le chargement des fonts Google + rendu DOM complet
     await new Promise(r => setTimeout(r, 400));
-    try {
-      await iframe.contentDocument.fonts.ready;
-    } catch(e) {}
+    try { await iframe.contentDocument.fonts.ready; } catch(e) {}
     await new Promise(r => setTimeout(r, 800));
 
-    // 7) Mesurer la hauteur RÉELLE du contenu après rendu complet
-    const realH = Math.max(
-      H_MIN,
-      exportFrame ? exportFrame.scrollHeight : H_MIN,
-      doc.body.scrollHeight
-    );
-
+    // 7) Mesurer la hauteur RÉELLE du contenu
+    const exportFrame = doc.getElementById('cv-export-frame');
+    const realH = Math.max(H_MIN, exportFrame ? exportFrame.scrollHeight : H_MIN, doc.body.scrollHeight);
     iframe.style.height = realH + 'px';
     await new Promise(r => setTimeout(r, 200));
 
-    // 8) Canvas mode overlay
+    // 8) Mode Canvas (Éléments déplaçables)
     if(_S.canvasMode && _S.canvasElements && _S.canvasElements.length && exportFrame){
       exportFrame.style.position = 'relative';
       const overlay = doc.createElement('div');
@@ -3319,7 +3280,7 @@ html,body{margin:0;padding:0;width:${W}px;background:#fff;overflow:visible!impor
       await new Promise(r => setTimeout(r, 200));
     }
 
-    // 9) Capture avec html2canvas — hauteur dynamique réelle
+    // 9) Capture avec html2canvas
     const targetEl = doc.body;
     const canvas = await html2canvas(targetEl, {
       scale: 3,
@@ -3329,17 +3290,12 @@ html,body{margin:0;padding:0;width:${W}px;background:#fff;overflow:visible!impor
       backgroundColor: '#ffffff',
       logging: false,
       imageTimeout: 15000,
-      scrollX: 0,
-      scrollY: 0,
-      x: 0,
-      y: 0,
-      width: W,
-      height: realH,
-      windowWidth: W,
-      windowHeight: realH,
+      scrollX: 0, scrollY: 0, x: 0, y: 0,
+      width: W, height: realH,
+      windowWidth: W, windowHeight: realH,
     });
 
-    // 10) jsPDF — pages multiples si le contenu dépasse une page A4
+    // 10) jsPDF — Génération des pages PDF
     const { jsPDF } = window.jspdf;
     const PAGE_H = H_MIN; 
     const totalPages = Math.ceil(realH / PAGE_H);
