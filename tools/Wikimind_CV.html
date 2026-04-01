@@ -3253,24 +3253,54 @@ html,body{margin:0;padding:0;width:${W}px;background:#fff;overflow:visible!impor
     doc.write(iframeDoc);
     doc.close();
 
+    // =========================================================
+    // 🟢 DÉBUT DE LA CORRECTION : APPLICATION DES FIX AU PDF
+    // =========================================================
+    const exportFrame = doc.getElementById('cv-export-frame');
+    const d = _S.currentCV.data;
+
+    // FIX 3 PDF : Ajouter la description des formations manquantes
+    if(d.education && d.education.length && exportFrame){
+      // Supporte les classes en "-edu" et celles comme "t1-edu-item"
+      const eduDivs = exportFrame.querySelectorAll('[class$="-edu"], [class*="-edu-item"]');
+      eduDivs.forEach((div, i) => {
+        const edu = d.education[i];
+        if(edu && edu.desc && !div.querySelector('.edu-desc-text')){
+          const descEl = doc.createElement('div');
+          descEl.className = 'edu-desc-text';
+          descEl.style.cssText = 'font-size:11px;color:#6b7280;font-style:italic;margin-top:3px;line-height:1.5;';
+          descEl.innerHTML = window.escMultiline ? window.escMultiline(edu.desc) : edu.desc.replace(/\n/g,'<br>');
+          div.appendChild(descEl);
+        }
+      });
+    }
+
+    // FIX 2 PDF : Fixer le multiligne (\n -> <br>)
+    if(exportFrame){
+      exportFrame.querySelectorAll('[style*="line-height:1.7"], [class$="-desc"]').forEach(el => {
+        if(el.innerHTML.includes('\n')){
+          el.innerHTML = el.innerHTML.replace(/\n/g,'<br>');
+        }
+      });
+    }
+    // =========================================================
+    // 🔴 FIN DE LA CORRECTION
+    // =========================================================
+
     // 6) Attendre le chargement des fonts Google + rendu DOM complet
     await new Promise(r => setTimeout(r, 400));
-    // Attendre que les fonts soient prêtes dans l'iframe
     try {
       await iframe.contentDocument.fonts.ready;
     } catch(e) {}
-    // Attente supplémentaire pour le rendu final
     await new Promise(r => setTimeout(r, 800));
 
     // 7) Mesurer la hauteur RÉELLE du contenu après rendu complet
-    const exportFrame = doc.getElementById('cv-export-frame');
     const realH = Math.max(
       H_MIN,
       exportFrame ? exportFrame.scrollHeight : H_MIN,
       doc.body.scrollHeight
     );
 
-    // Redimensionner l'iframe à la hauteur réelle
     iframe.style.height = realH + 'px';
     await new Promise(r => setTimeout(r, 200));
 
@@ -3311,7 +3341,7 @@ html,body{margin:0;padding:0;width:${W}px;background:#fff;overflow:visible!impor
 
     // 10) jsPDF — pages multiples si le contenu dépasse une page A4
     const { jsPDF } = window.jspdf;
-    const PAGE_H = H_MIN; // 1122px = A4 en px à 96dpi
+    const PAGE_H = H_MIN; 
     const totalPages = Math.ceil(realH / PAGE_H);
 
     const pdf = new jsPDF({
@@ -3322,14 +3352,12 @@ html,body{margin:0;padding:0;width:${W}px;background:#fff;overflow:visible!impor
       hotfixes: ['px_scaling'],
     });
 
-    // Découper l'image canvas en pages A4
     for(let i = 0; i < totalPages; i++){
       if(i > 0) pdf.addPage([W, PAGE_H], 'portrait');
-      const srcY = i * PAGE_H * 3; // scale:3
+      const srcY = i * PAGE_H * 3; 
       const srcH = Math.min(PAGE_H * 3, canvas.height - srcY);
       if(srcH <= 0) break;
 
-      // Créer un canvas temporaire pour la tranche de page
       const pageCanvas = document.createElement('canvas');
       pageCanvas.width = W * 3;
       pageCanvas.height = PAGE_H * 3;
