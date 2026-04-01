@@ -3877,8 +3877,8 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
 
 <!-- ========== MAIN SCRIPT ========== -->
 <script>
-const MISTRAL_KEY = 'MIZklTnIR8Qj7PeFTQRAAn2vpyYGoHm7';  // Clé principale v6
-const MISTRAL_TOOLS_KEY = 'MIZklTnIR8Qj7PeFTQRAAn2vpyYGoHm7';
+const MISTRAL_KEY = 'wuZGbRk6ry7KpMraZvxB3zg7ae6x1dLN';  // Clé principale v6
+const MISTRAL_TOOLS_KEY = 'wuZGbRk6ry7KpMraZvxB3zg7ae6x1dLN';
 const CODESTRAL_KEY = '5QLfudFOswjh37MYAq0CeXaNWY7RUwvl';  // Clé Codestral dédiée
 const PLAN_PRICES_MT = { 2: 11, 3: 22, 4: 39 };
 const PROMO_END = new Date('2025-04-14T23:59:59');
@@ -5365,11 +5365,73 @@ function formatMarkdown(text){
   return html;
 }
 
-// ── CHARTJS INLINE RENDERER ──
-function _renderChartJsBlock(canvasId, jsonStr){
+// ── CHARTJS INLINE RENDERER avec validation 3s + régénération ──
+// Styles CSS pour les animations de validation graphique
+(function(){
+  const style=document.createElement('style');
+  style.textContent=`
+.wm-chart-validating{position:relative;}
+.wm-chart-validating::after{
+  content:'';position:absolute;inset:0;border-radius:12px;
+  background:rgba(var(--bg-rgb,255,255,255),.85);
+  display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(2px);z-index:10;
+}
+.wm-chart-overlay{
+  position:absolute;inset:0;border-radius:12px;
+  background:rgba(var(--bg-rgb,255,255,255),.88);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;z-index:11;backdrop-filter:blur(3px);
+}
+.dark-mode .wm-chart-overlay{background:rgba(15,15,15,.88);}
+.wm-chart-spinner{width:28px;height:28px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:chartSpin .7s linear infinite;}
+@keyframes chartSpin{to{transform:rotate(360deg);}}
+.wm-chart-overlay-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#888;}
+.wm-chart-overlay-bar{width:80px;height:3px;background:var(--border2);border-radius:3px;overflow:hidden;margin-top:2px;}
+.wm-chart-overlay-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .15s linear;}
+`;
+  document.head.appendChild(style);
+})();
+
+function _renderChartJsBlock(canvasId, jsonStr, retryCount=0){
   const canvas=document.getElementById(canvasId);
   if(!canvas) return;
-  if(!window.Chart){ setTimeout(()=>_renderChartJsBlock(canvasId,jsonStr),500); return; }
+  if(!window.Chart){ setTimeout(()=>_renderChartJsBlock(canvasId,jsonStr,retryCount),500); return; }
+
+  const wrap=canvas.closest('.wm-chartjs-wrap');
+  const canvasWrap=canvas.parentElement; // div avec position:relative;height:280px
+
+  // Créer l'overlay de validation
+  let overlay=canvasWrap.querySelector('.wm-chart-overlay');
+  if(!overlay){
+    overlay=document.createElement('div');
+    overlay.className='wm-chart-overlay';
+    overlay.innerHTML=`
+      <div class="wm-chart-spinner"></div>
+      <div class="wm-chart-overlay-label">${retryCount>0?'Régénération…':'Validation…'}</div>
+      <div class="wm-chart-overlay-bar"><div class="wm-chart-overlay-fill" id="cfill-${canvasId}" style="width:0%"></div></div>
+    `;
+    canvasWrap.style.position='relative';
+    canvasWrap.appendChild(overlay);
+  }
+
+  // Animation de la barre de progression sur 3 secondes
+  const fillEl=document.getElementById('cfill-'+canvasId);
+  const startTime=Date.now();
+  const VALIDATE_MS=3000;
+  let animFrame;
+  function animProgress(){
+    const elapsed=Date.now()-startTime;
+    const pct=Math.min(95, (elapsed/VALIDATE_MS)*100);
+    if(fillEl) fillEl.style.width=pct+'%';
+    if(elapsed<VALIDATE_MS) animFrame=requestAnimationFrame(animProgress);
+  }
+  animFrame=requestAnimationFrame(animProgress);
+
+  // Tentative de rendu (immédiate, pendant l'animation)
+  let renderError=null;
+  let renderSuccess=false;
+
   try{
     // Nettoyer les entités HTML résiduelles
     let clean=jsonStr
@@ -5380,28 +5442,53 @@ function _renderChartJsBlock(canvasId, jsonStr){
     clean=clean.replace(/\/\/[^\n]*/g,'').replace(/\/\*[\s\S]*?\*\//g,'');
     // Supprimer les virgules trailing avant } ou ]
     clean=clean.replace(/,(\s*[}\]])/g,'$1');
-    // Convertir les apostrophes simples en guillemets doubles pour les clés/valeurs string
-    // (seulement si pas déjà entre guillemets doubles)
+
+    // Corriger les usages de Array.from, Object.keys, etc. dans les labels/data (bug courant)
+    // Remplacer les appels JS non-JSON par des arrays statiques
+    clean=clean.replace(/Array\.from\s*\([^)]+\)/g, match=>{
+      try{
+        // Tenter d'évaluer l'expression dans un contexte sécurisé
+        const result=(new Function('return '+match))();
+        if(Array.isArray(result)) return JSON.stringify(result);
+      }catch(e){}
+      return '[]';
+    });
+    clean=clean.replace(/Object\.(keys|values|entries)\s*\([^)]+\)/g, '[]');
+    clean=clean.replace(/new Array\s*\([^)]*\)/g, '[]');
+    // Range generators type [...Array(n).keys()]
+    clean=clean.replace(/\[\.\.\.Array\([^)]+\)[\s\S]*?\]/g, match=>{
+      try{ const r=(new Function('return '+match))(); if(Array.isArray(r)) return JSON.stringify(r); }catch(e){}
+      return '[]';
+    });
+
     let cfg;
     try{ cfg=JSON.parse(clean); }
     catch(e1){
-      // Tentative 2: réparer les clés sans guillemets
       try{
         const fixed=clean.replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g,'$1"$2":');
         cfg=JSON.parse(fixed);
       }catch(e2){
-        // Tentative 3: remplacer apostrophes simples
         try{
           const fixed2=clean.replace(/'/g,'"');
           cfg=JSON.parse(fixed2.replace(/,(\s*[}\]])/g,'$1'));
         }catch(e3){
-          // Tentative 4: eval sécurisé (dernier recours)
           try{ cfg=(new Function('return ('+clean+')'))(); }
           catch(e4){ throw new Error('JSON invalide: '+e1.message.substring(0,80)); }
         }
       }
     }
-    // Thème adaptatif (dark/light)
+
+    // Valider la structure minimale
+    if(!cfg||!cfg.type||!cfg.data){ throw new Error('Structure Chart.js invalide (type ou data manquant)'); }
+    // S'assurer que les datasets ont des données valides
+    if(cfg.data.datasets){
+      cfg.data.datasets=cfg.data.datasets.map(ds=>{
+        if(ds.data&&!Array.isArray(ds.data)) ds.data=[];
+        return ds;
+      });
+    }
+
+    // Thème adaptatif
     const isDark=document.body.classList.contains('dark-mode');
     const textColor=isDark?'#eeeeee':'#111111';
     const gridColor=isDark?'rgba(255,255,255,.08)':'rgba(0,0,0,.08)';
@@ -5412,7 +5499,6 @@ function _renderChartJsBlock(canvasId, jsonStr){
     cfg.options.maintainAspectRatio=false;
     cfg.options.plugins.legend={...cfg.options.plugins.legend,labels:{color:textColor,font:{family:'Inter,sans-serif',size:12}}};
     if(cfg.options.plugins.title) cfg.options.plugins.title.color=textColor;
-    // Appliquer couleurs axes seulement si le type supporte les scales (pas pie/doughnut)
     const scaledTypes=['bar','line','radar','scatter','bubble'];
     if(scaledTypes.includes(cfg.type)){
       ['x','y'].forEach(axis=>{
@@ -5421,13 +5507,67 @@ function _renderChartJsBlock(canvasId, jsonStr){
         cfg.options.scales[axis].grid={...cfg.options.scales[axis].grid,color:gridColor};
       });
     }
-    // Destroy previous chart if exists
     if(canvas._wmChart) canvas._wmChart.destroy();
     canvas._wmChart=new Chart(canvas, cfg);
+    renderSuccess=true;
   }catch(e){
-    console.warn('ChartJS render error:',e);
-    const parent=canvas.parentElement;
-    if(parent) parent.innerHTML='<div style="color:#ef4444;font-size:11px;padding:12px;background:rgba(239,68,68,.05);border-radius:8px;">⚠️ Erreur graphique: '+esc(e.message.substring(0,100))+'</div>';
+    renderError=e;
+  }
+
+  // Après 3 secondes : afficher le résultat
+  setTimeout(()=>{
+    cancelAnimationFrame(animFrame);
+    if(fillEl) fillEl.style.width='100%';
+    if(overlay) overlay.remove();
+
+    if(renderSuccess){
+      // ✅ Graphique OK — rien à faire, déjà rendu
+    } else if(renderError){
+      console.warn('ChartJS render error:',renderError);
+      // Si on peut encore réessayer (max 1 régénération auto)
+      if(retryCount<1 && wrap){
+        // Afficher un message de régénération
+        const errDiv=document.createElement('div');
+        errDiv.style.cssText='color:#f59e0b;font-size:10px;padding:6px 10px;font-weight:700;text-align:center;';
+        errDiv.textContent='⟳ Régénération automatique…';
+        if(canvasWrap) canvasWrap.appendChild(errDiv);
+
+        // Tenter de corriger le JSON et re-render
+        _retryChartRender(canvasId, jsonStr, retryCount+1, canvasWrap, errDiv);
+      } else {
+        // Échec définitif : afficher le bouton de régén manuelle
+        if(canvasWrap) canvasWrap.innerHTML=`
+          <div style="color:#ef4444;font-size:11px;padding:12px;background:rgba(239,68,68,.05);border-radius:8px;text-align:center;">
+            <div style="margin-bottom:8px">⚠️ Erreur graphique : ${esc((renderError.message||'').substring(0,80))}</div>
+            <button onclick="this.parentElement.parentElement.innerHTML='<div style=padding:20px;text-align:center;color:#aaa;font-size:12px>Graphique retiré</div>'" style="background:var(--select-bg);border:1px solid var(--border2);border-radius:6px;padding:4px 10px;font-size:10px;cursor:pointer;font-family:Inter,sans-serif;font-weight:700">Fermer</button>
+          </div>`;
+      }
+    }
+  }, VALIDATE_MS);
+}
+
+// Tentative de correction intelligente du JSON chartjs avant re-render
+async function _retryChartRender(canvasId, originalJson, retryCount, canvasWrap, errDiv){
+  try{
+    // Demander à l'IA de corriger le JSON
+    const corrected=await callMistral([
+      {role:'system',content:'Tu corriges du JSON Chart.js invalide. Retourne UNIQUEMENT le JSON corrigé valide, sans commentaire ni backticks. Le JSON doit avoir exactement la structure: {"type":"...","data":{"labels":[...],"datasets":[...]},"options":{...}}. Tous les tableaux doivent être des tableaux JSON statiques, pas des appels de fonctions JS.'},
+      {role:'user',content:'Corrige ce JSON Chart.js:\n'+originalJson.substring(0,2000)}
+    ], M_MINI, 600);
+
+    const cleanCorrected=corrected.replace(/```json|```/g,'').trim();
+    // Recréer le canvas s'il a été détruit
+    let canvas=document.getElementById(canvasId);
+    if(!canvas){
+      canvas=document.createElement('canvas');
+      canvas.id=canvasId;
+      if(errDiv) errDiv.remove();
+      if(canvasWrap){ canvasWrap.innerHTML=''; canvasWrap.appendChild(canvas); }
+    } else { if(errDiv) errDiv.remove(); }
+    _renderChartJsBlock(canvasId, cleanCorrected, retryCount);
+  }catch(e){
+    if(errDiv) errDiv.remove();
+    if(canvasWrap) canvasWrap.innerHTML=`<div style="color:#ef4444;font-size:11px;padding:12px;background:rgba(239,68,68,.05);border-radius:8px;">⚠️ Graphique impossible à générer après régénération.</div>`;
   }
 }
 
@@ -6549,96 +6689,224 @@ function toggleMsgDetails(btn,popupId){
 }
 
 
-// ════════════════════════════════════════
-// RAG UTILISATEUR — mémoire persistante
-// ════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════
+// RAG UTILISATEUR v2 — Vrai système de mémoire intelligente
+// Max 200 connaissances · ~4% d'extraction · Update/Delete auto
+// ════════════════════════════════════════════════════════════════
 const WM_RAG = {
-  memories: [], // [{id, tag, text, createdAt}]
+  memories: [], // [{id, tag, text, createdAt, updatedAt, importance, source}]
   _loaded: false,
+  MAX_MEMORIES: 200,
+  // Taux cible d'extraction : ~4% du contenu de chaque échange
+  EXTRACT_RATIO: 0.04,
 
   async load(){
     if(this._loaded) return;
     try{
-      const raw=await localforage.getItem('wm_rag_memories');
+      const raw=await localforage.getItem('wm_rag_memories_v2');
       if(raw) this.memories=Array.isArray(raw)?raw:JSON.parse(raw);
+      // Migration depuis l'ancienne clé v1
+      if(!this.memories.length){
+        const old=await localforage.getItem('wm_rag_memories');
+        if(old){ const arr=Array.isArray(old)?old:JSON.parse(old); if(arr.length) this.memories=arr; }
+      }
     }catch(e){}
-    // Also load from Firebase for cross-device sync
     if(S.user&&!S.user.isGuest&&window._fb?.db){
       try{
-        const snap=await window._fb.get(window._fb.ref(window._fb.db,`users/${S.user.uid}/rag`));
-        if(snap.exists()) this.memories=snap.val()||[];
+        const snap=await window._fb.get(window._fb.ref(window._fb.db,`users/${S.user.uid}/rag_v2`));
+        if(snap.exists()){ const fb=snap.val()||[]; if(fb.length>=this.memories.length) this.memories=fb; }
       }catch(e){}
     }
     this._loaded=true;
   },
 
   async save(){
-    try{ await localforage.setItem('wm_rag_memories',this.memories); }catch(e){}
+    try{ await localforage.setItem('wm_rag_memories_v2',this.memories); }catch(e){}
     if(S.user&&!S.user.isGuest&&window._fb?.db){
-      try{ await window._fb.set(window._fb.ref(window._fb.db,`users/${S.user.uid}/rag`),this.memories); }catch(e){}
+      try{ await window._fb.set(window._fb.ref(window._fb.db,`users/${S.user.uid}/rag_v2`),this.memories); }catch(e){}
     }
+    this._updateCount();
   },
 
-  async extractFromConversation(userMsg, aiReply){
-    if(!userMsg||!aiReply) return;
-    // Limite stricte : max 6 souvenirs (≈7% de la capacité max de 80)
-    const MAX_MEMORIES = 6;
-    if(this.memories.length>=MAX_MEMORIES) return; // Ne pas extraire si plein
-    try{
-      const raw=await callMistral([
-        {role:'system',content:`Tu analyses un échange et extrais UNIQUEMENT des informations TRÈS IMPORTANTES et DURABLES sur l'utilisateur.
-
-EXTRAIS SEULEMENT (seuil très haut, importance 3 uniquement):
-- Prénom ou nom de l'utilisateur
-- Profession ou secteur d'activité principal
-- Projet majeur en cours (nom clair)
-- Langue maternelle si différente du français
-- Compétence technique principale
-
-IGNORE ABSOLUMENT TOUT LE RESTE: salutations, sujets ponctuels, préférences mineures, contexte de conversation, questions one-shot, remerciements.
-
-Réponds UNIQUEMENT en JSON: {"memories":[{"tag":"identity|pref|project|skill","text":"fait court max 60 chars","importance":3}]} ou {"memories":[]}.
-Seuil TRÈS ÉLEVÉ : extrais SEULEMENT si tu as 90%+ de confiance que c'est une info durable et personnelle. En cas de doute : {"memories":[]}.`},
-        {role:'user',content:`Utilisateur: ${userMsg.substring(0,400)}\nIA: ${aiReply.substring(0,300)}`}
-      ], M_MINI, 200);
-      const parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
-      if(parsed.memories?.length){
-        for(const m of parsed.memories){
-          if(m.text&&m.text.length>5&&m.text.length<100&&this.memories.length<MAX_MEMORIES){
-            const similar=this.memories.some(ex=>{
-              const a=ex.text.toLowerCase(), b=m.text.toLowerCase();
-              return a===b || a.includes(b.substring(0,25)) || b.includes(a.substring(0,25));
-            });
-            if(!similar){
-              this.memories.push({
-                id:'m'+Date.now()+Math.random().toString(36).substr(2,4),
-                tag:m.tag||'info',
-                text:m.text,
-                importance:3,
-                createdAt:Date.now()
-              });
-            }
-          }
-        }
-        await this.save();
-      }
-    }catch(e){}
+  _updateCount(){
     const countEl=document.getElementById('rag-count');
     if(countEl){
       const n=this.memories.length;
-      countEl.textContent=n===0?'0 souvenirs':n===1?'1 souvenir':n+' souvenirs';
+      countEl.textContent=n===0?'0 souvenir':n===1?'1 souvenir':`${n} souvenirs`;
     }
+  },
+
+  // Trouver une mémoire similaire existante
+  _findSimilar(text){
+    const b=text.toLowerCase().trim();
+    const bShort=b.substring(0,30);
+    return this.memories.findIndex(ex=>{
+      const a=ex.text.toLowerCase().trim();
+      if(a===b) return true;
+      // Même début (chevauchement > 50%)
+      const aShort=a.substring(0,30);
+      if(aShort===bShort&&bShort.length>12) return true;
+      // Contient l'un l'autre
+      if(a.includes(b.substring(0,40))||b.includes(a.substring(0,40))) return true;
+      return false;
+    });
+  },
+
+  // Extraire et intégrer les connaissances depuis un échange
+  async extractFromConversation(userMsg, aiReply){
+    if(!userMsg||!aiReply) return;
+    const combinedLen=(userMsg+aiReply).length;
+    // Calculer combien de mémoires extraire (4% du contenu, min 0, max 8 par échange)
+    const targetExtract=Math.max(0, Math.min(8, Math.round(combinedLen*this.EXTRACT_RATIO/50)));
+    if(targetExtract===0&&combinedLen<200) return;
+
+    // Si on a dépassé 200 mémoires, supprimer les plus anciennes/moins importantes
+    if(this.memories.length>=this.MAX_MEMORIES){
+      const sorted=[...this.memories].sort((a,b)=>(a.importance||1)-(b.importance||1)||(a.updatedAt||a.createdAt||0)-(b.updatedAt||b.createdAt||0));
+      const toRemove=sorted.slice(0, Math.max(1, this.memories.length-this.MAX_MEMORIES+10));
+      const removeIds=new Set(toRemove.map(m=>m.id));
+      this.memories=this.memories.filter(m=>!removeIds.has(m.id));
+    }
+
+    try{
+      const existingSummary=this.memories.slice(-20).map(m=>`[${m.id}] ${m.tag}: ${m.text}`).join('\n');
+      const raw=await callMistral([
+        {role:'system',content:`Tu es un système RAG (Retrieval Augmented Generation) qui extrait et maintient un profil précis de l'utilisateur.
+
+TÂCHE : Analyse cet échange et retourne un JSON avec les actions à effectuer sur la base de connaissances.
+
+CATÉGORIES (tags) :
+- identity : prénom, nom, âge, nationalité, langue
+- profession : métier, secteur, employeur, rôle
+- skill : compétences tech, langages, outils maîtrisés
+- project : projets en cours, objectifs, travaux
+- pref : préférences, goûts, habitudes, style
+- context : situation actuelle, contraintes, environnement
+- habit : comportements récurrents, routines
+- goal : objectifs court/long terme
+
+RÈGLES D'EXTRACTION (~4% du contenu = environ ${targetExtract} éléments max) :
+- Extrais les faits DURABLES et UTILES pour personnaliser les futures réponses
+- Importance 1=utile, 2=important, 3=critique
+- Pour chaque info : vérifier si elle existe déjà (IDs fournis) → UPDATE si oui, ADD si non
+- Si une info contredit une existante → REPLACE avec la nouvelle
+- Si l'utilisateur demande d'oublier quelque chose → DELETE
+
+CONNAISSANCES ACTUELLES (pour éviter les doublons) :
+${existingSummary||'(aucune encore)'}
+
+Réponds UNIQUEMENT en JSON valide :
+{
+  "actions": [
+    {"type":"add","tag":"skill","text":"texte court max 80 chars","importance":2},
+    {"type":"update","id":"m123","text":"nouveau texte"},
+    {"type":"delete","id":"m456"}
+  ]
+}
+Si rien à extraire : {"actions":[]}`},
+        {role:'user',content:`Utilisateur: ${userMsg.substring(0,600)}\nIA: ${aiReply.substring(0,400)}`}
+      ], M_MINI, 400);
+
+      let parsed;
+      try{ parsed=JSON.parse(raw.replace(/```json|```/g,'').trim()); }
+      catch(e){ return; }
+
+      const actions=parsed.actions||[];
+      let changed=false;
+
+      for(const action of actions){
+        if(action.type==='add'&&action.text&&action.text.length>3&&action.text.length<120){
+          // Vérifier doublon avant d'ajouter
+          const dupIdx=this._findSimilar(action.text);
+          if(dupIdx>=0){
+            // Mettre à jour si texte différent
+            if(this.memories[dupIdx].text!==action.text){
+              this.memories[dupIdx].text=action.text;
+              this.memories[dupIdx].updatedAt=Date.now();
+              if(action.importance) this.memories[dupIdx].importance=action.importance;
+              changed=true;
+            }
+          } else if(this.memories.length<this.MAX_MEMORIES){
+            this.memories.push({
+              id:'m'+Date.now()+Math.random().toString(36).substr(2,5),
+              tag:action.tag||'context',
+              text:action.text,
+              importance:action.importance||1,
+              createdAt:Date.now(),
+              updatedAt:Date.now()
+            });
+            changed=true;
+          }
+        } else if(action.type==='update'&&action.id){
+          const idx=this.memories.findIndex(m=>m.id===action.id);
+          if(idx>=0){
+            if(action.text) this.memories[idx].text=action.text;
+            if(action.tag) this.memories[idx].tag=action.tag;
+            if(action.importance) this.memories[idx].importance=action.importance;
+            this.memories[idx].updatedAt=Date.now();
+            changed=true;
+          }
+        } else if(action.type==='delete'&&action.id){
+          const before=this.memories.length;
+          this.memories=this.memories.filter(m=>m.id!==action.id);
+          if(this.memories.length<before) changed=true;
+        } else if(action.type==='replace'&&action.id&&action.text){
+          const idx=this.memories.findIndex(m=>m.id===action.id);
+          if(idx>=0){
+            this.memories[idx].text=action.text;
+            if(action.tag) this.memories[idx].tag=action.tag;
+            this.memories[idx].updatedAt=Date.now();
+            changed=true;
+          }
+        }
+      }
+
+      if(changed){
+        await this.save();
+        renderRagMemories();
+      }
+    }catch(e){ console.warn('[RAG] extract error:',e); }
+  },
+
+  // Détecter si l'utilisateur demande à oublier quelque chose
+  async processForgetRequest(userMsg){
+    const forgetKeywords=['oublie','supprime cette info','efface','retire de ta mémoire','oublie que','ne te souviens plus'];
+    const t=userMsg.toLowerCase();
+    if(!forgetKeywords.some(k=>t.includes(k))) return false;
+    try{
+      const raw=await callMistral([
+        {role:'system',content:`L'utilisateur veut que tu oublies quelque chose. Identifie quelle(s) mémoire(s) supprimer parmi celles-ci :
+${this.memories.map(m=>`[${m.id}] ${m.tag}: ${m.text}`).join('\n')}
+
+Réponds UNIQUEMENT en JSON: {"delete_ids":["id1","id2"]} ou {"delete_ids":[]}`},
+        {role:'user',content:userMsg}
+      ], M_MINI, 150);
+      const parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
+      if(parsed.delete_ids?.length){
+        parsed.delete_ids.forEach(id=>{ this.memories=this.memories.filter(m=>m.id!==id); });
+        await this.save();
+        renderRagMemories();
+        toast(`🧠 ${parsed.delete_ids.length} souvenir(s) supprimé(s)`);
+        return true;
+      }
+    }catch(e){}
+    return false;
   },
 
   getContextString(){
     if(!this.memories.length) return '';
-    // Priorise les mémoires importantes
-    const sorted = [...this.memories].sort((a,b)=>(b.importance||1)-(a.importance||1));
-    const topMems = sorted.slice(0,25); // Top 25 plus importantes
-    const userName = S.user?.displayName ? S.user.displayName.split(' ')[0] : 'l\'utilisateur';
-    return `\n\n[MÉMOIRE PERSONNALISÉE — profil de ${userName}]\n`+
-      topMems.map(m=>`• [${m.tag}${m.importance>=3?' ★':''}] ${m.text}`).join('\n')+
-      '\n[/MÉMOIRE]\nUtilise ces informations naturellement pour personnaliser tes réponses. Ne mentionne jamais explicitement cette mémoire.';
+    // Prioriser les plus importantes et récentes
+    const sorted=[...this.memories].sort((a,b)=>{
+      const importanceDiff=(b.importance||1)-(a.importance||1);
+      if(importanceDiff!==0) return importanceDiff;
+      return (b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0);
+    });
+    const topMems=sorted.slice(0,50); // Top 50 pour le contexte
+    const userName=S.user?.displayName?S.user.displayName.split(' ')[0]:'l\'utilisateur';
+    const tagLabels={identity:'Identité',profession:'Profession',skill:'Compétence',project:'Projet',pref:'Préférence',context:'Contexte',habit:'Habitude',goal:'Objectif'};
+    return `\n\n[PROFIL MÉMOIRE — ${userName} (${this.memories.length} connaissances)]\n`+
+      topMems.map(m=>`• [${tagLabels[m.tag]||m.tag}${m.importance>=3?' ★':''}] ${m.text}`).join('\n')+
+      '\n[/PROFIL]\nPersonnalise tes réponses avec ces infos de façon naturelle et discrète.';
   },
 
   delete(id){
@@ -6651,22 +6919,33 @@ Seuil TRÈS ÉLEVÉ : extrais SEULEMENT si tu as 90%+ de confiance que c'est une
     this.memories=[];
     this.save();
     renderRagMemories();
+    toast('🧠 Mémoire effacée');
   }
 };
 
 function renderRagMemories(){
   const container=G('rag-memories-list'); if(!container) return;
   if(!WM_RAG.memories.length){
-    container.innerHTML='<div style="color:#aaa;font-size:12px;text-align:center;padding:16px">Aucune information mémorisée pour l\'instant.<br><small style="opacity:.6">Les infos importantes seront retenues automatiquement au fil des conversations.</small></div>';
+    container.innerHTML='<div style="color:#aaa;font-size:12px;text-align:center;padding:16px">Aucune connaissance mémorisée.<br><small style="opacity:.6">WikiMind apprend automatiquement (~4% de chaque échange).<br>Max 200 connaissances · Mise à jour intelligente.</small></div>';
     return;
   }
-  container.innerHTML=WM_RAG.memories.map(m=>`
-    <div class="rag-memory-item">
-      <span class="rag-memory-tag rag-tag-${m.tag||'info'}">${m.tag==='pref'?'Préf.':m.tag==='context'?'Contexte':'Info'}</span>
+  const tagLabels={identity:'Identité',profession:'Métier',skill:'Skill',project:'Projet',pref:'Préf.',context:'Contexte',habit:'Habitude',goal:'Objectif',info:'Info'};
+  const tagColors={identity:'#3b82f6',profession:'#22c55e',skill:'#f97316',project:'#8b5cf6',pref:'#ec4899',context:'#06b6d4',habit:'#eab308',goal:'#ef4444',info:'#6b7280'};
+  // Trier par importance puis date
+  const sorted=[...WM_RAG.memories].sort((a,b)=>(b.importance||1)-(a.importance||1)||(b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0));
+  container.innerHTML=sorted.map(m=>{
+    const col=tagColors[m.tag]||'#6b7280';
+    const lbl=tagLabels[m.tag]||m.tag;
+    const stars=m.importance>=3?'★':'';
+    const age=m.updatedAt||m.createdAt?new Date(m.updatedAt||m.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}):'';
+    return `<div class="rag-memory-item" id="rmi-${m.id}">
+      <span class="rag-memory-tag" style="background:${col}18;color:${col}">${lbl}${stars}</span>
       <span class="rag-memory-text">${esc(m.text)}</span>
+      <span style="font-size:9px;color:#aaa;flex-shrink:0;margin-right:4px">${age}</span>
       <button class="rag-memory-del" onclick="WM_RAG.delete('${m.id}')" title="Supprimer">×</button>
-    </div>`).join('');
-  const countEl=G('rag-count'); if(countEl) countEl.textContent=WM_RAG.memories.length;
+    </div>`;
+  }).join('');
+  const countEl=G('rag-count'); if(countEl) countEl.textContent=WM_RAG.memories.length+'/200';
 }
 
 async function openRagPanel(){
@@ -7208,11 +7487,21 @@ ${_summary}
 
     S.msgs.push(am); renderMsg(am);
     indexConversationMsg(am, S.msgs.length-1).catch(()=>{});
-    // RAG: extraire uniquement si message très substantiel (>80 chars, pas trivial, 7% de chance max)
-    const _isTrivialMsg=displayText.length<30||/^(salut|bonjour|hi|hello|ok|oui|non|merci|ciao|bye|good|bien|yes|no|d'accord|parfait|super|cool|wsh|slt|lol|mdr)\s*[!?.]?$/i.test(displayText.trim());
-    if(S.plan>=1&&!S.user?.isGuest&&!_isTrivialMsg&&displayText.length>80&&Math.random()<0.07){
-      WM_RAG.extractFromConversation(displayText,aiContent).catch(()=>{});
+    // ── RAG v2 : extraction ~4% par échange substantiel ──
+    const _isTrivialMsg=displayText.length<25||/^(salut|bonjour|hi|hello|ok|oui|non|merci|ciao|bye|good|bien|yes|no|d'accord|parfait|super|cool|wsh|slt|lol|mdr)\s*[!?.]?$/i.test(displayText.trim());
+    if(!_isTrivialMsg&&(displayText+aiContent).length>100){
+      // Vérifier d'abord si c'est une demande d'oubli
+      WM_RAG.processForgetRequest(displayText).then(wasForget=>{
+        if(!wasForget){
+          // Extraction normale (~4% du contenu)
+          WM_RAG.extractFromConversation(displayText, aiContent).catch(()=>{});
+        }
+      }).catch(()=>{
+        WM_RAG.extractFromConversation(displayText, aiContent).catch(()=>{});
+      });
     }
+    // ── Résumé automatique de conversation (tous les ~100 000 chars) ──
+    _checkAndSummarizeConversation().catch(()=>{});
     // ── Auto-open tool if AI response suggests it ──
     autoDetectAndOpenTool(aiContent, displayText);
     if(S.chats[S.chatId]){S.chats[S.chatId].messages=S.msgs;S.chats[S.chatId].updatedAt=Date.now();await persistChat();}
@@ -8120,7 +8409,16 @@ async function buildHistoryWithContextManagement(latestFullContent){
     ]);
   }
 
-  return cleanMsgsForAPI([{role:'system',content:sysPrompt},...cleanHist]);
+  const finalMsgs = cleanMsgsForAPI([{role:'system',content:sysPrompt},...cleanHist]);
+  // Injection du résumé automatique si disponible
+  const cs=window._convSummaryData;
+  if(cs&&cs.summary&&cs.lastSummaryAt>0){
+    const summaryMsg={role:'system',content:`[RÉSUMÉ AUTO-WIKIMIND — contexte compressé des échanges précédents]\n${cs.summary}\n[/RÉSUMÉ]`};
+    const existingIdx=finalMsgs.findIndex(m=>m.role==='system'&&m.content.includes('[RÉSUMÉ AUTO-WIKIMIND]'));
+    if(existingIdx>=0){ finalMsgs[existingIdx]=summaryMsg; }
+    else if(finalMsgs.length>0&&finalMsgs[0].role==='system'){ finalMsgs.splice(1,0,summaryMsg); }
+  }
+  return finalMsgs;
 }
 
 function buildHistory(latestFullContent){
@@ -8132,6 +8430,92 @@ function buildHistory(latestFullContent){
   }).filter(m=>['user','assistant'].includes(m.role)&&m.content);
   return cleanMsgsForAPI([{role:'system',content:buildSystemPrompt()},...rawHist]);
 }
+
+// ═══════════════════════════════════════════════════════════════
+// RÉSUMÉ AUTOMATIQUE DE CONVERSATION (tous les ~100 000 chars)
+// Comme Claude — compresse l'historique long en arrière-plan
+// ═══════════════════════════════════════════════════════════════
+window._convSummaryData = {
+  lastSummaryAt: 0,      // timestamp du dernier résumé
+  lastSummaryCharCount: 0, // chars au moment du dernier résumé
+  summary: null,         // résumé actuel
+  isSummarizing: false,
+  THRESHOLD: 100000      // résumer tous les 100k chars
+};
+
+async function _checkAndSummarizeConversation(){
+  const cs = window._convSummaryData;
+  if(cs.isSummarizing) return;
+
+  // Calculer la taille totale de la conversation actuelle
+  const totalChars = S.msgs.reduce((acc,m)=>acc+(m.content||'').length,0);
+
+  // Déclencher si on dépasse le seuil ET si on a suffisamment de nouveau contenu depuis le dernier résumé
+  const newChars = totalChars - cs.lastSummaryCharCount;
+  if(totalChars < cs.THRESHOLD || newChars < cs.THRESHOLD * 0.3) return;
+
+  cs.isSummarizing = true;
+  console.log(`[Résumé Auto] Déclenchement — ${totalChars.toLocaleString()} chars, ${S.msgs.length} messages`);
+
+  // Afficher un indicateur discret
+  _showSummaryIndicator(true);
+
+  try{
+    // Prendre les messages anciens (tout sauf les 8 derniers)
+    const recentCount = 8;
+    const oldMsgs = S.msgs.slice(0, Math.max(0, S.msgs.length - recentCount));
+    if(oldMsgs.length < 4){ cs.isSummarizing=false; _showSummaryIndicator(false); return; }
+
+    const oldText = oldMsgs.map(m=>`${m.role==='user'?'👤 Utilisateur':'🤖 WikiMind'}: ${(m.content||'').substring(0,1200)}`).join('\n\n');
+
+    const summary = await callMistral([
+      {role:'system', content:`Tu es un système de compression de mémoire conversationnelle. Résume cette conversation de façon dense et structurée pour qu'une IA puisse reprendre le contexte sans relire l'historique complet.
+
+INCLURE IMPÉRATIVEMENT :
+- Sujet(s) principal(aux) abordé(s)
+- Décisions, conclusions, réponses importantes
+- Informations clés partagées par l'utilisateur
+- Tâches accomplies ou en cours
+- Préférences ou contraintes exprimées
+- Ton et style de la conversation
+
+Format : résumé dense en bullet points, max 400 mots. Commence directement par les points.`},
+      {role:'user', content:`Résume cette conversation :\n\n${oldText.substring(0,12000)}`}
+    ], M_MINI, 500);
+
+    if(summary && summary.length > 50){
+      cs.summary = summary;
+      cs.lastSummaryCharCount = totalChars;
+      cs.lastSummaryAt = Date.now();
+      // Mettre à jour le cache de buildHistoryWithContextManagement
+      _ctxSummaryCache = null; // Invalider le cache existant
+      console.log(`[Résumé Auto] ✓ Résumé créé (${summary.length} chars)`);
+    }
+  }catch(e){
+    console.warn('[Résumé Auto] Erreur:', e.message);
+  }finally{
+    cs.isSummarizing = false;
+    _showSummaryIndicator(false);
+  }
+}
+
+function _showSummaryIndicator(show){
+  let ind = document.getElementById('wm-summary-indicator');
+  if(show){
+    if(!ind){
+      ind = document.createElement('div');
+      ind.id = 'wm-summary-indicator';
+      ind.style.cssText = 'position:fixed;bottom:90px;right:24px;z-index:1000;background:var(--select-bg);border:1px solid var(--border2);border-radius:20px;padding:6px 12px;font-size:10px;font-weight:700;color:#888;display:flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(0,0,0,.1);animation:fadeIn .3s ease;';
+      ind.innerHTML = '<div style="width:6px;height:6px;border-radius:50%;background:#8b5cf6;animation:dotPulse 1s ease-in-out infinite"></div>Compression mémoire…';
+      document.body.appendChild(ind);
+    }
+    ind.style.display='flex';
+  } else {
+    if(ind) ind.style.display='none';
+  }
+}
+
+// Note: l'injection du résumé automatique est intégrée directement dans buildHistoryWithContextManagement ci-dessus.
 
 // ── ABORT CONTROLLER ──
 let _currentAbortController = null;
@@ -12189,11 +12573,12 @@ function getContactContextForMessage(text){
 const _origSendMsg = sendMsg;
 // We'll override in a safer way by patching the finalFullContent build inline
 // Since sendMsg is complex, we hook into buildHistoryWithContextManagement
-const _origBuildHistory = window.buildHistoryWithContextManagement;
-if(typeof buildHistoryWithContextManagement === 'function'){
-  window.buildHistoryWithContextManagement = async function(finalFullContent){
+if(typeof buildHistoryWithContextManagement === 'function' && !window._contactsHistoryPatched){
+  window._contactsHistoryPatched = true;
+  const _origBuildHistoryContacts = buildHistoryWithContextManagement;
+  buildHistoryWithContextManagement = async function(finalFullContent){
     const contactCtx = getContactContextForMessage(finalFullContent);
-    return _origBuildHistory(finalFullContent + contactCtx);
+    return _origBuildHistoryContacts(finalFullContent + contactCtx);
   };
 }
 
