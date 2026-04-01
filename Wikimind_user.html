@@ -826,6 +826,8 @@
             }
             // Write FORFAIT (compatible with Wikimind_AI.html)
             await set(ref(db, `users/${CU.uid}/FORFAIT`), p.id);
+            // Mettre à jour l'annuaire public (badge de plan visible dans la recherche)
+            await update(ref(db, `users_directory/${CU.uid}`), { FORFAIT: p.id });
             // Also write subscription record (same as Wikimind_AI subscribePlan)
             await set(ref(db, `users/${CU.uid}/subscription`), {
                 plan: p.id, mtPaid: p.mt, startedAt: Date.now(), renewAt: Date.now() + 30*24*3600*1000
@@ -974,6 +976,12 @@ Réponds UNIQUEMENT en JSON valide sans rien d'autre :
                 name: `${fn} ${ln}`, photoURL: '', FORFAIT: 1, tokens: 100, createdAt: Date.now(),
                 info: { email: em, displayName: `${fn} ${ln}`, firstname: fn, lastname: ln, searchName: `${fn} ${ln}`.toLowerCase(), searchEmail: em.toLowerCase(), plan: 1, createdAt: Date.now() }
             });
+            // Alimenter l'annuaire public (utilisé par la recherche d'amis)
+            await set(ref(db, `users_directory/${cred.user.uid}`), {
+                displayName: `${fn} ${ln}`, searchName: `${fn} ${ln}`.toLowerCase(),
+                email: em, searchEmail: em.toLowerCase(),
+                avatar: '', FORFAIT: 1
+            });
             toast(`Bienvenue sur WikiMind, ${fn} !`, 'success');
         } catch(err) { toast(err.message, 'error'); }
     };
@@ -1019,6 +1027,13 @@ Réponds UNIQUEMENT en JSON valide sans rien d'autre :
                 email: user.email, displayName: dn, lastLogin: Date.now(),
                 avatar: user.photoURL || null,
                 searchName: dn.toLowerCase(), searchEmail: user.email.toLowerCase()
+            }).catch(() => {});
+
+            // Mettre à jour l'annuaire public (recherche d'amis)
+            update(ref(db, `users_directory/${user.uid}`), {
+                displayName: dn, searchName: dn.toLowerCase(),
+                email: user.email, searchEmail: user.email.toLowerCase(),
+                avatar: user.photoURL || null
             }).catch(() => {});
 
             loadUserData(user.uid);
@@ -1137,6 +1152,11 @@ Réponds UNIQUEMENT en JSON valide sans rien d'autre :
             });
             // Also update top-level name (compatible with Wikimind AI)
             await update(ref(db, `users/${CU.uid}`), { name: dn });
+            // Mettre à jour l'annuaire public
+            await update(ref(db, `users_directory/${CU.uid}`), {
+                displayName: dn, searchName: dn.toLowerCase(),
+                email: CU.email, searchEmail: CU.email.toLowerCase()
+            });
             setText('h-name', dn); setText('prof-name', dn);
             toast('Profil mis à jour !', 'success');
         } catch(e) { toast(e.message, 'error'); }
@@ -1149,6 +1169,7 @@ Réponds UNIQUEMENT en JSON valide sans rien d'autre :
             await updateProfile(CU, { photoURL: url });
             await update(ref(db, `users/${CU.uid}`), { photoURL: url });
             await update(ref(db, `users/${CU.uid}/info`), { avatar: url });
+            await update(ref(db, `users_directory/${CU.uid}`), { avatar: url });
             ['home-av','prof-av','nav-av'].forEach(id => { const el = document.getElementById(id); if (el) el.src = url; });
             toast('Photo mise à jour !', 'success');
         } catch(e) { toast(e.message, 'error'); }
@@ -1205,7 +1226,7 @@ Réponds UNIQUEMENT en JSON valide sans rien d'autre :
 
     // ─── FRIENDS ───
 
-    // Search — reads all users from /users
+    // Search — reads /users_directory (annuaire public sécurisé, sans données privées)
     window.searchFriends = async () => {
         const q = document.getElementById('fsearch').value.trim().toLowerCase();
         if (q.length < 2) return toast('Entrez au moins 2 caractères.', 'error');
@@ -1214,20 +1235,25 @@ Réponds UNIQUEMENT en JSON valide sans rien d'autre :
         resEl.innerHTML = '<div class="text-white/25 text-sm py-4 text-center"><i class="fa-solid fa-spinner fa-spin"></i> Recherche en cours...</div>';
 
         try {
-            // We read /users/$uid/info for each user to search
-            const snap = await get(ref(db, 'users'));
+            // Lecture de l'annuaire public — ne contient que displayName, searchName, avatar, FORFAIT
+            // Aucune donnée sensible (tokens, fichiers, etc.) n'est exposée ici.
+            const snap = await get(ref(db, 'users_directory'));
             if (!snap.exists()) { resEl.innerHTML = '<div class="text-white/25 text-sm py-4 text-center">Aucun résultat.</div>'; return; }
 
             const results = [];
             snap.forEach(s => {
                 if (s.key === CU.uid) return; // skip self
-                const info = s.val()?.info || {};
-                const name   = (info.displayName || info.name || s.val()?.name || '').toLowerCase();
-                const email  = (info.email || '').toLowerCase();
-                const fn     = (info.firstname || '').toLowerCase();
-                const ln     = (info.lastname  || '').toLowerCase();
-                if (name.includes(q) || email.includes(q) || fn.includes(q) || ln.includes(q)) {
-                    results.push({ uid: s.key, displayName: info.displayName || s.val()?.name || 'Anonyme', email: info.email || '', avatar: info.avatar || s.val()?.photoURL || '', planId: parseInt(s.val()?.FORFAIT) || 1 });
+                const d = s.val() || {};
+                const name = (d.searchName || d.displayName || '').toLowerCase();
+                const email = (d.searchEmail || '').toLowerCase();
+                if (name.includes(q) || email.includes(q)) {
+                    results.push({
+                        uid: s.key,
+                        displayName: d.displayName || 'Anonyme',
+                        email: d.email || '',
+                        avatar: d.avatar || '',
+                        planId: parseInt(d.FORFAIT) || 1
+                    });
                 }
             });
 
