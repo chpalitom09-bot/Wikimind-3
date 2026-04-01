@@ -3142,64 +3142,92 @@ async function saveCV(){
 async function exportPDF(){
   if(!_S.currentCV){ toast('Ouvrez un CV d\'abord.'); return; }
   getFormData();
-  toast('⏳ Génération du PDF pixel-perfect…');
+  toast('⏳ Génération du PDF…');
 
-  // Use the live preview frame directly for pixel-perfect match
-  const liveFrame = G('cv-preview-frame');
-  if(!liveFrame){ toast('❌ Aperçu introuvable.'); return; }
+  // ── Collect ALL document styles (head <style> tags) ──
+  const allStyles = Array.from(document.querySelectorAll('style'))
+    .map(s => s.textContent).join('\n');
 
-  // Create an isolated container with exact styles
+  // ── Re-generate clean CV HTML via buildCVHTML ──
+  const cvHTML = buildCVHTML(_S.currentCV.template, _S.currentCV.data, _S.currentCV.color, false);
+
+  // ── Build the container, fully visible to html2canvas ──
   const container = document.createElement('div');
-  container.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;min-height:1122px;z-index:-1;background:#fff;';
-  
-  // Clone the live preview frame content
-  const clone = liveFrame.cloneNode(true);
-  clone.style.cssText = 'width:794px;min-height:1122px;background:#fff;overflow:visible;';
-  container.appendChild(clone);
+  container.style.cssText = [
+    'position:fixed',
+    'left:0',
+    'top:-9999px',
+    'width:794px',
+    'min-height:1122px',
+    'background:#ffffff',
+    'z-index:9999',
+    'overflow:visible',
+  ].join(';');
 
-  // Inject all styles
-  const allStyles = Array.from(document.querySelectorAll('style')).map(s=>s.textContent).join('\n');
+  // Inject the document styles so all template classes resolve correctly
   const styleEl = document.createElement('style');
   styleEl.textContent = allStyles + `
-    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    .canvas-element-overlay, .canvas-toolbar, .element-handles { display: none !important; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
+    body { margin: 0; padding: 0; }
+    .canvas-element-overlay, .canvas-toolbar, .element-handles,
+    .canvas-resize-handle, #canvas-context-menu { display: none !important; }
+    #cv-preview-frame { width: 794px; min-height: 1122px; background: #fff; overflow: visible; box-shadow: none; }
   `;
-  container.prepend(styleEl);
+  container.appendChild(styleEl);
+
+  // Inner frame matching the real preview frame
+  const frame = document.createElement('div');
+  frame.id = 'cv-preview-frame-export';
+  frame.style.cssText = 'width:794px;min-height:1122px;background:#fff;overflow:visible;';
+  frame.innerHTML = cvHTML;
+  container.appendChild(frame);
+
+  // Canvas mode overlay (drag & drop elements)
+  if(_S.canvasMode && _S.canvasElements?.length){
+    const canvasOverlay = document.createElement('div');
+    canvasOverlay.style.cssText = 'position:absolute;inset:0;pointer-events:none;';
+    _S.canvasElements.forEach(el => {
+      const div = document.createElement('div');
+      div.style.cssText = `position:absolute;left:${el.x}px;top:${el.y}px;width:${el.w}px;height:${el.h}px;`;
+      renderCanvasElementForExport(el, div);
+      canvasOverlay.appendChild(div);
+    });
+    frame.style.position = 'relative';
+    frame.appendChild(canvasOverlay);
+  }
+
   document.body.appendChild(container);
 
-  try{
-    // Also include any custom canvas elements if in canvas mode
-    if(_S.canvasMode && _S.canvasElements?.length){
-      const canvasOverlay = document.createElement('div');
-      canvasOverlay.style.cssText = 'position:absolute;inset:0;pointer-events:none;';
-      _S.canvasElements.forEach(el => {
-        const div = document.createElement('div');
-        div.style.cssText = `position:absolute;left:${el.x}px;top:${el.y}px;width:${el.w}px;height:${el.h}px;`;
-        renderCanvasElementForExport(el, div);
-        canvasOverlay.appendChild(div);
-      });
-      clone.style.position = 'relative';
-      clone.appendChild(canvasOverlay);
-    }
+  // Small delay so browser paints the container before html2canvas grabs it
+  await new Promise(r => setTimeout(r, 120));
 
+  try{
     await html2pdf().set({
-      margin:0,
-      filename:`${_S.currentCV.name||'CV'}.pdf`,
-      image:{type:'jpeg',quality:1.0},
-      html2canvas:{
-        scale:3,
-        useCORS:true,
-        letterRendering:true,
-        allowTaint:true,
-        backgroundColor:'#ffffff',
-        logging:false,
-        imageTimeout:15000
+      margin: 0,
+      filename: `${_S.currentCV.name || 'CV'}.pdf`,
+      image: { type: 'jpeg', quality: 1.0 },
+      html2canvas: {
+        scale: 3,
+        useCORS: true,
+        allowTaint: true,
+        letterRendering: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        imageTimeout: 15000,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: 794,
+        width: 794,
       },
-      jsPDF:{unit:'px',format:[794,1122],orientation:'portrait',compress:false}
-    }).from(container).save();
-    toast('✅ PDF exporté — fidèle à l\'aperçu !');
-  }catch(e){ toast('Erreur PDF : '+e.message); console.error(e); }
-  finally{ if(document.body.contains(container)) document.body.removeChild(container); }
+      jsPDF: { unit: 'px', format: [794, 1122], orientation: 'portrait', compress: false }
+    }).from(frame).save();
+    toast('✅ PDF exporté avec succès !');
+  } catch(e){
+    toast('Erreur PDF : ' + e.message);
+    console.error('[exportPDF]', e);
+  } finally{
+    if(document.body.contains(container)) document.body.removeChild(container);
+  }
 }
 
 function renderCanvasElementForExport(el, div){
