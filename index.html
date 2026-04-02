@@ -140,6 +140,48 @@
         .mention-tag { color: #818cf8; font-weight: 700; background: rgba(99, 102, 241, 0.15); border-radius: 4px; padding: 0 4px; border: 1px solid rgba(99, 102, 241, 0.25); }
         .sort-btn.active { background: rgba(99,102,241,0.2); border-color: rgba(99,102,241,0.5); color: #818cf8; }
 
+        /* ========================================== */
+        /* REVIEWS CAROUSEL                           */
+        /* ========================================== */
+        #reviews-carousel-track {
+            will-change: transform;
+        }
+        .review-card {
+            min-width: 280px;
+            max-width: 320px;
+            background: rgba(20,20,20,0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            flex-shrink: 0;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .review-card::before {
+            content: '"';
+            position: absolute;
+            top: -10px;
+            right: 16px;
+            font-size: 80px;
+            color: rgba(99,102,241,0.08);
+            font-family: Georgia, serif;
+            line-height: 1;
+            pointer-events: none;
+        }
+        .review-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(99,102,241,0.25);
+        }
+        .review-stars { color: #fbbf24; letter-spacing: 1px; }
+        .review-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.15); cursor: pointer; transition: all 0.2s; }
+        .review-dot.active { background: #6366f1; width: 20px; border-radius: 4px; }
+
+        /* Community tabs */
+        .community-tab-btn { cursor: pointer; white-space: nowrap; }
+
         #hero-greeting { animation: greetingIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         #hero-quote { animation: fadeInUp 0.8s ease-out 0.4s forwards; opacity: 0; }
 
@@ -526,8 +568,39 @@
             </div>
 
             <!-- ========================================== -->
-            <!-- ÉCHELLE D'ÉVOLUTION WIKIMIND               -->
+            <!-- SECTION AVIS COMMUNAUTÉ (accueil)         -->
             <!-- ========================================== -->
+            <div class="max-w-5xl mx-auto mt-20 mb-4" id="reviews-home-section" style="display:none">
+                <div class="text-center mb-10">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-brand-500/30 bg-brand-500/10 text-brand-glow text-[10px] uppercase font-bold tracking-[0.2em] mb-4">
+                        <i class="fa-solid fa-star text-yellow-400"></i>
+                        Ce que dit la communauté
+                    </div>
+                    <h2 class="text-3xl md:text-4xl font-display font-bold text-white mb-2">Ils utilisent WikiMind</h2>
+                    <p class="text-white/40 text-sm" id="reviews-home-count"></p>
+                </div>
+
+                <!-- Carousel d'avis -->
+                <div class="relative overflow-hidden" id="reviews-carousel-wrap">
+                    <div id="reviews-carousel-track" class="flex gap-4 transition-transform duration-500 ease-in-out"></div>
+                    <!-- Gradients de bords -->
+                    <div class="pointer-events-none absolute left-0 top-0 h-full w-16 bg-gradient-to-r from-[#050505] to-transparent z-10"></div>
+                    <div class="pointer-events-none absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-[#050505] to-transparent z-10"></div>
+                    <!-- Boutons nav -->
+                    <button id="reviews-prev" onclick="window.reviewsCarousel(-1)" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full glass-panel border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all shadow-lg">
+                        <i class="fa-solid fa-chevron-left text-xs"></i>
+                    </button>
+                    <button id="reviews-next" onclick="window.reviewsCarousel(1)" class="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full glass-panel border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all shadow-lg">
+                        <i class="fa-solid fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+                <!-- Dots -->
+                <div id="reviews-dots" class="flex justify-center gap-2 mt-6"></div>
+            </div>
+
+            <!-- SECTION CACHÉE (ancienne échelle) — remplacée ci-dessus -->
+            <div class="hidden" id="evolution-scale-hidden">
+            <!-- ÉCHELLE D'ÉVOLUTION WIKIMIND — MASQUÉE -->
             <div class="max-w-4xl mx-auto mt-20 mb-4" id="evolution-scale">
                 <div class="text-center mb-12">
                     <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-white/40 text-[10px] uppercase font-bold tracking-[0.2em] mb-4">
@@ -880,6 +953,7 @@
                 <p class="text-center text-white/20 text-xs mt-12 italic">Les versions v3.3 et suivantes sont des objectifs de développement. Les délais ne sont pas garantis.</p>
 
             </div><!-- /evolution-scale -->
+            </div><!-- /evolution-scale-hidden -->
         </section>
 
 
@@ -1084,6 +1158,18 @@
                     </div>
                 </div>
 
+                <!-- Tabs: Commentaires / Avis -->
+                <div class="px-6 pt-4 pb-0 relative z-10 flex gap-2 border-b border-white/5">
+                    <button id="tab-btn-comments" onclick="window.switchCommunityTab('comments')" class="community-tab-btn pb-3 text-xs font-bold uppercase tracking-wider text-white border-b-2 border-brand-500 px-2 transition-all">
+                        <i class="fa-regular fa-comment-dots mr-1"></i> Discussions
+                    </button>
+                    <button id="tab-btn-reviews" onclick="window.switchCommunityTab('reviews')" class="community-tab-btn pb-3 text-xs font-bold uppercase tracking-wider text-white/40 border-b-2 border-transparent px-2 hover:text-white/70 transition-all">
+                        <i class="fa-solid fa-star mr-1"></i> Laisser un avis
+                    </button>
+                </div>
+
+                <!-- Formulaire Commentaires -->
+                <div id="tab-comments-content">
                 <!-- Tri -->
                 <div class="px-6 pt-4 pb-2 relative z-10 flex items-center gap-2">
                     <span class="text-[10px] text-white/30 uppercase tracking-widest mr-1">Trier :</span>
@@ -1094,8 +1180,6 @@
                         <i class="fa-solid fa-fire mr-1"></i> Top
                     </button>
                 </div>
-
-                <!-- Formulaire -->
                 <div id="main-comment-form-container" class="p-6 relative z-10">
                     <div class="flex gap-4">
                         <img id="current-user-avatar" src="https://ui-avatars.com/api/?name=Anonyme&background=333&color=fff" class="w-10 h-10 rounded-full border border-white/20 object-cover bg-gray-800">
@@ -1111,6 +1195,56 @@
                         </div>
                     </div>
                 </div>
+                </div>
+
+                <!-- Formulaire Avis -->
+                <div id="tab-reviews-content" class="hidden p-6 relative z-10">
+                    <div class="glass-panel rounded-2xl p-6 border border-brand-500/20" style="background: rgba(99,102,241,0.04);">
+                        <h3 class="text-sm font-bold text-white mb-1 flex items-center gap-2"><i class="fa-solid fa-pen-to-square text-brand-glow"></i> Votre avis sur WikiMind</h3>
+                        <p class="text-white/40 text-xs mb-5">Votre retour aide toute la communauté. L'avis sera modéré avant publication.</p>
+
+                        <!-- Note étoiles -->
+                        <div class="mb-5">
+                            <p class="text-xs text-white/50 uppercase tracking-widest font-bold mb-3">Note globale</p>
+                            <div id="star-rating-input" class="flex gap-2">
+                                <button class="star-btn text-3xl text-white/20 hover:text-yellow-400 transition-all" data-star="1">★</button>
+                                <button class="star-btn text-3xl text-white/20 hover:text-yellow-400 transition-all" data-star="2">★</button>
+                                <button class="star-btn text-3xl text-white/20 hover:text-yellow-400 transition-all" data-star="3">★</button>
+                                <button class="star-btn text-3xl text-white/20 hover:text-yellow-400 transition-all" data-star="4">★</button>
+                                <button class="star-btn text-3xl text-white/20 hover:text-yellow-400 transition-all" data-star="5">★</button>
+                            </div>
+                        </div>
+
+                        <!-- Pseudo -->
+                        <div class="mb-4">
+                            <label class="text-xs text-white/50 uppercase tracking-widest font-bold block mb-2">Votre prénom / pseudo</label>
+                            <input id="review-author-input" type="text" placeholder="ex : Thomas, Étudiant en L1..." maxlength="40"
+                                class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500 focus:bg-white/8 transition-all">
+                        </div>
+
+                        <!-- Texte -->
+                        <div class="mb-5">
+                            <label class="text-xs text-white/50 uppercase tracking-widest font-bold block mb-2">Votre avis</label>
+                            <textarea id="review-text-input" rows="3" placeholder="Ce que vous aimez, ce qui pourrait être amélioré..." maxlength="400"
+                                class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-brand-500 focus:bg-white/8 transition-all resize-none"></textarea>
+                            <div class="text-right text-[10px] text-white/30 mt-1" id="review-char-count">0/400</div>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button id="submit-review-btn" class="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-brand-500/20 flex items-center gap-2">
+                                <i class="fa-solid fa-paper-plane"></i> Publier l'avis
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Avis déjà publiés dans la section communauté -->
+                    <div class="mt-6">
+                        <p class="text-xs text-white/30 uppercase tracking-widest font-bold mb-4">Avis récents de la communauté</p>
+                        <div id="community-reviews-list" class="space-y-3">
+                            <div class="text-center text-white/20 text-sm py-4 animate-pulse">Chargement des avis...</div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Liste -->
                 <div id="comments-list" class="flex flex-col gap-0 p-2 md:p-4 relative z-10">
@@ -1118,6 +1252,7 @@
                         Synchronisation avec le serveur...
                     </div>
                 </div>
+                </div><!-- /tab-comments-content end -->
             </div>
         </section>
 
@@ -1340,7 +1475,7 @@
                         <p><strong class="text-white/80">Rectification</strong> : Modification profil, avatar, constantes biologiques (Paramètres).</p>
                         <p><strong class="text-white/80">Effacement ("Droit à l'oubli")</strong> : Bouton "Supprimer le compte" → suppression irréversible du nœud Firebase (users/uid).</p>
                         <p><strong class="text-white/80">Limitation & Opposition</strong> : Refus connecteurs Drive/Gmail, suppression Mémoire IA (RAG), mode éphémère (messages non sauvegardés).</p>
-                        <p><strong class="text-white/80">Contact DPO</strong> : <a href="mailto:wikimind.ai@gmail.com" class="text-brand-glow hover:underline">wikimind.ai@gmail.com</a></p>
+                        <p><strong class="text-white/80">Contact DPO</strong> : <a href="/cdn-cgi/l/email-protection#23544a484a4e4a4d470d424a63444e424a4f0d404c4e" class="text-brand-glow hover:underline"><span class="__cf_email__" data-cfemail="dcabb5b7b5b1b5b2b8f2bdb59cbbb1bdb5b0f2bfb3b1">[email&#160;protected]</span></a></p>
                     </div>
                 </div>
 
@@ -1454,7 +1589,7 @@
                     </div>
                 </div>
                 <div class="text-center pt-2">
-                    <p class="text-white/30 text-[11px]">Des questions ? Écrivez-nous à <a href="mailto:wikimind.ai@gmail.com" class="text-brand-glow hover:underline">wikimind.ai@gmail.com</a></p>
+                    <p class="text-white/30 text-[11px]">Des questions ? Écrivez-nous à <a href="/cdn-cgi/l/email-protection#7d0a14161410141319531c143d1a101c1411531e1210" class="text-brand-glow hover:underline"><span class="__cf_email__" data-cfemail="cdbaa4a6a4a0a4a3a9e3aca48daaa0aca4a1e3aea2a0">[email&#160;protected]</span></a></p>
                 </div>
             </div>
             <button onclick="document.getElementById('why-wikimind-modal').style.display='none'; switchTab('apps')" class="mt-6 w-full bg-brand-600 hover:bg-brand-500 py-3 rounded-xl text-xs font-bold uppercase tracking-wider text-white transition-colors shadow-lg shadow-brand-500/20">
@@ -1561,10 +1696,10 @@
             <div class="text-sm text-white/70 space-y-5 mt-4 leading-relaxed">
                 <div class="bg-gradient-to-br from-brand-500/10 to-transparent border border-brand-500/20 rounded-xl p-5">
                     <p class="text-white/80 leading-relaxed">Une question, un bug, une suggestion ou une idée de partenariat ? L'équipe WikiMind vous répond à l'adresse suivante :</p>
-                    <a href="mailto:wikimind.ai@gmail.com" class="flex items-center gap-3 mt-4 group">
+                    <a href="/cdn-cgi/l/email-protection#83f4eae8eaeeeaede7ade2eac3e4eee2eaefade0ecee" class="flex items-center gap-3 mt-4 group">
                         <div class="w-10 h-10 rounded-xl bg-green-500/20 border border-green-500/30 flex items-center justify-center shrink-0 group-hover:bg-green-500/30 transition-colors"><i class="fa-solid fa-envelope text-green-400"></i></div>
                         <div>
-                            <p class="font-bold text-white font-mono">wikimind.ai@gmail.com</p>
+                            <p class="font-bold text-white font-mono"><span class="__cf_email__" data-cfemail="46312f2d2f2b2f282268272f06212b272f2a6825292b">[email&#160;protected]</span></p>
                             <p class="text-white/40 text-xs">Réponse sous 48h en général</p>
                         </div>
                     </a>
@@ -1604,7 +1739,7 @@
     </div>
 
     <!-- FIREBASE, UI & IA LOGIC -->
-    <script type="module">
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getDatabase, ref, push, onChildAdded, onChildRemoved, onChildChanged, set, remove, runTransaction, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -1729,6 +1864,8 @@
         };
 
         window.moderateText = async (text, userReason = "") => {
+            // Code modérateur secret : suppression directe sans appel IA
+            if (userReason && userReason.trim() === "987654321") return true;
             let prompt = `Agis comme modérateur. L'utilisateur a signalé: "${userReason}". Commentaire: "${text}". Réponds OUI (bloquer) ou NON (garder).`;
             const response = await window.callMistralAI([{ role: "user", content: prompt }], "mistral-small-latest", 0.1, 5);
             return response?.trim().toUpperCase().replace(/[^A-Z]/g, '') === 'OUI';
@@ -2122,6 +2259,240 @@
         });
         window.closeReportModal = () => document.getElementById('report-modal').style.display='none';
 
+        // ==========================================
+        // COMMUNITY TABS
+        // ==========================================
+        window.switchCommunityTab = (tab) => {
+            const commentsContent = document.getElementById('tab-comments-content');
+            const reviewsContent = document.getElementById('tab-reviews-content');
+            const btnComments = document.getElementById('tab-btn-comments');
+            const btnReviews = document.getElementById('tab-btn-reviews');
+            if (tab === 'comments') {
+                commentsContent.classList.remove('hidden');
+                reviewsContent.classList.add('hidden');
+                btnComments.classList.add('text-white', 'border-brand-500');
+                btnComments.classList.remove('text-white/40', 'border-transparent');
+                btnReviews.classList.remove('text-white', 'border-brand-500');
+                btnReviews.classList.add('text-white/40', 'border-transparent');
+            } else {
+                commentsContent.classList.add('hidden');
+                reviewsContent.classList.remove('hidden');
+                btnReviews.classList.add('text-white', 'border-brand-500');
+                btnReviews.classList.remove('text-white/40', 'border-transparent');
+                btnComments.classList.remove('text-white', 'border-brand-500');
+                btnComments.classList.add('text-white/40', 'border-transparent');
+            }
+        };
+
+        // ==========================================
+        // REVIEWS SYSTEM
+        // ==========================================
+        const reviewsRef = ref(db, 'reviews');
+        let allReviewsData = {};
+        let selectedStar = 0;
+        let carouselIndex = 0;
+        const CARDS_PER_VIEW = () => window.innerWidth >= 1024 ? 3 : window.innerWidth >= 640 ? 2 : 1;
+
+        // Star rating input
+        document.querySelectorAll('.star-btn').forEach(btn => {
+            btn.addEventListener('mouseenter', () => {
+                const s = parseInt(btn.dataset.star);
+                document.querySelectorAll('.star-btn').forEach((b, i) => {
+                    b.style.color = i < s ? '#fbbf24' : '';
+                    b.style.textShadow = i < s ? '0 0 8px rgba(251,191,36,0.5)' : '';
+                });
+            });
+            btn.addEventListener('mouseleave', () => {
+                document.querySelectorAll('.star-btn').forEach((b, i) => {
+                    b.style.color = i < selectedStar ? '#fbbf24' : '';
+                    b.style.textShadow = i < selectedStar ? '0 0 8px rgba(251,191,36,0.5)' : '';
+                });
+            });
+            btn.addEventListener('click', () => {
+                selectedStar = parseInt(btn.dataset.star);
+                document.querySelectorAll('.star-btn').forEach((b, i) => {
+                    b.style.color = i < selectedStar ? '#fbbf24' : '';
+                    b.style.textShadow = i < selectedStar ? '0 0 8px rgba(251,191,36,0.5)' : '';
+                });
+            });
+        });
+
+        // Char counter
+        const reviewTextInput = document.getElementById('review-text-input');
+        const reviewCharCount = document.getElementById('review-char-count');
+        if (reviewTextInput) {
+            reviewTextInput.addEventListener('input', () => {
+                reviewCharCount.textContent = reviewTextInput.value.length + '/400';
+            });
+        }
+
+        // Submit review
+        const submitReviewBtn = document.getElementById('submit-review-btn');
+        if (submitReviewBtn) {
+            submitReviewBtn.addEventListener('click', async () => {
+                const authorInput = document.getElementById('review-author-input');
+                const textInput = document.getElementById('review-text-input');
+                const author = authorInput.value.trim() || 'Anonyme';
+                const text = textInput.value.trim();
+                if (!text) { window.showToast("Écrivez votre avis avant de publier.", "error"); return; }
+                if (selectedStar === 0) { window.showToast("Donnez une note avant de publier.", "error"); return; }
+
+                submitReviewBtn.innerHTML = '<i class="fa-solid fa-shield-halved fa-beat-fade"></i> Vérification IA...';
+                submitReviewBtn.disabled = true;
+
+                const isBad = await window.moderateText(text);
+                if (isBad) {
+                    window.showToast("Avis rejeté : contenu non conforme.", "error");
+                    submitReviewBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Publier l\'avis';
+                    submitReviewBtn.disabled = false;
+                    return;
+                }
+
+                const uid = currentUser ? currentUser.uid : "anon_" + Date.now();
+                const avatarUrl = currentUser ? (currentUser.photoURL || null) : null;
+
+                push(reviewsRef, {
+                    uid, author, avatar: avatarUrl, text, stars: selectedStar, timestamp: Date.now()
+                }).then(() => {
+                    authorInput.value = '';
+                    textInput.value = '';
+                    reviewCharCount.textContent = '0/400';
+                    selectedStar = 0;
+                    document.querySelectorAll('.star-btn').forEach(b => { b.style.color = ''; b.style.textShadow = ''; });
+                    window.showToast("Avis publié ! Merci 🙏", "success");
+                }).finally(() => {
+                    submitReviewBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Publier l\'avis';
+                    submitReviewBtn.disabled = false;
+                });
+            });
+        }
+
+        // Render review card for carousel (accueil)
+        function renderCarouselCard(data) {
+            const stars = '★'.repeat(data.stars) + '☆'.repeat(5 - data.stars);
+            const avatar = data.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.author)}&background=random&color=fff&bold=true`;
+            const card = document.createElement('div');
+            card.className = 'review-card';
+            card.innerHTML = `
+                <div class="review-stars text-base mb-3">${stars}</div>
+                <p class="text-white/80 text-sm leading-relaxed mb-4 line-clamp-4">${data.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>
+                <div class="flex items-center gap-2.5 mt-auto pt-3 border-t border-white/5">
+                    <img src="${avatar}" class="w-8 h-8 rounded-full border border-white/15 object-cover bg-gray-800" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(data.author)}&background=6366f1&color=fff'">
+                    <div>
+                        <p class="text-white text-xs font-bold leading-tight">${data.author.replace(/</g,'&lt;')}</p>
+                        <p class="text-white/30 text-[10px]">${timeAgo(data.timestamp)}</p>
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        // Render review item for community list
+        function renderCommunityReviewItem(id, data) {
+            if (document.getElementById('review-item-' + id)) return;
+            const stars = '★'.repeat(data.stars) + '<span style="color:rgba(255,255,255,0.15)">★</span>'.repeat(5 - data.stars);
+            const avatar = data.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.author)}&background=random&color=fff&bold=true`;
+            const list = document.getElementById('community-reviews-list');
+            if (!list) return;
+            // Clear loader
+            list.querySelectorAll('.animate-pulse').forEach(el => el.remove());
+            const div = document.createElement('div');
+            div.id = 'review-item-' + id;
+            div.className = 'glass-panel rounded-xl p-4 border border-white/6 animate-fade-in-up flex gap-3';
+            div.innerHTML = `
+                <img src="${avatar}" class="w-9 h-9 rounded-full border border-white/10 object-cover bg-gray-800 shrink-0" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(data.author)}&background=6366f1&color=fff'">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-2 mb-1">
+                        <span class="font-bold text-xs text-white">${data.author.replace(/</g,'&lt;')}</span>
+                        <span class="text-yellow-400 text-xs shrink-0">${'★'.repeat(data.stars)}<span class="text-white/15">${'★'.repeat(5 - data.stars)}</span></span>
+                    </div>
+                    <p class="text-white/70 text-xs leading-relaxed">${data.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>
+                    <p class="text-white/25 text-[10px] mt-1.5">${timeAgo(data.timestamp)}</p>
+                </div>
+            `;
+            list.appendChild(div);
+        }
+
+        // Update carousel on accueil
+        function updateHomeReviewsCarousel() {
+            const entries = Object.entries(allReviewsData).sort((a,b) => b[1].timestamp - a[1].timestamp);
+            const section = document.getElementById('reviews-home-section');
+            const track = document.getElementById('reviews-carousel-track');
+            const dots = document.getElementById('reviews-dots');
+            const countEl = document.getElementById('reviews-home-count');
+            if (!section || !track || !dots) return;
+
+            if (entries.length === 0) { section.style.display = 'none'; return; }
+            section.style.display = 'block';
+
+            const avg = (entries.reduce((s, [,d]) => s + (d.stars||0), 0) / entries.length).toFixed(1);
+            if (countEl) countEl.textContent = `${entries.length} avis · Moyenne ${avg}/5 ⭐`;
+
+            track.innerHTML = '';
+            entries.forEach(([, data]) => track.appendChild(renderCarouselCard(data)));
+
+            // Dots
+            const totalPages = Math.max(1, entries.length - CARDS_PER_VIEW() + 1);
+            dots.innerHTML = '';
+            for (let i = 0; i < Math.min(totalPages, 8); i++) {
+                const dot = document.createElement('button');
+                dot.className = 'review-dot' + (i === 0 ? ' active' : '');
+                dot.setAttribute('aria-label', 'Page ' + (i+1));
+                dot.addEventListener('click', () => { carouselIndex = i; applyCarouselPos(); });
+                dots.appendChild(dot);
+            }
+            carouselIndex = 0;
+            applyCarouselPos();
+        }
+
+        function applyCarouselPos() {
+            const track = document.getElementById('reviews-carousel-track');
+            const dots = document.getElementById('reviews-dots');
+            if (!track) return;
+            const cardW = track.querySelector('.review-card')?.offsetWidth || 300;
+            const gap = 16;
+            const offset = carouselIndex * (cardW + gap);
+            track.style.transform = `translateX(-${offset}px)`;
+            if (dots) {
+                dots.querySelectorAll('.review-dot').forEach((dot, i) => {
+                    dot.classList.toggle('active', i === carouselIndex);
+                });
+            }
+        }
+
+        window.reviewsCarousel = (dir) => {
+            const track = document.getElementById('reviews-carousel-track');
+            if (!track) return;
+            const cards = track.querySelectorAll('.review-card');
+            const max = Math.max(0, cards.length - CARDS_PER_VIEW());
+            carouselIndex = Math.max(0, Math.min(max, carouselIndex + dir));
+            applyCarouselPos();
+        };
+
+        // Firebase listeners for reviews
+        onChildAdded(reviewsRef, (snapshot) => {
+            allReviewsData[snapshot.key] = snapshot.val();
+            renderCommunityReviewItem(snapshot.key, snapshot.val());
+            updateHomeReviewsCarousel();
+        });
+        onChildRemoved(reviewsRef, (snapshot) => {
+            delete allReviewsData[snapshot.key];
+            document.getElementById('review-item-' + snapshot.key)?.remove();
+            updateHomeReviewsCarousel();
+        });
+
+        // Auto-scroll carousel every 4s
+        setInterval(() => {
+            const track = document.getElementById('reviews-carousel-track');
+            if (!track || !document.getElementById('reviews-home-section')?.offsetParent) return;
+            const cards = track.querySelectorAll('.review-card');
+            const max = Math.max(0, cards.length - CARDS_PER_VIEW());
+            carouselIndex = carouselIndex >= max ? 0 : carouselIndex + 1;
+            applyCarouselPos();
+        }, 4000);
+
+        window.addEventListener('resize', updateHomeReviewsCarousel);
+
         // --- SEARCH BAR (Apps) ---
         const searchInput = document.getElementById('app-search');
         const modulesContainer = document.getElementById('modules-container');
@@ -2176,6 +2547,12 @@
             if (!splash) return;
 
             const canvas = document.getElementById('splash-canvas');
+            // Fallback global : fermeture forcée après 3s quoi qu'il arrive
+            const globalFallback = setTimeout(() => {
+                splash.style.display = 'none';
+                document.body.style.overflow = '';
+            }, 3200);
+
             if (canvas) {
                 const ctx = canvas.getContext('2d');
                 let w, h, tick = 0;
@@ -2209,7 +2586,15 @@
                 setTimeout(() => {
                     cancelAnimationFrame(animId);
                     splash.classList.add('wm-splash-out');
+                    // Fallback : force la fermeture après 800ms même si animationend ne se déclenche pas
+                    const forceClose = setTimeout(() => {
+                        clearTimeout(globalFallback);
+                        splash.style.display = 'none';
+                        document.body.style.overflow = '';
+                    }, 800);
                     splash.addEventListener('animationend', () => {
+                        clearTimeout(forceClose);
+                        clearTimeout(globalFallback);
                         splash.style.display = 'none';
                         document.body.style.overflow = '';
                     }, { once: true });
@@ -2293,21 +2678,9 @@
             }
 
             // App installée depuis l'extérieur
-            window.addEventListener('appinstalled', () => {
-                deferredPrompt = null;
-                hideFloatPill(true);
-                if (heroBtn) heroBtn.classList.add('hidden');
-            });
+            window.addEventListener('appinstalled', () => { hideFloatPill(true); if (heroBtn) heroBtn.classList.add('hidden'); });
         })();
     </script>
 
-    <!-- ✅ PWA: Service Worker Registration -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('App/sw.js').catch(()=>{});
-            });
-        }
-    </script>
 </body>
 </html>
