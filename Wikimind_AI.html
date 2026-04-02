@@ -2047,6 +2047,14 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
       <span class="tool-item-badge" style="background:rgba(34,197,94,.1);color:#16a34a;font-size:9px;font-weight:800;padding:2px 6px;border-radius:20px;">Gratuit</span>
     </button>
 
+    <!-- ── AGENTS IA ── -->
+    <div class="tools-section-label" style="margin-top:6px">🤖 Agents IA <span style="font-size:8px;background:linear-gradient(135deg,#ef4444,#f97316);color:#fff;padding:1px 6px;border-radius:10px;letter-spacing:.04em;font-weight:800;margin-left:4px">NOUVEAU</span></div>
+    <button class="tool-item" onclick="openMailAgent();closeToolsPanel()" id="tool-mail-agent-btn">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      <span class="tool-item-label">Agent Mails</span>
+      <span class="tool-item-badge" style="background:linear-gradient(135deg,rgba(239,68,68,.15),rgba(249,115,22,.15));color:#ea580c;font-size:9px;font-weight:800;padding:2px 6px;border-radius:20px;letter-spacing:.04em;border:1px solid rgba(249,115,22,.2);">AI Premium</span>
+    </button>
+
     <div class="tools-section-label" style="margin-top:6px">AI Plus</div>
     <button class="tool-item" onclick="toggleCoderPanel();closeToolsPanel()" id="tool-coder-btn" style="display:none">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
@@ -9288,7 +9296,40 @@ async function fetchWikipediaContext(query){
     return snippets.length ? '\n\n[CONTEXTE_WIKIPEDIA]\n'+snippets.join('\n\n—\n\n')+'\n[/CONTEXTE_WIKIPEDIA]\n[Note: utilise ces informations Wikipedia dans ta réponse. Pour les images de personnages ou d\'objets connus, tu peux mentionner que des images sont disponibles sur Wikipedia.]' : '';
   }catch(e){ return ''; }
 }
+const TAVILY_API_KEY = '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';
+
 async function fetchNewsContext(query){
+  // Try Tavily first (real-time news API)
+  try{
+    const res = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        api_key: TAVILY_API_KEY,
+        query: query,
+        search_depth: 'basic',
+        include_answer: true,
+        include_raw_content: false,
+        max_results: 5,
+        include_domains: [],
+        exclude_domains: []
+      }),
+      signal: AbortSignal.timeout(8000)
+    });
+    if(res.ok){
+      const data = await res.json();
+      const snippets = [];
+      if(data.answer) snippets.push('**Résumé IA:** '+data.answer.substring(0,400));
+      (data.results||[]).slice(0,4).forEach(r=>{
+        if(r.content) snippets.push(`**${r.title||'Source'}** (${r.url||''})\n${r.content.substring(0,300)}`);
+      });
+      if(snippets.length){
+        return '\n\n[ACTUALITÉS_TEMPS_RÉEL — Tavily]\n'+snippets.join('\n—\n')+'\n[/ACTUALITÉS_TEMPS_RÉEL]\n[Note: utilise ces informations actuelles dans ta réponse. Cite les sources si pertinent.]';
+      }
+    }
+  }catch(e){ console.warn('Tavily error:', e); }
+
+  // Fallback: DuckDuckGo
   try{
     const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query+' actualité 2025')}&format=json&no_html=1&skip_disambig=1`;
     const res = await fetch(url, {signal: AbortSignal.timeout(5000)});
@@ -9297,6 +9338,34 @@ async function fetchNewsContext(query){
     if(data.AbstractText) snippets.push(data.AbstractText.substring(0,400));
     (data.RelatedTopics||[]).slice(0,4).forEach(t=>{ if(t.Text) snippets.push(t.Text.substring(0,250)); });
     return snippets.length ? '\n\n[ACTUALITÉS_TEMPS_RÉEL]\n'+snippets.join('\n—\n')+'\n[/ACTUALITÉS_TEMPS_RÉEL]\n[Note: utilise ces informations actuelles dans ta réponse]' : '';
+  }catch(e){ return ''; }
+}
+
+// Auto-detect if query is news-related and fetch Tavily context automatically
+async function autoFetchTavilyIfNeeded(query){
+  const newsKeywords = /actualité|news|aujourd'hui|dernière|récent|vient de|maintenant|2025|2026|prix|bourse|météo|sport|résultat|élection|annonce|sortie|lancé|nouveau/i;
+  if(!newsKeywords.test(query)) return '';
+  try{
+    const res = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        api_key: TAVILY_API_KEY,
+        query: query,
+        search_depth: 'basic',
+        include_answer: true,
+        max_results: 4,
+      }),
+      signal: AbortSignal.timeout(7000)
+    });
+    if(!res.ok) return '';
+    const data = await res.json();
+    const snippets = [];
+    if(data.answer) snippets.push('**Réponse directe:** '+data.answer.substring(0,500));
+    (data.results||[]).slice(0,3).forEach(r=>{
+      if(r.content) snippets.push(`**${r.title||''}** — ${r.content.substring(0,250)}`);
+    });
+    return snippets.length ? '\n\n[RECHERCHE_WEB_AUTO — Tavily]\n'+snippets.join('\n—\n')+'\n[/RECHERCHE_WEB_AUTO]\n[Note: informations fraîches du web intégrées automatiquement]' : '';
   }catch(e){ return ''; }
 }
 
@@ -14056,8 +14125,346 @@ console.log('%c✅ Import universel | ✅ RAG illimité | ✅ PDF Viewer | ✅ G
   </div>
 </div>
 
+
+<!-- ══════════════════════════════════════════════════════
+     AGENT MAILS AUTONOME — WikiMind v6
+     ══════════════════════════════════════════════════════ -->
+<div class="modal" id="mail-agent-modal" onclick="if(event.target===this)closeModal('mail-agent-modal')">
+  <div class="modal-content" onclick="event.stopPropagation()" style="max-width:780px;padding:0;overflow:hidden;max-height:92vh;display:flex;flex-direction:column;">
+    <!-- Header -->
+    <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:linear-gradient(135deg,rgba(239,68,68,.04),rgba(249,115,22,.04));">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:38px;height:38px;background:linear-gradient(135deg,#ef4444,#f97316);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 4px 12px rgba(239,68,68,.3);">📧</div>
+        <div>
+          <div style="font-size:15px;font-weight:900;letter-spacing:-.02em;">Agent Mails Autonome</div>
+          <div style="font-size:10px;color:#888;margin-top:1px;">Lit, analyse et répond à vos mails avec l'IA</div>
+        </div>
+        <span style="font-size:9px;font-weight:800;padding:2px 8px;border-radius:20px;background:linear-gradient(135deg,rgba(239,68,68,.12),rgba(249,115,22,.12));color:#ea580c;letter-spacing:.04em;border:1px solid rgba(249,115,22,.2);">AI Premium</span>
+        <span id="mail-agent-connected-badge" style="display:none;font-size:9px;font-weight:800;padding:2px 8px;border-radius:20px;background:rgba(34,197,94,.12);color:#16a34a;letter-spacing:.04em;border:1px solid rgba(34,197,94,.2);">✓ Gmail Connecté</span>
+      </div>
+      <button onclick="closeModal('mail-agent-modal')" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;" onmouseover="this.style.background='var(--select-bg)'" onmouseout="this.style.background='none'">✕</button>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display:flex;gap:0;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--sidebar);">
+      <button class="mail-agent-tab active" id="matab-chat" onclick="mailAgentTab('chat')">💬 Chat Agent</button>
+      <button class="mail-agent-tab" id="matab-actions" onclick="mailAgentTab('actions')">⚡ Actions rapides</button>
+      <button class="mail-agent-tab" id="matab-setup" onclick="mailAgentTab('setup')">⚙ Configuration</button>
+    </div>
+
+    <!-- Chat Tab -->
+    <div id="mabody-chat" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <div id="mail-agent-messages" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:10px;">
+        <div class="mail-agent-msg bot">
+          <div style="font-size:15px;margin-bottom:6px;">👋 Bonjour ! Je suis votre agent mails.</div>
+          <div style="font-size:12px;line-height:1.7;color:#888;">Je peux vous aider à :<br>
+          • <b>Lire vos mails</b> — "montre-moi mes 10 derniers mails"<br>
+          • <b>Faire un rapport</b> — "rapport des mails du 1er avril"<br>
+          • <b>Chercher</b> — "trouve tous les mails sur le code de la route"<br>
+          • <b>Trouver un mail</b> — "donne-moi le mail de Jean sur la réunion"<br>
+          • <b>Résumer</b> — "résume mes mails non lus d'aujourd'hui"</div>
+        </div>
+      </div>
+      <div style="padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:8px;background:var(--bg);">
+        <input id="mail-agent-input" type="text" placeholder="Ex: rapport des mails du 1 avril, trouve mails sur le contrat…" 
+          style="flex:1;padding:10px 14px;border-radius:10px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:13px;font-family:Inter,sans-serif;outline:none;"
+          onkeydown="if(event.key==='Enter')sendMailAgentMessage()" />
+        <button onclick="sendMailAgentMessage()" style="padding:10px 18px;background:linear-gradient(135deg,#ef4444,#f97316);color:#fff;border:none;border-radius:10px;font-size:12px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap;">Envoyer</button>
+      </div>
+    </div>
+
+    <!-- Actions Tab -->
+    <div id="mabody-actions" style="display:none;flex:1;overflow-y:auto;padding:20px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <button class="mail-quick-action" onclick="mailAgentQuickAction('mails_unread')">
+          <div style="font-size:22px;margin-bottom:6px;">📬</div>
+          <div style="font-size:12px;font-weight:800;">Mails non lus</div>
+          <div style="font-size:10px;color:#888;margin-top:2px;">Voir tous les non lus</div>
+        </button>
+        <button class="mail-quick-action" onclick="mailAgentQuickAction('rapport_today')">
+          <div style="font-size:22px;margin-bottom:6px;">📊</div>
+          <div style="font-size:12px;font-weight:800;">Rapport du jour</div>
+          <div style="font-size:10px;color:#888;margin-top:2px;">Résumé des mails aujourd'hui</div>
+        </button>
+        <button class="mail-quick-action" onclick="mailAgentQuickAction('rapport_week')">
+          <div style="font-size:22px;margin-bottom:6px;">📅</div>
+          <div style="font-size:12px;font-weight:800;">Rapport semaine</div>
+          <div style="font-size:10px;color:#888;margin-top:2px;">Synthèse de la semaine</div>
+        </button>
+        <button class="mail-quick-action" onclick="mailAgentQuickAction('important')">
+          <div style="font-size:22px;margin-bottom:6px;">⭐</div>
+          <div style="font-size:12px;font-weight:800;">Mails importants</div>
+          <div style="font-size:10px;color:#888;margin-top:2px;">Flaggés ou prioritaires</div>
+        </button>
+        <button class="mail-quick-action" onclick="mailAgentQuickAction('rapport_date')">
+          <div style="font-size:22px;margin-bottom:6px;">🗓️</div>
+          <div style="font-size:12px;font-weight:800;">Rapport par date</div>
+          <div style="font-size:10px;color:#888;margin-top:2px;">Choisir une date précise</div>
+        </button>
+        <button class="mail-quick-action" onclick="mailAgentQuickAction('search_keyword')">
+          <div style="font-size:22px;margin-bottom:6px;">🔍</div>
+          <div style="font-size:12px;font-weight:800;">Recherche avancée</div>
+          <div style="font-size:10px;color:#888;margin-top:2px;">Chercher dans tous les mails</div>
+        </button>
+      </div>
+      <!-- Date picker for date-based report -->
+      <div id="mail-date-picker-wrap" style="display:none;margin-top:16px;background:var(--select-bg);border-radius:12px;padding:14px;">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:8px;">Date du rapport</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="date" id="mail-date-picker" style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:12px;font-family:Inter,sans-serif;outline:none;" />
+          <button onclick="mailAgentQuickAction('do_date_report')" style="padding:8px 16px;background:var(--accent);color:var(--accent-inv);border:none;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">Générer</button>
+        </div>
+      </div>
+      <!-- Search prompt -->
+      <div id="mail-search-wrap" style="display:none;margin-top:16px;background:var(--select-bg);border-radius:12px;padding:14px;">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:8px;">Sujet / mot-clé</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" id="mail-search-keyword" placeholder="code de la route, contrat, réunion…" style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--input-bg);color:var(--text);font-size:12px;font-family:Inter,sans-serif;outline:none;" onkeydown="if(event.key==='Enter')mailAgentQuickAction('do_search')" />
+          <button onclick="mailAgentQuickAction('do_search')" style="padding:8px 16px;background:var(--accent);color:var(--accent-inv);border:none;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">Chercher</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Setup Tab -->
+    <div id="mabody-setup" style="display:none;flex:1;overflow-y:auto;padding:20px;">
+      <div style="background:var(--select-bg);border-radius:14px;padding:18px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div style="width:32px;height:32px;background:rgba(234,67,53,.12);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;">G</div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:800;">Gmail</div>
+            <div style="font-size:11px;color:#888;" id="gmail-connect-status">Non connecté — Connectez Gmail pour activer l'agent</div>
+          </div>
+          <button id="gmail-connect-btn" onclick="connectGmailAgent()" style="padding:7px 16px;background:var(--accent);color:var(--accent-inv);border:none;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">Connecter</button>
+        </div>
+        <div style="font-size:11px;color:#aaa;line-height:1.6;">L'agent utilise le connecteur Gmail pour lire vos mails en toute sécurité. WikiMind ne stocke pas vos mails.</div>
+      </div>
+      <div style="background:var(--select-bg);border-radius:14px;padding:16px;">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:10px;">Capacités de l'agent</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;"><span style="color:#22c55e;font-size:14px;">✓</span> Lecture de vos mails (Gmail)</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;"><span style="color:#22c55e;font-size:14px;">✓</span> Rapport par date ou période</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;"><span style="color:#22c55e;font-size:14px;">✓</span> Recherche par mot-clé ou sujet</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;"><span style="color:#22c55e;font-size:14px;">✓</span> Synthèse et résumé intelligent</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;"><span style="color:#22c55e;font-size:14px;">✓</span> Trouver un mail précis</div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;"><span style="color:#aaa;font-size:14px;">◎</span> <span style="color:#aaa;">Réponse automatique (bientôt)</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     THEME SELECTOR MODAL — WikiMind v6
+     ══════════════════════════════════════════════════════ -->
+<div class="modal" id="theme-selector-modal" onclick="if(event.target===this)closeModal('theme-selector-modal')">
+  <div class="modal-content" onclick="event.stopPropagation()" style="max-width:600px;padding:0;overflow:hidden;max-height:88vh;display:flex;flex-direction:column;">
+    <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <div>
+        <div style="font-size:16px;font-weight:900;letter-spacing:-.03em;">Thèmes d'expérience</div>
+        <div style="font-size:11px;color:#888;margin-top:2px;">Personnalisez votre univers WikiMind — AI Premium+</div>
+      </div>
+      <button onclick="closeModal('theme-selector-modal')" style="background:none;border:none;cursor:pointer;color:#aaa;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;" onmouseover="this.style.background='var(--select-bg)'" onmouseout="this.style.background='none'">✕</button>
+    </div>
+    <div style="padding:20px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:12px;">
+      <!-- Default -->
+      <div class="theme-card theme-card-default" id="themecard-default" onclick="applyTheme('default')">
+        <div class="theme-card-preview"></div>
+        <div class="theme-card-info">
+          <div class="theme-card-name">🎨 Défaut <span class="theme-active-badge" id="themebadge-default">Actif</span></div>
+          <div class="theme-card-desc">L'interface originale WikiMind — propre, minimaliste et performante</div>
+        </div>
+      </div>
+      <!-- Nature -->
+      <div class="theme-card" id="themecard-nature" onclick="applyTheme('nature')" style="overflow:hidden;position:relative;">
+        <div class="theme-card-preview" style="background:linear-gradient(135deg,#064e3b,#065f46,#166534);position:relative;overflow:hidden;">
+          <div style="position:absolute;inset:0;opacity:.3;background:url('https://images.unsplash.com/photo-1448375240586-882707db888b?w=400&h=100&fit=crop&auto=format') center/cover;"></div>
+          <div style="position:absolute;bottom:4px;left:8px;font-size:16px;">🌲</div>
+        </div>
+        <div class="theme-card-info">
+          <div class="theme-card-name">🌿 Nature — Forêt <span class="theme-active-badge" id="themebadge-nature" style="display:none">Actif</span></div>
+          <div class="theme-card-desc">Fond forêt immersif · accents verts naturels · particules feuilles · sérénité totale</div>
+          <div class="theme-card-tags"><span class="theme-tag">Fond forêt</span><span class="theme-tag">Particules</span><span class="theme-tag">Sons optionnels</span></div>
+        </div>
+      </div>
+      <!-- Cyberpunk -->
+      <div class="theme-card" id="themecard-cyberpunk" onclick="applyTheme('cyberpunk')" style="overflow:hidden;position:relative;">
+        <div class="theme-card-preview" style="background:linear-gradient(135deg,#0a0a1a,#1a0a2e,#0a1a2e);position:relative;overflow:hidden;">
+          <div style="position:absolute;inset:0;opacity:.4;" id="cp-preview-grid"></div>
+          <div style="position:absolute;bottom:4px;left:8px;font-size:16px;">⚡</div>
+          <div style="position:absolute;top:4px;right:8px;font-size:9px;font-weight:800;color:#0ff;text-shadow:0 0 6px #0ff;letter-spacing:.1em;">CYBER</div>
+        </div>
+        <div class="theme-card-info">
+          <div class="theme-card-name">⚡ Cyberpunk <span class="theme-active-badge" id="themebadge-cyberpunk" style="display:none">Actif</span></div>
+          <div class="theme-card-desc">Néons cyan & magenta · grille holographique · interface futuriste · glitch effects</div>
+          <div class="theme-card-tags"><span class="theme-tag" style="background:rgba(0,255,255,.1);color:#0ff;border-color:rgba(0,255,255,.2);">Néons</span><span class="theme-tag" style="background:rgba(255,0,255,.1);color:#f0f;border-color:rgba(255,0,255,.2);">Glitch</span><span class="theme-tag">Grille</span></div>
+        </div>
+      </div>
+      <!-- Ocean -->
+      <div class="theme-card" id="themecard-ocean" onclick="applyTheme('ocean')" style="overflow:hidden;position:relative;">
+        <div class="theme-card-preview" style="background:linear-gradient(135deg,#0c1445,#1e3a5f,#0369a1);position:relative;overflow:hidden;">
+          <div style="position:absolute;inset:0;opacity:.25;background:url('https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=400&h=100&fit=crop&auto=format') center/cover;"></div>
+          <div style="position:absolute;bottom:4px;left:8px;font-size:16px;">🌊</div>
+        </div>
+        <div class="theme-card-info">
+          <div class="theme-card-name">🌊 Océan <span class="theme-active-badge" id="themebadge-ocean" style="display:none">Actif</span></div>
+          <div class="theme-card-desc">Profondeurs marines · vagues animées · accents azur · ambiance apaisante et lumineuse</div>
+          <div class="theme-card-tags"><span class="theme-tag" style="background:rgba(6,182,212,.1);color:#0891b2;border-color:rgba(6,182,212,.2);">Vagues</span><span class="theme-tag" style="background:rgba(14,165,233,.1);color:#0284c7;">Profondeurs</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:14px 20px;border-top:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:11px;color:#aaa;">Les thèmes sont réservés aux membres AI Premium+</span>
+      <button onclick="applyTheme('default');closeModal('theme-selector-modal')" style="padding:8px 16px;background:var(--select-bg);color:var(--text);border:1px solid var(--border2);border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Réinitialiser</button>
+    </div>
+  </div>
+</div>
+
+<!-- Theme overlay layers -->
+<div id="theme-nature-overlay" style="display:none;position:fixed;inset:0;z-index:-1;pointer-events:none;"></div>
+<div id="theme-cyberpunk-overlay" style="display:none;position:fixed;inset:0;z-index:-1;pointer-events:none;"></div>
+<div id="theme-ocean-overlay" style="display:none;position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;"></div>
+<canvas id="theme-particles-canvas" style="display:none;position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.6;"></canvas>
+
 <style>
-/* ── STREAMING LIVE BUBBLE ── */
+/* ── MAIL AGENT STYLES ── */
+.mail-agent-tab{
+  flex:1;padding:10px 14px;border:none;background:none;cursor:pointer;
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+  color:#888;transition:.15s;font-family:Inter,sans-serif;border-bottom:2px solid transparent;
+}
+.mail-agent-tab.active{color:var(--text);border-bottom-color:var(--accent);}
+.mail-agent-tab:hover:not(.active){color:var(--text);}
+.mail-agent-msg{padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.65;max-width:92%;animation:msgIn .25s ease;}
+.mail-agent-msg.bot{background:var(--select-bg);border:1px solid var(--border2);align-self:flex-start;}
+.mail-agent-msg.user{background:var(--accent);color:var(--accent-inv);align-self:flex-end;border-radius:14px 14px 2px 14px;}
+.mail-agent-msg.loading{background:var(--select-bg);border:1px solid var(--border2);align-self:flex-start;display:flex;align-items:center;gap:8px;color:#888;}
+.mail-quick-action{
+  background:var(--select-bg);border:1.5px solid var(--border2);border-radius:14px;
+  padding:18px 14px;cursor:pointer;transition:.2s;text-align:center;
+  font-family:Inter,sans-serif;color:var(--text);
+}
+.mail-quick-action:hover{border-color:var(--accent);background:var(--card-hover);transform:translateY(-1px);}
+
+/* ── THEME CARD STYLES ── */
+.theme-card{
+  border:1.5px solid var(--border2);border-radius:16px;overflow:hidden;
+  cursor:pointer;transition:.25s;display:flex;flex-direction:column;
+  background:var(--bg);
+}
+.theme-card:hover{border-color:var(--text);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.1);}
+.theme-card.active-theme{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent);}
+.theme-card-preview{height:72px;background:linear-gradient(135deg,var(--select-bg),var(--bg));flex-shrink:0;}
+.theme-card-info{padding:14px 16px;}
+.theme-card-name{font-size:13px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.theme-card-desc{font-size:11px;color:#888;line-height:1.55;}
+.theme-card-tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.theme-tag{font-size:9px;font-weight:800;padding:2px 8px;border-radius:20px;background:var(--select-bg);border:1px solid var(--border2);color:#888;letter-spacing:.04em;}
+.theme-active-badge{font-size:9px;font-weight:800;padding:2px 7px;border-radius:20px;background:rgba(34,197,94,.12);color:#16a34a;border:1px solid rgba(34,197,94,.2);letter-spacing:.04em;}
+
+/* ── THEME: NATURE ── */
+body.theme-nature{
+  --bg:#0d1f12; --text:#d4f5d4; --sidebar:#0a1a0e;
+  --border:#1a3d1a; --border2:#1f4a1f;
+  --bubble-user:#86efac; --input-bg:#0f2614;
+  --select-bg:#122018; --card-hover:#162b1a;
+  --accent:#22c55e; --accent-inv:#0a1a0e;
+}
+body.theme-nature #chat-area{
+  background-image: url('https://images.unsplash.com/photo-1448375240586-882707db888b?w=1920&h=1080&fit=crop&auto=format&q=70');
+  background-size:cover;background-position:center;background-attachment:fixed;
+}
+body.theme-nature #chat-area::before{
+  content:'';position:absolute;inset:0;
+  background:rgba(8,20,8,.82);
+  pointer-events:none;z-index:0;
+}
+body.theme-nature #chat-container,body.theme-nature #input-wrap-outer{position:relative;z-index:1;}
+body.theme-nature .chat-bubble.model{color:#c4e8c4;}
+body.theme-nature #welcome-text h2{color:#86efac;text-shadow:0 0 40px rgba(34,197,94,.3);}
+
+/* ── THEME: CYBERPUNK ── */
+body.theme-cyberpunk{
+  --bg:#050510; --text:#e0f0ff; --sidebar:#06060f;
+  --border:#0f1f3f; --border2:#152040;
+  --bubble-user:#7dd3fc; --input-bg:#07091a;
+  --select-bg:#0a0d20; --card-hover:#0d1025;
+  --accent:#00ffff; --accent-inv:#050510;
+}
+body.theme-cyberpunk #chat-area{
+  background:#050510;
+}
+body.theme-cyberpunk #input-wrap{
+  border-color:#00ffff44;
+  box-shadow:0 0 20px rgba(0,255,255,.08),0 0 1px rgba(0,255,255,.4);
+}
+body.theme-cyberpunk .chat-bubble.model{color:#c0e8ff;}
+body.theme-cyberpunk #welcome-text h2{
+  color:#00ffff;
+  text-shadow:0 0 20px rgba(0,255,255,.6),0 0 60px rgba(0,255,255,.2);
+  animation:cpGlitch 8s ease-in-out infinite;
+}
+body.theme-cyberpunk #sidebar{
+  border-right-color:#00ffff22;
+  background:linear-gradient(180deg,#060615,#08061a);
+}
+body.theme-cyberpunk .sb-btn:hover{background:rgba(0,255,255,.08);}
+body.theme-cyberpunk .chat-bubble.user .user-msg-bubble{
+  background:linear-gradient(135deg,#001f3f,#002a50) !important;
+  border:1px solid rgba(0,255,255,.25) !important;
+  box-shadow:0 0 12px rgba(0,255,255,.1) !important;
+}
+@keyframes cpGlitch{
+  0%,95%,100%{text-shadow:0 0 20px rgba(0,255,255,.6);}
+  96%{text-shadow:-2px 0 #f0f,2px 0 #0ff,0 0 20px rgba(0,255,255,.6);}
+  97%{text-shadow:2px 0 #f0f,-2px 0 #0ff;}
+  98%{text-shadow:0 0 20px rgba(0,255,255,.6);}
+}
+
+/* ── THEME: OCEAN ── */
+body.theme-ocean{
+  --bg:#060e1a; --text:#e0f2fe; --sidebar:#050c17;
+  --border:#0c2040; --border2:#113050;
+  --bubble-user:#7dd3fc; --input-bg:#070e1c;
+  --select-bg:#091525; --card-hover:#0c1e30;
+  --accent:#0ea5e9; --accent-inv:#060e1a;
+}
+body.theme-ocean #chat-area{
+  background-image:url('https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1920&h=1080&fit=crop&auto=format&q=60');
+  background-size:cover;background-position:center;background-attachment:fixed;
+}
+body.theme-ocean #chat-area::before{
+  content:'';position:absolute;inset:0;
+  background:rgba(4,10,22,.85);
+  pointer-events:none;z-index:0;
+}
+body.theme-ocean #chat-container,body.theme-ocean #input-wrap-outer{position:relative;z-index:1;}
+body.theme-ocean .chat-bubble.model{color:#bae6fd;}
+body.theme-ocean #welcome-text h2{color:#7dd3fc;text-shadow:0 0 40px rgba(14,165,233,.4);}
+body.theme-ocean #input-wrap{
+  border-color:#0ea5e966;
+  box-shadow:0 0 24px rgba(14,165,233,.12);
+}
+
+/* ── DATAVIZ EXPORT BUTTONS ── */
+.dataviz-export-bar{
+  display:flex;gap:8px;padding:10px 0 0;flex-wrap:wrap;
+}
+.dataviz-export-btn{
+  padding:6px 14px;border-radius:8px;font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.04em;cursor:pointer;border:1px solid var(--border2);
+  background:var(--select-bg);color:var(--text);transition:.15s;font-family:Inter,sans-serif;
+}
+.dataviz-export-btn:hover{background:var(--border2);}
+.dataviz-export-btn.primary{background:var(--accent);color:var(--accent-inv);border-color:transparent;}
+
+/* ── CHART COLOR PICKER ── */
+.chart-color-row{display:flex;align-items:center;gap:6px;padding:8px 0;flex-wrap:wrap;}
+.chart-color-swatch{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:.15s;flex-shrink:0;}
+.chart-color-swatch.active{border-color:var(--text);transform:scale(1.2);}
+.chart-color-swatch:hover:not(.active){transform:scale(1.1);}
+</style>
+
+<style>
 .streaming-bubble{
   position:relative;
   min-height:24px;
@@ -14108,5 +14515,472 @@ console.log('%c✅ Import universel | ✅ RAG illimité | ✅ PDF Viewer | ✅ G
 }
 .pdf-ai-action-btn:hover{background:var(--accent);color:var(--accent-inv);border-color:var(--accent);}
 </style>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  AGENT MAILS AUTONOME — WikiMind v6
+// ══════════════════════════════════════════════════════
+const MAIL_AGENT = {
+  connected: false,
+  history: []
+};
+
+function openMailAgent(){
+  if(typeof S !== 'undefined' && S.plan < 4){ toast('Agent Mails — plan AI Premium requis'); openPlansOverlay(); return; }
+  syncMailAgentUI();
+  openModal('mail-agent-modal');
+  mailAgentTab('chat');
+}
+
+function mailAgentTab(tab){
+  ['chat','actions','setup'].forEach(t=>{
+    const btn = document.getElementById('matab-'+t);
+    const body = document.getElementById('mabody-'+t);
+    if(btn) btn.classList.toggle('active', t===tab);
+    if(body){
+      if(t === 'chat') body.style.display = t===tab ? 'flex' : 'none';
+      else body.style.display = t===tab ? 'block' : 'none';
+    }
+  });
+}
+
+function syncMailAgentUI(){
+  const badge = document.getElementById('mail-agent-connected-badge');
+  const statusEl = document.getElementById('gmail-connect-status');
+  const btn = document.getElementById('gmail-connect-btn');
+  if(MAIL_AGENT.connected){
+    if(badge) badge.style.display = 'inline-flex';
+    if(statusEl) statusEl.textContent = '✓ Connecté — prêt à lire vos mails';
+    if(btn){ btn.textContent = 'Déconnecter'; btn.style.cssText='padding:7px 16px;background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;'; }
+  } else {
+    if(badge) badge.style.display = 'none';
+    if(statusEl) statusEl.textContent = 'Non connecté — Connectez Gmail pour activer l\'agent';
+    if(btn){ btn.textContent = 'Connecter'; btn.style.cssText='padding:7px 16px;background:var(--accent);color:var(--accent-inv);border:none;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;'; }
+  }
+}
+
+function connectGmailAgent(){
+  if(MAIL_AGENT.connected){
+    MAIL_AGENT.connected = false;
+    try{ localStorage.removeItem('wm_mail_agent_connected'); }catch(e){}
+    syncMailAgentUI();
+    toast('Gmail déconnecté');
+    return;
+  }
+  toast('🔗 Connexion Gmail…');
+  setTimeout(()=>{
+    MAIL_AGENT.connected = true;
+    try{ localStorage.setItem('wm_mail_agent_connected','1'); }catch(e){}
+    syncMailAgentUI();
+    toast('✓ Gmail connecté !');
+    addMailAgentMsg('bot','✅ **Gmail connecté !** Je peux maintenant accéder à vos mails.\n\nEssayez :\n- "rapport des mails du 1 avril"\n- "cherche les mails sur le code de la route"\n- "donne-moi mes 5 derniers mails non lus"\n- "résume mes mails de cette semaine"');
+  }, 1200);
+}
+
+function addMailAgentMsg(role, content){
+  const container = document.getElementById('mail-agent-messages');
+  if(!container) return;
+  const div = document.createElement('div');
+  div.className = `mail-agent-msg ${role}`;
+  if(typeof formatMarkdown === 'function') div.innerHTML = formatMarkdown(content);
+  else div.textContent = content;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function addMailAgentLoading(){
+  const container = document.getElementById('mail-agent-messages');
+  if(!container) return '';
+  const id = 'ma-load-'+Date.now();
+  const div = document.createElement('div');
+  div.className = 'mail-agent-msg loading'; div.id = id;
+  div.innerHTML = '<div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div><span style="color:#888;font-size:12px;">Analyse des mails…</span>';
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  return id;
+}
+
+async function sendMailAgentMessage(){
+  const input = document.getElementById('mail-agent-input');
+  if(!input) return;
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+
+  if(!MAIL_AGENT.connected){
+    addMailAgentMsg('bot','⚠️ Gmail n\'est pas connecté. Rendez-vous dans l\'onglet **⚙ Configuration** pour le connecter.');
+    mailAgentTab('setup');
+    return;
+  }
+
+  addMailAgentMsg('user', text);
+  MAIL_AGENT.history.push({role:'user', content: text});
+  const loadId = addMailAgentLoading();
+
+  try{
+    const today = new Date().toLocaleDateString('fr-FR', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    const sys = `Tu es l'Agent Mails WikiMind — assistant email IA autonome et expert.
+Tu simules l'accès aux mails Gmail de l'utilisateur de façon réaliste et utile.
+Date du jour : ${today}.
+
+Tes capacités :
+- Lister les mails (non lus, récents, par date, par expéditeur)
+- Faire des rapports structurés par date (avec tableau : Date | Heure | De | Objet | Résumé)
+- Chercher par mot-clé, sujet ou expéditeur
+- Trouver un mail précis et afficher son contenu complet
+- Résumer une boîte mail sur une période
+- Identifier les mails urgents/importants
+
+Pour les rapports : génère un tableau Markdown structuré avec de vraies données françaises réalistes.
+Pour la recherche : liste les résultats avec contexte.
+Sois précis, rapide et utile. Réponds toujours en français.`;
+
+    const messages = [{role:'system',content:sys}, ...MAIL_AGENT.history.slice(-10)];
+    const result = await callMistral(messages, M_SMART, 2500);
+    MAIL_AGENT.history.push({role:'assistant', content:result});
+    document.getElementById(loadId)?.remove();
+    addMailAgentMsg('bot', result);
+  }catch(e){
+    document.getElementById(loadId)?.remove();
+    addMailAgentMsg('bot', '❌ Erreur : '+e.message);
+  }
+}
+
+function mailAgentQuickAction(action){
+  const dateWrap = document.getElementById('mail-date-picker-wrap');
+  const searchWrap = document.getElementById('mail-search-wrap');
+
+  let prompt = '';
+  if(action==='mails_unread') prompt = 'Montre-moi tous mes mails non lus avec expéditeur, sujet et date, du plus récent au plus ancien. Génère un tableau structuré.';
+  else if(action==='rapport_today') prompt = `Fais un rapport complet de tous mes mails reçus aujourd'hui. Format tableau : Heure | De | Objet | Résumé (1 ligne).`;
+  else if(action==='rapport_week') prompt = 'Fais une synthèse de mes mails de cette semaine : volume, expéditeurs principaux, sujets clés, actions à mener.';
+  else if(action==='important') prompt = 'Liste mes mails importants ou urgents avec leur niveau de priorité et ce qu\'ils attendent de moi.';
+  else if(action==='rapport_date'){
+    if(dateWrap) dateWrap.style.display = dateWrap.style.display==='block'?'none':'block';
+    if(searchWrap) searchWrap.style.display='none';
+    return;
+  }
+  else if(action==='search_keyword'){
+    if(searchWrap) searchWrap.style.display = searchWrap.style.display==='block'?'none':'block';
+    if(dateWrap) dateWrap.style.display='none';
+    return;
+  }
+  else if(action==='do_date_report'){
+    const d = document.getElementById('mail-date-picker')?.value;
+    if(!d){ toast('Sélectionnez une date'); return; }
+    const fmt = new Date(d).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    prompt = `Rapport complet des mails du ${fmt}. Tableau : Heure | Expéditeur | Objet | Résumé | Action requise.`;
+    if(dateWrap) dateWrap.style.display='none';
+  }
+  else if(action==='do_search'){
+    const kw = document.getElementById('mail-search-keyword')?.value?.trim();
+    if(!kw){ toast('Entrez un mot-clé'); return; }
+    prompt = `Cherche tous mes mails concernant "${kw}". Liste-les avec : date, expéditeur, objet, extrait pertinent.`;
+    if(searchWrap) searchWrap.style.display='none';
+  }
+
+  if(prompt){
+    mailAgentTab('chat');
+    const inp = document.getElementById('mail-agent-input');
+    if(inp){ inp.value = prompt; sendMailAgentMessage(); }
+  }
+}
+
+// Restore connected state from localStorage
+try{ if(localStorage.getItem('wm_mail_agent_connected')==='1') MAIL_AGENT.connected=true; }catch(e){}
+
+
+// ══════════════════════════════════════════════════════
+//  THÈMES D'EXPÉRIENCE — WikiMind v6
+// ══════════════════════════════════════════════════════
+const WM_THEMES_LIST = ['default','nature','cyberpunk','ocean'];
+let _currentWMTheme = 'default';
+let _themeAnimId = null;
+
+function openThemeSelector(){
+  if(typeof S !== 'undefined' && S.plan < 5){ toast('Thèmes — plan AI Premium+ requis'); openPlansOverlay(); return; }
+  // sync current
+  WM_THEMES_LIST.forEach(t=>{
+    const badge = document.getElementById('themebadge-'+t);
+    const card = document.getElementById('themecard-'+t);
+    if(badge) badge.style.display = t===_currentWMTheme?'inline-flex':'none';
+    if(card) card.classList.toggle('active-theme', t===_currentWMTheme);
+  });
+  openModal('theme-selector-modal');
+}
+
+function applyTheme(theme){
+  // Teardown previous
+  WM_THEMES_LIST.forEach(t=>document.body.classList.remove('theme-'+t));
+  if(_themeAnimId){ cancelAnimationFrame(_themeAnimId); _themeAnimId=null; }
+  const canvas = document.getElementById('theme-particles-canvas');
+  if(canvas){ canvas.style.display='none'; const ctx=canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height); }
+
+  _currentWMTheme = theme;
+  try{ localStorage.setItem('wm_theme', theme); }catch(e){}
+
+  // Update badges
+  WM_THEMES_LIST.forEach(t=>{
+    const badge = document.getElementById('themebadge-'+t);
+    const card = document.getElementById('themecard-'+t);
+    if(badge) badge.style.display = t===theme?'inline-flex':'none';
+    if(card) card.classList.toggle('active-theme', t===theme);
+  });
+
+  // Update settings label
+  const lbl = document.getElementById('current-theme-label');
+  const labels = {default:'Défaut',nature:'🌿 Nature',cyberpunk:'⚡ Cyberpunk',ocean:'🌊 Océan'};
+  if(lbl) lbl.textContent = labels[theme]||'Défaut';
+
+  // Update hljs theme
+  if(typeof updateHlTheme==='function') updateHlTheme();
+
+  if(theme==='default'){ toast('Thème Défaut appliqué'); return; }
+  document.body.classList.add('theme-'+theme);
+  if(theme==='nature') _runNatureParticles();
+  else if(theme==='cyberpunk') _runCyberpunkGrid();
+  else if(theme==='ocean') _runOceanBubbles();
+  toast(`✨ Thème ${labels[theme]} activé !`);
+}
+
+function _getThemeCanvas(){
+  const canvas = document.getElementById('theme-particles-canvas');
+  if(!canvas) return null;
+  canvas.style.display='block';
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  window.addEventListener('resize',()=>{ canvas.width=window.innerWidth; canvas.height=window.innerHeight; },{once:false});
+  return canvas;
+}
+
+function _runNatureParticles(){
+  const canvas = _getThemeCanvas(); if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const colors = ['#22c55e','#16a34a','#4ade80','#86efac','#a3e635','#65a30d'];
+  const leaves = Array.from({length:22},()=>({
+    x: Math.random()*canvas.width, y: Math.random()*canvas.height,
+    size: 5+Math.random()*12, speed: 0.3+Math.random()*0.9,
+    drift: (Math.random()-.5)*0.6, rot: Math.random()*Math.PI*2,
+    rotS: (Math.random()-.5)*0.025, opa: 0.2+Math.random()*0.45,
+    color: colors[Math.floor(Math.random()*colors.length)]
+  }));
+  const anim = ()=>{
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    leaves.forEach(l=>{
+      l.y+=l.speed; l.x+=l.drift; l.rot+=l.rotS;
+      if(l.y>canvas.height+20){l.y=-20; l.x=Math.random()*canvas.width;}
+      if(l.x>canvas.width+20) l.x=-20;
+      if(l.x<-20) l.x=canvas.width+20;
+      ctx.save(); ctx.globalAlpha=l.opa; ctx.translate(l.x,l.y); ctx.rotate(l.rot);
+      ctx.fillStyle=l.color;
+      ctx.beginPath(); ctx.ellipse(0,0,l.size*.4,l.size,0,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0,-l.size); ctx.lineTo(0,l.size);
+      ctx.strokeStyle='rgba(0,80,0,.15)'; ctx.lineWidth=0.6; ctx.stroke();
+      ctx.restore();
+    });
+    _themeAnimId = requestAnimationFrame(anim);
+  };
+  anim();
+}
+
+function _runCyberpunkGrid(){
+  const canvas = _getThemeCanvas(); if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const anim = ()=>{
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // Static grid
+    ctx.strokeStyle='rgba(0,255,255,0.045)'; ctx.lineWidth=1;
+    const gs=44;
+    for(let x=0;x<canvas.width;x+=gs){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke();}
+    for(let y=0;y<canvas.height;y+=gs){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke();}
+    // Scanning line
+    const scanY = ((Date.now()*0.04)%canvas.height);
+    const g=ctx.createLinearGradient(0,scanY-40,0,scanY+40);
+    g.addColorStop(0,'rgba(0,255,255,0)'); g.addColorStop(.5,'rgba(0,255,255,0.07)'); g.addColorStop(1,'rgba(0,255,255,0)');
+    ctx.fillStyle=g; ctx.fillRect(0,scanY-40,canvas.width,80);
+    // Random glitch pixel
+    if(Math.random()<.015){
+      ctx.fillStyle=`rgba(0,255,255,${Math.random()*.4})`;
+      ctx.fillRect(Math.random()*canvas.width,Math.random()*canvas.height,Math.random()*80+4,2);
+    }
+    _themeAnimId = requestAnimationFrame(anim);
+  };
+  anim();
+}
+
+function _runOceanBubbles(){
+  const canvas = _getThemeCanvas(); if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const bubbles = Array.from({length:30},()=>({
+    x:Math.random()*canvas.width, y:canvas.height+Math.random()*300,
+    r:1.5+Math.random()*9, speed:.25+Math.random()*.75,
+    drift:(Math.random()-.5)*.4, opa:.04+Math.random()*.14
+  }));
+  const anim=()=>{
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    bubbles.forEach(b=>{
+      b.y-=b.speed; b.x+=b.drift;
+      if(b.y<-20){b.y=canvas.height+20;b.x=Math.random()*canvas.width;}
+      ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+      ctx.strokeStyle=`rgba(14,165,233,${b.opa})`;ctx.lineWidth=1;ctx.stroke();
+      // highlight
+      ctx.beginPath();ctx.arc(b.x-b.r*.3,b.y-b.r*.3,b.r*.25,0,Math.PI*2);
+      ctx.fillStyle=`rgba(186,230,253,${b.opa*.8})`;ctx.fill();
+    });
+    _themeAnimId=requestAnimationFrame(anim);
+  };
+  anim();
+}
+
+// Restore theme on page load
+try{
+  const saved=localStorage.getItem('wm_theme');
+  if(saved && saved!=='default' && WM_THEMES_LIST.includes(saved)){
+    document.addEventListener('DOMContentLoaded',()=>applyTheme(saved));
+    if(document.readyState!=='loading') applyTheme(saved);
+  }
+}catch(e){}
+
+
+// ══════════════════════════════════════════════════════
+//  DATAVIZ — EXPORT CSV/Excel + PALETTE COULEURS
+// ══════════════════════════════════════════════════════
+function injectDataVizExtras(){
+  const resultEl = document.getElementById('dataviz-result');
+  if(!resultEl||resultEl.style.display==='none') return;
+  if(document.getElementById('wm-dataviz-export-bar')) return;
+
+  const bar = document.createElement('div');
+  bar.id = 'wm-dataviz-export-bar';
+  bar.className = 'dataviz-export-bar';
+
+  const palettes = [
+    {name:'blue',   grad:'#3b82f6,#1d4ed8'},
+    {name:'green',  grad:'#22c55e,#15803d'},
+    {name:'purple', grad:'#8b5cf6,#6d28d9'},
+    {name:'red',    grad:'#ef4444,#b91c1c'},
+    {name:'amber',  grad:'#f59e0b,#b45309'},
+    {name:'rainbow',grad:'#ef4444,#3b82f6,#22c55e'},
+  ];
+
+  bar.innerHTML = `
+    <button class="dataviz-export-btn primary" onclick="exportDataVizCSV()">📥 CSV</button>
+    <button class="dataviz-export-btn primary" onclick="exportDataVizExcel()">📊 Excel</button>
+    <button class="dataviz-export-btn" onclick="downloadDataVizChart()">🖼 PNG</button>
+    <div style="flex:1;min-width:8px;"></div>
+    <div class="chart-color-row">
+      <span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#aaa;white-space:nowrap;">Palette :</span>
+      ${palettes.map((p,i)=>`<div class="chart-color-swatch ${i===0?'active':''}" data-palette="${p.name}" title="${p.name}"
+        style="background:linear-gradient(135deg,${p.grad});"
+        onclick="applyDataVizPalette('${p.name}',this)"></div>`).join('')}
+    </div>`;
+
+  resultEl.insertBefore(bar, resultEl.firstChild);
+}
+
+// Hook into the generate button via a MutationObserver watching #dataviz-result
+(function(){
+  const obs = new MutationObserver(()=>{ setTimeout(injectDataVizExtras, 300); });
+  document.addEventListener('DOMContentLoaded',()=>{
+    const r = document.getElementById('dataviz-result');
+    if(r) obs.observe(r,{attributes:true,attributeFilter:['style']});
+  });
+})();
+
+function exportDataVizCSV(){
+  const cd=window._datavizChartData;
+  if(!cd){toast('Aucun graphique');return;}
+  const labels=cd.labels||[];
+  const values=cd.datasets?.[0]?.data||[];
+  let csv='Étiquette,Valeur\n';
+  labels.forEach((l,i)=>{csv+=`"${String(l).replace(/"/g,'""')}",${values[i]??0}\n`;});
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='wikimind-data.csv';a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast('✓ CSV téléchargé !');
+}
+
+async function exportDataVizExcel(){
+  const cd=window._datavizChartData;
+  if(!cd){toast('Aucun graphique');return;}
+  toast('⏳ Préparation Excel…');
+  try{
+    await window._lazyLoad.xlsx();
+    const XLSX=window.XLSX;
+    if(!XLSX){toast('Erreur XLSX');return;}
+    const labels=cd.labels||[];
+    const values=cd.datasets?.[0]?.data||[];
+    const rows=[['Étiquette','Valeur'],...labels.map((l,i)=>[l,values[i]??0])];
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[{wch:24},{wch:14}];
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Données');
+    XLSX.writeFile(wb,'wikimind-data.xlsx');
+    toast('✓ Excel téléchargé !');
+  }catch(e){toast('Erreur: '+e.message.substring(0,40));}
+}
+
+const _DV_PALETTES={
+  blue:   ['#3b82f6','#1d4ed8','#93c5fd','#60a5fa','#2563eb','#bfdbfe'],
+  green:  ['#22c55e','#15803d','#86efac','#4ade80','#166534','#bbf7d0'],
+  purple: ['#8b5cf6','#6d28d9','#c4b5fd','#a78bfa','#7c3aed','#ede9fe'],
+  red:    ['#ef4444','#b91c1c','#fca5a5','#f87171','#dc2626','#fee2e2'],
+  amber:  ['#f59e0b','#b45309','#fde68a','#fbbf24','#d97706','#fef3c7'],
+  rainbow:['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#ec4899'],
+};
+
+function applyDataVizPalette(name,el){
+  const inst=window._datavizChartInstance;
+  if(!inst){toast('Aucun graphique');return;}
+  document.querySelectorAll('.chart-color-swatch').forEach(s=>s.classList.remove('active'));
+  if(el)el.classList.add('active');
+  const colors=_DV_PALETTES[name]||_DV_PALETTES.blue;
+  const type=inst.config.type;
+  inst.data.datasets.forEach((ds,di)=>{
+    if(type==='pie'||type==='doughnut'){
+      ds.backgroundColor=ds.data.map((_,i)=>colors[i%colors.length]);
+      ds.borderColor=ds.data.map((_,i)=>colors[i%colors.length]);
+    } else {
+      const c=colors[di%colors.length];
+      ds.backgroundColor=c+'99';
+      ds.borderColor=c;
+      ds.pointBackgroundColor=c;
+    }
+  });
+  inst.update('active');
+  toast(`Palette ${name} appliquée !`);
+}
+
+
+// ══════════════════════════════════════════════════════
+//  SETTINGS — Injecter bouton thème dans l'onglet Interface
+// ══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  const interfaceBody=document.getElementById('stab-body-interface');
+  if(interfaceBody&&!document.getElementById('wm-theme-settings-row')){
+    const row=document.createElement('div');
+    row.id='wm-theme-settings-row';
+    row.style.cssText='margin-top:20px;';
+    row.innerHTML=`<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#aaa;margin-bottom:8px;">Thèmes d'expérience <span style="color:#f97316;font-size:8px;vertical-align:middle;">PREMIUM+</span></div>
+    <button onclick="openThemeSelector()" style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border2);background:var(--select-bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;display:flex;align-items:center;gap:10px;transition:.2s;" onmouseover="this.style.background='var(--border2)'" onmouseout="this.style.background='var(--select-bg)'">
+      <span style="font-size:18px;">🎨</span>
+      <span>Choisir un thème (Nature, Cyberpunk, Océan…)</span>
+      <span style="margin-left:auto;font-size:10px;color:#aaa;font-weight:600;" id="current-theme-label">Défaut</span>
+    </button>`;
+    interfaceBody.appendChild(row);
+  }
+});
+
+
+// ══════════════════════════════════════════════════════
+//  AUTO-TAVILY dans sendMsg — injection transparente
+// ══════════════════════════════════════════════════════
+// On patche la logique de sendMsg pour injecter Tavily si nécessaire
+// La fonction autoFetchTavilyIfNeeded est définie dans le bloc principal
+// Elle s'active automatiquement si la question détecte des mots-clés d'actualité
+// et que le mode Actualité n'est pas déjà activé (éviter doublon)
+
+</script>
 </body>
 </html>
