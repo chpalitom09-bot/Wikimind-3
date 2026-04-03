@@ -1,461 +1,1277 @@
 <!-- START OF FILE Wikimind_BAC.html -->
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="dark">
 <head>
-<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-29XYBNJ2CB"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-29XYBNJ2CB');
 </script>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-YNR6KZQD5D"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WikiMind BAC 2026 - Simulateur de Moyenne</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --bg2: #13131a;
+  --bg3: #1c1c27;
+  --border: #2a2a3a;
+  --text: #f0f0f5;
+  --text2: #8888aa;
+  --accent: #6c63ff;
+  --accent2: #a78bfa;
+  --card: #16161f;
+  --card-hover: #1e1e2e;
+  --input-bg: #0f0f18;
+  --ring-1: #6c63ff;
+  --ring-2: #f59e0b;
+  --ring-3: #10b981;
+  --ring-4: #3b82f6;
+  --ring-5: #ec4899;
+  --success: #10b981;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+}
+[data-theme="light"] {
+  --bg: #f4f4f8;
+  --bg2: #ffffff;
+  --bg3: #eeeef4;
+  --border: #d8d8e8;
+  --text: #111118;
+  --text2: #6666aa;
+  --accent: #5b52ef;
+  --accent2: #7c6fe0;
+  --card: #ffffff;
+  --card-hover: #f8f8ff;
+  --input-bg: #f0f0f8;
+  --ring-1: #5b52ef;
+}
 
-  gtag('config', 'G-YNR6KZQD5D');
-</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WikiMind BAC 2026 - Calculateur de Moyenne</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            --bg: #ffffff;
-            --text: #111111;
-            --accent: #000000;
-            --border: #e5e7eb;
-            --card-bg: #f9fafb;
-        }
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            overflow-x: hidden; /* Empêche le scroll horizontal */
-        }
+*, *::before, *::after { box-sizing: border-box; }
 
-        /* Animations */
-        .fade-in { animation: fadeIn 0.5s ease-out forwards; opacity: 0; transform: translateY(10px); }
-        @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background 0.3s, color 0.3s;
+  overflow-x: hidden;
+}
 
-        .input-group { transition: all 0.2s; }
-        .input-group:focus-within { transform: scale(1.01); border-color: #000; }
-        
-        input[type="number"]::-webkit-inner-spin-button, 
-        input[type="number"]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; margin: 0; 
-        }
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-        /* WikiMind Branding Style */
-        .wikimind-btn {
-            background-color: var(--accent);
-            color: white;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        }
-        .wikimind-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
+/* Header */
+header {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
+  backdrop-filter: blur(20px);
+}
 
-        .result-card {
-            background: black;
-            color: white;
-            transition: 0.3s;
-        }
-    </style>
+/* Animations */
+@keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+@keyframes slideIn { from { opacity:0; transform:translateX(-12px); } to { opacity:1; transform:translateX(0); } }
+@keyframes popIn { from { opacity:0; transform:scale(0.85); } to { opacity:1; transform:scale(1); } }
+@keyframes pulse-ring { 0%,100% { box-shadow: 0 0 0 2px var(--ring-color,var(--accent)); } 50% { box-shadow: 0 0 0 4px var(--ring-color,var(--accent)); } }
+@keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+@keyframes barSlide { from { transform:translateY(100%); } to { transform:translateY(0); } }
+
+.fade-up { animation: fadeUp 0.45s cubic-bezier(0.22,1,0.36,1) both; }
+.pop-in { animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+/* Plan rings */
+.plan-ring {
+  --ring-color: var(--ring-1);
+  border-radius: 50%;
+  padding: 2px;
+  animation: pulse-ring 3s ease-in-out infinite;
+}
+.plan-ring-2 { --ring-color: var(--ring-2); }
+.plan-ring-3 { --ring-color: var(--ring-3); }
+.plan-ring-4 { --ring-color: var(--ring-4); }
+.plan-ring-5 { --ring-color: var(--ring-5); }
+
+/* Stream buttons */
+.stream-btn {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  color: var(--text);
+  border-radius: 14px;
+  padding: 18px 20px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.22,1,0.36,1);
+  position: relative;
+  overflow: hidden;
+}
+.stream-btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, var(--accent) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.stream-btn:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(108,99,255,0.15); }
+.stream-btn:hover::before { opacity: 0.06; }
+.stream-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+  box-shadow: 0 8px 24px rgba(108,99,255,0.35);
+}
+.stream-btn.active::before { opacity: 0; }
+
+/* Input groups */
+.input-group {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s;
+}
+.input-group:focus-within {
+  border-color: var(--accent);
+  background: var(--card-hover);
+  box-shadow: 0 0 0 3px rgba(108,99,255,0.1);
+}
+.grade-input {
+  width: 72px;
+  text-align: right;
+  font-weight: 800;
+  font-size: 1.2rem;
+  background: var(--input-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 6px 10px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.grade-input:focus { border-color: var(--accent); }
+.grade-input::placeholder { color: var(--text2); font-weight: 400; font-size: 0.9rem; }
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* Category separator */
+.cat-sep {
+  grid-column: 1 / -1;
+  margin-top: 24px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Result bar */
+#result-bar {
+  position: fixed; bottom: 0; left: 0; width: 100%;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  padding: 18px 24px;
+  z-index: 50;
+  transform: translateY(100%);
+  transition: transform 0.5s cubic-bezier(0.22,1,0.36,1);
+  backdrop-filter: blur(20px);
+}
+#result-bar.visible { transform: translateY(0); }
+
+/* Mention badges */
+.mention-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: all 0.3s;
+}
+
+/* Theme toggle */
+.theme-toggle {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+  font-size: 1rem;
+}
+.theme-toggle:hover { border-color: var(--accent); background: var(--card-hover); }
+
+/* Avatar */
+.avatar-ring {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 0.75rem; color: white;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.avatar-ring:hover { transform: scale(1.08); }
+
+/* User dropdown */
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 220px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+  overflow: hidden;
+  display: none;
+  z-index: 200;
+  animation: popIn 0.2s cubic-bezier(0.34,1.56,0.64,1);
+}
+.user-dropdown.open { display: block; }
+.dropdown-item {
+  padding: 10px 16px;
+  font-size: 0.82rem;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex; align-items: center; gap: 8px;
+}
+.dropdown-item:hover { background: var(--card); color: var(--text); }
+
+/* AI panel */
+#ai-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  margin-top: 24px;
+  display: none;
+}
+#ai-panel.visible { display: block; animation: fadeUp 0.3s both; }
+.ai-response {
+  background: var(--input-bg);
+  border-radius: 10px;
+  padding: 16px;
+  font-size: 0.88rem;
+  line-height: 1.65;
+  color: var(--text);
+  white-space: pre-wrap;
+  min-height: 60px;
+}
+.ai-loading {
+  background: linear-gradient(90deg, var(--border) 25%, var(--card-hover) 50%, var(--border) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  height: 16px; border-radius: 4px; margin-bottom: 8px;
+}
+
+/* Wikimind button */
+.wm-btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.wm-btn:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 6px 18px rgba(108,99,255,0.35); }
+.wm-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.wm-btn-outline {
+  background: transparent;
+  color: var(--text2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.wm-btn-outline:hover { border-color: var(--accent); color: var(--text); }
+
+/* MT badge */
+.mt-badge {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  color: white;
+  border-radius: 8px;
+  padding: 3px 8px;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+/* Section scrollable horizontale filières */
+.filieres-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.filieres-scroll::-webkit-scrollbar { display: none; }
+.filiere-chip {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text2);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.filiere-chip:hover { border-color: var(--accent); color: var(--text); }
+.filiere-chip.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+/* Tooltip info */
+.info-tooltip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--text2);
+  font-size: 0.6rem;
+  font-weight: 800;
+  cursor: help;
+  position: relative;
+}
+.info-tooltip:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: 120%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  z-index: 999;
+  font-weight: 500;
+  pointer-events: none;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+}
+</style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body>
 
-    <header class="border-b border-gray-200 sticky top-0 bg-white/90 backdrop-blur-md z-50">
-        <div class="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-2 flex-shrink-0 cursor-pointer" onclick="location.href='Wikimind_home.html'">
-                <div class="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white font-black text-sm flex-shrink-0 shadow-sm">W</div>
-                <h1 class="text-xl font-black tracking-tighter uppercase italic whitespace-nowrap">WikiMind <span class="text-gray-400 not-italic font-medium">BAC</span></h1>
-            </div>
-            
-            <div class="flex items-center gap-4">
-                <!-- BOUTON MON COMPTE -->
-                <a href="user.html" id="auth-btn" class="hidden md:flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-xs font-bold uppercase tracking-widest hover:bg-gray-200 transition">
-                    <span>Mon Compte</span>
-                </a>
-
-                <a href="https://chpalitom09-bot.github.io/Wikimind/" target="_blank" 
-                class="group flex items-center gap-2 text-sm font-medium hover:text-black transition-colors hidden sm:flex">
-                    <span class="text-gray-500 group-hover:text-black transition">Besoin d'aide ?</span>
-                    <span class="bg-gray-100 px-3 py-1.5 rounded-full font-bold border border-gray-200 group-hover:bg-black group-hover:text-white group-hover:border-black transition duration-300">
-                        Parler à @WikiMind
-                    </span>
-                </a>
-                <a href="https://chpalitom09-bot.github.io/Wikimind/" target="_blank" class="sm:hidden w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-black">
-                    ?
-                </a>
-            </div>
-        </div>
-    </header>
-
-    <main class="flex-grow max-w-4xl mx-auto w-full px-6 py-12">
-        
-        <div class="text-center mb-12 fade-in" style="animation-delay: 0.1s;">
-            <h2 class="text-4xl md:text-5xl font-black mb-4 tracking-tight">Simulateur BAC 2026</h2>
-            <p class="text-gray-500">Calcul de moyenne précis avec sauvegarde automatique.</p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 fade-in" style="animation-delay: 0.2s;">
-            <button onclick="setMode('general')" id="btn-general" class="stream-btn p-6 rounded-2xl border-2 border-gray-100 bg-white text-black text-left hover:scale-[1.02] transition shadow-sm">
-                <div class="text-2xl mb-2">🎓</div>
-                <div class="font-bold text-lg">Général</div>
-                <div class="text-xs opacity-70">Réforme 2026 standard</div>
-            </button>
-            <button onclick="setMode('bachibac')" id="btn-bachibac" class="stream-btn p-6 rounded-2xl border-2 border-gray-100 bg-white text-black text-left hover:scale-[1.02] transition shadow-sm">
-                <div class="text-2xl mb-2">🇪🇸</div>
-                <div class="font-bold text-lg">BachiBac</div>
-                <div class="text-xs text-gray-400">Section Binationale</div>
-            </button>
-            <button onclick="setMode('pro')" id="btn-pro" class="stream-btn p-6 rounded-2xl border-2 border-gray-100 bg-white text-black text-left hover:scale-[1.02] transition shadow-sm">
-                <div class="text-2xl mb-2">🛠️</div>
-                <div class="font-bold text-lg">Techno / Pro</div>
-                <div class="text-xs text-gray-400">Coefficients modulables</div>
-            </button>
-        </div>
-
-        <div id="calculator-container" class="fade-in hidden" style="animation-delay: 0.3s;">
-            
-            <div class="flex justify-between items-end mb-6 border-b border-gray-100 pb-2">
-                <h3 class="font-bold text-xl uppercase tracking-widest" id="mode-title">Matières</h3>
-                <span class="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-500">Note / 20</span>
-            </div>
-
-            <div id="inputs-grid" class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 pb-40">
-                </div>
-
-        </div>
-
-    </main>
-
-    <div id="result-bar" class="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-gray-200 p-6 transform translate-y-full transition-transform duration-500 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-40">
-        <div class="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-            <div>
-                <div class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 text-center md:text-left">Moyenne Estimée</div>
-                <div class="flex items-center md:items-baseline gap-3 justify-center md:justify-start">
-                    <span id="final-grade" class="text-5xl font-black tracking-tighter">--/20</span>
-                    <span id="final-mention" class="px-3 py-1 rounded-full bg-black text-white text-xs font-bold uppercase hidden animate-pulse">Mention ?</span>
-                </div>
-            </div>
-            
-            <div class="flex gap-3 w-full md:w-auto">
-                 <button onclick="resetCalculator()" class="flex-1 md:flex-none border border-gray-200 hover:border-black hover:bg-gray-50 px-6 py-3 rounded-xl font-bold text-sm uppercase transition text-gray-600">
-                    Réinitialiser
-                </button>
-                <a href="https://chpalitom09-bot.github.io/Wikimind/" target="_blank" class="flex-1 md:flex-none wikimind-btn px-6 py-3 rounded-xl font-bold text-sm uppercase flex items-center justify-center gap-2">
-                    <span>Analyser IA</span>
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
-                </a>
-            </div>
-        </div>
+<!-- HEADER -->
+<header>
+  <div style="max-width:1100px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between;">
+    <!-- Logo -->
+    <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="location.href='Wikimind_home.html'">
+      <div style="width:34px;height:34px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:0.85rem;letter-spacing:-1px;">W</div>
+      <span style="font-weight:900;font-size:1.1rem;letter-spacing:-0.5px;">WikiMind <span style="color:var(--text2);font-weight:400;">BAC</span></span>
     </div>
 
-    <!-- SCRIPT FIREBASE POUR HEADER -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+    <!-- Right side -->
+    <div style="display:flex;align-items:center;gap:10px;">
+      <!-- Theme toggle -->
+      <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn" title="Changer de thème">🌙</button>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyAsV27OD4bARFOSDlZN1MAARSv9q2WBkdo",
-            authDomain: "wikimind-pro.firebaseapp.com",
-            projectId: "wikimind-pro",
-            storageBucket: "wikimind-pro.firebasestorage.app",
-            messagingSenderId: "154490257518",
-            appId: "1:154490257518:web:3276b1e64f2db9894be67f"
-        };
+      <!-- User area -->
+      <div style="position:relative;" id="user-area">
+        <!-- Not logged in -->
+        <a href="Wikimind_user.html" id="btn-login" style="display:none;padding:8px 16px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text2);font-size:0.8rem;font-weight:600;text-decoration:none;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+          Connexion
+        </a>
+        <!-- Logged in avatar -->
+        <div id="btn-user" style="display:none;position:relative;">
+          <div class="avatar-ring plan-ring" id="avatar-circle" onclick="toggleDropdown()">
+            <span id="avatar-initials">?</span>
+          </div>
+          <!-- Dropdown -->
+          <div class="user-dropdown" id="user-dropdown">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border);">
+              <div style="font-weight:700;font-size:0.9rem;" id="dd-name">Utilisateur</div>
+              <div style="font-size:0.75rem;color:var(--text2);" id="dd-plan">Plan Free</div>
+            </div>
+            <div class="dropdown-item" onclick="location.href='Wikimind_user.html'">
+              <span>👤</span> Mon espace
+            </div>
+            <div class="dropdown-item" id="dd-mt" style="display:none;">
+              <span>⚡</span> <span id="dd-mt-val">-- MT</span>
+            </div>
+            <div style="height:1px;background:var(--border);margin:4px 0;"></div>
+            <div class="dropdown-item" onclick="signOutUser()" style="color:var(--danger);">
+              <span>🚪</span> Déconnexion
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
+<!-- MAIN -->
+<main style="flex:1;max-width:1100px;margin:0 auto;width:100%;padding:40px 24px 120px;">
 
-        onAuthStateChanged(auth, (user) => {
-            const btn = document.getElementById('auth-btn');
-            if (btn) {
-                if (user) {
-                    btn.innerHTML = `<div class="w-2 h-2 rounded-full bg-green-500"></div> <span>Mon Espace</span>`;
-                } else {
-                    btn.innerHTML = `<span>Mon Compte</span>`;
-                }
-            }
-        });
-    </script>
+  <!-- Hero -->
+  <div class="fade-up" style="text-align:center;margin-bottom:48px;">
+    <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;border:1px solid var(--border);background:var(--card);margin-bottom:20px;">
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block;"></span>
+      <span style="font-size:0.75rem;color:var(--text2);font-weight:600;">Réforme BAC 2026 — Coefficients officiels</span>
+    </div>
+    <h1 style="font-size:clamp(2rem,5vw,3.5rem);font-weight:900;letter-spacing:-2px;margin:0 0 12px;">Simulateur BAC 2026</h1>
+    <p style="color:var(--text2);font-size:1rem;">Calcul précis • Toutes filières • Analyse IA Mistral</p>
+  </div>
 
-    <script>
-        // --- 1. CONFIGURATION DATA ---
-        const DATA = {
-            general: [
-                { category: "Épreuves Terminales (60%)" },
-                { name: "Français (Écrit)", coef: 5 },
-                { name: "Français (Oral)", coef: 5 },
-                { name: "Philosophie", coef: 8 },
-                { name: "Grand Oral", coef: 10 },
-                { name: "Spécialité 1 (Terminale)", coef: 16 },
-                { name: "Spécialité 2 (Terminale)", coef: 16 },
-                { category: "Contrôle Continu (40%)" },
-                { name: "Spécialité abandonnée (1ère)", coef: 8 },
-                { name: "Histoire-Géo (Moyenne 1ère+Term)", coef: 6 },
-                { name: "LVA (Moyenne 1ère+Term)", coef: 6 },
-                { name: "LVB (Moyenne 1ère+Term)", coef: 6 },
-                { name: "Enseignement Scientifique", coef: 6 },
-                { name: "EPS", coef: 6 },
-                { name: "EMC", coef: 2 }
-            ],
-            bachibac: [
-                { category: "Épreuves Spécifiques BachiBac" },
-                { name: "Langue et Littérature (Écrit)", coef: 10, info: "Remplace LVA" },
-                { name: "Langue et Littérature (Oral)", coef: 10 },
-                { name: "Hist-Géo Espagnol (Écrit+Oral)", coef: 15, info: "Remplace Hist-Géo TC" },
-                { category: "Épreuves Communes" },
-                { name: "Français (Écrit)", coef: 5 },
-                { name: "Français (Oral)", coef: 5 },
-                { name: "Philosophie", coef: 8 },
-                { name: "Grand Oral", coef: 10 },
-                { name: "Spécialité 1 (Terminale)", coef: 16 },
-                { name: "Spécialité 2 (Terminale)", coef: 16 },
-                { category: "Contrôle Continu" },
-                { name: "Spécialité abandonnée (1ère)", coef: 8 },
-                { name: "LVB (Moyenne 1ère+Term)", coef: 6 },
-                { name: "Enseignement Scientifique", coef: 6 },
-                { name: "EPS", coef: 6 },
-                { name: "EMC", coef: 2 }
-            ],
-            pro: [
-                { category: "Enseignements Généraux" },
-                { name: "Français / Histoire-Géo", coef: 5 },
-                { name: "Maths / Sciences", coef: 5 },
-                { name: "LVA", coef: 4 },
-                { name: "LVB", coef: 4 },
-                { name: "Arts Appliqués", coef: 2 },
-                { name: "EPS", coef: 4 },
-                { category: "Enseignements Professionnels" },
-                { name: "Chef d'œuvre", coef: 4 },
-                { name: "Épreuve Pro (EP1 - Pratique)", coef: 12 },
-                { name: "Épreuve Pro (EP2 - Dossier)", coef: 8 },
-                { name: "Économie - Gestion / Droit", coef: 2 },
-                { name: "Prévention Santé Env.", coef: 2 }
-            ]
-        };
+  <!-- Filière selector - Catégories -->
+  <div class="fade-up" style="animation-delay:0.1s;margin-bottom:16px;">
+    <div style="font-size:0.72rem;color:var(--text2);font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">Voie</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+      <button class="filiere-chip active" onclick="selectVoie('generale',this)" id="voie-generale">🎓 Générale</button>
+      <button class="filiere-chip" onclick="selectVoie('technologique',this)" id="voie-technologique">⚙️ Technologique</button>
+      <button class="filiere-chip" onclick="selectVoie('pro',this)" id="voie-pro">🛠️ Professionnelle</button>
+      <button class="filiere-chip" onclick="selectVoie('internationale',this)" id="voie-internationale">🌍 Internationale</button>
+    </div>
+    <!-- Sous-filières -->
+    <div style="font-size:0.72rem;color:var(--text2);font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;" id="sous-filiere-label">Filière / Spécificité</div>
+    <div class="filieres-scroll" id="sous-filieres-container"></div>
+  </div>
 
-        let currentMode = null;
+  <!-- Calculator -->
+  <div id="calculator-container" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+      <h3 style="font-weight:800;font-size:1rem;letter-spacing:0.05em;text-transform:uppercase;" id="mode-title">Matières</h3>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:0.72rem;color:var(--text2);font-family:monospace;background:var(--card);padding:4px 10px;border-radius:6px;border:1px solid var(--border);">note / 20</span>
+      </div>
+    </div>
+    <div id="inputs-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;"></div>
 
-        // --- 2. LOCAL STORAGE LOGIC ---
-        // Clés uniques pour éviter les conflits
-        const LS_KEY_LAST_MODE = 'wikimind_bac_last_mode';
-        const LS_PREFIX_DATA = 'wikimind_bac_data_';
+    <!-- AI Panel -->
+    <div id="ai-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div>
+          <div style="font-weight:700;font-size:0.9rem;margin-bottom:2px;">✨ Analyse IA Mistral</div>
+          <div style="font-size:0.75rem;color:var(--text2);" id="ai-cost-info">Coût : <span class="mt-badge">3 MT</span></div>
+        </div>
+        <button class="wm-btn" onclick="launchAI()" id="ai-btn">
+          <span>Analyser mes résultats</span>
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5-5 5M6 12h12"/></svg>
+        </button>
+      </div>
+      <div class="ai-response" id="ai-response" style="display:none;"></div>
+      <div id="ai-loader" style="display:none;">
+        <div class="ai-loading" style="width:80%;"></div>
+        <div class="ai-loading" style="width:60%;"></div>
+        <div class="ai-loading" style="width:70%;"></div>
+      </div>
+    </div>
+  </div>
 
-        function saveToLocal() {
-            if (!currentMode) return;
-            
-            const inputs = document.querySelectorAll('.grade-input');
-            const dataToSave = {};
-            
-            inputs.forEach((input, index) => {
-                dataToSave[index] = input.value;
-            });
+</main>
 
-            try {
-                localStorage.setItem(LS_PREFIX_DATA + currentMode, JSON.stringify(dataToSave));
-                localStorage.setItem(LS_KEY_LAST_MODE, currentMode);
-            } catch (e) {
-                console.warn("Impossible de sauvegarder (Mode privé ?)", e);
-            }
-        }
+<!-- RESULT BAR -->
+<div id="result-bar">
+  <div style="max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:16px;">
+    <div>
+      <div style="font-size:0.65rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Moyenne estimée</div>
+      <div style="display:flex;align-items:baseline;gap:12px;">
+        <span id="final-grade" style="font-size:3rem;font-weight:900;letter-spacing:-2px;line-height:1;">--/20</span>
+        <span id="final-mention" class="mention-badge" style="display:none;"></span>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="wm-btn-outline" onclick="resetCalculator()">Réinitialiser</button>
+      <button class="wm-btn" onclick="showAIPanel()">
+        <span>Analyser avec l'IA</span>
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
 
-        function loadFromLocal(mode) {
-            try {
-                const savedJson = localStorage.getItem(LS_PREFIX_DATA + mode);
-                if (savedJson) {
-                    const savedData = JSON.parse(savedJson);
-                    const inputs = document.querySelectorAll('.grade-input');
-                    inputs.forEach((input, index) => {
-                        if (savedData[index] !== undefined) {
-                            input.value = savedData[index];
-                        }
-                    });
-                }
-            } catch (e) {
-                console.warn("Erreur chargement données", e);
-            }
-        }
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-        function initApp() {
-            // Vérifie s'il y a une dernière session
-            try {
-                const lastMode = localStorage.getItem(LS_KEY_LAST_MODE);
-                if (lastMode && DATA[lastMode]) {
-                    setMode(lastMode);
-                }
-            } catch (e) { console.log("Nouvelle session"); }
-        }
+const firebaseConfig = {
+  apiKey: "AIzaSyAsV27OD4bARFOSDlZN1MAARSv9q2WBkdo",
+  authDomain: "wikimind-pro.firebaseapp.com",
+  databaseURL: "https://wikimind-pro-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "wikimind-pro",
+  storageBucket: "wikimind-pro.firebasestorage.app",
+  messagingSenderId: "154490257518",
+  appId: "1:154490257518:web:3276b1e64f2db9894be67f"
+};
 
-        // --- 3. CORE FUNCTIONS ---
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
 
-        function setMode(mode) {
-            currentMode = mode;
-            
-            // Mise à jour visuelle des boutons
-            document.querySelectorAll('.stream-btn').forEach(btn => {
-                btn.classList.remove('bg-black', 'text-white', 'border-black', 'ring-2', 'ring-offset-2');
-                btn.classList.add('bg-white', 'text-black', 'border-gray-100');
-            });
-            const activeBtn = document.getElementById(`btn-${mode}`);
-            activeBtn.classList.remove('bg-white', 'text-black', 'border-gray-100');
-            activeBtn.classList.add('bg-black', 'text-white', 'border-black');
+const FORFAIT_LABELS = ['', 'Free', 'Basic', 'Standard', 'Premium', 'Premium+'];
+const FORFAIT_RING = ['', 'plan-ring', 'plan-ring-2', 'plan-ring-3', 'plan-ring-4', 'plan-ring-5'];
 
-            // Afficher le calculateur
-            const container = document.getElementById('calculator-container');
-            container.classList.remove('hidden');
-            
-            // Titre
-            const titles = { general: "Bac Général", bachibac: "Section BachiBac", pro: "Bac Pro / Techno" };
-            document.getElementById('mode-title').innerText = titles[mode];
+window._currentUser = null;
+window._currentForfait = 1;
+window._currentMT = 0;
 
-            renderInputs(mode);
-            loadFromLocal(mode); // Charger les données sauvegardées
-            updateCalculation(); // Lancer le calcul
-            
-            // Scroll doux vers le calculateur si ce n'est pas le chargement initial
-            if (window.scrollY < 100) {
-                 setTimeout(() => {
-                    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 100);
-            }
-            
-            // Afficher la barre de résultat
-            document.getElementById('result-bar').classList.remove('translate-y-full');
-            
-            // Sauvegarder le mode actuel
-            try { localStorage.setItem(LS_KEY_LAST_MODE, mode); } catch(e){}
-        }
+onAuthStateChanged(auth, async (user) => {
+  const loginBtn = document.getElementById('btn-login');
+  const userBtn = document.getElementById('btn-user');
 
-        function renderInputs(mode) {
-            const grid = document.getElementById('inputs-grid');
-            grid.innerHTML = '';
+  if (user) {
+    loginBtn.style.display = 'none';
+    userBtn.style.display = 'block';
+    window._currentUser = user;
 
-            DATA[mode].forEach((item, index) => {
-                if (item.category) {
-                    const separator = document.createElement('div');
-                    separator.className = "md:col-span-2 mt-6 mb-2 pb-1 border-b border-gray-200";
-                    separator.innerHTML = `<h4 class="font-bold text-xs text-gray-500 uppercase tracking-widest">${item.category}</h4>`;
-                    grid.appendChild(separator);
-                } else {
-                    const div = document.createElement('div');
-                    div.className = "input-group flex items-center justify-between bg-gray-50 p-4 rounded-xl border border-transparent hover:border-gray-300 hover:bg-white";
-                    
-                    div.innerHTML = `
-                        <div class="flex flex-col pr-4">
-                            <label class="font-bold text-sm leading-tight text-gray-800">${item.name}</label>
-                            <span class="text-xs text-gray-400 font-mono mt-1">Coef. ${item.coef} ${item.info ? '• ' + item.info : ''}</span>
-                        </div>
-                        <input type="number" 
-                            min="0" max="20" step="0.5" 
-                            placeholder="-"
-                            inputmode="decimal"
-                            class="grade-input w-20 text-right font-black text-xl bg-transparent border-b-2 border-gray-200 focus:border-black outline-none transition-colors p-1 text-black placeholder-gray-300"
-                            data-coef="${item.coef}"
-                            oninput="updateCalculationAndSave()">
-                    `;
-                    grid.appendChild(div);
-                }
-            });
-        }
+    // Fetch user data
+    try {
+      const snap = await get(ref(db, `users/${user.uid}`));
+      if (snap.exists()) {
+        const data = snap.val();
+        const forfait = data.FORFAIT || 1;
+        const mt = data.MT || 0;
+        window._currentForfait = forfait;
+        window._currentMT = mt;
 
-        function updateCalculationAndSave() {
-            updateCalculation();
-            saveToLocal();
-        }
+        // Avatar
+        const initials = (user.displayName || user.email || '?').substring(0,2).toUpperCase();
+        document.getElementById('avatar-initials').textContent = initials;
 
-        function updateCalculation() {
-            const inputs = document.querySelectorAll('.grade-input');
-            let totalPoints = 0;
-            let totalCoef = 0;
-            let filledCount = 0;
+        // Ring color par forfait
+        const circle = document.getElementById('avatar-circle');
+        circle.className = 'avatar-ring plan-ring ' + FORFAIT_RING[forfait];
 
-            inputs.forEach(input => {
-                let valStr = input.value.replace(',', '.'); // Accepte les virgules
-                let val = parseFloat(valStr);
-                const coef = parseFloat(input.dataset.coef);
-                
-                if (!isNaN(val)) {
-                    filledCount++;
-                    // Clamp visuel
-                    if(val < 0) { val = 0; input.value = 0; }
-                    if(val > 20) { val = 20; input.value = 20; }
-                    
-                    totalPoints += val * coef;
-                    totalCoef += coef;
-                }
-            });
+        // Dropdown
+        document.getElementById('dd-name').textContent = user.displayName || user.email;
+        document.getElementById('dd-plan').textContent = `Plan ${FORFAIT_LABELS[forfait]}`;
+        document.getElementById('dd-mt').style.display = 'flex';
+        document.getElementById('dd-mt-val').textContent = `${mt} MT`;
+      }
+    } catch(e) {
+      console.warn('Firebase read error', e);
+      document.getElementById('avatar-initials').textContent = (user.email||'?').substring(0,2).toUpperCase();
+    }
+  } else {
+    loginBtn.style.display = 'flex';
+    userBtn.style.display = 'none';
+    window._currentUser = null;
+  }
+});
 
-            const display = document.getElementById('final-grade');
-            const mentionTag = document.getElementById('final-mention');
-            
-            // Si aucune note n'est entrée
-            if (totalCoef === 0 || filledCount === 0) {
-                display.innerText = "--/20";
-                mentionTag.classList.add('hidden');
-                return;
-            }
+window.signOutUser = async () => {
+  await signOut(auth);
+  document.getElementById('user-dropdown').classList.remove('open');
+};
+</script>
 
-            // Calcul Moyenne
-            // Note: Pour une simulation "en cours", on divise par le coef total des matières remplies
-            // Mais pour le BAC réel, c'est le coef total absolu.
-            // Ici, on fait une moyenne pondérée des notes RENTRÉES pour donner une estimation "courante"
-            const average = totalPoints / totalCoef;
-            const averageFormatted = average.toFixed(2);
-            
-            display.innerText = averageFormatted + "/20";
+<script>
+// ============================================================
+// DATA — Toutes filières
+// ============================================================
+const FILIERES = {
+  generale: {
+    label: '🎓 Bac Général',
+    subs: {
+      'standard': {
+        label: 'Général Standard',
+        subjects: [
+          { cat: 'Épreuves Terminales (60%)' },
+          { name: 'Français Écrit (1ère)', coef: 5 },
+          { name: 'Français Oral (1ère)', coef: 5 },
+          { name: 'Philosophie', coef: 8 },
+          { name: 'Grand Oral', coef: 10 },
+          { name: 'Spécialité 1 (Terminale)', coef: 16, info: 'Épreuve écrite 4h' },
+          { name: 'Spécialité 2 (Terminale)', coef: 16, info: 'Épreuve écrite 4h' },
+          { cat: 'Contrôle Continu (40%)' },
+          { name: 'Spécialité abandonnée (1ère)', coef: 8, info: 'Moyenne annuelle 1ère' },
+          { name: 'Histoire-Géographie', coef: 6, info: 'Moyenne 1ère + Term' },
+          { name: 'LVA', coef: 6 },
+          { name: 'LVB', coef: 6 },
+          { name: 'Enseignement Scientifique', coef: 6 },
+          { name: 'EPS', coef: 6 },
+          { name: 'EMC', coef: 2 },
+        ]
+      },
+      'maths-expertes': {
+        label: 'Maths Expertes',
+        subjects: [
+          { cat: 'Épreuves Terminales (60%)' },
+          { name: 'Français Écrit (1ère)', coef: 5 },
+          { name: 'Français Oral (1ère)', coef: 5 },
+          { name: 'Philosophie', coef: 8 },
+          { name: 'Grand Oral', coef: 10 },
+          { name: 'Spécialité 1 (Terminale)', coef: 16 },
+          { name: 'Spécialité 2 (Terminale)', coef: 16 },
+          { cat: 'Option Maths Expertes' },
+          { name: 'Maths Expertes', coef: 6, info: 'Option de Terminale (+3 coef si > 10)' },
+          { cat: 'Contrôle Continu (40%)' },
+          { name: 'Spécialité abandonnée (1ère)', coef: 8 },
+          { name: 'Histoire-Géographie', coef: 6 },
+          { name: 'LVA', coef: 6 },
+          { name: 'LVB', coef: 6 },
+          { name: 'Enseignement Scientifique', coef: 6 },
+          { name: 'EPS', coef: 6 },
+          { name: 'EMC', coef: 2 },
+        ]
+      },
+      'maths-complementaires': {
+        label: 'Maths Complémentaires',
+        subjects: [
+          { cat: 'Épreuves Terminales (60%)' },
+          { name: 'Français Écrit (1ère)', coef: 5 },
+          { name: 'Français Oral (1ère)', coef: 5 },
+          { name: 'Philosophie', coef: 8 },
+          { name: 'Grand Oral', coef: 10 },
+          { name: 'Spécialité 1 (Terminale)', coef: 16 },
+          { name: 'Spécialité 2 (Terminale)', coef: 16 },
+          { cat: 'Option Maths Complémentaires' },
+          { name: 'Maths Complémentaires', coef: 4, info: 'Option Terminale' },
+          { cat: 'Contrôle Continu (40%)' },
+          { name: 'Spécialité abandonnée (1ère)', coef: 8 },
+          { name: 'Histoire-Géographie', coef: 6 },
+          { name: 'LVA', coef: 6 },
+          { name: 'LVB', coef: 6 },
+          { name: 'Enseignement Scientifique', coef: 6 },
+          { name: 'EPS', coef: 6 },
+          { name: 'EMC', coef: 2 },
+        ]
+      },
+      'droit-eco': {
+        label: 'Option Droit/Éco',
+        subjects: [
+          { cat: 'Épreuves Terminales (60%)' },
+          { name: 'Français Écrit (1ère)', coef: 5 },
+          { name: 'Français Oral (1ère)', coef: 5 },
+          { name: 'Philosophie', coef: 8 },
+          { name: 'Grand Oral', coef: 10 },
+          { name: 'Spécialité 1 (Terminale)', coef: 16 },
+          { name: 'Spécialité 2 (Terminale)', coef: 16 },
+          { cat: 'Option Droit & Éco' },
+          { name: 'Droit & Grands Enjeux Contemporains', coef: 4 },
+          { cat: 'Contrôle Continu (40%)' },
+          { name: 'Spécialité abandonnée (1ère)', coef: 8 },
+          { name: 'Histoire-Géographie', coef: 6 },
+          { name: 'LVA', coef: 6 },
+          { name: 'LVB', coef: 6 },
+          { name: 'Enseignement Scientifique', coef: 6 },
+          { name: 'EPS', coef: 6 },
+          { name: 'EMC', coef: 2 },
+        ]
+      }
+    }
+  },
+  technologique: {
+    label: '⚙️ Voie Techno',
+    subs: {
+      'sti2d': {
+        label: 'STI2D',
+        subjects: [
+          { cat: 'Épreuves Terminales' },
+          { name: 'Français Écrit (1ère)', coef: 5 },
+          { name: 'Français Oral (1ère)', coef: 5 },
+          { name: 'Philosophie', coef: 4 },
+          { name: 'Maths (Terminale)', coef: 6 },
+          { name: 'Innovation Techno & Éco-conception', coef: 6, info: 'Écrit 4h' },
+          { name: 'Ingénierie & Développement Durable', coef: 8, info: 'Écrit + TP' },
+          { name: 'Spécialité STI2D (Écrit)', coef: 8 },
+          { name: 'Spécialité STI2D (TP)', coef: 6, info: 'Évaluation pratique' },
+          { cat: 'Contrôle Continu' },
+          { name: 'Histoire-Géographie', coef: 4 },
+          { name: 'LVA', coef: 4 },
+          { name: 'LVB', coef: 2 },
+          { name: 'EPS', coef: 6 },
+          { name: 'EMC', coef: 2 },
+        ]
+      },
+      'stl': {
+        label: 'STL',
+        subjects: [
+          { cat: 'Épreuves Terminales' },
+          { name: 'Français Écrit (1ère)', coef: 5 },
+          { name: 'Français Oral (1ère)', coef: 5 },
+          { name: 'Philosophie', coef: 4 },
+          { name: 'Maths (Terminale)', coef: 6 },
+          { name: 'Chimie-Biochimie-Sciences du Vivant', coef: 8, info: 'Écrit' },
+          { name: 'Sciences Physiques et Chimiques (Écrit)', coef: 6 },
+          { name: 'Sciences Physiques et Chimiques (TP)', coef: 8, info: 'CCF en cours d\'année' },
+          { cat: 'Contrôle Continu' },
+          { name: 'Histoire-Géographie', coef: 4 },
+          { name: 'LVA', coef: 4 },
+          { name: 'LVB', coef: 2 },
+          { name: 'EPS', coef: 6 },
+          { name: 'EMC', coef: 2 },
+        ]
+      },
+      'stmg': {
+        label: 'STMG',
+        subjects: [
+          { cat: 'Épreuves Terminales' },
+          { name: 'Français Écrit (1ère)', coef: 5 },
+          { name: 'Français Oral (1ère)', coef: 5 },
+          { name: 'Philosophie', coef: 4 },
+          { name: 'Sciences de Management (Écrit)', coef: 7 },
+          { name: 'Sciences de Gestion (Oral)', coef: 7, info: 'Épreuve orale' },
+          { name: 'Éco-Droit', coef: 6, info: 'Écrit 4h' },
+          { name: 'Spécialité STMG (Écrit)', coef: 6 },
+          { cat: 'Contrôle Continu' },
+          { name: 'Maths', coef: 4 },
+          { name: 'Histoire-Géographie', coef: 4 },
+          { name: 'LVA', coef: 4 },
+          { name: 'LVB', coef: 2 },
+          { name: 'EPS', coef: 6 },
+          { name: 'EMC', coef: 2 },
+        ]
+      },
+      'st2s': {
+        label: 'ST2S',
+        subjects: [
+          { cat: 'Épreuves Terminales' },
+          { name: 'Français Écrit (1ère)', coef: 5 },
+          { name: 'Français Oral (1ère)', coef: 5 },
+          { name: 'Philosophie', coef: 4 },
+          { name: 'Sciences et Techniques Sanitaires (Écrit)', coef: 9 },
+          { name: 'Sciences et Techniques Sanitaires (Oral)', coef: 5 },
+          { name: 'Biologie et Physiopathologie', coef: 8, info: 'Écrit' },
+          { name: 'Sciences Physiques (TP)', coef: 3 },
+          { cat: 'Contrôle Continu' },
+          { name: 'Maths', coef: 4 },
+          { name: 'Histoire-Géographie', coef: 4 },
+          { name: 'LVA', coef: 4 },
+          { name: 'LVB', coef: 2 },
+          { name: 'EPS', coef: 6 },
+          { name: 'EMC', coef: 2 },
+        ]
+      },
+      'stav': {
+        label: 'STAV',
+        subjects: [
+          { cat: 'Épreuves Terminales' },
+          { name: 'Français Écrit (1ère)', coef: 5 },
+          { name: 'Français Oral (1ère)', coef: 5 },
+          { name: 'Philosophie', coef: 4 },
+          { name: 'Sciences et Technologies (Écrit)', coef: 8 },
+          { name: 'Agronomie-Territoire-Citoyenneté', coef: 6 },
+          { name: 'Épreuve de Spécialité', coef: 8 },
+          { cat: 'Contrôle Continu' },
+          { name: 'Maths', coef: 4 },
+          { name: 'Histoire-Géographie', coef: 4 },
+          { name: 'LVA', coef: 4 },
+          { name: 'EPS', coef: 6 },
+          { name: 'EMC', coef: 2 },
+        ]
+      },
+      'std2a': {
+        label: 'STD2A',
+        subjects: [
+          { cat: 'Épreuves Terminales' },
+          { name: 'Français Écrit (1ère)', coef: 5 },
+          { name: 'Français Oral (1ère)', coef: 5 },
+          { name: 'Philosophie', coef: 4 },
+          { name: 'Arts Appliqués (Analyse)', coef: 6 },
+          { name: 'Arts Appliqués (Pratique)', coef: 12, info: 'Dossier + jury' },
+          { name: 'Design & Arts Appliqués (Oral)', coef: 6 },
+          { cat: 'Contrôle Continu' },
+          { name: 'Maths', coef: 4 },
+          { name: 'Histoire des Arts', coef: 4 },
+          { name: 'LVA', coef: 4 },
+          { name: 'EPS', coef: 6 },
+          { name: 'EMC', coef: 2 },
+        ]
+      },
+      'hotellerie': {
+        label: 'Hôtellerie',
+        subjects: [
+          { cat: 'Épreuves Terminales' },
+          { name: 'Français Écrit (1ère)', coef: 5 },
+          { name: 'Français Oral (1ère)', coef: 5 },
+          { name: 'Philosophie', coef: 4 },
+          { name: 'Hébergement & Communication Pro', coef: 8 },
+          { name: 'Alimentation & Boissons', coef: 8 },
+          { name: 'Économie-Droit-Management', coef: 6 },
+          { cat: 'Contrôle Continu' },
+          { name: 'Maths', coef: 4 },
+          { name: 'Histoire-Géographie', coef: 4 },
+          { name: 'LVA', coef: 6 },
+          { name: 'LVB', coef: 4 },
+          { name: 'EPS', coef: 4 },
+          { name: 'EMC', coef: 2 },
+        ]
+      }
+    }
+  },
+  pro: {
+    label: '🛠️ Voie Pro',
+    subs: {
+      'generique': {
+        label: 'Pro Générique',
+        subjects: [
+          { cat: 'Enseignements Généraux' },
+          { name: 'Français / Histoire-Géo', coef: 5 },
+          { name: 'Maths / Sciences', coef: 5 },
+          { name: 'LVA', coef: 4 },
+          { name: 'Arts Appliqués', coef: 2 },
+          { name: 'EPS', coef: 4 },
+          { cat: 'Enseignements Professionnels' },
+          { name: 'Chef d\'œuvre', coef: 4, info: 'Projet pluriannuel' },
+          { name: 'EP1 — Épreuve pratique', coef: 12 },
+          { name: 'EP2 — Dossier professionnel', coef: 8 },
+          { name: 'Économie-Gestion / Droit', coef: 2 },
+          { name: 'Prévention Santé Environnement', coef: 2 },
+        ]
+      }
+    }
+  },
+  internationale: {
+    label: '🌍 Section Internationale',
+    subs: {
+      'bachibac': {
+        label: 'BachiBac 🇪🇸',
+        subjects: [
+          { cat: 'Épreuves Spécifiques BachiBac' },
+          { name: 'Langue & Littérature Espagnole (Écrit)', coef: 10, info: 'Remplace LVA' },
+          { name: 'Langue & Littérature Espagnole (Oral)', coef: 10 },
+          { name: 'Histoire-Géo en Espagnol', coef: 15, info: 'Écrit + Oral — remplace Hist-Géo TC' },
+          { cat: 'Épreuves Communes' },
+          { name: 'Français Écrit (1ère)', coef: 5 },
+          { name: 'Français Oral (1ère)', coef: 5 },
+          { name: 'Philosophie', coef: 8 },
+          { name: 'Grand Oral', coef: 10 },
+          { name: 'Spécialité 1 (Terminale)', coef: 16 },
+          { name: 'Spécialité 2 (Terminale)', coef: 16 },
+          { cat: 'Contrôle Continu' },
+          { name: 'Spécialité abandonnée (1ère)', coef: 8 },
+          { name: 'LVB', coef: 6 },
+          { name: 'Enseignement Scientifique', coef: 6 },
+          { name: 'EPS', coef: 6 },
+          { name: 'EMC', coef: 2 },
+        ]
+      },
+      'abibac': {
+        label: 'AbiBac 🇩🇪',
+        subjects: [
+          { cat: 'Épreuves Spécifiques AbiBac' },
+          { name: 'Langue & Littérature Allemande (Écrit)', coef: 10 },
+          { name: 'Langue & Littérature Allemande (Oral)', coef: 10 },
+          { name: 'Histoire en Allemand', coef: 10, info: 'Écrit + Oral' },
+          { cat: 'Épreuves Communes' },
+          { name: 'Français Écrit (1ère)', coef: 5 },
+          { name: 'Français Oral (1ère)', coef: 5 },
+          { name: 'Philosophie', coef: 8 },
+          { name: 'Grand Oral', coef: 10 },
+          { name: 'Spécialité 1 (Terminale)', coef: 16 },
+          { name: 'Spécialité 2 (Terminale)', coef: 16 },
+          { cat: 'Contrôle Continu' },
+          { name: 'Spécialité abandonnée (1ère)', coef: 8 },
+          { name: 'Histoire-Géographie', coef: 6 },
+          { name: 'LVB', coef: 6 },
+          { name: 'Enseignement Scientifique', coef: 6 },
+          { name: 'EPS', coef: 6 },
+          { name: 'EMC', coef: 2 },
+        ]
+      },
+      'esabac': {
+        label: 'EsaBac 🇮🇹',
+        subjects: [
+          { cat: 'Épreuves Spécifiques EsaBac' },
+          { name: 'Langue & Littérature Italienne (Écrit)', coef: 10 },
+          { name: 'Langue & Littérature Italienne (Oral)', coef: 10 },
+          { name: 'Histoire en Italien', coef: 10 },
+          { cat: 'Épreuves Communes' },
+          { name: 'Français Écrit (1ère)', coef: 5 },
+          { name: 'Français Oral (1ère)', coef: 5 },
+          { name: 'Philosophie', coef: 8 },
+          { name: 'Grand Oral', coef: 10 },
+          { name: 'Spécialité 1 (Terminale)', coef: 16 },
+          { name: 'Spécialité 2 (Terminale)', coef: 16 },
+          { cat: 'Contrôle Continu' },
+          { name: 'Spécialité abandonnée (1ère)', coef: 8 },
+          { name: 'Histoire-Géographie', coef: 6 },
+          { name: 'LVB', coef: 6 },
+          { name: 'Enseignement Scientifique', coef: 6 },
+          { name: 'EPS', coef: 6 },
+          { name: 'EMC', coef: 2 },
+        ]
+      },
+      'option-italiano': {
+        label: 'Option Italien',
+        subjects: [
+          { cat: 'Épreuves Terminales' },
+          { name: 'Français Écrit (1ère)', coef: 5 },
+          { name: 'Français Oral (1ère)', coef: 5 },
+          { name: 'Philosophie', coef: 8 },
+          { name: 'Grand Oral', coef: 10 },
+          { name: 'Spécialité 1 (Terminale)', coef: 16 },
+          { name: 'Spécialité 2 (Terminale)', coef: 16 },
+          { cat: 'Option Langue Vivante' },
+          { name: 'Italien (LVB ou option)', coef: 6, info: 'Note sur 20 — coef bonificateur si > 10' },
+          { cat: 'Contrôle Continu' },
+          { name: 'Spécialité abandonnée (1ère)', coef: 8 },
+          { name: 'Histoire-Géographie', coef: 6 },
+          { name: 'LVA', coef: 6 },
+          { name: 'Enseignement Scientifique', coef: 6 },
+          { name: 'EPS', coef: 6 },
+          { name: 'EMC', coef: 2 },
+        ]
+      }
+    }
+  }
+};
 
-            // Gestion Mention
-            mentionTag.classList.remove('hidden', 'bg-red-500', 'bg-yellow-500', 'bg-blue-500', 'bg-green-500', 'bg-purple-600', 'bg-black');
-            mentionTag.className = "px-3 py-1 rounded-full text-white text-xs font-bold uppercase shadow-sm transform transition-all duration-300";
+// ============================================================
+// STATE
+// ============================================================
+let currentVoie = 'generale';
+let currentFiliere = 'standard';
+let isDark = true;
 
-            if (average < 8) {
-                mentionTag.innerText = "Refusé";
-                mentionTag.classList.add('bg-red-500');
-            } else if (average < 10) {
-                mentionTag.innerText = "Rattrapage";
-                mentionTag.classList.add('bg-yellow-500');
-            } else if (average < 12) {
-                mentionTag.innerText = "Admis";
-                mentionTag.classList.add('bg-blue-500');
-            } else if (average < 14) {
-                mentionTag.innerText = "Mention Assez Bien";
-                mentionTag.classList.add('bg-green-500');
-            } else if (average < 16) {
-                mentionTag.innerText = "Mention Bien";
-                mentionTag.classList.add('bg-black');
-            } else {
-                mentionTag.innerText = "Mention Très Bien";
-                mentionTag.classList.add('bg-purple-600', 'shadow-purple-200');
-            }
-        }
+// ============================================================
+// THEME
+// ============================================================
+function toggleTheme() {
+  isDark = !isDark;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  document.getElementById('theme-btn').textContent = isDark ? '🌙' : '☀️';
+  try { localStorage.setItem('wikimind_bac_theme', isDark ? 'dark' : 'light'); } catch(e) {}
+}
+window.toggleTheme = toggleTheme;
 
-        function resetCalculator() {
-            if(confirm("Tout effacer ?")) {
-                document.querySelectorAll('.grade-input').forEach(i => i.value = '');
-                updateCalculationAndSave();
-                // On nettoie aussi le localStorage pour ce mode
-                try { localStorage.removeItem(LS_PREFIX_DATA + currentMode); } catch(e){}
-            }
-        }
+// ============================================================
+// DROPDOWN
+// ============================================================
+window.toggleDropdown = () => {
+  document.getElementById('user-dropdown').classList.toggle('open');
+};
+document.addEventListener('click', (e) => {
+  const area = document.getElementById('user-area');
+  if (area && !area.contains(e.target)) {
+    const dd = document.getElementById('user-dropdown');
+    if (dd) dd.classList.remove('open');
+  }
+});
 
-        // Lancement au chargement
-        window.addEventListener('DOMContentLoaded', initApp);
+// ============================================================
+// VOIE / FILIÈRE SELECTORS
+// ============================================================
+function selectVoie(voie, el) {
+  currentVoie = voie;
+  document.querySelectorAll('[id^="voie-"]').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderSousFilieres(voie);
+}
+window.selectVoie = selectVoie;
 
-    </script>
+function renderSousFilieres(voie) {
+  const container = document.getElementById('sous-filieres-container');
+  container.innerHTML = '';
+  const subs = FILIERES[voie].subs;
+  const keys = Object.keys(subs);
+  keys.forEach((key, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'filiere-chip' + (i === 0 ? ' active' : '');
+    btn.textContent = subs[key].label;
+    btn.onclick = () => {
+      document.querySelectorAll('#sous-filieres-container .filiere-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFiliere = key;
+      renderCalculator(voie, key);
+    };
+    container.appendChild(btn);
+  });
+  // Auto-select first
+  currentFiliere = keys[0];
+  renderCalculator(voie, keys[0]);
+}
+
+// ============================================================
+// RENDER CALCULATOR
+// ============================================================
+function renderCalculator(voie, filiere) {
+  const data = FILIERES[voie].subs[filiere];
+  if (!data) return;
+
+  document.getElementById('calculator-container').style.display = 'block';
+  document.getElementById('mode-title').textContent = data.label;
+
+  const grid = document.getElementById('inputs-grid');
+  grid.innerHTML = '';
+
+  data.subjects.forEach((item, idx) => {
+    if (item.cat) {
+      const sep = document.createElement('div');
+      sep.className = 'cat-sep';
+      sep.style.animationDelay = `${idx * 0.02}s`;
+      sep.innerHTML = `<div style="font-size:0.68rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.1em;">${item.cat}</div>`;
+      grid.appendChild(sep);
+    } else {
+      const div = document.createElement('div');
+      div.className = 'input-group fade-up';
+      div.style.animationDelay = `${idx * 0.03}s`;
+      div.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:3px;flex:1;padding-right:12px;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-weight:600;font-size:0.87rem;">${item.name}</span>
+            ${item.info ? `<span class="info-tooltip" data-tip="${item.info}">i</span>` : ''}
+          </div>
+          <span style="font-size:0.72rem;color:var(--text2);font-family:monospace;">Coef. ${item.coef}</span>
+        </div>
+        <input type="number" min="0" max="20" step="0.5"
+          placeholder="—"
+          inputmode="decimal"
+          class="grade-input"
+          data-coef="${item.coef}"
+          oninput="updateAndSave()">
+      `;
+      grid.appendChild(div);
+    }
+  });
+
+  loadFromLS();
+  updateCalculation();
+
+  // Reset AI
+  document.getElementById('ai-panel').classList.remove('visible');
+  document.getElementById('ai-response').style.display = 'none';
+  document.getElementById('ai-loader').style.display = 'none';
+
+  // Show result bar
+  document.getElementById('result-bar').classList.add('visible');
+}
+
+// ============================================================
+// LOCALSTORAGE
+// ============================================================
+const LS_MODE = 'wm_bac_mode';
+const LS_DATA_PFX = 'wm_bac_data_';
+
+function saveToLS() {
+  const key = currentVoie + '_' + currentFiliere;
+  const inputs = document.querySelectorAll('.grade-input');
+  const d = {};
+  inputs.forEach((inp, i) => { d[i] = inp.value; });
+  try {
+    localStorage.setItem(LS_DATA_PFX + key, JSON.stringify(d));
+    localStorage.setItem(LS_MODE, key);
+  } catch(e) {}
+}
+
+function loadFromLS() {
+  const key = currentVoie + '_' + currentFiliere;
+  try {
+    const raw = localStorage.getItem(LS_DATA_PFX + key);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    document.querySelectorAll('.grade-input').forEach((inp, i) => {
+      if (d[i] !== undefined) inp.value = d[i];
+    });
+  } catch(e) {}
+}
+
+// ============================================================
+// CALCULATION
+// ============================================================
+function updateCalculation() {
+  const inputs = document.querySelectorAll('.grade-input');
+  let pts = 0, coefTotal = 0;
+  inputs.forEach(inp => {
+    let v = parseFloat(inp.value.replace(',', '.'));
+    const c = parseFloat(inp.dataset.coef);
+    if (!isNaN(v)) {
+      v = Math.max(0, Math.min(20, v));
+      pts += v * c;
+      coefTotal += c;
+    }
+  });
+
+  const display = document.getElementById('final-grade');
+  const mention = document.getElementById('final-mention');
+
+  if (coefTotal === 0) {
+    display.textContent = '--/20';
+    mention.style.display = 'none';
+    return;
+  }
+
+  const avg = pts / coefTotal;
+  display.textContent = avg.toFixed(2) + '/20';
+  mention.style.display = 'inline-flex';
+
+  const mentions = [
+    { min: 18, label: 'Félicitations', bg: '#7c3aed', text: 'white' },
+    { min: 16, label: 'Mention TB', bg: '#6c63ff', text: 'white' },
+    { min: 14, label: 'Mention B', bg: '#10b981', text: 'white' },
+    { min: 12, label: 'Mention AB', bg: '#3b82f6', text: 'white' },
+    { min: 10, label: 'Admis', bg: '#f59e0b', text: 'white' },
+    { min: 8,  label: 'Rattrapage', bg: '#f97316', text: 'white' },
+    { min: 0,  label: 'Refusé', bg: '#ef4444', text: 'white' },
+  ];
+  const m = mentions.find(x => avg >= x.min) || mentions[mentions.length - 1];
+  mention.textContent = m.label;
+  mention.style.background = m.bg;
+  mention.style.color = m.text;
+}
+
+window.updateAndSave = () => { updateCalculation(); saveToLS(); };
+
+window.resetCalculator = () => {
+  if (!confirm('Réinitialiser toutes les notes ?')) return;
+  document.querySelectorAll('.grade-input').forEach(i => { i.value = ''; });
+  updateCalculation();
+  const key = currentVoie + '_' + currentFiliere;
+  try { localStorage.removeItem(LS_DATA_PFX + key); } catch(e) {}
+};
+
+// ============================================================
+// AI ANALYSIS — Mistral
+// ============================================================
+const MISTRAL_API_KEY = 'AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA';
+
+window.showAIPanel = () => {
+  const panel = document.getElementById('ai-panel');
+  panel.classList.add('visible');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+};
+
+window.launchAI = async () => {
+  const btn = document.getElementById('ai-btn');
+  const loader = document.getElementById('ai-loader');
+  const responseEl = document.getElementById('ai-response');
+
+  // Build context
+  const inputs = document.querySelectorAll('.grade-input');
+  const filiere = FILIERES[currentVoie]?.subs[currentFiliere];
+  const subjects = filiere?.subjects.filter(s => !s.cat) || [];
+  let totalPts = 0, totalCoef = 0;
+  const lines = [];
+
+  inputs.forEach((inp, i) => {
+    const v = parseFloat(inp.value);
+    const s = subjects[i];
+    if (!isNaN(v) && s) {
+      totalPts += v * s.coef;
+      totalCoef += s.coef;
+      lines.push(`- ${s.name} (coef ${s.coef}) : ${v}/20`);
+    }
+  });
+
+  if (lines.length === 0) {
+    responseEl.textContent = '⚠️ Entre au moins quelques notes avant de lancer l\'analyse.';
+    responseEl.style.display = 'block';
+    loader.style.display = 'none';
+    return;
+  }
+
+  const avg = totalCoef > 0 ? (totalPts / totalCoef).toFixed(2) : '?';
+  const prompt = `Tu es un conseiller d'orientation scolaire expert du système éducatif français.
+
+Un lycéen prépare le BAC 2026 — filière : ${filiere?.label || currentFiliere}
+Moyenne actuelle estimée : ${avg}/20
+
+Voici ses notes actuelles :
+${lines.join('\n')}
+
+Analyse ses résultats et donne-lui :
+1. Une évaluation honnête de sa situation actuelle
+2. Les matières à fort impact où il doit progresser en priorité
+3. Des conseils concrets et motivants pour améliorer sa moyenne
+4. Sa mention probable si les tendances continuent
+
+Réponds en français, de façon claire et bienveillante, sans utiliser de markdown ni de symboles spéciaux. Sois direct et utile.`;
+
+  btn.disabled = true;
+  loader.style.display = 'block';
+  responseEl.style.display = 'none';
+
+  try {
+    const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${MISTRAL_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'mistral-small-latest',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 600,
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || `Erreur ${response.status}`);
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content || 'Aucune réponse reçue.';
+
+    loader.style.display = 'none';
+    responseEl.textContent = text;
+    responseEl.style.display = 'block';
+    responseEl.style.animation = 'fadeUp 0.4s both';
+
+  } catch(e) {
+    loader.style.display = 'none';
+    responseEl.textContent = `Erreur lors de l'analyse : ${e.message}`;
+    responseEl.style.display = 'block';
+    console.error('Mistral error', e);
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  // Theme
+  try {
+    const saved = localStorage.getItem('wikimind_bac_theme');
+    if (saved === 'light') {
+      isDark = false;
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.getElementById('theme-btn').textContent = '☀️';
+    }
+  } catch(e) {}
+
+  // Default: Générale standard
+  renderSousFilieres('generale');
+
+  // Restore last mode
+  try {
+    const lastMode = localStorage.getItem(LS_MODE);
+    if (lastMode) {
+      const [voie, filiere] = lastMode.split('_').reduce((acc, p, i, arr) => {
+        // key format: voie_filiere where filiere might contain _
+        if (i === 0) return [p, ''];
+        return [acc[0], (acc[1] ? acc[1] + '_' : '') + p];
+      }, ['', '']);
+      if (voie && FILIERES[voie]?.subs[filiere]) {
+        currentVoie = voie;
+        currentFiliere = filiere;
+        // Click voie btn
+        const voieBtn = document.getElementById('voie-' + voie);
+        if (voieBtn) selectVoie(voie, voieBtn);
+      }
+    }
+  } catch(e) {}
+});
+</script>
 </body>
 </html>
