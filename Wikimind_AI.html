@@ -11,9 +11,9 @@
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="WikiMind AI v6 — L'assistant IA le plus puissant, gratuit et open source">
+<meta name="description" content="WikiMind AI v7 — Canvas édition inline · Mind Map interactive · Graphiques IA éditables">
 <meta name="theme-color" content="#ffffff">
-<title>WikiMind AI v6</title>
+<title>WikiMind AI v7</title>
 
 <!-- Preconnect pour accélérer les requêtes CDN -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
@@ -92,6 +92,12 @@ window._lazyLoad = {
     if(window.lottie){r();return;}
     const s=document.createElement('script');
     s.src='https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js';
+    s.onload=r; document.head.appendChild(s);
+  }),
+  plotly: () => new Promise(r=>{
+    if(window.Plotly){r();return;}
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.29.1/plotly.min.js';
     s.onload=r; document.head.appendChild(s);
   }),
   orama: () => new Promise(r=>{
@@ -697,6 +703,101 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 
 /* Canvas notice in chat */
 .canvas-notice{display:flex;align-items:center;gap:8px;font-size:11px;color:#22c55e;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:6px 0;opacity:.7;}
+
+/* ── CANVAS INLINE EDIT FLOATING MENU ── */
+#canvas-inline-menu{
+  position:fixed;z-index:9999;
+  background:var(--bg);border:1px solid var(--border2);border-radius:14px;
+  padding:6px;display:flex;gap:4px;align-items:center;
+  box-shadow:0 8px 32px rgba(0,0,0,.2);
+  opacity:0;pointer-events:none;transform:translateY(4px);
+  transition:opacity .15s,transform .15s;
+}
+#canvas-inline-menu.show{opacity:1;pointer-events:auto;transform:translateY(0);}
+.cvs-inline-btn{
+  display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:9px;
+  background:none;border:none;font-size:11px;font-weight:700;cursor:pointer;
+  color:var(--text);font-family:Inter,sans-serif;transition:.15s;white-space:nowrap;
+}
+.cvs-inline-btn:hover{background:var(--select-bg);}
+.cvs-inline-btn.primary{background:var(--accent);color:var(--accent-inv);}
+.cvs-inline-btn.primary:hover{opacity:.85;}
+.cvs-inline-btn svg{width:12px;height:12px;flex-shrink:0;}
+.cvs-inline-sep{width:1px;height:18px;background:var(--border2);margin:0 2px;}
+.cvs-inline-processing{font-size:10px;color:#888;font-weight:600;padding:4px 8px;animation:cvs-pulse 1s ease-in-out infinite;}
+@keyframes cvs-pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* ── INTERACTIVE MINDMAP NODES ── */
+.mm-node-interactive{cursor:pointer;}
+#mindmap-node-editor{
+  position:absolute;z-index:200;
+  background:var(--bg);border:1px solid var(--border2);border-radius:16px;
+  padding:16px;min-width:280px;max-width:360px;
+  box-shadow:0 12px 40px rgba(0,0,0,.2);
+  display:none;
+}
+#mindmap-node-editor.show{display:block;}
+.mm-edit-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#999;margin-bottom:6px;}
+.mm-edit-input{
+  width:100%;padding:8px 12px;border-radius:9px;
+  border:1px solid var(--border2);background:var(--input-bg);
+  color:var(--text);font-size:13px;font-family:Inter,sans-serif;
+  outline:none;transition:border .2s;box-sizing:border-box;
+}
+.mm-edit-input:focus{border-color:var(--accent);}
+.mm-edit-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.mm-edit-btn{
+  padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;
+  cursor:pointer;border:none;font-family:Inter,sans-serif;transition:.15s;
+}
+.mm-edit-btn.primary{background:var(--accent);color:var(--accent-inv);}
+.mm-edit-btn.primary:hover{opacity:.85;}
+.mm-edit-btn.secondary{background:var(--select-bg);color:var(--text);border:1px solid var(--border2);}
+.mm-edit-btn.secondary:hover{background:var(--border2);}
+.mm-edit-btn.ai{background:rgba(139,92,246,.12);color:#8b5cf6;border:1px solid rgba(139,92,246,.25);}
+.mm-edit-btn.ai:hover{background:rgba(139,92,246,.22);}
+.mm-edit-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+/* ── AI EDIT BUTTON on all generated content ── */
+.wm-ai-edit-bar{display:flex;align-items:center;gap:8px;padding:8px 0 0;flex-wrap:wrap;}
+.wm-ai-edit-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 12px;border-radius:20px;font-size:10px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.06em;cursor:pointer;
+  border:1px solid var(--border2);background:none;color:#888;
+  font-family:Inter,sans-serif;transition:.2s;
+}
+.wm-ai-edit-btn:hover{border-color:#8b5cf6;color:#8b5cf6;background:rgba(139,92,246,.06);}
+.wm-ai-edit-btn svg{width:11px;height:11px;}
+.wm-ai-edit-btn.loading{color:#8b5cf6;border-color:#8b5cf6;animation:cvs-pulse 1s ease-in-out infinite;}
+.wm-ai-edit-input{
+  padding:5px 10px;border-radius:8px;border:1px solid var(--border2);
+  background:var(--input-bg);color:var(--text);font-size:11px;
+  font-family:Inter,sans-serif;outline:none;flex:1;min-width:160px;
+  transition:border .15s;
+}
+.wm-ai-edit-input:focus{border-color:#8b5cf6;}
+
+/* ── MATH GRAPH INTERACTIVE ── */
+.wm-math-graph-wrap{
+  background:var(--select-bg);border:1px solid var(--border);border-radius:14px;
+  padding:14px 16px;margin:10px 0;
+}
+.wm-math-graph-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.wm-math-graph-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#888;display:flex;align-items:center;gap:6px;}
+.wm-math-graph-controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.wm-graph-ctrl-input{
+  padding:4px 8px;border-radius:6px;border:1px solid var(--border2);
+  background:var(--input-bg);color:var(--text);font-size:11px;
+  font-family:'Menlo','Courier New',monospace;outline:none;width:180px;
+}
+.wm-graph-ctrl-btn{
+  padding:4px 10px;border-radius:6px;border:none;background:var(--accent);
+  color:var(--accent-inv);font-size:10px;font-weight:800;cursor:pointer;
+  font-family:Inter,sans-serif;transition:.15s;
+}
+.wm-graph-ctrl-btn:hover{opacity:.85;}
+.wm-plot-container{width:100%;height:320px;}
 
 /* AI tool call indicator */
 .tool-call-chip{display:inline-flex;align-items:center;gap:6px;background:var(--select-bg);border:1px solid var(--border2);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:#888;margin-bottom:8px;}
@@ -4608,12 +4709,12 @@ function updateUserUI(){
 function updateModelOptions(){
   const sel=G('model-select'); if(!sel) return;
   const models=[
-    {value:'flash',  label:'WIKIMIND FLASH 4.0',     minPlan:1},
-    {value:'medium', label:'WIKIMIND MEDIUM 4.0',    minPlan:2},
-    {value:'work',   label:'WIKIMIND WORK 4.0',      minPlan:2},
-    {value:'reflect',label:'WIKIMIND RÉFLEXION 4.0', minPlan:2},
-    {value:'task',   label:'WIKIMIND TASK 4.0',      minPlan:2},
-    {value:'code',   label:'WIKIMIND CODE',           minPlan:2},
+    {value:'flash',  label:'WIKIMIND FLASH 4.1',     minPlan:1},
+    {value:'medium', label:'WIKIMIND MEDIUM 4.1',    minPlan:2},
+    {value:'work',   label:'WIKIMIND WORK 4.1',      minPlan:2},
+    {value:'reflect',label:'WIKIMIND RÉFLEXION 4.1', minPlan:2},
+    {value:'task',   label:'WIKIMIND TASK 4.1',      minPlan:2},
+    {value:'code',   label:'WIKIMIND CODE 4.1',      minPlan:2},
   ];
   sel.innerHTML='';
   models.forEach(m=>{ if(S.plan>=m.minPlan){const opt=document.createElement('option');opt.value=m.value;opt.textContent=m.label;sel.appendChild(opt);} });
@@ -5203,6 +5304,8 @@ function typewriterEffect(el,fullText){
     el.innerHTML=formatMarkdown(fullText);
     el.classList.remove('typing-cursor');
     applyMath(el);applyHljs(el);injectPythonRunButtons(el);
+    // Detect math functions and render interactive graph
+    setTimeout(()=>{ if(typeof _postProcessChatBubble==='function') _postProcessChatBubble(el, fullText); },200);
     // Trigger chartjs render after typewriter completes
     el.querySelectorAll('canvas[id^="chart-"]').forEach(c=>{
       if(c.id&&window._wmCopyStore){
@@ -5377,7 +5480,8 @@ function formatMarkdown(text){
     setTimeout(()=>{ try{ if(window.mermaid) window.mermaid.init(undefined,'#'+mid); }catch(e){} },100);
     const cid='wmc'+(+(window._wciCounter=(window._wciCounter||0)+1));
     window._wmCopyStore[cid]=raw;
-    return `<div class="mermaid-wrap"><div class="mermaid" id="${mid}">${raw}</div><div class="mermaid-actions"><button class="mermaid-action-btn" onclick="copyStoredText('${cid}')">📋 Copier code</button><button class="mermaid-action-btn" onclick="toggleDiagramPanel();setTimeout(()=>{const el=G('diagram-prompt');if(el)el.value='${escapedRaw.substring(0,200)}';},300)">✏️ Éditer</button></div></div>`;
+    const mmId = 'mm-aibar-'+mid;
+    return `<div class="mermaid-wrap"><div class="mermaid" id="${mid}">${raw}</div><div class="mermaid-actions"><button class="mermaid-action-btn" onclick="copyStoredText('${cid}')">📋 Copier code</button><button class="mermaid-action-btn" onclick="toggleDiagramPanel();setTimeout(()=>{const el=G('diagram-prompt');if(el)el.value='${escapedRaw.substring(0,200)}';},300)">✏️ Éditer</button></div><div class="wm-ai-edit-bar" id="${mmId}" style="padding-top:8px"><span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#aaa">✦ IA :</span><input class="wm-ai-edit-input" placeholder="Modifie le diagramme… ex: ajoute un nœud, change les couleurs" style="flex:1;min-width:140px"><button class="wm-ai-edit-btn" onclick="_applyMermaidAiEdit(this,'${cid}')"><svg fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><path d='M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z'/></svg>Appliquer</button></div></div>`;
   });
   html=html.replace(/<pre><code( class="language-([^"]*)")?>([\s\S]*?)<\/code><\/pre>/g,(_,cls,lang,code)=>{
     const raw=code.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'").trim();
@@ -11961,6 +12065,24 @@ Utilise ces couleurs pour les branches : ["#3b82f6","#22c55e","#f59e0b","#ef4444
     if(check.record) check.record();
     renderMindMap(data, canvas);
     toast('✓ Mind Map générée !');
+    // Inject AI edit bar below the canvas
+    const mmCanvasParent = canvas?.parentElement;
+    if(mmCanvasParent){
+      let existingBar = mmCanvasParent.querySelector('.wm-ai-edit-bar.mm-bar');
+      if(!existingBar){
+        const mmBar = document.createElement('div');
+        mmBar.className = 'wm-ai-edit-bar mm-bar';
+        mmBar.style.padding = '10px 0 0';
+        mmBar.innerHTML = `<span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#aaa">✦ Éditer la carte avec l'IA :</span>
+          <input class="wm-ai-edit-input" placeholder="Ex: ajoute une branche sur les risques, traduis en anglais, développe la 1ère branche…" style="flex:1;min-width:160px">
+          <button class="wm-ai-edit-btn" onclick="_applyMindmapAiEdit(this)">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg>
+            Appliquer
+          </button>`;
+        mmCanvasParent.appendChild(mmBar);
+        mmBar.querySelector('input')?.addEventListener('keydown', e=>{ if(e.key==='Enter') _applyMindmapAiEdit(mmBar.querySelector('.wm-ai-edit-btn')); });
+      }
+    }
   }catch(e){
     if(canvas) canvas.innerHTML=`<div style="text-align:center;color:#ef4444;font-size:13px;padding:40px">Erreur : ${esc(e.message)}</div>`;
     toast('Erreur génération : '+e.message.substring(0,50));
@@ -13707,7 +13829,7 @@ console.log('%c✅ Import universel | ✅ RAG illimité | ✅ PDF Viewer | ✅ G
           <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.18em;color:rgba(255,255,255,.4);margin-bottom:8px;">Guide complet</div>
           <div style="font-size:26px;font-weight:900;letter-spacing:-.04em;color:#fff;line-height:1;">WikiMind AI</div>
           <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
-            <span style="font-size:13px;font-weight:800;color:#fff;opacity:.9;">v6.0</span>
+            <span style="font-size:13px;font-weight:800;color:#fff;opacity:.9;">v7.0</span>
             <span style="background:linear-gradient(90deg,#6366f1,#ec4899);color:#fff;font-size:9px;font-weight:800;padding:3px 9px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;">Plateforme IA</span>
           </div>
         </div>
@@ -13913,7 +14035,7 @@ console.log('%c✅ Import universel | ✅ RAG illimité | ✅ PDF Viewer | ✅ G
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
           <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#ec4899);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🚀</div>
           <div>
-            <div style="font-size:14px;font-weight:800;">WikiMind AI v6.0</div>
+            <div style="font-size:14px;font-weight:800;">WikiMind AI v7.0</div>
             <div style="font-size:11px;color:#888;">1er avril 2026</div>
           </div>
           <span style="margin-left:auto;background:linear-gradient(90deg,#6366f1,#ec4899);color:#fff;font-size:9px;font-weight:800;padding:3px 9px;border-radius:20px;letter-spacing:.04em;">LATEST</span>
@@ -15364,5 +15486,748 @@ document.addEventListener('DOMContentLoaded',()=>{
 // et que le mode Actualité n'est pas déjà activé (éviter doublon)
 
 </script>
+
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  WIKIMIND v7 — CANVAS INLINE EDITING (Selection floating menu)
+// ══════════════════════════════════════════════════════════════
+
+let _cvsInlineSelStart = 0, _cvsInlineSelEnd = 0, _cvsInlineSelectedText = '';
+const _cvsMenu = () => document.getElementById('canvas-inline-menu');
+
+function initCanvasInlineEdit(){
+  const editor = document.getElementById('canvas-editor');
+  if(!editor) return;
+
+  editor.addEventListener('mouseup', _onCvsSelection);
+  editor.addEventListener('keyup', _onCvsSelection);
+  document.addEventListener('mousedown', e => {
+    if(!_cvsMenu()?.contains(e.target)) hideCvsInlineMenu();
+  });
+}
+
+function _onCvsSelection(){
+  const editor = document.getElementById('canvas-editor');
+  if(!editor) return;
+  const start = editor.selectionStart, end = editor.selectionEnd;
+  if(start === end){ hideCvsInlineMenu(); return; }
+  const selected = editor.value.substring(start, end).trim();
+  if(selected.length < 3){ hideCvsInlineMenu(); return; }
+  _cvsInlineSelStart = start;
+  _cvsInlineSelEnd = end;
+  _cvsInlineSelectedText = selected;
+  _positionCvsMenu(editor);
+}
+
+function _positionCvsMenu(editor){
+  const menu = _cvsMenu(); if(!menu) return;
+  const rect = editor.getBoundingClientRect();
+  // Position above the textarea mid-point
+  menu.style.left = Math.min(rect.left + 60, window.innerWidth - 520) + 'px';
+  menu.style.top = (rect.top - 56 + window.scrollY) + 'px';
+  menu.classList.add('show');
+}
+
+function hideCvsInlineMenu(){
+  _cvsMenu()?.classList.remove('show');
+}
+
+async function cvsInlineAction(action){
+  if(!_cvsInlineSelectedText) return;
+  const menu = _cvsMenu();
+  const btnContainer = menu.querySelector('.cvs-inline-btn.primary');
+
+  // Show spinner in menu
+  const originalHTML = menu.innerHTML;
+  menu.innerHTML = '<span class="cvs-inline-processing">✦ IA en cours…</span>';
+
+  const prompts = {
+    rewrite:  `Réécris ce texte de façon plus claire et percutante. Réponds UNIQUEMENT avec le texte réécrit.`,
+    shorten:  `Raccourcis ce texte en gardant l'essentiel (max 60% de la longueur originale). Réponds UNIQUEMENT avec le texte raccourci.`,
+    expand:   `Développe ce texte avec plus de détails et d'exemples. Réponds UNIQUEMENT avec le texte développé.`,
+    translate:`Traduis ce texte en anglais. Réponds UNIQUEMENT avec la traduction.`,
+    improve:  `Améliore le style de ce texte pour le rendre plus fluide et professionnel. Réponds UNIQUEMENT avec le texte amélioré.`,
+  };
+
+  try{
+    const result = await callMistral([
+      {role:'system', content: prompts[action] || prompts.rewrite},
+      {role:'user', content: _cvsInlineSelectedText}
+    ], M_MINI, 800);
+
+    // Replace selection in canvas editor
+    const editor = document.getElementById('canvas-editor');
+    if(editor && result){
+      const before = editor.value.substring(0, _cvsInlineSelStart);
+      const after  = editor.value.substring(_cvsInlineSelEnd);
+      editor.value = before + result.trim() + after;
+      // Re-select replaced text
+      editor.selectionStart = _cvsInlineSelStart;
+      editor.selectionEnd   = _cvsInlineSelStart + result.trim().length;
+      editor.focus();
+      updateCanvasWordCount?.();
+      // Auto-preview if preview tab active
+      if(document.getElementById('cvstab-preview')?.classList.contains('active')){
+        switchCvsTab?.('preview');
+      }
+      toast('✦ ' + {rewrite:'Réécriture', shorten:'Raccourci', expand:'Développé', translate:'Traduit', improve:'Amélioré'}[action] + ' !');
+    }
+  } catch(e){
+    toast('Erreur IA : ' + (e.message||'').substring(0,40));
+  }
+
+  menu.innerHTML = originalHTML;
+  hideCvsInlineMenu();
+}
+
+// Init on DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+  initCanvasInlineEdit();
+  // Re-init when canvas opens (MutationObserver on canvas-panel)
+  const panel = document.getElementById('canvas-panel');
+  if(panel){
+    new MutationObserver(() => {
+      if(panel.classList.contains('open')) setTimeout(initCanvasInlineEdit, 200);
+    }).observe(panel, {attributes:true, attributeFilter:['class']});
+  }
+});
+
+
+// ══════════════════════════════════════════════════════════════
+//  WIKIMIND v7 — INTERACTIVE MINDMAP NODES
+// ══════════════════════════════════════════════════════════════
+
+let _mmCurrentData = null;
+let _mmCurrentNode = null; // {type:'topic'|'branch'|'child'|'grandchild', branchIdx, childIdx, gcIdx}
+
+function renderMindMap(data, container){
+  if(!container||!data) return;
+  _mmCurrentData = JSON.parse(JSON.stringify(data)); // deep clone
+  _renderMindMapSVG(_mmCurrentData, container);
+}
+
+function _renderMindMapSVG(data, container){
+  if(!container||!data) return;
+  const isDark = document.body.classList.contains('dark-mode');
+  const branches = data.branches||[];
+  const W = Math.max(container.clientWidth||800, 800);
+  const H = Math.max(600, branches.length*90+200);
+  const cx = W/2, cy = H/2;
+  const colors = branches.map((b,i)=>b.color||['#3b82f6','#22c55e','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16'][i%8]);
+
+  let svgNodes='', svgEdges='';
+
+  function wrapText(text, maxChars){
+    if(text.length<=maxChars) return [text];
+    const words=text.split(' '); let lines=[], cur='';
+    words.forEach(w=>{
+      if((cur+' '+w).trim().length>maxChars&&cur){lines.push(cur.trim());cur=w;}
+      else{cur=(cur+' '+w).trim();}
+    });
+    if(cur) lines.push(cur.trim());
+    return lines.slice(0,3);
+  }
+
+  function escSvg(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+  // Center node — clickable
+  const topicLines = wrapText(data.topic||'Topic', 14);
+  const cw = Math.max(110, topicLines[0].length*8+20);
+  const ch = topicLines.length*18+20;
+  svgNodes += `<g class="mm-node-interactive" onclick="openMindmapNodeEditor('topic',-1,-1,-1,'${escSvg(data.topic||'')}',${cx-cw/2},${cy-ch/2},this)" filter="url(#shadow)" style="cursor:pointer">
+    <rect x="${cx-cw/2}" y="${cy-ch/2}" width="${cw}" height="${ch}" rx="16" fill="${isDark?'#1f2937':'#111827'}" stroke="#6366f1" stroke-width="0"/>
+    ${topicLines.map((l,li)=>`<text x="${cx}" y="${cy-ch/2+18+li*18}" text-anchor="middle" font-size="13" font-weight="800" fill="#fff" font-family="Inter,sans-serif">${escSvg(l)}</text>`).join('')}
+    <title>Cliquer pour modifier</title>
+  </g>`;
+
+  const angleStep = (2*Math.PI)/Math.max(branches.length,1);
+  const branchRadius = 200;
+
+  branches.forEach((branch, bi)=>{
+    const angle = -Math.PI/2+bi*angleStep;
+    const bx = cx+Math.cos(angle)*branchRadius;
+    const by = cy+Math.sin(angle)*branchRadius;
+    const color = colors[bi];
+
+    svgEdges += `<line x1="${cx}" y1="${cy}" x2="${bx}" y2="${by}" stroke="${color}" stroke-width="3" opacity="0.7" stroke-linecap="round"/>`;
+
+    const bLines = wrapText(branch.label||'', 12);
+    const bw = Math.max(90, bLines[0].length*7+22);
+    const bh = bLines.length*16+16;
+    svgNodes += `<g class="mm-node-interactive" onclick="openMindmapNodeEditor('branch',${bi},-1,-1,'${escSvg(branch.label||'')}',${bx-bw/2},${by-bh/2},this)" style="cursor:pointer">
+      <rect x="${bx-bw/2}" y="${by-bh/2}" width="${bw}" height="${bh}" rx="12" fill="${color}" opacity="0.95" class="mm-node-bg"/>
+      ${bLines.map((l,li)=>`<text x="${bx}" y="${by-bh/2+14+li*16}" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="Inter,sans-serif">${escSvg(l)}</text>`).join('')}
+      <title>Cliquer pour modifier · "Développer" pour ajouter des sous-nœuds</title>
+    </g>`;
+
+    const children = branch.children||[];
+    if(children.length){
+      const childRadius = 130;
+      const perpAngle = angle+Math.PI/2;
+      children.forEach((child, ci)=>{
+        const offset = (ci-(children.length-1)/2)*55;
+        const cx2 = bx+Math.cos(angle)*childRadius+Math.cos(perpAngle)*offset*0.7;
+        const cy2 = by+Math.sin(angle)*childRadius+Math.sin(perpAngle)*offset*0.7;
+
+        svgEdges += `<line x1="${bx}" y1="${by}" x2="${cx2}" y2="${cy2}" stroke="${color}" stroke-width="1.8" opacity="0.45" stroke-linecap="round"/>`;
+
+        const cLines = wrapText(child.label||'', 11);
+        const cw2 = Math.max(75, cLines[0].length*6.5+16);
+        const ch2 = cLines.length*14+12;
+        svgNodes += `<g class="mm-node-interactive" onclick="openMindmapNodeEditor('child',${bi},${ci},-1,'${escSvg(child.label||'')}',${cx2-cw2/2},${cy2-ch2/2},this)" style="cursor:pointer">
+          <rect x="${cx2-cw2/2}" y="${cy2-ch2/2}" width="${cw2}" height="${ch2}" rx="8" fill="${isDark?'#1e293b':'#f8fafc'}" stroke="${color}" stroke-width="1.5"/>
+          ${cLines.map((l,li)=>`<text x="${cx2}" y="${cy2-ch2/2+11+li*14}" text-anchor="middle" font-size="9.5" font-weight="600" fill="${isDark?'#e2e8f0':'#334155'}" font-family="Inter,sans-serif">${escSvg(l)}</text>`).join('')}
+          <title>Cliquer pour modifier</title>
+        </g>`;
+
+        const grandchildren = child.children||[];
+        if(grandchildren.length){
+          const gcRadius = 90;
+          grandchildren.slice(0,4).forEach((gc,gci)=>{
+            const gcOffset = (gci-(grandchildren.length-1)/2)*36;
+            const gcPerpA = angle+Math.PI/2;
+            const gcx = cx2+Math.cos(angle)*gcRadius+Math.cos(gcPerpA)*gcOffset*0.6;
+            const gcy = cy2+Math.sin(angle)*gcRadius+Math.sin(gcPerpA)*gcOffset*0.6;
+            const gcLabel = (gc.label||'').length>14?(gc.label||'').substring(0,13)+'…':(gc.label||'');
+            svgEdges += `<line x1="${cx2}" y1="${cy2}" x2="${gcx}" y2="${gcy}" stroke="${color}" stroke-width="1.2" opacity="0.3" stroke-linecap="round"/>`;
+            svgNodes += `<text x="${gcx}" y="${gcy+4}" text-anchor="middle" font-size="8.5" fill="${isDark?'#94a3b8':'#64748b'}" font-family="Inter,sans-serif" font-style="italic" class="mm-node-interactive" onclick="openMindmapNodeEditor('grandchild',${bi},${ci},${gci},'${escSvg(gc.label||'')}',${gcx-40},${gcy-16},this)" style="cursor:pointer">• ${escSvg(gcLabel)}</text>`;
+          });
+        }
+      });
+    }
+  });
+
+  container.innerHTML = `<div style="position:relative">
+    <svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="min-width:${W}px;overflow:visible;cursor:default">
+      <defs>
+        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="rgba(0,0,0,0.25)"/>
+        </filter>
+      </defs>
+      ${svgEdges}${svgNodes}
+    </svg>
+    <div id="mindmap-node-editor"></div>
+  </div>`;
+
+  // Re-inject editor div since we just rebuilt container
+  const editorDiv = container.querySelector('#mindmap-node-editor');
+  if(editorDiv){
+    editorDiv.className = '';
+    editorDiv.innerHTML = `
+      <div class="mm-edit-label" id="mm-edit-label-inner">Modifier le nœud</div>
+      <input class="mm-edit-input" id="mm-edit-input-inner" type="text" placeholder="Nouveau texte…">
+      <div class="mm-edit-actions">
+        <button class="mm-edit-btn primary" onclick="applyMindmapNodeEdit()">✓ Appliquer</button>
+        <button class="mm-edit-btn ai" id="mm-expand-btn-inner" onclick="expandMindmapBranch()">✦ Développer</button>
+        <button class="mm-edit-btn secondary" onclick="closeMindmapNodeEditor()">✕</button>
+      </div>`;
+    editorDiv.style.cssText = 'position:absolute;z-index:200;background:var(--bg);border:1px solid var(--border2);border-radius:16px;padding:16px;min-width:280px;box-shadow:0 12px 40px rgba(0,0,0,.2);display:none;';
+  }
+
+  // Hover highlight effect
+  container.querySelectorAll('.mm-node-interactive').forEach(g=>{
+    g.addEventListener('mouseenter', ()=>{ g.style.filter='brightness(1.12)'; });
+    g.addEventListener('mouseleave', ()=>{ g.style.filter=''; });
+  });
+}
+
+function openMindmapNodeEditor(type, branchIdx, childIdx, gcIdx, currentLabel, x, y, el){
+  const container = el?.closest('div[style*="position:relative"]');
+  const editorEl = container?.querySelector('#mindmap-node-editor') || document.getElementById('mindmap-node-editor');
+  if(!editorEl) return;
+
+  _mmCurrentNode = {type, branchIdx, childIdx, gcIdx};
+
+  const labelEl = editorEl.querySelector('#mm-edit-label-inner') || editorEl.querySelector('.mm-edit-label');
+  const inputEl = editorEl.querySelector('#mm-edit-input-inner') || editorEl.querySelector('.mm-edit-input');
+  const expandBtn = editorEl.querySelector('#mm-expand-btn-inner') || editorEl.querySelector('#mm-expand-btn');
+
+  if(labelEl) labelEl.textContent = {topic:'Modifier le sujet principal', branch:'Modifier la branche', child:'Modifier le sous-nœud', grandchild:'Modifier le détail'}[type] || 'Modifier';
+  if(inputEl) inputEl.value = currentLabel;
+  if(expandBtn) expandBtn.style.display = (type === 'branch' || type === 'child') ? 'inline-flex' : 'none';
+
+  // Position near click
+  const svgRect = el?.closest('svg')?.getBoundingClientRect();
+  const containerRect = el?.closest('div[style*="position:relative"]')?.getBoundingClientRect();
+  if(containerRect){
+    const relX = Math.min(x, containerRect.width - 310);
+    const relY = y + 30;
+    editorEl.style.left = Math.max(0, relX) + 'px';
+    editorEl.style.top  = relY + 'px';
+  }
+
+  editorEl.style.display = 'block';
+  inputEl?.focus();
+  inputEl?.select();
+
+  // Keyboard shortcut
+  inputEl?.addEventListener('keydown', function handler(e){
+    if(e.key === 'Enter'){ applyMindmapNodeEdit(); inputEl.removeEventListener('keydown', handler); }
+    if(e.key === 'Escape'){ closeMindmapNodeEditor(); inputEl.removeEventListener('keydown', handler); }
+  });
+}
+
+function closeMindmapNodeEditor(){
+  document.querySelectorAll('#mindmap-node-editor').forEach(el=>{ el.style.display='none'; });
+  _mmCurrentNode = null;
+}
+
+function applyMindmapNodeEdit(){
+  if(!_mmCurrentNode || !_mmCurrentData) return;
+  const input = document.querySelector('#mm-edit-input-inner') || document.querySelector('#mindmap-node-editor .mm-edit-input');
+  const newLabel = input?.value?.trim();
+  if(!newLabel){ closeMindmapNodeEditor(); return; }
+
+  const {type, branchIdx, childIdx, gcIdx} = _mmCurrentNode;
+  if(type === 'topic') _mmCurrentData.topic = newLabel;
+  else if(type === 'branch' && branchIdx >= 0) _mmCurrentData.branches[branchIdx].label = newLabel;
+  else if(type === 'child' && branchIdx >= 0 && childIdx >= 0) _mmCurrentData.branches[branchIdx].children[childIdx].label = newLabel;
+  else if(type === 'grandchild' && branchIdx >= 0 && childIdx >= 0 && gcIdx >= 0) _mmCurrentData.branches[branchIdx].children[childIdx].children[gcIdx].label = newLabel;
+
+  _lastMindMapData = _mmCurrentData;
+  closeMindmapNodeEditor();
+  const canvas = document.getElementById('mindmap-canvas');
+  if(canvas) _renderMindMapSVG(_mmCurrentData, canvas);
+  toast('✓ Nœud modifié !');
+}
+
+async function expandMindmapBranch(){
+  if(!_mmCurrentNode || !_mmCurrentData) return;
+  const {type, branchIdx, childIdx} = _mmCurrentNode;
+  const expandBtn = document.querySelector('#mm-expand-btn-inner');
+  if(expandBtn){ expandBtn.disabled = true; expandBtn.textContent = '⏳ IA…'; }
+
+  let targetLabel = '';
+  if(type === 'branch') targetLabel = _mmCurrentData.branches[branchIdx]?.label || '';
+  else if(type === 'child') targetLabel = _mmCurrentData.branches[branchIdx]?.children[childIdx]?.label || '';
+
+  try{
+    const raw = await callMistral([
+      {role:'system', content:'Tu génères des sous-nœuds pour une carte mentale. Réponds UNIQUEMENT en JSON valide sans backticks: {"children":[{"label":"...","children":[]},{"label":"...","children":[]},{"label":"...","children":[]}]}. Max 4 sous-nœuds, labels courts (max 4 mots).'},
+      {role:'user', content:`Génère 3-4 sous-nœuds pour : "${targetLabel}" dans le contexte de la carte mentale sur "${_mmCurrentData.topic}"`}
+    ], M_STRUCT, 400);
+
+    const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    const newChildren = parsed.children || [];
+
+    if(type === 'branch' && branchIdx >= 0){
+      const existing = _mmCurrentData.branches[branchIdx].children || [];
+      _mmCurrentData.branches[branchIdx].children = [...existing, ...newChildren].slice(0,6);
+    } else if(type === 'child' && branchIdx >= 0 && childIdx >= 0){
+      const existing = _mmCurrentData.branches[branchIdx].children[childIdx].children || [];
+      _mmCurrentData.branches[branchIdx].children[childIdx].children = [...existing, ...newChildren].slice(0,4);
+    }
+
+    _lastMindMapData = _mmCurrentData;
+    closeMindmapNodeEditor();
+    const canvas = document.getElementById('mindmap-canvas');
+    if(canvas) _renderMindMapSVG(_mmCurrentData, canvas);
+    toast(`✦ ${newChildren.length} sous-nœud(s) ajouté(s) !`);
+  } catch(e){
+    toast('Erreur IA : ' + (e.message||'').substring(0,40));
+  }
+  if(expandBtn){ expandBtn.disabled = false; expandBtn.textContent = '✦ Développer'; }
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  WIKIMIND v7 — AI EDIT BAR on Charts & DataViz
+// ══════════════════════════════════════════════════════════════
+
+function _injectAiEditBar(containerEl, onEditCallback){
+  if(!containerEl || containerEl.querySelector('.wm-ai-edit-bar')) return;
+  const bar = document.createElement('div');
+  bar.className = 'wm-ai-edit-bar';
+  bar.innerHTML = `
+    <span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#aaa">✦ Éditer avec l'IA :</span>
+    <input class="wm-ai-edit-input" placeholder="Ex: passe en camembert, ajoute des couleurs vives, traduis les labels…" style="flex:1;min-width:160px">
+    <button class="wm-ai-edit-btn" onclick="_applyAiEditBar(this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg>
+      Appliquer
+    </button>`;
+  bar._onEdit = onEditCallback;
+  containerEl.appendChild(bar);
+  // Enter key
+  bar.querySelector('.wm-ai-edit-input')?.addEventListener('keydown', e=>{
+    if(e.key==='Enter') _applyAiEditBar(bar.querySelector('.wm-ai-edit-btn'));
+  });
+}
+
+async function _applyAiEditBar(btn){
+  const bar = btn?.closest('.wm-ai-edit-bar');
+  if(!bar) return;
+  const instruction = bar.querySelector('.wm-ai-edit-input')?.value?.trim();
+  if(!instruction){ toast('Décrivez la modification souhaitée'); return; }
+
+  const applyBtn = bar.querySelector('.wm-ai-edit-btn');
+  if(applyBtn){ applyBtn.classList.add('loading'); applyBtn.textContent = '⏳'; }
+
+  try{
+    if(bar._onEdit) await bar._onEdit(instruction);
+  } catch(e){
+    toast('Erreur IA : ' + (e.message||'').substring(0,50));
+  }
+
+  if(applyBtn){ applyBtn.classList.remove('loading'); applyBtn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg> Appliquer'; }
+}
+
+// Hook DataViz modal to inject AI edit bar after chart generation
+const _origRunDataViz = window.runDataViz;
+// We patch after DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+  // Observe dataviz-result visibility changes
+  const dvResult = document.getElementById('dataviz-result');
+  if(dvResult){
+    new MutationObserver(()=>{
+      if(dvResult.style.display !== 'none'){
+        setTimeout(()=>{
+          _injectAiEditBar(dvResult, async (instruction)=>{
+            const cd = window._datavizChartData;
+            if(!cd) return;
+            const raw = await callMistral([
+              {role:'system', content:'Tu modifies un objet de données Chart.js selon une instruction. Réponds UNIQUEMENT en JSON valide (labels + datasets). Sans backticks.'},
+              {role:'user', content:`Données actuelles: ${JSON.stringify(cd).substring(0,800)}
+Instruction: ${instruction}`}
+            ], M_STRUCT, 800);
+            const clean = raw.replace(/```json|```/g,'').trim();
+            const newData = JSON.parse(clean);
+            const inst = window._datavizChartInstance;
+            if(inst && newData){
+              if(newData.labels) inst.data.labels = newData.labels;
+              if(newData.datasets) inst.data.datasets = newData.datasets;
+              if(newData.type && newData.type !== inst.config.type){
+                // Type change: rebuild chart
+                const canvas = document.getElementById('dataviz-chart');
+                const ctx = canvas?.getContext('2d');
+                if(ctx){ inst.destroy(); window._datavizChartInstance = new Chart(ctx, {type:newData.type, data:{labels:newData.labels||cd.labels,datasets:newData.datasets||cd.datasets}, options: inst.config.options}); }
+              } else {
+                inst.update();
+              }
+              window._datavizChartData = {...cd, ...newData};
+              toast('✦ Graphique mis à jour !');
+            }
+          });
+        }, 400);
+      }
+    }, {attributes:true, attributeFilter:['style']});
+  }
+});
+
+
+// ══════════════════════════════════════════════════════════════
+//  WIKIMIND v7 — MATH INTERACTIVE GRAPH (Plotly.js)
+// ══════════════════════════════════════════════════════════════
+
+// Detect math function expressions in AI messages and render interactive graphs
+const _MATH_FN_PATTERNS = [
+  /f\s*\(x\)\s*=\s*([^
+<]{4,80})/gi,
+  /y\s*=\s*([^
+<,]{4,80})/gi,
+  /(?:fonction|function|tracé|graphe)\s*:?\s*([^
+<]{4,80})/gi,
+];
+
+function _detectMathFunctions(text){
+  const fns = [];
+  for(const pattern of _MATH_FN_PATTERNS){
+    let m;
+    pattern.lastIndex = 0;
+    while((m = pattern.exec(text)) !== null){
+      const expr = m[1].trim().replace(/\*\*/g,'^').replace(/`/g,'');
+      // Basic validation: contains x, looks like math
+      if(expr.includes('x') && expr.length < 80 && /[\d\+\-\*\/\^\(\)sincotaexpqlg]/.test(expr)){
+        if(!fns.find(f=>f===expr)) fns.push(expr);
+      }
+    }
+  }
+  return fns.slice(0,3);
+}
+
+function _mathExprToJS(expr){
+  // Convert common math notation to JS evaluable
+  return expr
+    .replace(/\^/g,'**')
+    .replace(/(\d)(x)/g,'$1*$2')
+    .replace(/(x)(\d)/g,'$1*$2')
+    .replace(/(\))(\()/g,'$1*$2')
+    .replace(/sin\(/g,'Math.sin(')
+    .replace(/cos\(/g,'Math.cos(')
+    .replace(/tan\(/g,'Math.tan(')
+    .replace(/sqrt\(/g,'Math.sqrt(')
+    .replace(/exp\(/g,'Math.exp(')
+    .replace(/log\(/g,'Math.log(')
+    .replace(/ln\(/g,'Math.log(')
+    .replace(/abs\(/g,'Math.abs(')
+    .replace(/\|([^|]+)\|/g,'Math.abs($1)')
+    .replace(/π|pi/g,'Math.PI')
+    .replace(/e(?![a-z])/g,'Math.E');
+}
+
+function _evalMathFn(expr, x){
+  try{
+    const js = _mathExprToJS(expr);
+    return (new Function('x','Math', `"use strict"; return (${js});`))(x, Math);
+  }catch(e){ return NaN; }
+}
+
+async function renderMathGraph(containerId, expressions, xMin=-10, xMax=10){
+  await window._lazyLoad.plotly();
+  const container = document.getElementById(containerId);
+  if(!container || !window.Plotly) return;
+
+  const isDark = document.body.classList.contains('dark-mode');
+  const N = 400;
+  const step = (xMax - xMin) / N;
+  const xs = Array.from({length: N+1}, (_, i) => xMin + i*step);
+
+  const colors = ['#6366f1','#22c55e','#ef4444','#f59e0b','#06b6d4'];
+  const traces = expressions.map((expr, i) => {
+    const ys = xs.map(x => _evalMathFn(expr, x));
+    return {
+      x: xs,
+      y: ys,
+      mode: 'lines',
+      name: `f${i===0?'':i+1}(x) = ${expr}`,
+      line: {color: colors[i%colors.length], width: 2.5},
+      connectgaps: false,
+    };
+  });
+
+  const layout = {
+    paper_bgcolor: isDark ? '#0f0f0f' : '#ffffff',
+    plot_bgcolor: isDark ? '#1a1a1a' : '#f9fafb',
+    font: {family: 'Inter, sans-serif', color: isDark ? '#eeeeee' : '#111111'},
+    xaxis: {
+      title: 'x', gridcolor: isDark ? '#252525' : '#e5e7eb',
+      zerolinecolor: isDark ? '#444' : '#999', automargin: true,
+    },
+    yaxis: {
+      title: 'y', gridcolor: isDark ? '#252525' : '#e5e7eb',
+      zerolinecolor: isDark ? '#444' : '#999', automargin: true,
+    },
+    margin: {l:50, r:20, t:30, b:50},
+    legend: {orientation:'h', y:-0.18},
+    hovermode: 'x unified',
+  };
+
+  const config = {
+    responsive: true,
+    scrollZoom: true,
+    displayModeBar: true,
+    modeBarButtonsToRemove: ['lasso2d','select2d'],
+    displaylogo: false,
+  };
+
+  Plotly.newPlot(container, traces, layout, config);
+
+  // Re-render on dark mode toggle
+  const obs = new MutationObserver(()=>{
+    const dark = document.body.classList.contains('dark-mode');
+    Plotly.relayout(container, {
+      paper_bgcolor: dark?'#0f0f0f':'#ffffff',
+      plot_bgcolor: dark?'#1a1a1a':'#f9fafb',
+      'font.color': dark?'#eeeeee':'#111111',
+    });
+  });
+  obs.observe(document.body, {attributes:true, attributeFilter:['class']});
+}
+
+function _buildMathGraphBlock(expressions){
+  const id = 'math-plot-' + Math.random().toString(36).substr(2,8);
+  const exprsJSON = JSON.stringify(expressions).replace(/"/g,'&quot;');
+  setTimeout(()=>renderMathGraph(id, expressions), 100);
+  return `<div class="wm-math-graph-wrap">
+    <div class="wm-math-graph-header">
+      <span class="wm-math-graph-label">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Graphique interactif — zoom · dézoom · survol
+      </span>
+      <div class="wm-math-graph-controls">
+        <input class="wm-graph-ctrl-input" id="xrange-${id}" placeholder="Plage x : -10, 10" value="-10, 10">
+        <button class="wm-graph-ctrl-btn" onclick="_updateMathGraphRange('${id}')">Actualiser</button>
+      </div>
+    </div>
+    <div class="wm-plot-container" id="${id}"></div>
+    <div style="margin-top:8px">
+      ${expressions.map((e,i)=>`<div style="font-size:11px;color:#888;font-family:monospace;margin-top:3px"><span style="color:${['#6366f1','#22c55e','#ef4444'][i%3]}">■</span> f${i===0?'':i+1}(x) = ${e}</div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function _updateMathGraphRange(plotId){
+  const input = document.getElementById('xrange-' + plotId);
+  const val = input?.value || '-10, 10';
+  const parts = val.split(',').map(s=>parseFloat(s.trim()));
+  const xMin = isNaN(parts[0]) ? -10 : parts[0];
+  const xMax = isNaN(parts[1]) ? 10 : parts[1];
+  const container = document.getElementById(plotId);
+  // Find stored expressions
+  const exprs = container?._wmMathExprs || [];
+  if(exprs.length) renderMathGraph(plotId, exprs, xMin, xMax);
+}
+
+// Patch renderMsg / mdToHtml to inject math graphs
+const _origMdToHtml = window.mdToHtml;
+// We patch by wrapping applyMath
+const _origApplyMath = window.applyMath;
+
+// Hook into the chat rendering to detect math functions
+function _postProcessChatBubble(el, text){
+  if(!el || !text) return;
+  // Detect math function patterns
+  const fns = _detectMathFunctions(text);
+  if(fns.length > 0){
+    // Only inject if not already done
+    if(!el.querySelector('.wm-math-graph-wrap')){
+      const graphHtml = _buildMathGraphBlock(fns);
+      el.insertAdjacentHTML('beforeend', graphHtml);
+      // Store expressions on DOM element
+      fns.forEach((fn, i) => {
+        const plotEl = el.querySelector('.wm-plot-container');
+        if(plotEl) plotEl._wmMathExprs = fns;
+      });
+    }
+  }
+}
+
+
+
+async function _applyMermaidAiEdit(btn, cid){
+  const bar = btn?.closest('.wm-ai-edit-bar');
+  const instruction = bar?.querySelector('input')?.value?.trim();
+  if(!instruction){ toast('Décrivez la modification'); return; }
+  const currentCode = (window._wmCopyStore && window._wmCopyStore[cid]) || '';
+  if(!currentCode){ toast('Code Mermaid introuvable'); return; }
+  if(btn){ btn.classList.add('loading'); btn.textContent='⏳'; }
+  try{
+    const raw = await callMistral([
+      {role:'system', content:'Tu modifies du code Mermaid selon une instruction. Réponds UNIQUEMENT avec le code Mermaid valide, sans backticks, sans explication.'},
+      {role:'user', content:`Code actuel:
+${currentCode}
+
+Instruction: ${instruction}`}
+    ], M_STRUCT, 800);
+    const newCode = raw.replace(/```mermaid|```/g,'').trim();
+    // Find mermaid div and re-render
+    const entries = Object.entries(window._wmCopyStore||{});
+    const key = entries.find(([k,v])=>v===currentCode)?.[0];
+    if(key){
+      window._wmCopyStore[key] = newCode;
+      // Re-render all mermaid divs using this cid
+      document.querySelectorAll('.mermaid').forEach(div=>{
+        if(div.textContent.trim().substring(0,50) === currentCode.trim().substring(0,50)){
+          div.innerHTML = newCode;
+          div.removeAttribute('data-processed');
+          try{ window.mermaid?.init(undefined, div); }catch(e){}
+        }
+      });
+    }
+    toast('✦ Diagramme mis à jour !');
+  } catch(e){
+    toast('Erreur IA : ' + (e.message||'').substring(0,50));
+  }
+  if(btn){ btn.classList.remove('loading'); btn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg> Appliquer'; }
+}
+
+async function _applyMindmapAiEdit(btn){
+  if(!_mmCurrentData && !_lastMindMapData){ toast('Aucune carte à modifier'); return; }
+  const data = _mmCurrentData || _lastMindMapData;
+  const bar = btn?.closest('.wm-ai-edit-bar');
+  const instruction = bar?.querySelector('input')?.value?.trim();
+  if(!instruction){ toast('Décrivez la modification souhaitée'); return; }
+
+  if(btn){ btn.classList.add('loading'); btn.textContent='⏳'; }
+  try{
+    const raw = await callMistral([
+      {role:'system', content:'Tu modifies une structure de carte mentale JSON. Réponds UNIQUEMENT en JSON valide (même structure que l\'entrée). Sans backticks ni explication.'},
+      {role:'user', content:`Carte actuelle: ${JSON.stringify(data).substring(0,1200)}
+
+Instruction: ${instruction}`}
+    ], M_STRUCT, 1500);
+    const clean = raw.replace(/```json|```/g,'').trim();
+    const newData = JSON.parse(clean);
+    if(newData?.topic && newData?.branches){
+      _mmCurrentData = newData;
+      _lastMindMapData = newData;
+      const canvas = document.getElementById('mindmap-canvas');
+      if(canvas) _renderMindMapSVG(newData, canvas);
+      toast('✦ Carte mentale mise à jour !');
+    }
+  } catch(e){
+    toast('Erreur IA : ' + (e.message||'').substring(0,50));
+  }
+  if(btn){ btn.classList.remove('loading'); btn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg> Appliquer'; }
+}
+
+// Inject AI edit bar on chartjs blocks after they render
+const _origRenderChartJs = window._renderChartJsBlock;
+if(_origRenderChartJs){
+  window._renderChartJsBlock = function(canvasId, jsonStr, retryCount=0){
+    _origRenderChartJs(canvasId, jsonStr, retryCount);
+    setTimeout(()=>{
+      const canvas = document.getElementById(canvasId);
+      const wrap = canvas?.closest('.wm-chartjs-wrap');
+      if(wrap && !wrap.querySelector('.wm-ai-edit-bar')){
+        _injectAiEditBar(wrap, async (instruction)=>{
+          // Parse current chart config and apply instruction
+          const currentCfg = JSON.stringify(canvas?._wmChart?.data || {});
+          const raw = await callMistral([
+            {role:'system', content:'Tu modifies un graphique Chart.js. Réponds UNIQUEMENT en JSON valide avec les nouvelles données. Format: {"type":"bar|line|pie|...","data":{"labels":[...],"datasets":[...]}}. Sans backticks.'},
+            {role:'user', content:`Config actuelle: ${currentCfg.substring(0,600)}
+Instruction: ${instruction}`}
+          ], M_STRUCT, 800);
+          const clean = raw.replace(/```json|```/g,'').trim();
+          const newCfg = JSON.parse(clean);
+          const inst = canvas?._wmChart;
+          if(inst && newCfg?.data){
+            inst.data = newCfg.data;
+            inst.update();
+            toast('✦ Graphique mis à jour !');
+          }
+        });
+      }
+    }, 3200);
+  };
+}
+</script>
+<!-- ── CANVAS INLINE EDIT MENU ── -->
+<div id="canvas-inline-menu">
+  <button class="cvs-inline-btn primary" onclick="cvsInlineAction('rewrite')" title="Réécrire la sélection">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    Réécrire
+  </button>
+  <div class="cvs-inline-sep"></div>
+  <button class="cvs-inline-btn" onclick="cvsInlineAction('shorten')" title="Raccourcir">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 6h13M8 12h9M8 18h5"/></svg>
+    Raccourcir
+  </button>
+  <button class="cvs-inline-btn" onclick="cvsInlineAction('expand')" title="Développer">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/></svg>
+    Développer
+  </button>
+  <button class="cvs-inline-btn" onclick="cvsInlineAction('translate')" title="Traduire">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20"/></svg>
+    Traduire
+  </button>
+  <button class="cvs-inline-btn" onclick="cvsInlineAction('improve')" title="Améliorer le style">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg>
+    Améliorer
+  </button>
+  <div class="cvs-inline-sep"></div>
+  <button class="cvs-inline-btn" onclick="hideCvsInlineMenu()" style="color:#aaa" title="Fermer">✕</button>
+</div>
+
+<!-- ── MINDMAP NODE EDITOR ── -->
+<div id="mindmap-node-editor">
+  <div class="mm-edit-label" id="mm-edit-label">Modifier le nœud</div>
+  <input class="mm-edit-input" id="mm-edit-input" type="text" placeholder="Nouveau texte…">
+  <div class="mm-edit-actions">
+    <button class="mm-edit-btn primary" onclick="applyMindmapNodeEdit()">✓ Appliquer</button>
+    <button class="mm-edit-btn ai" id="mm-expand-btn" onclick="expandMindmapBranch()">✦ Développer la branche</button>
+    <button class="mm-edit-btn secondary" onclick="closeMindmapNodeEditor()">Annuler</button>
+  </div>
+</div>
 </body>
 </html>
