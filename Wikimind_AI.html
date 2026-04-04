@@ -3250,7 +3250,48 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
         🕵️ Mode incognito actif — les conversations ne sont pas sauvegardées
       </div>
 
-      <div class="st-section-title" style="margin-top:28px">Règles de la Mémoire (RAG)</div>
+      <div class="st-section-title" style="margin-top:28px">Entraînement des modèles d'IA</div>
+      <div class="toggle-row">
+        <div>
+          <span style="font-size:13px;font-weight:600">Ne pas entraîner les modèles d'IA avec mes données</span>
+          <div style="font-size:11px;color:#999;margin-top:2px">Vos conversations ne seront pas utilisées pour améliorer les modèles, quelle que soit la clé API utilisée.</div>
+        </div>
+        <div class="toggle-bg" id="no-train-toggle" onclick="toggleNoTrain()"><div class="toggle-dot"></div></div>
+      </div>
+
+      <div class="st-section-title" style="margin-top:28px">Niveau de mémorisation (RAG)</div>
+      <p style="font-size:12px;color:#888;margin-bottom:12px;line-height:1.6">Contrôle la quantité d'informations que WikiMind extrait automatiquement de vos conversations.</p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+        <label id="rag-level-aggressive-lbl" onclick="setRagLevel('aggressive')" style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--select-bg);border:1.5px solid var(--border2);border-radius:12px;cursor:pointer;transition:.15s;">
+          <div style="margin-top:1px;width:16px;height:16px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;" id="rag-radio-aggressive">
+            <div style="width:8px;height:8px;border-radius:50%;background:transparent;" id="rag-dot-aggressive"></div>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:700;">🔥 Agressif</div>
+            <div style="font-size:11px;color:#888;margin-top:2px">L'IA mémorise presque tout — détails personnels, projets, préférences. Max 15 infos par échange.</div>
+          </div>
+        </label>
+        <label id="rag-level-moderate-lbl" onclick="setRagLevel('moderate')" style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--select-bg);border:1.5px solid var(--border2);border-radius:12px;cursor:pointer;transition:.15s;">
+          <div style="margin-top:1px;width:16px;height:16px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;" id="rag-radio-moderate">
+            <div style="width:8px;height:8px;border-radius:50%;background:transparent;" id="rag-dot-moderate"></div>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:700;">⚖️ Modéré <span style="font-size:10px;color:#6366f1;font-weight:600;margin-left:4px">Défaut</span></div>
+            <div style="font-size:11px;color:#888;margin-top:2px">~4% d'extraction par échange. Bon équilibre entre personnalisation et discrétion.</div>
+          </div>
+        </label>
+        <label id="rag-level-disabled-lbl" onclick="setRagLevel('disabled')" style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--select-bg);border:1.5px solid var(--border2);border-radius:12px;cursor:pointer;transition:.15s;">
+          <div style="margin-top:1px;width:16px;height:16px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;" id="rag-radio-disabled">
+            <div style="width:8px;height:8px;border-radius:50%;background:transparent;" id="rag-dot-disabled"></div>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:700;">🔕 Désactivé</div>
+            <div style="font-size:11px;color:#888;margin-top:2px">Aucune extraction automatique. Vous gérez votre mémoire manuellement via le panneau 🧠.</div>
+          </div>
+        </label>
+      </div>
+
+      <div class="st-section-title" style="margin-top:8px">Règles de la Mémoire (RAG)</div>
       <div style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--select-bg);border-radius:12px;margin-bottom:8px;">
         <div style="flex:1;">
           <span style="font-size:13px;font-weight:600;">Oublier automatiquement les souvenirs de plus de</span>
@@ -4772,6 +4813,13 @@ async function bootUser(user){
   G('user-input').focus();
   // Init RAG memory (background)
   if(!S.user?.isGuest) WM_RAG.load().catch(()=>{});
+  // Appliquer le niveau de mémorisation sauvegardé
+  (function(){
+    const lvl = localStorage.getItem('wm_rag_level')||'moderate';
+    if(lvl==='aggressive'){ WM_RAG.EXTRACT_RATIO=0.15; WM_RAG._maxPerExchange=15; }
+    else if(lvl==='disabled'){ WM_RAG.EXTRACT_RATIO=0; WM_RAG._maxPerExchange=0; }
+    else { WM_RAG.EXTRACT_RATIO=0.04; WM_RAG._maxPerExchange=8; }
+  })();
   if(!user.isGuest){
     // Load data in background
     (async()=>{
@@ -7137,10 +7185,18 @@ const WM_RAG = {
 
   // Extraire et intégrer les connaissances depuis un échange
   async extractFromConversation(userMsg, aiReply){
+    // Respecter le niveau de mémorisation choisi par l'utilisateur
+    const ragLevel = localStorage.getItem('wm_rag_level')||'moderate';
+    if(ragLevel==='disabled') return;
+    // Appliquer le ratio selon le niveau
+    if(ragLevel==='aggressive'){ this.EXTRACT_RATIO=0.15; this._maxPerExchange=15; }
+    else { this.EXTRACT_RATIO=0.04; this._maxPerExchange=8; }
+
     if(!userMsg||!aiReply) return;
     const combinedLen=(userMsg+aiReply).length;
-    // Calculer combien de mémoires extraire (4% du contenu, min 0, max 8 par échange)
-    const targetExtract=Math.max(0, Math.min(8, Math.round(combinedLen*this.EXTRACT_RATIO/50)));
+    // Calculer combien de mémoires extraire
+    const maxPer = this._maxPerExchange||8;
+    const targetExtract=Math.max(0, Math.min(maxPer, Math.round(combinedLen*this.EXTRACT_RATIO/50)));
     if(targetExtract===0&&combinedLen<200) return;
 
     // Si on a dépassé 200 mémoires, supprimer les plus anciennes/moins importantes
@@ -9014,6 +9070,7 @@ async function callMistral(messages, modelId, maxTokens=4096, useToolsKey=false,
   const useStream = !!(onToken);
 
   const doFetch = async () => {
+    const _noTrain = localStorage.getItem('wm_no_train')==='1';
     const res = await fetch(apiEndpoint,{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
@@ -9022,7 +9079,8 @@ async function callMistral(messages, modelId, maxTokens=4096, useToolsKey=false,
         messages: merged,
         max_tokens: maxTokens,
         temperature: 0.72,
-        stream: useStream
+        stream: useStream,
+        ...(_noTrain ? {safe_prompt: false} : {})
       }),
       signal: ctrl.signal
     });
@@ -16170,12 +16228,9 @@ Instruction: ${instruction}`}
 
 // Detect math function expressions in AI messages and render interactive graphs
 const _MATH_FN_PATTERNS = [
-  /f\s*\(x\)\s*=\s*([^
-<]{4,80})/gi,
-  /y\s*=\s*([^
-<,]{4,80})/gi,
-  /(?:fonction|function|tracé|graphe)\s*:?\s*([^
-<]{4,80})/gi,
+  /f\s*\(x\)\s*=\s*([^\n<]{4,80})/gi,
+  /y\s*=\s*([^\n<,]{4,80})/gi,
+  /(?:fonction|function|tracé|graphe)\s*:?\s*([^\n<]{4,80})/gi,
 ];
 
 function _detectMathFunctions(text){
@@ -16834,6 +16889,47 @@ function _loadPrivacySettings(){
   if(select) select.value = String(_ragForgetDays);
   const ind = document.getElementById('incognito-indicator');
   if(ind) ind.style.display = _incognitoMode?'flex':'none';
+  // No-train toggle
+  const noTrain = localStorage.getItem('wm_no_train')==='1';
+  const noTrainToggle = document.getElementById('no-train-toggle');
+  if(noTrainToggle) noTrainToggle.classList.toggle('on', noTrain);
+  // RAG level
+  const ragLevel = localStorage.getItem('wm_rag_level')||'moderate';
+  _applyRagLevelUI(ragLevel);
+}
+
+function toggleNoTrain(){
+  const cur = localStorage.getItem('wm_no_train')==='1';
+  const next = !cur;
+  localStorage.setItem('wm_no_train', next?'1':'0');
+  const t = document.getElementById('no-train-toggle');
+  if(t) t.classList.toggle('on', next);
+  toast(next ? '🔒 Entraînement IA désactivé' : '✅ Entraînement IA réactivé');
+}
+
+function setRagLevel(level){
+  localStorage.setItem('wm_rag_level', level);
+  _applyRagLevelUI(level);
+  // Update WM_RAG ratio live
+  if(typeof WM_RAG !== 'undefined'){
+    if(level==='aggressive'){ WM_RAG.EXTRACT_RATIO=0.15; WM_RAG._maxPerExchange=15; }
+    else if(level==='moderate'){ WM_RAG.EXTRACT_RATIO=0.04; WM_RAG._maxPerExchange=8; }
+    else { WM_RAG.EXTRACT_RATIO=0; WM_RAG._maxPerExchange=0; }
+  }
+  const labels = {aggressive:'🔥 Mémorisation agressive activée', moderate:'⚖️ Mémorisation modérée (défaut)', disabled:'🔕 Mémorisation automatique désactivée'};
+  toast(labels[level]||'');
+}
+
+function _applyRagLevelUI(level){
+  ['aggressive','moderate','disabled'].forEach(l=>{
+    const lbl = document.getElementById('rag-level-'+l+'-lbl');
+    const radio = document.getElementById('rag-radio-'+l);
+    const dot = document.getElementById('rag-dot-'+l);
+    const active = l===level;
+    if(lbl) lbl.style.borderColor = active ? 'var(--accent)' : 'var(--border2)';
+    if(radio) radio.style.borderColor = active ? 'var(--accent)' : 'var(--border2)';
+    if(dot) dot.style.background = active ? 'var(--accent)' : 'transparent';
+  });
 }
 function toggleIncognito(){
   _incognitoMode = !_incognitoMode;
