@@ -1522,6 +1522,29 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 .plan-subscribe-btn{width:100%;margin-top:10px;padding:8px;border-radius:8px;font-size:10px;font-weight:800;text-transform:uppercase;cursor:pointer;border:none;transition:.2s;background:var(--accent);color:var(--accent-inv);}
 .plan-subscribe-btn:disabled{opacity:.4;cursor:not-allowed;}
 
+/* ── AI GENERATED FILE CARD ── */
+.ai-file-card{
+  display:flex;align-items:center;gap:12px;
+  background:var(--select-bg);border:1.5px solid var(--border2);border-radius:14px;
+  padding:12px 14px;margin:10px 0 4px;max-width:340px;
+  transition:.15s;
+}
+.ai-file-card:hover{border-color:var(--text);box-shadow:0 2px 16px rgba(0,0,0,.08);}
+.ai-file-card-icon{
+  font-size:28px;flex-shrink:0;width:40px;height:40px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:10px;background:var(--bg);
+}
+.ai-file-card-info{flex:1;min-width:0;}
+.ai-file-card-name{font-size:12px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);}
+.ai-file-card-meta{font-size:10px;color:#888;margin-top:2px;font-weight:600;}
+.ai-file-card-dl{
+  flex-shrink:0;background:var(--accent);color:var(--accent-inv);
+  border:none;border-radius:9px;padding:6px 12px;font-size:10px;font-weight:800;
+  cursor:pointer;transition:.15s;text-transform:uppercase;letter-spacing:.04em;
+}
+.ai-file-card-dl:hover{opacity:.85;transform:scale(1.04);}
+
 /* Whisper download popup */
 #whisper-modal .modal-content{max-width:400px;text-align:center;}
 .whisper-progress-bar{width:100%;height:8px;background:var(--border2);border-radius:20px;overflow:hidden;margin:16px 0 8px;}
@@ -4482,9 +4505,25 @@ TES CAPACITÉS (utilise-les toutes selon le besoin) :
    - Le système interceptera cette balise et lancera la synthèse vocale automatiquement
 
 4. CRÉATION DE FICHIERS
-   - Pour un fichier Word/document : [CREATE_DOCX:titre|contenu]
-   - Pour un fichier CSV : [CREATE_CSV:titre|contenu]
-   - Propose toujours de créer le fichier en plus de la réponse texte
+   Quand l'utilisateur demande un fichier, utilise la balise correspondante — le système l'affichera dans le chat avec un bouton téléchargement (NE télécharge PAS automatiquement).
+   - Texte / Document  : [CREATE_TXT:nom|contenu]
+   - Markdown          : [CREATE_MD:nom|contenu]
+   - Word (simulé)     : [CREATE_DOCX:nom|contenu]
+   - CSV               : [CREATE_CSV:nom|contenu]
+   - JSON              : [CREATE_JSON:nom|contenu]
+   - XML               : [CREATE_XML:nom|contenu]
+   - YAML / YML        : [CREATE_YAML:nom|contenu]
+   - SQL               : [CREATE_SQL:nom|contenu]
+   - HTML              : [CREATE_HTML:nom|contenu]
+   - CSS               : [CREATE_CSS:nom|contenu]
+   - JavaScript        : [CREATE_JS:nom|contenu]
+   - TypeScript        : [CREATE_TS:nom|contenu]
+   - Python            : [CREATE_PY:nom|contenu]
+   - Java              : [CREATE_JAVA:nom|contenu]
+   - PHP               : [CREATE_PHP:nom|contenu]
+   - Shell / Bash      : [CREATE_SH:nom|contenu]
+   - Règle : utilise TOUJOURS la balise la plus précise selon ce que l'utilisateur veut créer
+   - Ne propose pas de créer un fichier si l'utilisateur n'en a pas demandé un
 
 5. IMAGES & GALERIE WIKIPEDIA
    - Si l'utilisateur demande une image, photo ou illustration d'une personne/lieu/chose :
@@ -5490,6 +5529,63 @@ async function genTitle(text){
   catch(e){return text.substring(0,38)+'…';}
 }
 
+// ── AI FILE CARD RENDERER ──────────────────────────────────────────────────
+const _FILE_TYPE_MAP_RENDER = {
+  TXT :{ext:'txt', mime:'text/plain',               icon:'📄',label:'Texte',      color:'#6b7280'},
+  MD  :{ext:'md',  mime:'text/markdown',             icon:'📝',label:'Markdown',   color:'#6366f1'},
+  DOCX:{ext:'docx',mime:'application/octet-stream',  icon:'📘',label:'Word',       color:'#2563eb'},
+  CSV :{ext:'csv', mime:'text/csv',                  icon:'📊',label:'CSV',        color:'#10b981'},
+  JSON:{ext:'json',mime:'application/json',          icon:'🗂️',label:'JSON',       color:'#f59e0b'},
+  XML :{ext:'xml', mime:'application/xml',           icon:'📋',label:'XML',        color:'#ef4444'},
+  YAML:{ext:'yaml',mime:'text/yaml',                 icon:'⚙️',label:'YAML',       color:'#8b5cf6'},
+  SQL :{ext:'sql', mime:'application/sql',           icon:'🗃️',label:'SQL',        color:'#0ea5e9'},
+  HTML:{ext:'html',mime:'text/html',                 icon:'🌐',label:'HTML',       color:'#f97316'},
+  CSS :{ext:'css', mime:'text/css',                  icon:'🎨',label:'CSS',        color:'#ec4899'},
+  JS  :{ext:'js',  mime:'text/javascript',           icon:'⚡',label:'JavaScript', color:'#eab308'},
+  TS  :{ext:'ts',  mime:'text/typescript',           icon:'🔷',label:'TypeScript', color:'#3b82f6'},
+  PY  :{ext:'py',  mime:'text/x-python',             icon:'🐍',label:'Python',     color:'#22c55e'},
+  JAVA:{ext:'java',mime:'text/x-java-source',        icon:'☕',label:'Java',       color:'#dc2626'},
+  PHP :{ext:'php', mime:'application/x-httpd-php',   icon:'🐘',label:'PHP',        color:'#7c3aed'},
+  SH  :{ext:'sh',  mime:'application/x-sh',          icon:'🖥️',label:'Shell',      color:'#374151'},
+};
+function buildFileCard(fc){
+  const wrap = document.createElement('div');
+  wrap.className = 'ai-file-card';
+  const sizeStr = fc.sizeKb < 1 ? `${Math.round(fc.sizeKb*1024)} o` : `${fc.sizeKb} Ko`;
+  wrap.innerHTML = `
+    <div class="ai-file-card-icon" style="color:${fc.meta.color}">${fc.meta.icon}</div>
+    <div class="ai-file-card-info">
+      <div class="ai-file-card-name">${esc(fc.filename)}</div>
+      <div class="ai-file-card-meta" style="color:${fc.meta.color}">${fc.meta.label} &bull; ${sizeStr}</div>
+    </div>
+    <button class="ai-file-card-dl" onclick="(function(btn){
+      const a=document.createElement('a');
+      a.href='${fc.blobUrl}';
+      a.download='${fc.filename.replace(/'/g,"\\'")}';
+      a.click();
+      btn.textContent='✓';
+      setTimeout(()=>btn.textContent='↓ DL',1500);
+    })(this)">↓ DL</button>
+  `;
+  return wrap;
+}
+function parseAndAttachFileCards(raw, aiMsg){
+  const fileTagRe = /\[CREATE_(TXT|MD|DOCX|CSV|JSON|XML|YAML|SQL|HTML|CSS|JS|TS|PY|JAVA|PHP|SH):([^\|]+)\|([\s\S]*?)\]/g;
+  let m; const cards = [];
+  while((m = fileTagRe.exec(raw)) !== null){
+    const [,tag,rawName,content] = m;
+    const meta = _FILE_TYPE_MAP_RENDER[tag]; if(!meta) continue;
+    const name = rawName.trim().replace(/\.[a-z0-9]+$/i,'');
+    const filename = name + '.' + meta.ext;
+    const blob = new Blob([content], {type: meta.mime + ';charset=utf-8'});
+    const blobUrl = URL.createObjectURL(blob);
+    const sizeKb = (blob.size / 1024).toFixed(1);
+    cards.push({filename, meta, blobUrl, sizeKb});
+  }
+  if(cards.length) aiMsg._fileCards = cards;
+}
+// ── END FILE CARD RENDERER ────────────────────────────────────────────────
+
 // ── RENDER MESSAGES ──
 function renderMsg(msg, doScroll=true){
   const cc=G('chat-container'); showWelcome();
@@ -5608,11 +5704,18 @@ function renderMsg(msg, doScroll=true){
     } else if(S.writingAnim&&doScroll){ typewriterEffect(div,msg.content); }
     else{
       // Strip [TOOL:...] tags from displayed content before markdown render
-      const _displayContent=msg.content.replace(/\[TOOL:[^\]]+\]/g,'').trim();
+      const _displayContent=msg.content.replace(/\[TOOL:[^\]]+\]/g,'').replace(/\[CREATE_(?:TXT|MD|DOCX|CSV|JSON|XML|YAML|SQL|HTML|CSS|JS|TS|PY|JAVA|PHP|SH):[^\|]+\|[\s\S]*?\]/g,'').trim();
       div.innerHTML=formatMarkdown(_displayContent); applyMath(div); applyHljs(div); injectPythonRunButtons(div);
       // Execute tool calls (async, non-blocking) — uses original content with tags
       if(msg.content&&msg.content.includes('[TOOL:')){
         interceptAndExecuteTools(msg.content,div).catch(()=>{});
+      }
+      // Inject stored file cards for this message
+      if(msg._fileCards && msg._fileCards.length){
+        msg._fileCards.forEach(fc=>{
+          const card = buildFileCard(fc);
+          div.appendChild(card);
+        });
       }
     }
     cc.appendChild(div);
@@ -7974,26 +8077,22 @@ ${_summary}
       } else {
         aiContent=raw;
       }
-      // Détecter création fichier
-      const csvMatch=raw.match(/\[CREATE_CSV:([^\|]+)\|([^\]]+)\]/s);
-      if(csvMatch){
-        aiContent=aiContent.replace(/\[CREATE_CSV:[^\]]+\]/s,'').trim();
-        const blob=new Blob([csvMatch[2]],{type:'text/csv;charset=utf-8;'});
-        const url=URL.createObjectURL(blob);
-        const a=document.createElement('a');a.href=url;a.download=csvMatch[1]+'.csv';a.click();
-        URL.revokeObjectURL(url);
-        toolCalls.push(`📊 Fichier CSV "${csvMatch[1]}" téléchargé`);
+      // ── DÉTECTION FICHIERS GÉNÉRÉS (affichage via file cards, pas de téléchargement auto) ──
+      {
+        const _fileDetectRe = /\[CREATE_(TXT|MD|DOCX|CSV|JSON|XML|YAML|SQL|HTML|CSS|JS|TS|PY|JAVA|PHP|SH):([^\|]+)\|([\s\S]*?)\]/g;
+        const _icons={TXT:'📄',MD:'📝',DOCX:'📘',CSV:'📊',JSON:'🗂️',XML:'📋',YAML:'⚙️',SQL:'🗃️',HTML:'🌐',CSS:'🎨',JS:'⚡',TS:'🔷',PY:'🐍',JAVA:'☕',PHP:'🐘',SH:'🖥️'};
+        const _exts={TXT:'txt',MD:'md',DOCX:'docx',CSV:'csv',JSON:'json',XML:'xml',YAML:'yaml',SQL:'sql',HTML:'html',CSS:'css',JS:'js',TS:'ts',PY:'py',JAVA:'java',PHP:'php',SH:'sh'};
+        let _fm;
+        while((_fm=_fileDetectRe.exec(raw))!==null){
+          const [,tag,rawName]=_fm;
+          const name=rawName.trim().replace(/\.[a-z0-9]+$/i,'');
+          toolCalls.push(`${_icons[tag]||'📎'} Fichier "${name}.${_exts[tag]||tag.toLowerCase()}" prêt`);
+        }
+        // Strip tags from aiContent (buildFileCard will re-parse from raw on render)
+        aiContent=aiContent.replace(/\[CREATE_(?:TXT|MD|DOCX|CSV|JSON|XML|YAML|SQL|HTML|CSS|JS|TS|PY|JAVA|PHP|SH):[^\|]+\|[\s\S]*?\]/g,'').trim();
       }
-      // Détecter création DOCX (simulation via txt)
-      const docxMatch=raw.match(/\[CREATE_DOCX:([^\|]+)\|([^\]]+)\]/s);
-      if(docxMatch){
-        aiContent=aiContent.replace(/\[CREATE_DOCX:[^\]]+\]/s,'').trim();
-        const blob=new Blob([docxMatch[2]],{type:'text/plain;charset=utf-8;'});
-        const url=URL.createObjectURL(blob);
-        const a=document.createElement('a');a.href=url;a.download=docxMatch[1]+'.txt';a.click();
-        URL.revokeObjectURL(url);
-        toolCalls.push(`📄 Document "${docxMatch[1]}" téléchargé`);
-      }
+      // ── FIN FICHIERS ─────────────────────────────────────────────────────────
+
       // Détecter Office intent
       const officeIntentTask=detectOfficeIntent(displayText);
       if(officeIntentTask&&S.plan>=3&&S.connectors.office&&!S.user?.isGuest){
@@ -8068,6 +8167,8 @@ ${_summary}
     // rmTyping already called in streaming path; safe to call again (no-op if already removed)
     try{ rmTyping(tyId); }catch(_){}
     const am={role:'assistant',content:aiContent,canvasContent:null,steps,toolCalls,_stepsRenderedLive:S.model==='reflect',_ttsText:window._lastTTSText||null,_model:S.model,_modelLabel:MISTRAL_MODELS[S.model]?.label||S.model,ts:Date.now()}; window._lastTTSText=null;
+    // Attach generated file cards (displayed inline, no auto-download)
+    parseAndAttachFileCards(raw||aiContent, am);
 
     // ── Version history ──
     if(_prevAssistantMsg && _prevAssistantMsg._versions){
