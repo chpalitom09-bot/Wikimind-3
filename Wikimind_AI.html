@@ -8049,7 +8049,7 @@ ${_summary}
   if(urlContext) finalFullContent+=urlContext;
 
   try{
-    let aiContent='',steps=null,toolCalls=[];
+    let aiContent='',steps=null,toolCalls=[],raw='';
 
     if(S.model==='reflect'){const res=await runReflection(finalFullContent);aiContent=res.content;steps=res.steps;}
     else if(S.model==='task'){
@@ -8058,7 +8058,7 @@ ${_summary}
         {role:'system',content:WIKIMIND_TASK_SYSTEM},
         ...await buildHistoryWithContextManagement(finalFullContent)
       ];
-      const raw=await callMistral(taskMessages, MISTRAL_MODELS.task.id);
+      raw=await callMistral(taskMessages, MISTRAL_MODELS.task.id);
       // Détecter TTS request
       const ttsMatch=raw.match(/\[TTS_REQUEST:([^\]]+)\]/);
       if(ttsMatch){
@@ -8124,7 +8124,6 @@ ${_summary}
       // ── MODE NON-STREAMING — attendre la réponse complète avant affichage ──
       // tyId reste visible (indicateur de chargement) pendant toute la génération
 
-      let raw = '';
       try {
         raw = await callMistral(
           await buildHistoryWithContextManagement(finalFullContent+(visionCtx?'\n'+visionCtx:'')),
