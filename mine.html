@@ -80,6 +80,17 @@ canvas{display:block}
 
 /* DAY INDICATOR */
 #day-time{position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:20px;text-shadow:1px 1px 0 #000}
+
+/* CHAT / COMMAND */
+#chat-overlay{position:fixed;bottom:80px;left:20px;width:500px;z-index:500;display:none}
+#chat-log{max-height:120px;overflow-y:auto;margin-bottom:4px;display:flex;flex-direction:column;gap:2px}
+.chat-line{font-size:18px;text-shadow:1px 1px 0 #000;background:rgba(0,0,0,0.4);padding:2px 6px;width:fit-content;max-width:100%}
+.chat-line.system{color:#55ff55}
+.chat-line.error{color:#ff5555}
+.chat-line.info{color:#55ffff}
+#chat-input-row{display:flex;align-items:center;background:rgba(0,0,0,0.7);border:2px solid #555}
+#chat-prefix{font-size:20px;padding:4px 6px;color:#fff}
+#chat-input{flex:1;background:transparent;border:none;outline:none;color:#fff;font-family:'VT323',monospace;font-size:20px;padding:4px 6px}
 </style>
 </head>
 <body>
@@ -138,7 +149,8 @@ canvas{display:block}
     <div class="section-label">Inventaire</div>
     <div id="craft-inv" class="inv-grid"></div>
     <div style="display:flex;gap:4px;margin-top:6px" id="craft-hotbar-row"></div>
-    <div style="text-align:right;margin-top:8px">
+    <div style="text-align:right;margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
+      <div class="mc-btn" style="width:200px;font-size:20px" onclick="showRecipeBook()">📖 Recettes</div>
       <div class="mc-btn" style="width:200px;font-size:20px" onclick="closeCrafting()">Fermer [Q]</div>
     </div>
   </div>
@@ -162,6 +174,15 @@ canvas{display:block}
 <div id="tooltip"></div>
 <div id="notif"></div>
 
+<!-- CHAT / COMMAND -->
+<div id="chat-overlay">
+  <div id="chat-log"></div>
+  <div id="chat-input-row">
+    <span id="chat-prefix">&gt;</span>
+    <input id="chat-input" type="text" maxlength="100" autocomplete="off" spellcheck="false" placeholder="Tapez un message ou /commande...">
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 'use strict';
@@ -171,7 +192,7 @@ canvas{display:block}
 // ============================================================
 const CFG = {
   CHUNK_SIZE: 16,
-  RENDER_DIST: 4,
+  RENDER_DIST: 3,
   MAX_HEIGHT: 80,
   SEA_LEVEL: 10,
   SEED: Math.random() * 9999 | 0,
@@ -230,6 +251,7 @@ const BLOCK_DATA = {
 // Items (non-blocs)
 const ITEM = {
   STICK:100, WOOD_PICK:101, STONE_PICK:102, IRON_PICK:103, GOLD_PICK:104, DIAMOND_PICK:105,
+  LAPIS_PICK:106, REDSTONE_PICK:107, COAL_PICK:108, EMERALD:123,
   WOOD_AXE:106, STONE_AXE:107, IRON_AXE:108,
   WOOD_SWORD:109, STONE_SWORD:110, IRON_SWORD:111, DIAMOND_SWORD:112,
   WOOD_SHOVEL:113, STONE_SHOVEL:114, IRON_SHOVEL:115,
@@ -245,6 +267,9 @@ const ITEM_DATA = {
   [ITEM.IRON_PICK]: {name:'Pioche Fer',   emoji:'⛏️', tool:'pickaxe',dmg:3, dur:250, level:3},
   [ITEM.GOLD_PICK]: {name:'Pioche Or',    emoji:'⛏️', tool:'pickaxe',dmg:4, dur:32,  level:4},
   [ITEM.DIAMOND_PICK]:{name:'Pioche Diamant',emoji:'⛏️',tool:'pickaxe',dmg:5,dur:1562,level:5},
+  [ITEM.LAPIS_PICK]:  {name:'Pioche Lapis',  emoji:'⛏️',tool:'pickaxe',dmg:3,dur:200, level:3},
+  [ITEM.REDSTONE_PICK]:{name:'Pioche Redstone',emoji:'⛏️',tool:'pickaxe',dmg:3,dur:180, level:3},
+  [ITEM.COAL_PICK]:   {name:'Pioche Charbon', emoji:'⛏️',tool:'pickaxe',dmg:1,dur:80,  level:1},
   [ITEM.WOOD_AXE]:  {name:'Hache Bois',   emoji:'🪓', tool:'axe',   dmg:3, dur:60},
   [ITEM.STONE_AXE]: {name:'Hache Pierre', emoji:'🪓', tool:'axe',   dmg:5, dur:132},
   [ITEM.IRON_AXE]:  {name:'Hache Fer',    emoji:'🪓', tool:'axe',   dmg:7, dur:250},
@@ -307,6 +332,20 @@ addRecipe([0,ITEM.IRON_INGOT,0, 0,ITEM.STICK,0, 0,ITEM.STICK,0], ITEM.IRON_SHOVE
 // --- Outils diamant ---
 addRecipe([ITEM.DIAMOND,ITEM.DIAMOND,ITEM.DIAMOND, 0,ITEM.STICK,0, 0,ITEM.STICK,0], ITEM.DIAMOND_PICK, 1);
 addRecipe([0,ITEM.DIAMOND,0, 0,ITEM.DIAMOND,0, 0,ITEM.STICK,0], ITEM.DIAMOND_SWORD, 1);
+// --- Pioche Lapis ---
+addRecipe([B.LAPIS_ORE,B.LAPIS_ORE,B.LAPIS_ORE, 0,ITEM.STICK,0, 0,ITEM.STICK,0], ITEM.LAPIS_PICK, 1);
+// --- Pioche Redstone ---
+addRecipe([B.REDSTONE_ORE,B.REDSTONE_ORE,B.REDSTONE_ORE, 0,ITEM.STICK,0, 0,ITEM.STICK,0], ITEM.REDSTONE_PICK, 1);
+// --- Pioche Charbon ---
+addRecipe([B.COAL_ORE,B.COAL_ORE,B.COAL_ORE, 0,ITEM.STICK,0, 0,ITEM.STICK,0], ITEM.COAL_PICK, 1);
+// --- Planches (toutes positions) ---
+addRecipe([0,0,B.LOG, 0,0,0, 0,0,0], B.PLANKS, 4);
+addRecipe([0,0,0, B.LOG,0,0, 0,0,0], B.PLANKS, 4);
+addRecipe([0,0,0, 0,B.LOG,0, 0,0,0], B.PLANKS, 4);
+addRecipe([0,0,0, 0,0,B.LOG, 0,0,0], B.PLANKS, 4);
+addRecipe([0,0,0, 0,0,0, B.LOG,0,0], B.PLANKS, 4);
+addRecipe([0,0,0, 0,0,0, 0,B.LOG,0], B.PLANKS, 4);
+addRecipe([0,0,0, 0,0,0, 0,0,B.LOG], B.PLANKS, 4);
 // --- Grès ---
 addRecipe([B.SAND,B.SAND,0, B.SAND,B.SAND,0, 0,0,0], B.SANDSTONE, 4);
 // --- Briques ---
@@ -351,7 +390,7 @@ let craftGrid = new Array(9).fill(null);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87CEEB);
 const fogColor = new THREE.Color(0x87CEEB);
-scene.fog = new THREE.Fog(fogColor, 30, 100);
+scene.fog = new THREE.Fog(fogColor, 20, 70);
 
 const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.05, 500);
 camera.position.set(0, 32, 0);
@@ -875,10 +914,12 @@ function updateChunks(){
     gen++;
   }
 
-  // Rebuild dirty chunks
+  // Rebuild dirty chunks (max 2/frame to avoid stutters)
+  let rebuilt=0;
   for(const k of [...dirtyChunks]){
+    if(rebuilt>=2) break;
     const [cx,cz]=k.split(',').map(Number);
-    if(chunkGenerated.has(k)) buildChunkMesh(cx,cz);
+    if(chunkGenerated.has(k)){ buildChunkMesh(cx,cz); rebuilt++; }
     dirtyChunks.delete(k);
   }
 
@@ -902,14 +943,22 @@ let yaw=0, pitch=0;
 let isPointerLocked = false;
 
 document.addEventListener('keydown', e=>{
+  // Chat input intercepts all keys when open
+  if(GAME_STATE==='CHAT'){
+    if(e.code==='Escape'){ closeChat(); e.preventDefault(); return; }
+    if(e.code==='Enter'){ submitChat(); e.preventDefault(); return; }
+    return; // let the input field handle typing
+  }
   keys[e.code]=true;
   if(GAME_STATE!=='PLAYING') return;
   if(['Digit1','Digit2','Digit3','Digit4','Digit5','Digit6','Digit7','Digit8','Digit9'].includes(e.code)){
     selectedSlot=parseInt(e.code.replace('Digit',''))-1;
     updateHotbarUI();
   }
-  if(e.code==='KeyE') openInventory();
-  if(e.code==='KeyQ') openCrafting();
+  if(e.code==='KeyE'){ openInventory(); e.preventDefault(); return; }
+  if(e.code==='KeyQ'){ openCrafting(); e.preventDefault(); return; }
+  if(e.code==='KeyT'){ openChat(false); e.preventDefault(); return; }
+  if(e.code==='Slash'){ openChat(true); e.preventDefault(); return; }
   if(e.code==='Space' && player.flying) player.vy=CFG.FLY_SPEED;
   if(e.code==='ShiftLeft' && player.flying) player.vy=-CFG.FLY_SPEED;
   if(e.code==='KeyF') toggleFly();
@@ -1342,6 +1391,214 @@ function toggleFly(){
 }
 
 // ============================================================
+// CHAT & COMMANDS
+// ============================================================
+const chatMessages = [];
+
+function openChat(startWithSlash=false){
+  GAME_STATE='CHAT';
+  document.exitPointerLock();
+  const overlay = document.getElementById('chat-overlay');
+  const input = document.getElementById('chat-input');
+  overlay.style.display='block';
+  input.value = startWithSlash ? '/' : '';
+  input.focus();
+  if(startWithSlash){ // move cursor to end
+    setTimeout(()=>{ input.selectionStart=input.selectionEnd=1; },0);
+  }
+}
+
+function closeChat(){
+  GAME_STATE='PLAYING';
+  document.getElementById('chat-overlay').style.display='none';
+  document.body.requestPointerLock();
+}
+
+function addChatLine(msg, cls=''){
+  chatMessages.push({msg, cls});
+  if(chatMessages.length > 50) chatMessages.shift();
+  const log = document.getElementById('chat-log');
+  const line = document.createElement('div');
+  line.className = 'chat-line' + (cls ? ' '+cls : '');
+  line.textContent = msg;
+  log.appendChild(line);
+  // Remove old lines if too many
+  while(log.children.length > 20) log.removeChild(log.firstChild);
+  log.scrollTop = log.scrollHeight;
+}
+
+function submitChat(){
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  input.value='';
+  if(!text){ closeChat(); return; }
+  if(text.startsWith('/')){
+    processCommand(text.slice(1));
+  } else {
+    addChatLine('[Vous] '+text);
+  }
+  closeChat();
+}
+
+function processCommand(cmd){
+  const parts = cmd.trim().split(/\s+/);
+  const name = parts[0].toLowerCase();
+  const args = parts.slice(1);
+
+  if(name==='speed'){
+    const val = parseFloat(args[0]);
+    if(isNaN(val)||val<0||val>1000){ addChatLine('Usage: /speed <0-1000>', 'error'); return; }
+    // 100 = normal (0.12), scale linearly
+    CFG.PLAYER_SPEED = 0.12 * (val/100);
+    CFG.FLY_SPEED = 0.25 * (val/100);
+    addChatLine(`✅ Vitesse réglée à ${val}`, 'system');
+    showNotif(`⚡ Vitesse: ${val}`);
+  }
+  else if(name==='creative'||name==='créatif'){
+    creativeMode=true;
+    player.flying=false;
+    addChatLine('✅ Mode créatif activé', 'system');
+    showNotif('🎨 Mode Créatif');
+    // Give all blocks
+    let idx=0;
+    for(const id of [B.GRASS,B.DIRT,B.STONE,B.LOG,B.PLANKS,B.SAND,B.BRICKS,B.GLASS,B.CRAFTING_TABLE,B.TORCH,B.COAL_ORE,B.IRON_ORE,B.GOLD_ORE,B.DIAMOND_ORE,B.LAPIS_ORE,B.REDSTONE_ORE,ITEM.WOOD_PICK,ITEM.STONE_PICK,ITEM.IRON_PICK,ITEM.DIAMOND_PICK]){
+      if(idx<HOTBAR_SIZE) inventory[hotbarSlot(idx++)]={id,count:64,dur:0};
+    }
+    updateHotbarUI(); updateBars();
+  }
+  else if(name==='survie'||name==='survival'){
+    creativeMode=false;
+    player.flying=false;
+    addChatLine('✅ Mode survie activé', 'system');
+    showNotif('⚔ Mode Survie');
+    player.hp=player.maxHp; player.food=player.maxFood;
+    updateBars();
+  }
+  else if(name==='fly'){
+    if(!creativeMode){ addChatLine('❌ Seulement en mode créatif', 'error'); return; }
+    toggleFly();
+    addChatLine(player.flying?'✅ Vol activé':'✅ Vol désactivé', 'system');
+  }
+  else if(name==='tp'||name==='teleport'){
+    const x=parseFloat(args[0]), y=parseFloat(args[1]), z=parseFloat(args[2]);
+    if(isNaN(x)||isNaN(y)||isNaN(z)){ addChatLine('Usage: /tp <x> <y> <z>', 'error'); return; }
+    player.x=x; player.y=y; player.z=z; player.vy=0;
+    addChatLine(`✅ Téléporté à ${x} ${y} ${z}`, 'system');
+    showNotif(`📍 TP: ${x|0} ${y|0} ${z|0}`);
+  }
+  else if(name==='give'){
+    const itemName=args[0]?.toLowerCase();
+    const count=parseInt(args[1])||1;
+    // Try to find item by name
+    const found = findItemByName(itemName);
+    if(found===null){ addChatLine(`❌ Item inconnu: ${itemName}`, 'error'); return; }
+    addItem(found, count);
+    updateHotbarUI();
+    addChatLine(`✅ Donné ${count}x ${getItemName(found)}`, 'system');
+    showNotif(`🎁 +${count} ${getItemName(found)}`);
+  }
+  else if(name==='heal'){
+    player.hp=player.maxHp; player.food=player.maxFood;
+    updateBars();
+    addChatLine('✅ Soigné !', 'system');
+    showNotif('❤ Soins complets');
+  }
+  else if(name==='kill'){
+    if(!creativeMode) damagePlayer(9999);
+    addChatLine('💀 ...', 'error');
+  }
+  else if(name==='time'){
+    if(args[0]==='day') dayTime=0;
+    else if(args[0]==='night') dayTime=CFG.DAY_LENGTH*0.55;
+    else if(!isNaN(parseFloat(args[0]))) dayTime=Math.floor(parseFloat(args[0])*CFG.DAY_LENGTH);
+    else { addChatLine('Usage: /time day|night|<0-1>', 'error'); return; }
+    addChatLine(`✅ Heure changée`, 'system');
+  }
+  else if(name==='gamemode'||name==='gm'){
+    if(args[0]==='0'||args[0]==='survival'||args[0]==='survie'){ processCommand('survie'); }
+    else if(args[0]==='1'||args[0]==='creative'||args[0]==='créatif'){ processCommand('creative'); }
+    else { addChatLine('Usage: /gamemode 0|1  (0=survie, 1=créatif)', 'error'); }
+  }
+  else if(name==='clear'){
+    inventory.fill(null); updateHotbarUI();
+    addChatLine('✅ Inventaire vidé', 'system');
+    showNotif('🗑 Inventaire vidé');
+  }
+  else if(name==='xp'){
+    const val=parseInt(args[0])||0;
+    xp+=val;
+    addChatLine(`✅ +${val} XP`, 'system');
+  }
+  else if(name==='pos'||name==='position'){
+    addChatLine('📍 Position: '+Math.floor(player.x)+' '+Math.floor(player.y)+' '+Math.floor(player.z), 'info');
+    openChat(false); return;
+  }
+  else if(name==='score'){
+    addChatLine('🏆 Score: '+gameScore+' | XP: '+Math.floor(xp), 'info');
+    openChat(false); return;
+  }
+  else if(name==='help'){
+    const cmds=['speed <val>','creative','survie','fly','tp <x> <y> <z>','give <item> [count]','heal','kill','time day|night','clear','xp <val>','help'];
+    addChatLine('📖 Commandes:', 'info');
+    for(const c of cmds) addChatLine('  /'+c, 'info');
+    // reopen chat to show
+    openChat(false);
+    return;
+  }
+  else {
+    addChatLine(`❌ Commande inconnue: /${name}. Tapez /help`, 'error');
+  }
+}
+
+function showRecipeBook(){
+  const recipes = [
+    ['Planches', 'Bûche × 1 = Planches × 4'],
+    ['Bâton', 'Planches (2 vertical) = Bâtons × 4'],
+    ['Table craft', 'Planches × 4 (2×2) = Table de craft'],
+    ['Pioche Bois', 'Planches×3 haut + 2 bâtons = Pioche bois'],
+    ['Pioche Pierre', 'Cobblestone×3 + 2 bâtons = Pioche pierre'],
+    ['Pioche Fer', 'Lingot Fer×3 + 2 bâtons = Pioche fer'],
+    ['Pioche Or', '(craft identique avec lingots or)'],
+    ['Pioche Diamant', 'Diamant×3 + 2 bâtons = Pioche diamant'],
+    ['Pioche Lapis', 'Lapis×3 + 2 bâtons = Pioche lapis'],
+    ['Pioche Redstone', 'Redstone×3 + 2 bâtons = Pioche redstone'],
+    ['Pioche Charbon', 'Charbon×3 + 2 bâtons = Pioche charbon'],
+    ['Épée', '2 matériaux vertical + 1 bâton = Épée'],
+    ['Hache', 'L-shape matériaux + bâtons = Hache'],
+    ['Pelle', '1 matériau + 2 bâtons = Pelle'],
+    ['Grès', 'Sable × 4 (2×2) = Grès × 4'],
+    ['Briques', 'Pierre × 4 (2×2) = Briques × 4'],
+  ];
+  let msg = '📖 RECETTES:\n';
+  for(const [name, recipe] of recipes) msg += name+': '+recipe+'\n';
+  // Show as notification chain
+  addChatLine('📖 Recettes de craft:', 'info');
+  for(const [name, recipe] of recipes) addChatLine('  '+name+': '+recipe, 'info');
+  openChat(false);
+}
+
+function findItemByName(n){
+  if(!n) return null;
+  // Search in BLOCK_DATA
+  for(const [id, data] of Object.entries(BLOCK_DATA)){
+    if(data.name.toLowerCase().includes(n)||id===n) return parseInt(id);
+  }
+  for(const [id, data] of Object.entries(ITEM_DATA)){
+    if(data.name.toLowerCase().includes(n)||id===n) return parseInt(id);
+  }
+  return null;
+}
+
+// Show chat log briefly on message
+let chatLogTimer=0;
+function pulseChat(){
+  const overlay=document.getElementById('chat-overlay');
+  if(GAME_STATE==='CHAT') return;
+  overlay.style.display='block';
+  chatLogTimer=200;
+}
+
+// ============================================================
 // MOBS (Simple)
 // ============================================================
 const mobs = [];
@@ -1398,6 +1655,7 @@ function updateMobs(dt){
 
     const dx=player.x-mob.x, dz=player.z-mob.z;
     const dist=Math.sqrt(dx*dx+dz*dz);
+    if(dist>60) continue; // skip far mobs
 
     if(mob.hostile && !isDay){
       // Chase player
@@ -1564,7 +1822,10 @@ function updateDayNight(){
 // DEBUG HUD
 // ============================================================
 let fps=60, lastFpsTime=performance.now(), fpsFrames=0;
+let debugFrame=0;
 function updateDebug(){
+  debugFrame++;
+  if(debugFrame%10!==0) return;
   fpsFrames++;
   const now=performance.now();
   if(now-lastFpsTime>=1000){ fps=fpsFrames; fpsFrames=0; lastFpsTime=now; }
@@ -1608,6 +1869,8 @@ function animate(){
 
     // Notif timer
     if(notifTimer>0){ notifTimer--; if(notifTimer===0) document.getElementById('notif').style.display='none'; }
+    // Chat log fade
+    if(chatLogTimer>0){ chatLogTimer--; if(chatLogTimer===0&&GAME_STATE!=='CHAT') document.getElementById('chat-overlay').style.display='none'; }
 
     // Movement
     const spd = player.flying ? CFG.FLY_SPEED : (keys.ShiftLeft&&!player.flying ? CFG.PLAYER_SPEED*CFG.SPRINT_MULT : CFG.PLAYER_SPEED);
@@ -1799,6 +2062,8 @@ document.addEventListener('keydown', e=>{
   }
   if(e.code==='KeyE'&&GAME_STATE==='INVENTORY') closeInventory();
   if(e.code==='KeyQ'&&GAME_STATE==='CRAFTING') closeCrafting();
+  if(e.code==='Enter'&&GAME_STATE==='CHAT') submitChat();
+  if(e.code==='Escape'&&GAME_STATE==='CHAT') closeChat();
 });
 </script>
 </body>
