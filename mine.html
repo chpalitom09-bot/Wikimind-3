@@ -194,6 +194,7 @@ const B = {
   PLANKS:14, BRICKS:15, GLASS:16, GRAVEL:17, CACTUS:18, BEDROCK:19,
   TORCH:20, CHEST:21, CRAFTING_TABLE:22, FURNACE:23,
   COBBLESTONE:24, SANDSTONE:25, GRANITE:26, ANDESITE:27,
+  LAPIS_ORE:28, REDSTONE_ORE:29,
 };
 
 const BLOCK_DATA = {
@@ -222,6 +223,8 @@ const BLOCK_DATA = {
   [B.ANDESITE]:  {name:'Andésite',    emoji:'⬜', hardness:4,  drop:B.ANDESITE,tool:'pickaxe'},
   [B.CRAFTING_TABLE]:{name:'Table de Craft',emoji:'🔨',hardness:2,drop:B.CRAFTING_TABLE,tool:null},
   [B.CHEST]:     {name:'Coffre',      emoji:'📦', hardness:2,  drop:B.CHEST,   tool:null},
+  [B.LAPIS_ORE]: {name:'Lapis-Lazuli',emoji:'🔵', hardness:5,  drop:B.LAPIS_ORE,tool:'pickaxe'},
+  [B.REDSTONE_ORE]:{name:'Redstone',  emoji:'🔴', hardness:4,  drop:B.REDSTONE_ORE,tool:'pickaxe'},
 };
 
 // Items (non-blocs)
@@ -477,12 +480,15 @@ function generateChunk(cx, cz){
         if(y < 16){
           const r = hash3(x,y,z);
           if(r < 0.012) bt = B.DIAMOND_ORE;
+          else if(r < 0.025) bt = B.LAPIS_ORE;
           else if(r < 0.04) bt = B.GOLD_ORE;
+          else if(r < 0.065) bt = B.REDSTONE_ORE;
           else if(r < 0.09) bt = B.IRON_ORE;
           else if(r < 0.18) bt = B.COAL_ORE;
         } else {
           const r = hash3(x,y,z);
-          if(r < 0.04) bt = B.IRON_ORE;
+          if(r < 0.015) bt = B.REDSTONE_ORE;
+          else if(r < 0.04) bt = B.IRON_ORE;
           else if(r < 0.1) bt = B.COAL_ORE;
         }
         // Granite/Andesite variation
@@ -655,6 +661,8 @@ function buildTextures(){
   TEXTURES[B.IRON_ORE]    = oreTexture(204,120,50,13);
   TEXTURES[B.GOLD_ORE]    = oreTexture(255,208,0,14);
   TEXTURES[B.DIAMOND_ORE] = oreTexture(0,218,255,15);
+  TEXTURES[B.LAPIS_ORE]   = oreTexture(30,60,220,27);
+  TEXTURES[B.REDSTONE_ORE]= oreTexture(220,20,20,28);
 
   TEXTURES[B.PLANKS] = noiseBlock(160,118,52,14,16,(d)=>{
     row(d,0,105,72,25); row(d,8,105,72,25);
@@ -720,16 +728,14 @@ function buildTextures(){
 
   // Fallback magenta for any unmapped block id
   const fallbackMat = new THREE.MeshLambertMaterial({color:0xff00ff});
-  for(let id=0; id<=30; id++){
+  for(let id=0; id<=35; id++){
     if(!MATERIALS[id]) MATERIALS[id] = fallbackMat;
   }
 }
 
 // ============================================================
-// CHUNK MESH BUILDING (INSTANCED + FACE CULLING)
+// CHUNK MESH BUILDING - PER-FACE GREEDY (fixes visibility bug)
 // ============================================================
-const boxGeo = new THREE.BoxGeometry(1,1,1);
-const dummy = new THREE.Object3D();
 const chunkGroup = new THREE.Group();
 scene.add(chunkGroup);
 
@@ -737,16 +743,26 @@ const TRANSPARENT_BLOCKS = new Set([B.GLASS, B.WATER, B.LEAVES, B.AIR, B.TORCH])
 const NON_SOLID = new Set([B.AIR, B.WATER, B.GLASS, B.LEAVES, B.TORCH]);
 
 function isExposed(x,y,z){
-  // Check all 6 neighbors
   for(const [dx,dy,dz] of [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]){
     if(NON_SOLID.has(getBlock(x+dx,y+dy,z+dz))) return true;
   }
   return false;
 }
 
+// Face directions: +X, -X, +Y, -Y, +Z, -Z
+// Each face: 4 vertices (x,y,z), normal, uv
+const FACE_DIRS = [
+  { dir:[1,0,0],  verts:[[0.5,-0.5,-0.5],[0.5,0.5,-0.5],[0.5,0.5,0.5],[0.5,-0.5,0.5]  ], norm:[1,0,0]  },
+  { dir:[-1,0,0], verts:[[-0.5,-0.5,0.5],[-0.5,0.5,0.5],[-0.5,0.5,-0.5],[-0.5,-0.5,-0.5]], norm:[-1,0,0] },
+  { dir:[0,1,0],  verts:[[-0.5,0.5,-0.5],[-0.5,0.5,0.5],[0.5,0.5,0.5],[0.5,0.5,-0.5]  ], norm:[0,1,0]  },
+  { dir:[0,-1,0], verts:[[-0.5,-0.5,0.5],[-0.5,-0.5,-0.5],[0.5,-0.5,-0.5],[0.5,-0.5,0.5]], norm:[0,-1,0] },
+  { dir:[0,0,1],  verts:[[0.5,-0.5,0.5],[0.5,0.5,0.5],[-0.5,0.5,0.5],[-0.5,-0.5,0.5]  ], norm:[0,0,1]  },
+  { dir:[0,0,-1], verts:[[-0.5,-0.5,-0.5],[-0.5,0.5,-0.5],[0.5,0.5,-0.5],[0.5,-0.5,-0.5]], norm:[0,0,-1] },
+];
+const FACE_UVS = [[0,0],[0,1],[1,1],[1,0]];
+
 function buildChunkMesh(cx, cz){
   const key = ckey(cx,cz);
-  // Remove old mesh
   if(chunkMeshes.has(key)){
     chunkGroup.remove(chunkMeshes.get(key));
     chunkMeshes.get(key).children.forEach(c=>{
@@ -755,34 +771,54 @@ function buildChunkMesh(cx, cz){
   }
 
   const offX=cx*CFG.CHUNK_SIZE, offZ=cz*CFG.CHUNK_SIZE;
-  const blocksByType = new Map();
+
+  // Collect per-material face data
+  const matFaces = new Map(); // blockType -> {positions[], normals[], uvs[], indices[]}
 
   for(let dx=0;dx<CFG.CHUNK_SIZE;dx++){
     for(let dz=0;dz<CFG.CHUNK_SIZE;dz++){
-      for(let y=-10;y<CFG.MAX_HEIGHT;y++){
+      for(let y=0;y<CFG.MAX_HEIGHT;y++){
         const x=offX+dx, z=offZ+dz;
         const bt = getBlock(x,y,z);
         if(bt===B.AIR) continue;
-        if(!isExposed(x,y,z)) continue;
-        if(!blocksByType.has(bt)) blocksByType.set(bt,[]);
-        blocksByType.get(bt).push(x,y,z);
+
+        for(const face of FACE_DIRS){
+          const nx=x+face.dir[0], ny=y+face.dir[1], nz=z+face.dir[2];
+          const neighbor = getBlock(nx,ny,nz);
+          // Show face if neighbor is non-solid (or transparent and we're opaque)
+          if(!NON_SOLID.has(neighbor)) continue;
+          // Don't render transparent-vs-transparent same type
+          if(TRANSPARENT_BLOCKS.has(bt) && neighbor===bt) continue;
+
+          if(!matFaces.has(bt)) matFaces.set(bt,{pos:[],nor:[],uv:[],idx:[]});
+          const fd = matFaces.get(bt);
+          const base = fd.pos.length/3;
+
+          for(let v=0;v<4;v++){
+            fd.pos.push(x+face.verts[v][0], y+face.verts[v][1], z+face.verts[v][2]);
+            fd.nor.push(...face.norm);
+            fd.uv.push(FACE_UVS[v][0], FACE_UVS[v][1]);
+          }
+          // Two triangles per face
+          fd.idx.push(base,base+1,base+2, base,base+2,base+3);
+        }
       }
     }
   }
 
   const group = new THREE.Group();
-  for(const [type, positions] of blocksByType){
+  for(const [type, fd] of matFaces){
+    if(fd.idx.length===0) continue;
     const mat = MATERIALS[type];
     if(!mat) continue;
-    const count = positions.length/3;
-    const mesh = new THREE.InstancedMesh(boxGeo, mat, count);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(fd.pos,3));
+    geo.setAttribute('normal',   new THREE.Float32BufferAttribute(fd.nor,3));
+    geo.setAttribute('uv',       new THREE.Float32BufferAttribute(fd.uv,2));
+    geo.setIndex(fd.idx);
+    geo.computeBoundingSphere();
+    const mesh = new THREE.Mesh(geo, mat);
     mesh.frustumCulled = true;
-    for(let i=0;i<count;i++){
-      dummy.position.set(positions[i*3],positions[i*3+1],positions[i*3+2]);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i,dummy.matrix);
-    }
-    mesh.instanceMatrix.needsUpdate=true;
     group.add(mesh);
   }
 
@@ -791,29 +827,46 @@ function buildChunkMesh(cx, cz){
 }
 
 // ============================================================
-// CHUNK MANAGER (QUEUE + UNLOAD FAR CHUNKS)
+// CHUNK MANAGER (QUEUE + UNLOAD FAR CHUNKS + FRUSTUM)
 // ============================================================
-let genPerFrame = 1;
-const UNLOAD_DIST = CFG.RENDER_DIST + 3;
+let genPerFrame = 2;
+const UNLOAD_DIST = CFG.RENDER_DIST + 2;
+const _frustum = new THREE.Frustum();
+const _projScreenMatrix = new THREE.Matrix4();
+
+function isChunkInFrustum(cx, cz){
+  camera.updateMatrixWorld();
+  _projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+  _frustum.setFromProjectionMatrix(_projScreenMatrix);
+  const minX = cx*CFG.CHUNK_SIZE, maxX = minX+CFG.CHUNK_SIZE;
+  const minZ = cz*CFG.CHUNK_SIZE, maxZ = minZ+CFG.CHUNK_SIZE;
+  const box = new THREE.Box3(
+    new THREE.Vector3(minX, 0, minZ),
+    new THREE.Vector3(maxX, CFG.MAX_HEIGHT, maxZ)
+  );
+  return _frustum.intersectsBox(box);
+}
 
 function updateChunks(){
   const pcx = Math.floor(player.x/CFG.CHUNK_SIZE);
   const pcz = Math.floor(player.z/CFG.CHUNK_SIZE);
 
-  // Queue needed chunks sorted by distance
+  // Queue needed chunks — visible ones first
   const needed = [];
   for(let dx=-CFG.RENDER_DIST;dx<=CFG.RENDER_DIST;dx++){
     for(let dz=-CFG.RENDER_DIST;dz<=CFG.RENDER_DIST;dz++){
       const cx=pcx+dx, cz=pcz+dz;
       const k=ckey(cx,cz);
       if(!chunkGenerated.has(k)){
-        needed.push([cx,cz,dx*dx+dz*dz]);
+        const dist2 = dx*dx+dz*dz;
+        const inView = isChunkInFrustum(cx,cz) ? 0 : 1000;
+        needed.push([cx,cz,dist2+inView]);
       }
     }
   }
   needed.sort((a,b)=>a[2]-b[2]);
 
-  // Generate up to N per frame
+  // Generate up to N per frame (adaptive)
   let gen=0;
   for(const [cx,cz] of needed){
     if(gen>=genPerFrame) break;
@@ -823,20 +876,20 @@ function updateChunks(){
   }
 
   // Rebuild dirty chunks
-  for(const k of dirtyChunks){
+  for(const k of [...dirtyChunks]){
     const [cx,cz]=k.split(',').map(Number);
     if(chunkGenerated.has(k)) buildChunkMesh(cx,cz);
     dirtyChunks.delete(k);
   }
 
-  // Unload far chunks
-  for(const [k] of chunkMeshes){
+  // Hide chunks outside frustum (but keep them loaded)
+  for(const [k, grp] of chunkMeshes){
     const [cx,cz]=k.split(',').map(Number);
-    if(Math.abs(cx-pcx)>UNLOAD_DIST||Math.abs(cz-pcz)>UNLOAD_DIST){
-      chunkGroup.remove(chunkMeshes.get(k));
-      chunkMeshes.get(k).children.forEach(c=>{if(c.geometry)c.geometry.dispose();});
+    const dist = Math.max(Math.abs(cx-pcx), Math.abs(cz-pcz));
+    if(dist > UNLOAD_DIST){
+      chunkGroup.remove(grp);
+      grp.children.forEach(c=>{if(c.geometry)c.geometry.dispose();});
       chunkMeshes.delete(k);
-      // keep worldData for later (sparse)
     }
   }
 }
@@ -888,13 +941,51 @@ document.addEventListener('pointerlockchange', ()=>{
 });
 
 // ============================================================
-// BLOCK BREAKING
+// BLOCK BREAK CRACK ANIMATION
 // ============================================================
 let breakTarget = null;
 let breakProgress = 0;
 let lastBreakClick = 0;
 const breakBarBg = document.getElementById('break-bar-bg');
 const breakBarEl = document.getElementById('break-bar');
+
+// Crack overlay: a canvas texture applied on a slightly enlarged box
+const crackCanvas = document.createElement('canvas');
+crackCanvas.width = 16; crackCanvas.height = 16;
+const crackCtx = crackCanvas.getContext('2d');
+const crackTex = new THREE.CanvasTexture(crackCanvas);
+crackTex.magFilter = THREE.NearestFilter;
+crackTex.minFilter = THREE.NearestFilter;
+
+const crackMesh = new THREE.Mesh(
+  new THREE.BoxGeometry(1.02,1.02,1.02),
+  new THREE.MeshBasicMaterial({map:crackTex, transparent:true, depthWrite:false, opacity:0.85})
+);
+crackMesh.visible = false;
+scene.add(crackMesh);
+
+function drawCrack(stage){ // stage 0-7
+  crackCtx.clearRect(0,0,16,16);
+  if(stage<=0) return;
+  crackCtx.strokeStyle=`rgba(0,0,0,${0.1+stage*0.1})`;
+  crackCtx.lineWidth=0.5;
+  // Draw crack lines radiating from center
+  const lines=[
+    [[8,8],[2,2]],[[8,8],[14,3]],[[8,8],[4,14]],[[8,8],[13,13]],
+    [[8,8],[1,8]],[[8,8],[15,9]],[[8,8],[8,1]],[[8,8],[7,15]],
+  ];
+  for(let i=0;i<stage&&i<lines.length;i++){
+    crackCtx.beginPath();
+    crackCtx.moveTo(lines[i][0][0],lines[i][0][1]);
+    crackCtx.lineTo(lines[i][1][0],lines[i][1][1]);
+    // branch
+    const mx=(lines[i][0][0]+lines[i][1][0])/2, my=(lines[i][0][1]+lines[i][1][1])/2;
+    crackCtx.moveTo(mx,my);
+    crackCtx.lineTo(mx+(lines[i][1][1]-lines[i][0][1])*0.3, my-(lines[i][1][0]-lines[i][0][0])*0.3);
+    crackCtx.stroke();
+  }
+  crackTex.needsUpdate=true;
+}
 
 function getToolMultiplier(held, blockId){
   if(!held) return 1;
@@ -975,6 +1066,7 @@ document.addEventListener('mouseup', e=>{
   breakTarget=null; breakProgress=0;
   breakBarBg.style.display='none';
   highlightMesh.visible=false;
+  crackMesh.visible=false;
 });
 document.addEventListener('contextmenu', e=>e.preventDefault());
 
@@ -1569,10 +1661,11 @@ function animate(){
     if(ray.hit){
       highlightMesh.position.set(ray.block.x,ray.block.y,ray.block.z);
       highlightMesh.visible=true;
+      crackMesh.position.set(ray.block.x,ray.block.y,ray.block.z);
 
       if(mouseDown&&mouseButton===0){
         const bk=bkey(ray.block.x,ray.block.y,ray.block.z);
-        if(breakTarget!==bk){ breakTarget=bk; breakProgress=0; }
+        if(breakTarget!==bk){ breakTarget=bk; breakProgress=0; drawCrack(0); }
         const bt=getBlock(ray.block.x,ray.block.y,ray.block.z);
         const bdata=BLOCK_DATA[bt];
         if(bdata){
@@ -1580,11 +1673,17 @@ function animate(){
           const mult=getToolMultiplier(held,bt);
           const ticksNeeded=(bdata.hardness*10)/mult;
           breakProgress++;
+          const pct = breakProgress/ticksNeeded;
           breakBarBg.style.display='block';
-          breakBarEl.style.width=Math.min(100,(breakProgress/ticksNeeded*100))+'%';
+          breakBarEl.style.width=Math.min(100,pct*100)+'%';
+          // Crack stages 0-7
+          const stage = Math.floor(pct*8);
+          crackMesh.visible = true;
+          drawCrack(stage);
           if(breakProgress>=ticksNeeded){
             // Break block
             breakProgress=0; breakTarget=null; breakBarBg.style.display='none';
+            crackMesh.visible=false; drawCrack(0);
             const dropId=bdata.drop;
             if(dropId!==null&&dropId!==undefined) addItem(dropId,1);
             setBlock(ray.block.x,ray.block.y,ray.block.z,B.AIR);
@@ -1592,9 +1691,13 @@ function animate(){
             updateHotbarUI();
           }
         }
-      } else { breakTarget=null; breakProgress=0; breakBarBg.style.display='none'; }
+      } else {
+        breakTarget=null; breakProgress=0; breakBarBg.style.display='none';
+        crackMesh.visible=false; drawCrack(0);
+      }
     } else {
       highlightMesh.visible=false;
+      crackMesh.visible=false;
       breakTarget=null; breakProgress=0; breakBarBg.style.display='none';
     }
 
