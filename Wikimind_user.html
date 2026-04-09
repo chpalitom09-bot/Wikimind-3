@@ -540,20 +540,12 @@
                     <div id="notif-status" class="text-[11px] text-white/20 text-center py-2 hidden"></div>
                 </div>
 
-                <!-- Confidentialité -->
-                <div class="glass rounded-3xl p-6">
-                    <h3 class="font-display font-bold text-base mb-2 flex items-center gap-2"><i class="fa-solid fa-eye" style="color:#a5b4fc;"></i>Visibilité du profil</h3>
-                    <p class="text-[11px] text-white/30 mb-5">Choisis ce que les autres utilisateurs peuvent voir sur ton profil</p>
-                    <div class="space-y-3" id="privacy-toggles">
-                        <!-- dynamically rendered -->
-                    </div>
-                    <button onclick="savePrivacySettings()" class="btn-brand mt-5 flex items-center justify-center gap-2"><i class="fa-solid fa-floppy-disk"></i>Sauvegarder</button>
-                </div>
+                <!-- Confidentialité supprimée : tout ce qui est rempli est visible -->
 
                 <!-- Infos sociales -->
                 <div class="glass rounded-3xl p-6 md:col-span-2">
                     <h3 class="font-display font-bold text-base mb-2 flex items-center gap-2"><i class="fa-solid fa-address-card" style="color:#4ade80;"></i>Mes informations publiques</h3>
-                    <p class="text-[11px] text-white/30 mb-5">Ces infos ne seront visibles que si tu les actives dans la section Visibilité</p>
+                    <p class="text-[11px] text-white/30 mb-5">Ces infos seront visibles par tes amis sur ton profil</p>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                         <div>
                             <label class="block text-xs text-white/35 font-bold uppercase tracking-wider mb-1.5"><i class="fa-solid fa-quote-left mr-1 text-indigo-400"></i>Petite phrase / Bio</label>
@@ -730,7 +722,8 @@
         sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import {
-        getDatabase, ref, onValue, set, get, push, update, remove, runTransaction
+        getDatabase, ref, onValue, set, get, push, update, remove, runTransaction,
+        onChildAdded, onChildRemoved, onChildChanged
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     // ─── CONFIG ───
@@ -1469,99 +1462,188 @@ Réponds UNIQUEMENT en JSON valide sans rien d'autre :
 
     let _lastReqCount = 0;
 
-    function loadFriends(uid) {
-        // Friend requests — ALWAYS real-time (no cache)
-        onValue(ref(db, `users/${uid}/friend_requests`), snap => {
-            const section = document.getElementById('req-section');
-            const list    = document.getElementById('req-list');
-            const dot     = document.getElementById('friends-dot');
-            list.innerHTML = '';
-            if (!snap.exists()) { section.classList.add('hidden'); dot.classList.add('hidden'); _lastReqCount = 0; return; }
-            let pending = 0;
-            snap.forEach(reqSnap => {
-                const r = reqSnap.val();
-                if (!r || r.status !== 'pending') return;
-                pending++;
-                const av = r.fromAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(r.fromName||'?')}&background=6366f1&color=fff&size=128`;
-                const div = document.createElement('div');
-                div.className = 'flex items-center gap-3 p-4 rounded-2xl transition-all friend-card-enter';
-                div.style.cssText = 'background:rgba(251,146,60,0.08);border:1px solid rgba(217,119,6,0.22);';
-                div.innerHTML = `
-                    <img src="${av}" class="w-11 h-11 rounded-full object-cover flex-shrink-0 ring-2" style="ring-color:rgba(251,146,60,0.3);" alt="" onerror="this.src='https://ui-avatars.com/api/?background=6366f1&color=fff&name=?'">
-                    <div class="flex-1 min-w-0">
-                        <div class="text-sm font-bold">${r.fromName || 'Anonyme'}</div>
-                        <div class="text-[10px] text-white/30 flex items-center gap-1.5 mt-0.5"><i class="fa-solid fa-clock text-orange-400/60"></i>${r.fromEmail || ''}</div>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="acceptFriend('${reqSnap.key}','${(r.fromName||'').replace(/'/g,"\\'")}','${(r.fromAvatar||'').replace(/'/g,"\\'")}','${r.fromEmail||''}','${r.fromPlanKey||'free'}')" 
-                            class="w-9 h-9 rounded-xl flex items-center justify-center font-bold transition hover:scale-110 active:scale-95" style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.25);">
-                            <i class="fa-solid fa-check text-sm"></i>
-                        </button>
-                        <button onclick="declineFriend('${reqSnap.key}')" 
-                            class="w-9 h-9 rounded-xl flex items-center justify-center font-bold transition hover:scale-110 active:scale-95" style="background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.2);">
-                            <i class="fa-solid fa-xmark text-sm"></i>
-                        </button>
-                    </div>`;
-                list.appendChild(div);
-            });
-            // Browser push notification for NEW requests
-            if (pending > _lastReqCount && _lastReqCount >= 0 && Notification?.permission === 'granted') {
-                try {
-                    new Notification('WikiMind 👋 Nouvelle demande d\'ami !', {
-                        body: 'Quelqu\'un veut être votre ami sur WikiMind !',
-                        icon: 'https://ui-avatars.com/api/?name=W&background=6366f1&color=fff&size=64'
-                    });
-                } catch(e) {}
+    // ─────────────────────────────────────────────────────────────
+    // SYSTÈME AMIS — get() initial + listeners incrementaux
+    // ─────────────────────────────────────────────────────────────
+
+    const FRIENDS_MAP = new Map();
+    let friendsInitialLoadDone = false;
+
+    function buildFriendCard(f) {
+        const planId = parseInt(f.planId) || 1;
+        const plan   = PLANS.find(p => p.id === planId) || PLANS[0];
+        const av     = f.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(f.name||'?')}&background=6366f1&color=fff&size=128`;
+        const div    = document.createElement('div');
+        div.id        = `fc-${f.uid}`;
+        div.className = 'friend-card glass-sm rounded-2xl p-4 flex items-center gap-4';
+        div.style.borderRadius = '16px';
+        div.onclick   = () => openFriendModal(f.uid, f.name, f.avatar, f.email, planId);
+        div.innerHTML = `
+            <div class="relative flex-shrink-0">
+                <div class="ring-wrap ${plan.ring}" style="width:54px;height:54px;">
+                    <img src="${av}" class="rounded-full object-cover" style="width:46px;height:46px;" alt=""
+                         onerror="this.src='https://ui-avatars.com/api/?background=6366f1&color=fff&name=?'">
+                </div>
+                <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[7px] font-black uppercase whitespace-nowrap ${plan.badge}" style="letter-spacing:0.04em;">${plan.label}</div>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="text-sm font-bold truncate">${f.name || 'Anonyme'}</div>
+                <div class="text-[10px] text-white/20 truncate mt-0.5 flex items-center gap-1.5">
+                    <i class="fa-solid fa-envelope opacity-40 text-[9px]"></i>${f.email || ''}
+                </div>
+                ${f.since ? `<div class="text-[9px] text-white/15 mt-1 flex items-center gap-1"><i class="fa-solid fa-handshake opacity-40"></i>Ami depuis ${new Date(f.since).toLocaleDateString('fr-FR',{month:'short',year:'numeric'})}</div>` : ''}
+            </div>
+            <button onclick="event.stopPropagation();removeFriend('${f.uid}')"
+                class="w-8 h-8 rounded-xl flex items-center justify-center text-xs transition hover:scale-110 active:scale-95 flex-shrink-0"
+                style="background:rgba(239,68,68,0.07);color:rgba(248,113,113,0.45);border:1px solid rgba(239,68,68,0.12);"
+                title="Retirer">
+                <i class="fa-solid fa-user-minus"></i>
+            </button>`;
+        return div;
+    }
+
+    function updateFriendsCounters() {
+        const n = FRIENDS_MAP.size;
+        setText('friends-badge', n);
+        setText('friend-count-home', n);
+    }
+
+    function updateEmptyState() {
+        const list = document.getElementById('friends-list');
+        if (!list) return;
+        const empty = document.getElementById('friends-empty');
+        if (FRIENDS_MAP.size === 0) {
+            if (!empty) {
+                const d = document.createElement('div');
+                d.id = 'friends-empty';
+                d.style.cssText = 'text-align:center;padding:40px 0;color:rgba(255,255,255,0.12);font-size:13px;';
+                d.innerHTML = '<i class="fa-solid fa-user-group" style="font-size:2rem;opacity:0.2;display:block;margin-bottom:12px;"></i>Aucun ami pour l\'instant.';
+                list.appendChild(d);
             }
-            _lastReqCount = pending;
-            section.classList.toggle('hidden', pending === 0);
-            dot.classList.toggle('hidden', pending === 0);
+        } else {
+            if (empty) empty.remove();
+        }
+    }
+
+    function loadFriends(uid) {
+        const friendsRef = ref(db, `users/${uid}/friends`);
+        const list = document.getElementById('friends-list');
+
+        // 1. Chargement initial avec get() — snapshot complet, une seule fois
+        get(friendsRef).then(snap => {
+            FRIENDS_MAP.clear();
+            if (list) list.innerHTML = ''; // vide UNE SEULE FOIS au début
+
+            if (snap.exists()) {
+                const frag = document.createDocumentFragment();
+                snap.forEach(child => {
+                    const v = child.val();
+                    if (!v) return;
+                    const f = { uid: child.key, ...v };
+                    FRIENDS_MAP.set(child.key, f);
+                    frag.appendChild(buildFriendCard(f));
+                });
+                if (list) list.appendChild(frag);
+            }
+
+            updateFriendsCounters();
+            updateEmptyState();
+            friendsInitialLoadDone = true;
+
+            // 2. Après le chargement initial, écoute les ajouts/suppressions en temps réel
+            onChildAdded(friendsRef, snap => {
+                if (!friendsInitialLoadDone) return; // ignore les events du chargement initial
+                const v = snap.val();
+                if (!v || FRIENDS_MAP.has(snap.key)) return; // déjà là
+                const f = { uid: snap.key, ...v };
+                FRIENDS_MAP.set(snap.key, f);
+                const card = buildFriendCard(f);
+                card.style.animation = 'friendSlideIn 0.4s cubic-bezier(0.34,1.3,0.64,1) both';
+                if (list) list.appendChild(card);
+                updateFriendsCounters();
+                updateEmptyState();
+            });
+
+            onChildRemoved(friendsRef, snap => {
+                FRIENDS_MAP.delete(snap.key);
+                const card = document.getElementById(`fc-${snap.key}`);
+                if (card) card.remove();
+                updateFriendsCounters();
+                updateEmptyState();
+            });
+
+            onChildChanged(friendsRef, snap => {
+                const v = snap.val();
+                if (!v) return;
+                const f = { uid: snap.key, ...v };
+                FRIENDS_MAP.set(snap.key, f);
+                const oldCard = document.getElementById(`fc-${snap.key}`);
+                const newCard = buildFriendCard(f);
+                if (oldCard && list) list.replaceChild(newCard, oldCard);
+            });
+
+        }).catch(e => {
+            console.error('loadFriends get() error:', e);
+            if (list) list.innerHTML = '<div class="text-red-400/50 text-center text-sm py-8">Erreur chargement amis</div>';
         });
 
-        // Friends list — ALWAYS real-time (structure is small)
-        onValue(ref(db, `users/${uid}/friends`), snap => {
-            const list  = document.getElementById('friends-list');
-            const badge = document.getElementById('friends-badge');
-            const homeC = document.getElementById('friend-count-home');
-            list.innerHTML = '';
-            if (!snap.exists()) {
-                setText('friends-badge', 0); setText('friend-count-home', 0);
-                list.innerHTML = '<div style="text-align:center;padding:40px 0;color:rgba(255,255,255,0.12);font-size:13px;"><i class="fa-solid fa-user-group" style="font-size:2rem;opacity:0.2;display:block;margin-bottom:12px;"></i>Aucun ami pour l\'instant.</div>';
-                return;
+        // 3. Demandes d'amis — onValue est OK ici car le nœud est petit
+        onValue(ref(db, `users/${uid}/friend_requests`), snap => {
+            const section = document.getElementById('req-section');
+            const reqList = document.getElementById('req-list');
+            const dot     = document.getElementById('friends-dot');
+            if (!reqList) return;
+
+            const frag = document.createDocumentFragment();
+            let pending = 0;
+
+            if (snap.exists()) {
+                snap.forEach(reqSnap => {
+                    const r = reqSnap.val();
+                    if (!r || r.status !== 'pending') return;
+                    pending++;
+                    const av = r.fromAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(r.fromName||'?')}&background=6366f1&color=fff&size=128`;
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center gap-3 p-4 rounded-2xl transition-all';
+                    div.style.cssText = 'background:rgba(251,146,60,0.08);border:1px solid rgba(217,119,6,0.22);';
+                    div.innerHTML = `
+                        <img src="${av}" class="w-11 h-11 rounded-full object-cover flex-shrink-0" alt=""
+                             onerror="this.src='https://ui-avatars.com/api/?background=6366f1&color=fff&name=?'">
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-bold">${r.fromName || 'Anonyme'}</div>
+                            <div class="text-[10px] text-white/30 flex items-center gap-1.5 mt-0.5">
+                                <i class="fa-solid fa-clock text-orange-400/60"></i>${r.fromEmail || ''}
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="acceptFriend('${reqSnap.key}','${(r.fromName||'').replace(/'/g,"\\'")}','${(r.fromAvatar||'').replace(/'/g,"\\'")}','${r.fromEmail||''}','${r.fromPlanKey||'free'}')"
+                                class="w-9 h-9 rounded-xl flex items-center justify-center font-bold transition hover:scale-110 active:scale-95"
+                                style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.25);">
+                                <i class="fa-solid fa-check text-sm"></i>
+                            </button>
+                            <button onclick="declineFriend('${reqSnap.key}')"
+                                class="w-9 h-9 rounded-xl flex items-center justify-center font-bold transition hover:scale-110 active:scale-95"
+                                style="background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.2);">
+                                <i class="fa-solid fa-xmark text-sm"></i>
+                            </button>
+                        </div>`;
+                    frag.appendChild(div);
+                });
             }
-            const friends = [];
-            snap.forEach(f => friends.push({ uid: f.key, ...f.val() }));
-            setText('friends-badge', friends.length); setText('friend-count-home', friends.length);
-            friends.forEach((f, idx) => {
-                const planId = f.planId || 1;
-                const plan = PLANS.find(p => p.id === planId) || PLANS[0];
-                const av = f.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(f.name||'?')}&background=6366f1&color=fff&size=128`;
-                const div = document.createElement('div');
-                div.className = 'friend-card glass-sm rounded-2xl p-4 flex items-center gap-4';
-                div.style.cssText = `border-radius:16px;animation:friendSlideIn 0.4s cubic-bezier(0.34,1.3,0.64,1) ${idx * 0.06}s both;`;
-                div.onclick = () => openFriendModal(f.uid, f.name, f.avatar, f.email, planId);
-                div.innerHTML = `
-                    <div class="relative flex-shrink-0">
-                        <div class="ring-wrap ${plan.ring}" style="width:54px;height:54px;">
-                            <img src="${av}" class="rounded-full object-cover" style="width:46px;height:46px;" alt="" onerror="this.src='https://ui-avatars.com/api/?background=6366f1&color=fff&name=?'">
-                        </div>
-                        <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[7px] font-black uppercase whitespace-nowrap ${plan.badge}" style="letter-spacing:0.04em;">${plan.label}</div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="text-sm font-bold truncate">${f.name || 'Anonyme'}</div>
-                        <div class="text-[10px] text-white/20 truncate mt-0.5 flex items-center gap-1.5">
-                            <i class="fa-solid fa-envelope opacity-40 text-[9px]"></i>${f.email || ''}
-                        </div>
-                        ${f.since ? `<div class="text-[9px] text-white/15 mt-1 flex items-center gap-1"><i class="fa-solid fa-handshake opacity-40"></i>Ami depuis ${new Date(f.since).toLocaleDateString('fr-FR',{month:'short',year:'numeric'})}</div>` : ''}
-                    </div>
-                    <button onclick="event.stopPropagation();removeFriend('${f.uid}')" 
-                        class="w-8 h-8 rounded-xl flex items-center justify-center text-xs transition hover:scale-110 active:scale-95 flex-shrink-0" 
-                        style="background:rgba(239,68,68,0.07);color:rgba(248,113,113,0.45);border:1px solid rgba(239,68,68,0.12);" 
-                        title="Retirer">
-                        <i class="fa-solid fa-user-minus"></i>
-                    </button>`;
-                list.appendChild(div);
-            });
+
+            // Notif browser si nouvelle demande
+            if (pending > _lastReqCount && _lastReqCount >= 0 && Notification?.permission === 'granted') {
+                try { new Notification('WikiMind 👋 Nouvelle demande d\'ami !', {
+                    body: 'Quelqu\'un veut être votre ami sur WikiMind !',
+                    icon: 'https://ui-avatars.com/api/?name=W&background=6366f1&color=fff&size=64'
+                }); } catch(e) {}
+            }
+            _lastReqCount = pending;
+
+            reqList.innerHTML = '';
+            reqList.appendChild(frag);
+            if (section) section.classList.toggle('hidden', pending === 0);
+            if (dot)     dot.classList.toggle('hidden', pending === 0);
         });
     }
 
@@ -1613,53 +1695,38 @@ Réponds UNIQUEMENT en JSON valide sans rien d'autre :
         const fmBadge = document.getElementById('fm-badge');
         fmBadge.className = `inline-block px-4 py-1.5 rounded-full ${plan.badge} text-xs font-black uppercase tracking-widest mb-4`;
         fmBadge.innerText = 'Plan ' + plan.label;
-        const fmRing = document.getElementById('fm-ring');
-        fmRing.className = `ring-wrap ${plan.ring}`;
+        document.getElementById('fm-ring').className = `ring-wrap ${plan.ring}`;
 
-        // Load their privacy settings and show public fields
         const extraEl = document.getElementById('fm-extra');
-        const emailEl = document.getElementById('fm-email-vis');
         extraEl.innerHTML = '<div class="text-white/20 text-xs text-center py-2"><i class="fa-solid fa-spinner fa-spin mr-1"></i>Chargement...</div>';
-        emailEl.classList.add('hidden');
 
         try {
-            const [privSnap, socialSnap] = await Promise.all([
-                get(ref(db, `users/${uid}/privacy`)),
-                get(ref(db, `users/${uid}/social`))
-            ]);
-            const priv   = privSnap.val()  || {};
+            const socialSnap = await get(ref(db, `users/${uid}/social`));
             const social = socialSnap.val() || {};
 
-            const PRIVACY_FIELDS = [
-                { key: 'forfait', label: 'Forfait', icon: 'fa-crown', color: '#fbbf24', getValue: () => 'Plan ' + plan.label, badge: plan.badge },
-                { key: 'bio',    label: 'Bio',     icon: 'fa-quote-left', color: '#a5b4fc', getValue: () => social.bio },
-                { key: 'age',    label: 'Âge',     icon: 'fa-cake-candles', color: '#f472b6', getValue: () => social.age ? social.age + ' ans' : null },
-                { key: 'insta',  label: 'Instagram', icon: 'fa-brands fa-instagram', color: '#c084fc', getValue: () => social.insta },
-                { key: 'snap',   label: 'Snapchat',  icon: 'fa-brands fa-snapchat', color: '#fbbf24', getValue: () => social.snap },
-                { key: 'phone',  label: 'Téléphone', icon: 'fa-phone', color: '#4ade80', getValue: () => social.phone },
-                { key: 'email',  label: 'Email',     icon: 'fa-envelope', color: '#60a5fa', getValue: () => email },
-            ];
+            const fields = [
+                { val: social.bio,   icon: 'fa-quote-left',          color: '#a5b4fc', prefix: '' },
+                { val: social.age ? social.age + ' ans' : null, icon: 'fa-cake-candles', color: '#f472b6', prefix: '' },
+                { val: social.insta, icon: 'fa-brands fa-instagram',  color: '#c084fc', prefix: '' },
+                { val: social.snap,  icon: 'fa-brands fa-snapchat',   color: '#fbbf24', prefix: '' },
+                { val: social.phone, icon: 'fa-phone',                color: '#4ade80', prefix: '' },
+                { val: social.email, icon: 'fa-envelope',             color: '#60a5fa', prefix: '' },
+            ].filter(f => f.val && String(f.val).trim());
 
             extraEl.innerHTML = '';
-            let hasContent = false;
-
-            PRIVACY_FIELDS.forEach(f => {
-                if (!priv[f.key]) return; // hidden by user
-                const val = f.getValue();
-                if (!val) return;
-                hasContent = true;
-                const div = document.createElement('div');
-                div.className = 'flex items-center gap-2.5 glass-sm rounded-xl px-3 py-2.5';
-                div.innerHTML = `<i class="fa-solid ${f.icon} text-xs flex-shrink-0" style="color:${f.color};width:14px;"></i>
-                    ${f.badge ? `<span class="text-xs ${f.badge} px-2 py-0.5 rounded-full font-bold">${val}</span>` : `<span class="text-sm font-medium text-white/70">${val}</span>`}`;
-                extraEl.appendChild(div);
-            });
-
-            if (!hasContent) {
-                extraEl.innerHTML = '<div class="text-xs text-white/20 glass-sm rounded-xl p-3 text-center"><i class="fa-solid fa-lock text-xs mr-1"></i>Aucune information publique partagée</div>';
+            if (fields.length === 0) {
+                extraEl.innerHTML = '<div class="text-xs text-white/15 text-center py-2">Aucune info publique renseignée</div>';
+            } else {
+                fields.forEach(f => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center gap-2.5 glass-sm rounded-xl px-3 py-2.5';
+                    div.innerHTML = `<i class="fa-solid ${f.icon} text-xs flex-shrink-0" style="color:${f.color};width:16px;text-align:center;"></i>
+                        <span class="text-sm text-white/70">${f.val}</span>`;
+                    extraEl.appendChild(div);
+                });
             }
         } catch(e) {
-            extraEl.innerHTML = '<div class="text-xs text-white/20 text-center py-2">Impossible de charger le profil.</div>';
+            extraEl.innerHTML = '';
         }
         openModal('modal-friend');
     };
@@ -1783,59 +1850,7 @@ Réponds UNIQUEMENT en JSON valide sans rien d'autre :
         }
     };
 
-    // ─── PRIVACY SETTINGS ───
-    const PRIVACY_DEFS = [
-        { key: 'forfait', label: 'Forfait',    icon: 'fa-crown',                  color: '#fbbf24', desc: 'Ton plan WikiMind' },
-        { key: 'bio',     label: 'Bio',         icon: 'fa-quote-left',              color: '#a5b4fc', desc: 'Ta petite phrase de présentation' },
-        { key: 'age',     label: 'Âge',         icon: 'fa-cake-candles',            color: '#f472b6', desc: 'Ton âge' },
-        { key: 'insta',   label: 'Instagram',   icon: 'fa-brands fa-instagram',     color: '#c084fc', desc: 'Ton compte Instagram' },
-        { key: 'snap',    label: 'Snapchat',    icon: 'fa-brands fa-snapchat',      color: '#fbbf24', desc: 'Ton compte Snapchat' },
-        { key: 'phone',   label: 'Téléphone',   icon: 'fa-phone',                   color: '#4ade80', desc: 'Ton numéro de téléphone' },
-        { key: 'email',   label: 'Email',       icon: 'fa-envelope',                color: '#60a5fa', desc: 'Ton adresse email' },
-    ];
-
-    let PRIVACY_STATE = {};
-
-    function renderPrivacyToggles() {
-        const container = document.getElementById('privacy-toggles');
-        if (!container) return;
-        container.innerHTML = '';
-        PRIVACY_DEFS.forEach(f => {
-            const enabled = !!PRIVACY_STATE[f.key];
-            const div = document.createElement('div');
-            div.className = 'flex items-center justify-between glass-sm rounded-xl px-4 py-3';
-            div.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <i class="fa-solid ${f.icon} text-sm flex-shrink-0" style="color:${f.color};width:16px;"></i>
-                    <div>
-                        <div class="text-sm font-bold">${f.label}</div>
-                        <div class="text-[10px] text-white/25">${f.desc}</div>
-                    </div>
-                </div>
-                <button onclick="togglePrivacy('${f.key}')" class="relative w-12 h-6 rounded-full transition-all duration-300 flex-shrink-0" 
-                    style="background:${enabled ? 'rgba(99,102,241,0.6)' : 'rgba(255,255,255,0.1)'};" id="ptoggle-${f.key}">
-                    <span class="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-300" 
-                        style="left:${enabled ? '26px' : '2px'};"></span>
-                </button>`;
-            container.appendChild(div);
-        });
-    }
-
-    window.togglePrivacy = (key) => {
-        PRIVACY_STATE[key] = !PRIVACY_STATE[key];
-        const btn = document.getElementById(`ptoggle-${key}`);
-        const dot = btn?.querySelector('span');
-        if (btn) btn.style.background = PRIVACY_STATE[key] ? 'rgba(99,102,241,0.6)' : 'rgba(255,255,255,0.1)';
-        if (dot) dot.style.left = PRIVACY_STATE[key] ? '26px' : '2px';
-    };
-
-    window.savePrivacySettings = async () => {
-        if (!CU) return;
-        try {
-            await set(ref(db, `users/${CU.uid}/privacy`), PRIVACY_STATE);
-            toast('Paramètres de confidentialité sauvegardés ! 🔒', 'success');
-        } catch(e) { toast(e.message, 'error'); }
-    };
+    // ─── PRIVACY SETTINGS — supprimé, tout ce qui est rempli est visible ───
 
     window.saveSocialInfo = async () => {
         if (!CU) return;
@@ -1849,16 +1864,11 @@ Réponds UNIQUEMENT en JSON valide sans rien d'autre :
         };
         try {
             await set(ref(db, `users/${CU.uid}/social`), social);
-            toast('Informations sociales sauvegardées ! ✅', 'success');
+            toast('Informations sauvegardées ! ✅', 'success');
         } catch(e) { toast(e.message, 'error'); }
     };
 
     function loadSettingsData(uid) {
-        get(ref(db, `users/${uid}/privacy`)).then(snap => {
-            PRIVACY_STATE = snap.val() || {};
-            renderPrivacyToggles();
-        }).catch(() => { PRIVACY_STATE = {}; renderPrivacyToggles(); });
-
         get(ref(db, `users/${uid}/social`)).then(snap => {
             if (!snap.exists()) return;
             const s = snap.val();
