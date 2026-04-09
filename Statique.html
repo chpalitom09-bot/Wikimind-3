@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Statique des Solides Indéformables — Cours Complet</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=JetBrains+Mono:wght@400;600&family=Libre+Baskerville:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1008;
+    --paper: #fdf8f0;
+    --cream: #f5edd8;
+    --amber: #c8860a;
+    --amber-light: #f0c84a;
+    --rust: #8b3a0f;
+    --sage: #4a6741;
+    --steel: #3a4f5c;
+    --red: #c0392b;
+    --border: #d4b896;
+    --shadow: rgba(26,16,8,0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Libre Baskerville', Georgia, serif;
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 60px 40px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      90deg, transparent, transparent 60px, rgba(200,134,10,0.08) 60px, rgba(200,134,10,0.08) 61px
+    ), repeating-linear-gradient(
+      0deg, transparent, transparent 60px, rgba(200,134,10,0.08) 60px, rgba(200,134,10,0.08) 61px
+    );
+  }
+  header .badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--amber-light);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(28px, 5vw, 52px);
+    font-weight: 700;
+    line-height: 1.15;
+    position: relative;
+    max-width: 700px;
+  }
+  header h1 em {
+    color: var(--amber-light);
+    font-style: italic;
+  }
+  header .subtitle {
+    margin-top: 16px;
+    font-size: 14px;
+    color: rgba(253,248,240,0.6);
+    font-family: 'JetBrains Mono', monospace;
+    position: relative;
+  }
+  .toc-strip {
+    background: var(--amber);
+    display: flex; flex-wrap: wrap; gap: 0;
+    overflow: hidden;
+  }
+  .toc-strip a {
+    color: var(--ink);
+    text-decoration: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 10px 20px;
+    text-transform: uppercase;
+    border-right: 1px solid rgba(26,16,8,0.2);
+    transition: background 0.2s;
+  }
+  .toc-strip a:hover { background: rgba(255,255,255,0.25); }
+
+  /* ── LAYOUT ── */
+  .container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── CHAPTER ── */
+  .chapter {
+    border-top: 3px solid var(--ink);
+    margin-top: 56px;
+    padding-top: 32px;
+  }
+  .chapter-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--amber);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .chapter h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(22px, 4vw, 34px);
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 24px;
+  }
+
+  /* ── SECTION ── */
+  .section {
+    margin: 32px 0;
+  }
+  .section h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-style: italic;
+    margin-bottom: 14px;
+    padding-left: 16px;
+    border-left: 4px solid var(--amber);
+  }
+  .section h4 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--steel);
+    margin: 20px 0 8px;
+  }
+
+  /* ── PROSE ── */
+  p { margin-bottom: 14px; }
+  ul, ol { margin: 10px 0 14px 24px; }
+  li { margin-bottom: 6px; }
+  strong { color: var(--rust); }
+  em { font-style: italic; }
+
+  /* ── DEFINITION BOX ── */
+  .def-box {
+    background: var(--cream);
+    border: 2px solid var(--ink);
+    border-left: 6px solid var(--amber);
+    padding: 20px 24px;
+    margin: 20px 0;
+    position: relative;
+  }
+  .def-box .def-tag {
+    position: absolute;
+    top: -12px; left: 16px;
+    background: var(--ink);
+    color: var(--amber-light);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 3px 10px;
+    text-transform: uppercase;
+  }
+  .def-box p { margin-bottom: 0; }
+
+  /* ── FORMULA ── */
+  .formula {
+    background: var(--ink);
+    color: var(--amber-light);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    padding: 18px 24px;
+    margin: 18px 0;
+    text-align: center;
+    letter-spacing: 1px;
+    border: 2px solid var(--amber);
+    position: relative;
+    overflow: hidden;
+  }
+  .formula::before {
+    content: '∫';
+    position: absolute;
+    right: 16px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 48px;
+    opacity: 0.07;
+    color: var(--amber-light);
+  }
+
+  /* ── CORRIGE BOX ── */
+  .corrige-toggle {
+    background: none;
+    border: 2px solid var(--sage);
+    color: var(--sage);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    cursor: pointer;
+    margin: 16px 0 0;
+    display: flex; align-items: center; gap: 10px;
+    transition: all 0.2s;
+  }
+  .corrige-toggle:hover { background: var(--sage); color: white; }
+  .corrige-toggle .arrow { transition: transform 0.3s; }
+  .corrige-toggle.open .arrow { transform: rotate(90deg); }
+
+  .corrige-content {
+    display: none;
+    background: #f0f5f0;
+    border: 2px solid var(--sage);
+    border-top: none;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+  .corrige-content.visible { display: block; }
+  .corrige-content .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--sage);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: block;
+    font-weight: 600;
+  }
+  .corrige-content .formula-c {
+    background: var(--sage);
+    color: #e8f5e8;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    padding: 14px 20px;
+    margin: 12px 0;
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── TABLE ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 13px;
+  }
+  th {
+    background: var(--ink);
+    color: var(--amber-light);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    text-align: left;
+  }
+  td {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: var(--cream); }
+
+  /* ── LIAISON CARD ── */
+  .liaison-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .liaison-card {
+    border: 2px solid var(--border);
+    padding: 16px;
+    background: white;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .liaison-card:hover { border-color: var(--amber); transform: translateY(-2px); }
+  .liaison-card .lname {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .liaison-card .ldl {
+    display: inline-block;
+    background: var(--amber);
+    color: var(--ink);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    margin-bottom: 8px;
+  }
+  .liaison-card ul { margin: 6px 0 0 16px; font-size: 13px; }
+  .liaison-card li { margin-bottom: 3px; }
+
+  /* ── STEP BOX ── */
+  .method-steps {
+    counter-reset: step;
+    margin: 20px 0;
+  }
+  .step {
+    display: flex; gap: 16px;
+    margin-bottom: 16px;
+    align-items: flex-start;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 36px; height: 36px;
+    background: var(--ink);
+    color: var(--amber-light);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step-body strong { display: block; color: var(--ink); margin-bottom: 4px; }
+  .step-body { font-size: 14px; }
+
+  /* ── EXAMPLE ── */
+  .example-box {
+    border: 2px dashed var(--steel);
+    padding: 20px 24px;
+    margin: 20px 0;
+    background: white;
+    position: relative;
+  }
+  .example-box .ex-label {
+    position: absolute; top: -12px; left: 14px;
+    background: var(--steel);
+    color: white;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 3px 10px;
+    text-transform: uppercase;
+  }
+
+  /* ── ALERT ── */
+  .alert {
+    background: #fff4e0;
+    border: 2px solid var(--amber);
+    border-left: 6px solid var(--rust);
+    padding: 14px 20px;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .alert::before { content: '⚠ '; color: var(--rust); font-weight: bold; }
+
+  /* ── VECTOR NOTATION ── */
+  .vec { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--rust); }
+  .vecc { font-family: 'JetBrains Mono', monospace; font-size: 13px; background: rgba(200,134,10,0.1); padding: 1px 4px; border-radius: 2px; }
+
+  /* ── SVG DIAGRAMS ── */
+  .diagram-wrap {
+    text-align: center;
+    margin: 24px 0;
+    padding: 20px;
+    background: white;
+    border: 2px solid var(--border);
+  }
+  .diagram-wrap svg { max-width: 100%; }
+  .diagram-caption {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--steel);
+    margin-top: 10px;
+    letter-spacing: 1px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    margin-top: 80px;
+    border-top: 3px solid var(--ink);
+    background: var(--ink);
+    color: rgba(253,248,240,0.5);
+    padding: 30px 40px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-align: center;
+    letter-spacing: 2px;
+  }
+
+  /* ── SCROLL ANIM ── */
+  .chapter, .section, .def-box, .example-box {
+    animation: fadein 0.5s ease both;
+  }
+  @keyframes fadein { from { opacity: 0; transform: translateY(12px); } to { opacity:1; transform:none; } }
+
+  @media (max-width: 600px) {
+    header { padding: 32px 20px 24px; }
+    .container { padding: 0 16px; }
+    .liaison-grid { grid-template-columns: 1fr; }
+    .formula { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="badge">Terminale · Sciences de l'Ingénieur · Lycée Galilée</div>
+  <h1>Statique des Solides <em>Indéformables</em></h1>
+  <div class="subtitle">Cours complet + Corrigés · Toutes les notions du chapitre</div>
+</header>
+
+<nav class="toc-strip">
+  <a href="#ch1">1. Actions méca.</a>
+  <a href="#ch2">2. Moment & produit vectoriel</a>
+  <a href="#ch3">3. PFS</a>
+  <a href="#ch4">4. Liaisons</a>
+  <a href="#ch5">5. Méthode complète</a>
+  <a href="#ch6">6. Exercices corrigés</a>
+</nav>
+
+<div class="container">
+
+<!-- ══════════════════════════════════════════════════════
+     CHAPITRE 1 — ACTIONS MÉCANIQUES
+══════════════════════════════════════════════════════ -->
+<div class="chapter" id="ch1">
+  <div class="chapter-num">Chapitre 01</div>
+  <h2>Modélisation des Actions Mécaniques</h2>
+
+  <div class="section">
+    <h3>1.1 Identification et bilan</h3>
+    <div class="def-box">
+      <div class="def-tag">Définition</div>
+      <p>Une <strong>action mécanique</strong> est toute cause susceptible de <strong>provoquer, modifier ou empêcher</strong> un mouvement, ou de <strong>déformer</strong> un solide.</p>
+    </div>
+
+    <p>Pour dresser le Bilan des Actions Mécaniques Extérieures (BAME), il faut :</p>
+    <div class="method-steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body"><strong>Isoler le système</strong> — Définir précisément une frontière fictive séparant le système de son environnement.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body"><strong>Lister toutes les actions extérieures</strong> — Le poids (Terre→système), tous les contacts physiques à la frontière, les éventuelles actions à distance (magnétiques, électrostatiques).</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body"><strong>Ne jamais oublier le poids</strong> — Sauf si le problème demande de le négliger explicitement.</div>
+      </div>
+    </div>
+
+    <div class="alert">Les actions <strong>intérieures</strong> au système isolé ne figurent JAMAIS dans le bilan. Elles se compensent mutuellement (principe d'action-réaction).</div>
+  </div>
+
+  <div class="section">
+    <h3>1.2 La Force</h3>
+    <div class="def-box">
+      <div class="def-tag">Définition</div>
+      <p>Une <strong>force</strong> est un vecteur caractérisé par quatre éléments : sa <strong>direction</strong> (droite support), son <strong>sens</strong>, sa <strong>norme</strong> (intensité en Newtons) et son <strong>point d'application</strong>.</p>
+    </div>
+
+    <p>Notation vectorielle : <span class="vec">F⃗<sub>ext→S</sub></span> désigne la force exercée par l'environnement <em>ext</em> sur le système <em>S</em>.</p>
+
+    <h4>Poids</h4>
+    <p>Le poids est la force exercée par la Terre sur un système via la pesanteur :</p>
+    <div class="formula">P⃗<sub>Terre→S</sub> = m × g⃗ &nbsp;&nbsp;avec g ≈ 9,81 m/s² ↓</div>
+    <p>Le poids s'applique au <strong>centre de gravité G</strong> du solide. Il est toujours <strong>vertical, dirigé vers le bas</strong>.</p>
+  </div>
+
+  <div class="section">
+    <h3>1.3 Le Moment d'une Force</h3>
+    <div class="def-box">
+      <div class="def-tag">Définition</div>
+      <p>Le <strong>moment</strong> est une grandeur physique qui caractérise l'aptitude d'une action mécanique à <strong>provoquer, modifier ou empêcher un mouvement de rotation</strong>.</p>
+    </div>
+
+    <h4>En 2D (problème plan)</h4>
+    <div class="formula">𝓜<sub>Δ, ext→S</sub> = d × ‖F⃗<sub>ext→S</sub>‖ &nbsp;&nbsp;(en N·m)</div>
+    <p>où <strong>d</strong> est le <strong>bras de levier</strong> : distance perpendiculaire entre la <em>ligne d'action</em> de la force et l'axe Δ de rotation considéré.</p>
+
+    <div class="alert">Si la ligne d'action passe par l'axe de rotation, le bras de levier est nul → le moment est nul → l'action est "neutre" vis-à-vis de la rotation.</div>
+
+    <h4>Signe du moment</h4>
+    <p>On choisit une convention de signe pour le sens de rotation :</p>
+    <ul>
+      <li><strong>Positif (+)</strong> : sens anti-horaire (trigonométrique)</li>
+      <li><strong>Négatif (−)</strong> : sens horaire</li>
+    </ul>
+
+    <h4>Notion de Couple</h4>
+    <div class="def-box">
+      <div class="def-tag">Définition</div>
+      <p>Un <strong>couple</strong> est une combinaison d'actions mécaniques dont la résultante en force est <strong>nulle</strong> mais dont le moment résultant est <strong>non nul</strong>. Les moteurs et réducteurs transmettent des couples.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     CHAPITRE 2 — PRODUIT VECTORIEL ET MOMENT 3D
+══════════════════════════════════════════════════════ -->
+<div class="chapter" id="ch2">
+  <div class="chapter-num">Chapitre 02</div>
+  <h2>Calcul du Moment par le Produit Vectoriel</h2>
+
+  <div class="section">
+    <h3>2.1 Rappel : Produit vectoriel</h3>
+    <table>
+      <tr><th>Propriété</th><th>Produit scalaire u⃗·v⃗</th><th>Produit vectoriel u⃗∧v⃗</th></tr>
+      <tr><td>Résultat</td><td>Un <strong>nombre</strong></td><td>Un <strong>vecteur</strong></td></tr>
+      <tr><td>Commutativité</td><td>u⃗·v⃗ = v⃗·u⃗</td><td>u⃗∧v⃗ = −v⃗∧u⃗ (anti-commutatif)</td></tr>
+      <tr><td>Si colinéaires</td><td>—</td><td>u⃗∧v⃗ = 0⃗</td></tr>
+      <tr><td>Si orthogonaux</td><td>u⃗·v⃗ = 0</td><td>—</td></tr>
+    </table>
+
+    <h4>Calcul par les composantes (3D)</h4>
+    <div class="formula">
+      u⃗∧v⃗ = | u<sub>x</sub> |   | v<sub>x</sub> |   | u<sub>y</sub>·v<sub>z</sub> − u<sub>z</sub>·v<sub>y</sub> |<br>
+              | u<sub>y</sub> | ∧ | v<sub>y</sub> | = | u<sub>z</sub>·v<sub>x</sub> − u<sub>x</sub>·v<sub>z</sub> |<br>
+              | u<sub>z</sub> |   | v<sub>z</sub> |   | u<sub>x</sub>·v<sub>y</sub> − u<sub>y</sub>·v<sub>x</sub> |
+    </div>
+
+    <p><strong>Propriété géométrique</strong> : le vecteur résultant u⃗∧v⃗ est <em>perpendiculaire</em> au plan contenant u⃗ et v⃗. Son sens est celui d'un tire-bouchon tournant de u⃗ vers v⃗.</p>
+  </div>
+
+  <div class="section">
+    <h3>2.2 Moment d'une force en 3D</h3>
+    <div class="def-box">
+      <div class="def-tag">Formule clé</div>
+      <p>La force <span class="vec">F⃗<sub>ext→S</sub></span> dont <strong>P</strong> est le point d'application génère autour d'un point <strong>A</strong> le moment :</p>
+    </div>
+    <div class="formula">ℳ⃗<sub>A, ext→S</sub> = AP⃗ ∧ F⃗<sub>ext→S</sub></div>
+
+    <div class="example-box">
+      <div class="ex-label">Exemple numérique</div>
+      <p>Force <span class="vecc">F⃗ = (0 ; 0 ; −30,4)</span> N appliquée en G, calculer le moment en O :</p>
+      <p>avec <span class="vecc">OG⃗ = (0,530 ; 0 ; 0,445)</span> m</p>
+      <div class="formula" style="font-size:13px;">
+        ℳ⃗<sub>O,G</sub> = OG⃗ ∧ F⃗ = | 0·(−30,4) − 0,445·0 | = | 0 |<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 0,445·0 − 0,530·(−30,4) |   | +16,1 |<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 0,530·0 − 0·0 |              | 0 |&nbsp;&nbsp;&nbsp;N·m
+      </div>
+    </div>
+
+    <div class="alert">En problème <strong>plan (x,y)</strong>, seule la composante selon z du moment vectoriel est non nulle. On travaille alors avec un simple scalaire signé.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     CHAPITRE 3 — PFS
+══════════════════════════════════════════════════════ -->
+<div class="chapter" id="ch3">
+  <div class="chapter-num">Chapitre 03</div>
+  <h2>Principe Fondamental de la Statique (PFS)</h2>
+
+  <div class="section">
+    <h3>3.1 Énoncé</h3>
+    <div class="def-box">
+      <div class="def-tag">PFS — Théorème fondamental</div>
+      <p>Pour qu'un solide indéformable S soit en <strong>équilibre statique</strong>, il faut simultanément :</p>
+    </div>
+    <div class="formula">Σ F⃗<sub>ext→S</sub> = 0⃗ &nbsp;&nbsp;&nbsp;(résultante des forces nulle)</div>
+    <div class="formula">Σ ℳ⃗<sub>A, ext→S</sub> = 0⃗ &nbsp;&nbsp;&nbsp;(résultante des moments nulle en tout point A)</div>
+
+    <div class="alert">Le point A autour duquel on exprime les moments est <strong>arbitraire</strong>. On le choisit judicieusement pour simplifier les calculs (souvent au niveau d'une liaison inconnue, pour éliminer ses composantes des équations de moment).</div>
+  </div>
+
+  <div class="section">
+    <h3>3.2 Équations scalaires disponibles</h3>
+    <table>
+      <tr><th>Contexte</th><th>Équations de force</th><th>Équations de moment</th><th>Total</th></tr>
+      <tr><td><strong>Problème plan (2D)</strong></td><td>ΣFx = 0 &nbsp; ΣFy = 0</td><td>ΣM<sub>A,z</sub> = 0</td><td><strong>3 équations</strong></td></tr>
+      <tr><td><strong>Problème 3D</strong></td><td>ΣFx=0 ΣFy=0 ΣFz=0</td><td>ΣMx=0 ΣMy=0 ΣMz=0</td><td><strong>6 équations</strong></td></tr>
+    </table>
+
+    <h4>Stratégie de résolution</h4>
+    <div class="method-steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body"><strong>Choisir le système à isoler</strong> — Préférer un système pour lequel on cherche à calculer des forces (pas trop d'inconnues).</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body"><strong>Dresser le BAME</strong> — Lister exhaustivement toutes les actions extérieures.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body"><strong>Exprimer les inconnues</strong> — Identifier les composantes inconnues et compter : nombre d'équations ≥ nombre d'inconnues.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body"><strong>Choisir le point de calcul des moments</strong> — Prendre un point qui annule le maximum d'inconnues (généralement une liaison).</div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body"><strong>Résoudre le système</strong> — Commencer par les équations de moment (souvent plus directes), puis utiliser les équations de force.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     CHAPITRE 4 — LIAISONS
+══════════════════════════════════════════════════════ -->
+<div class="chapter" id="ch4">
+  <div class="chapter-num">Chapitre 04</div>
+  <h2>Liaisons entre Solides</h2>
+
+  <div class="section">
+    <h3>4.1 Principe de modélisation</h3>
+    <div class="def-box">
+      <div class="def-tag">Définition</div>
+      <p>Une <strong>liaison</strong> entre deux solides limite leurs mouvements relatifs. Elle est caractérisée par ses <strong>degrés de liberté (DDL)</strong> — les mouvements relatifs autorisés — et les <strong>actions mécaniques de liaison</strong> qu'elle peut transmettre.</p>
+    </div>
+    <p>Une <strong>liaison parfaite</strong> est sans jeu et sans frottement. Cela signifie que les forces de liaison ne produisent pas de travail, et que les seules actions mécaniques sont celles strictement nécessaires à la contrainte.</p>
+  </div>
+
+  <div class="section">
+    <h3>4.2 Les liaisons courantes</h3>
+    <div class="liaison-grid">
+
+      <div class="liaison-card">
+        <div class="lname">Encastrement</div>
+        <div class="ldl">0 DDL</div>
+        <p>Aucun mouvement relatif possible.</p>
+        <ul>
+          <li>3 forces (Fx, Fy, Fz)</li>
+          <li>3 moments (Mx, My, Mz)</li>
+        </ul>
+      </div>
+
+      <div class="liaison-card">
+        <div class="lname">Pivot (rotule d'axe)</div>
+        <div class="ldl">1 DDL — Rotation</div>
+        <p>Rotation autour d'un axe fixe uniquement.</p>
+        <ul>
+          <li>3 forces (Fx, Fy, Fz)</li>
+          <li>2 moments (⊥ à l'axe pivot)</li>
+          <li>Moment nul <em>autour de l'axe</em></li>
+        </ul>
+      </div>
+
+      <div class="liaison-card">
+        <div class="lname">Glissière</div>
+        <div class="ldl">1 DDL — Translation</div>
+        <p>Translation selon un axe uniquement.</p>
+        <ul>
+          <li>2 forces (⊥ à l'axe)</li>
+          <li>3 moments</li>
+          <li>Force nulle <em>selon l'axe</em></li>
+        </ul>
+      </div>
+
+      <div class="liaison-card">
+        <div class="lname">Pivot-glissant</div>
+        <div class="ldl">2 DDL</div>
+        <p>Rotation + translation selon le même axe.</p>
+        <ul>
+          <li>2 forces (⊥ à l'axe)</li>
+          <li>2 moments (⊥ à l'axe)</li>
+        </ul>
+      </div>
+
+      <div class="liaison-card">
+        <div class="lname">Appui-plan</div>
+        <div class="ldl">3 DDL</div>
+        <p>Translation dans un plan + rotation autour de la normale.</p>
+        <ul>
+          <li>1 force (normale au plan)</li>
+          <li>2 moments (dans le plan)</li>
+        </ul>
+      </div>
+
+      <div class="liaison-card">
+        <div class="lname">Rotule (sphérique)</div>
+        <div class="ldl">3 DDL — Rotations</div>
+        <p>3 rotations autour d'un point fixe.</p>
+        <ul>
+          <li>3 forces (Fx, Fy, Fz)</li>
+          <li>Aucun moment transmis</li>
+        </ul>
+      </div>
+
+      <div class="liaison-card">
+        <div class="lname">Linéaire annulaire</div>
+        <div class="ldl">4 DDL</div>
+        <p>Contact selon une droite (fil, câble).</p>
+        <ul>
+          <li>2 forces (⊥ à l'axe)</li>
+          <li>1 moment (autour d'un axe ⊥)</li>
+        </ul>
+      </div>
+
+      <div class="liaison-card">
+        <div class="lname">Ponctuelle (contact)</div>
+        <div class="ldl">5 DDL</div>
+        <p>Contact en un point (roulement).</p>
+        <ul>
+          <li>1 force (normale au contact)</li>
+          <li>Aucun moment transmis</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="alert">Pour une <strong>liaison parfaite pivot d'axe z</strong> : le moment autour de z est nul → le moteur accouplé à cet axe doit fournir ce moment manquant !</div>
+  </div>
+
+  <div class="section">
+    <h3>4.3 Solide soumis à 2 forces — Cas particulier important</h3>
+    <div class="def-box">
+      <div class="def-tag">Théorème des 2 forces</div>
+      <p>Un solide en équilibre soumis à <strong>exactement deux forces</strong> (et rien d'autre) est nécessairement tel que ces deux forces sont <strong>colinéaires, de sens opposés et d'égale intensité</strong>. Elles partagent la même ligne d'action.</p>
+    </div>
+    <p>Ce théorème s'applique typiquement aux <strong>bielles, fils, câbles, barres</strong> de masse négligeable liés à deux pivots.</p>
+
+    <div class="example-box">
+      <div class="ex-label">Application — Coupe-boulons</div>
+      <p>Les brides (5) du coupe-boulons sont articulées en deux points A et D. En négligeant leur poids, elles ne sont soumises qu'à deux forces → ces forces sont colinéaires selon AD. Cela permet de connaître immédiatement leur direction sans calcul.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>4.4 Solide soumis à 3 forces</h3>
+    <div class="def-box">
+      <div class="def-tag">Théorème des 3 forces</div>
+      <p>Un solide en équilibre soumis à <strong>exactement trois forces</strong> : ces trois forces sont <strong>coplanaires</strong> et leurs lignes d'action sont <strong>concourantes en un même point</strong> (ou toutes trois parallèles).</p>
+    </div>
+    <p>Ce théorème permet de déterminer graphiquement les inconnues par <strong>triangle des forces fermé</strong>.</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     CHAPITRE 5 — MÉTHODE COMPLÈTE
+══════════════════════════════════════════════════════ -->
+<div class="chapter" id="ch5">
+  <div class="chapter-num">Chapitre 05</div>
+  <h2>Méthode Complète de Résolution Statique</h2>
+
+  <div class="section">
+    <h3>5.1 Fiche méthode — Étude statique 3D</h3>
+
+    <div class="method-steps">
+      <div class="step">
+        <div class="step-num">①</div>
+        <div class="step-body">
+          <strong>Isoler le système</strong><br>
+          Définir S clairement. Tracer la frontière d'isolement.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">②</div>
+        <div class="step-body">
+          <strong>BAME complet</strong><br>
+          • Poids : <span class="vecc">P⃗ = (0 ; −mg ; 0)</span> si y est vertical haut<br>
+          • Actions des liaisons : composantes inconnues selon les DDL bloqués<br>
+          • Actions extérieures données (efforts, contacts)
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">③</div>
+        <div class="step-body">
+          <strong>Exprimer les vecteurs position</strong><br>
+          Calculer <span class="vecc">OP⃗</span> pour chaque point d'application P par rapport au point de calcul O.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">④</div>
+        <div class="step-body">
+          <strong>Calculer les moments par produit vectoriel</strong><br>
+          <span class="vecc">ℳ⃗<sub>O,i</sub> = OP⃗<sub>i</sub> ∧ F⃗<sub>i</sub></span> pour chaque force
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">⑤</div>
+        <div class="step-body">
+          <strong>Écrire le PFS</strong><br>
+          Deux équations vectorielles (force + moment) → 6 scalaires en 3D, 3 en 2D.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">⑥</div>
+        <div class="step-body">
+          <strong>Résoudre</strong><br>
+          Identifier les inconnues. Vérifier que le système est déterminé (n éq. ≥ n inconnues). Résoudre.
+        </div>
+      </div>
+    </div>
+
+    <h4>Astuce : Choix du point pour les moments</h4>
+    <div class="def-box">
+      <div class="def-tag">Conseil</div>
+      <p>Choisir le point de calcul des moments <strong>au niveau d'une liaison</strong> pour faire disparaître ses réactions des équations de moment. Cela permet souvent de calculer directement les efforts recherchés.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     CHAPITRE 6 — EXERCICES CORRIGÉS
+══════════════════════════════════════════════════════ -->
+<div class="chapter" id="ch6">
+  <div class="chapter-num">Chapitre 06</div>
+  <h2>Exercices Corrigés</h2>
+
+  <!-- ── EX 1 : Attelle ── -->
+  <div class="section">
+    <h3>Exercice 1 — Attelle de rééducation d'épaule</h3>
+
+    <div class="example-box">
+      <div class="ex-label">Données</div>
+      <p>Système S = solides 1+2 · Masse : 3,1 kg · g = 9,81 m/s²</p>
+      <p><span class="vecc">OA⃗ = (+400 ; 0 ; +175) mm</span> · <span class="vecc">OG⃗ = (+530 ; 0 ; +445) mm</span> · <span class="vecc">OB⃗ = (+480 ; 0 ; +725) mm</span></p>
+      <p>Forces : <span class="vecc">‖F<sub>Ab→S</sub>‖ = 40 N</span> (dirigée selon −y) · <span class="vecc">‖F<sub>Bavb→S</sub>‖ = 20 N</span> (dirigée selon −y) · Poids 3,1 kg.</p>
+    </div>
+
+    <p><strong>Question 3</strong> — Composantes du vecteur poids</p>
+    <button class="corrige-toggle" onclick="toggle(this)"><span class="arrow">▶</span> Voir le corrigé</button>
+    <div class="corrige-content">
+      <span class="tag">✓ Corrigé Q3</span>
+      <p>Le poids est vertical, dirigé vers le bas. Dans le repère (x horizontal, y vertical haut, z) :</p>
+      <div class="formula-c">‖P⃗‖ = m × g = 3,1 × 9,81 = 30,4 N<br><br>P⃗<sub>Terre→S</sub> = | 0 |<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| −30,4 | N<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 0 |</div>
+      <p>Le poids s'applique au centre de gravité G. La composante y est négative car dirigée vers le bas (y est l'axe vertical ascendant du repère).</p>
+    </div>
+
+    <p><strong>Question 4</strong> — Composantes des forces en A et B</p>
+    <button class="corrige-toggle" onclick="toggle(this)"><span class="arrow">▶</span> Voir le corrigé</button>
+    <div class="corrige-content">
+      <span class="tag">✓ Corrigé Q4</span>
+      <p>D'après la figure, F<sub>Ab→S</sub> en A (action du bras du patient) est dirigée vers le bas (−y), intensité 40 N. F<sub>Bavb→S</sub> en B (action de l'avant-bras) est également dirigée vers le bas (−y), intensité 20 N :</p>
+      <div class="formula-c">F⃗<sub>Ab→S</sub> = | 0 |&nbsp;&nbsp;&nbsp;&nbsp;F⃗<sub>Bavb→S</sub> = | 0 |<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| −40 | N &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| −20 | N<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 0 |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 0 |</div>
+    </div>
+
+    <p><strong>Question 5</strong> — Cumul des forces et moments en O</p>
+    <button class="corrige-toggle" onclick="toggle(this)"><span class="arrow">▶</span> Voir le corrigé</button>
+    <div class="corrige-content">
+      <span class="tag">✓ Corrigé Q5</span>
+      <p><strong>Somme des forces (A+G+B) :</strong></p>
+      <div class="formula-c">ΣF⃗ = (0 ; −40 ; 0) + (0 ; −30,4 ; 0) + (0 ; −20 ; 0) = | 0 |<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| −90,4 | N<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 0 |</div>
+      <p><strong>Moments en O (produit vectoriel OP⃗ ∧ F⃗ pour chaque force) :</strong></p>
+      <p>Pour la force en A : <span class="vecc">OA⃗ = (0,400 ; 0 ; 0,175)</span> m · <span class="vecc">F⃗ = (0;−40;0)</span></p>
+      <div class="formula-c">ℳ⃗<sub>O,A</sub> = OA⃗ ∧ F⃗ = | 0×0 − 0,175×(−40) | = | +7,0 |<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 0,175×0 − 0,400×0 |   | 0 | N·m<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 0,400×(−40) − 0×0 |   | −16,0 |</div>
+      <p>Pour la force en G : <span class="vecc">OG⃗ = (0,530 ; 0 ; 0,445)</span> · <span class="vecc">F⃗ = (0;−30,4;0)</span></p>
+      <div class="formula-c">ℳ⃗<sub>O,G</sub> = | 0×0 − 0,445×(−30,4) | = | +13,5 |<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 0,445×0 − 0,530×0 |   | 0 | N·m<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 0,530×(−30,4) − 0×0 | | −16,1 |</div>
+      <p>Pour la force en B : <span class="vecc">OB⃗ = (0,480 ; 0 ; 0,725)</span> · <span class="vecc">F⃗ = (0;−20;0)</span></p>
+      <div class="formula-c">ℳ⃗<sub>O,B</sub> = | 0×0 − 0,725×(−20) | = | +14,5 |<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 0,725×0 − 0,480×0 |   | 0 | N·m<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 0,480×(−20) − 0×0 |   | −9,6 |</div>
+      <p><strong>Somme des moments :</strong></p>
+      <div class="formula-c">Σℳ⃗<sub>O</sub> = | +7,0+13,5+14,5 | = | +35,0 |<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 0 |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | 0 | N·m<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| −16,0−16,1−9,6 | = | −41,7 |</div>
+    </div>
+
+    <p><strong>Question 6</strong> — Autres actions à intégrer</p>
+    <button class="corrige-toggle" onclick="toggle(this)"><span class="arrow">▶</span> Voir le corrigé</button>
+    <div class="corrige-content">
+      <span class="tag">✓ Corrigé Q6</span>
+      <p>Pour écrire l'équilibre du solide S, il faut également intégrer :</p>
+      <ul>
+        <li>L'<strong>action de la liaison en O</strong> (liaison pivot d'axe y entre solide 0 et solide 1) : elle se traduit par des forces (Ox, Oy, Oz) et des moments (MOx, MOz) — mais pas de moment autour de y (axe du pivot).</li>
+        <li>Le <strong>couple du moteur M1</strong> autour de l'axe y (c'est lui qui compense le moment Mz calculé).</li>
+      </ul>
+    </div>
+
+    <p><strong>Question 7 & 8</strong> — Couple du moteur M1</p>
+    <button class="corrige-toggle" onclick="toggle(this)"><span class="arrow">▶</span> Voir le corrigé</button>
+    <div class="corrige-content">
+      <span class="tag">✓ Corrigé Q7 & Q8</span>
+      <p><strong>Q7 :</strong> La liaison pivot en O bloque les translations (3 forces) et les rotations autour de x et z (2 moments). Elle ne peut PAS transmettre de moment autour de l'axe y → c'est précisément l'axe de rotation de la liaison, donc le pivot est "libre" en rotation selon y.</p>
+      <p>C'est pourquoi le moteur M1 (couplé à cet axe) doit fournir un moment pour compenser.</p>
+      <p><strong>Q8 :</strong> En appliquant le PFS sur S, la composante y du moment en O doit être nulle :</p>
+      <div class="formula-c">ΣM<sub>O,y</sub> = 0 → Couple<sub>M1</sub> + ΣM<sub>O,y</sub>(A+G+B) = 0<br><br>La composante y des moments calculés en Q5 est nulle (toutes les forces sont selon y, donc les moments sont dans le plan xz).<br><br>La composante z donne : C<sub>M1</sub> = −(−41,7) = +41,7 N·m</div>
+      <p>Le moteur M1 doit fournir un couple d'environ <strong>41,7 N·m</strong>.</p>
+    </div>
+
+    <p><strong>Question 9</strong> — Comparaison avec la courbe</p>
+    <button class="corrige-toggle" onclick="toggle(this)"><span class="arrow">▶</span> Voir le corrigé</button>
+    <div class="corrige-content">
+      <span class="tag">✓ Corrigé Q9</span>
+      <p>La configuration étudiée (coude à 90°, position intermédiaire du mouvement) correspond environ à une rotation de l'épaule autour de 90°. Sur la courbe, on lit une valeur d'environ <strong>38–40 N·m</strong>, cohérente avec les 41,7 N·m calculés (écart dû aux simplifications du modèle et à la position exacte).</p>
+      <p><strong>Allure de la courbe :</strong> le couple augmente puis diminue car le bras de levier des forces (poids du bras du patient + poids de l'attelle) varie avec la rotation. Il est maximal quand les forces sont les plus éloignées de l'axe de rotation (bras horizontal), et minimal en début et fin de mouvement (bras tendu vers le haut ou le bas).</p>
+    </div>
+  </div>
+
+  <!-- ── EX 2 : Coupe-boulons ── -->
+  <div class="section">
+    <h3>Exercice 2 — Coupe-boulons : effet d'amplification</h3>
+
+    <div class="example-box">
+      <div class="ex-label">Contexte</div>
+      <p>Déterminer le rapport entre la force de coupe M<sub>Y,ext→4</sub> aux mâchoires et la force manuelle C<sub>Y,ut→1</sub> sur les poignées. Étude dans le plan (x,y).</p>
+    </div>
+
+    <p><strong>Question 5</strong> — Équilibre de la mâchoire 4 (moments en A)</p>
+    <button class="corrige-toggle" onclick="toggle(this)"><span class="arrow">▶</span> Voir le corrigé</button>
+    <div class="corrige-content">
+      <span class="tag">✓ Corrigé Q5</span>
+      <p>Système isolé : mâchoire 4. Actions extérieures :</p>
+      <ul>
+        <li>Action de l'objet à couper : <span class="vecc">M<sub>Yext→4</sub></span> en M (selon −y)</li>
+        <li>Action de la liaison pivot en A : <span class="vecc">A<sub>5→4</sub></span> (force inconnue)</li>
+        <li>Action de la liaison pivot en B : <span class="vecc">B<sub>Y1→4</sub></span> selon y</li>
+      </ul>
+      <p>PFS — Moments autour de A (pour éliminer la réaction en A) :</p>
+      <div class="formula-c">Σℳ<sub>A,z</sub> = 0<br><br>M<sub>Yext→4</sub> × AM<sub>x</sub> + B<sub>Y1→4</sub> × AB<sub>x</sub> = 0<br><br>→ B<sub>Y1→4</sub> = −M<sub>Yext→4</sub> × (AM<sub>x</sub> / AB<sub>x</sub>)</div>
+      <p>où AM<sub>x</sub> et AB<sub>x</sub> sont les distances horizontales de M et B au point A.</p>
+    </div>
+
+    <p><strong>Question 6</strong> — Équilibre du levier droit 1 (moments en O)</p>
+    <button class="corrige-toggle" onclick="toggle(this)"><span class="arrow">▶</span> Voir le corrigé</button>
+    <div class="corrige-content">
+      <span class="tag">✓ Corrigé Q6</span>
+      <p>Système isolé : levier droit 1. Actions extérieures :</p>
+      <ul>
+        <li>Action de l'utilisateur : <span class="vecc">C<sub>Y,ut→1</sub></span> en C</li>
+        <li>Réaction de la liaison O (pivot central)</li>
+        <li>Action de la mâchoire 4 en B : <span class="vecc">B<sub>Y4→1</sub> = −B<sub>Y1→4</sub></span> (action-réaction)</li>
+      </ul>
+      <p>Moments autour de O (pour éliminer la réaction pivot en O) :</p>
+      <div class="formula-c">Σℳ<sub>O,z</sub> = 0<br><br>C<sub>Y,ut→1</sub> × OC<sub>x</sub> + B<sub>Y4→1</sub> × OB<sub>x</sub> = 0<br><br>→ B<sub>Y4→1</sub> = −C<sub>Y,ut→1</sub> × (OC<sub>x</sub> / OB<sub>x</sub>)</div>
+    </div>
+
+    <p><strong>Question 8 & 9</strong> — Rapport d'amplification</p>
+    <button class="corrige-toggle" onclick="toggle(this)"><span class="arrow">▶</span> Voir le corrigé</button>
+    <div class="corrige-content">
+      <span class="tag">✓ Corrigé Q8 & Q9</span>
+      <p>En combinant les deux expressions (et en utilisant B<sub>Y4→1</sub> = −B<sub>Y1→4</sub>) :</p>
+      <div class="formula-c">M<sub>Yext→4</sub> / C<sub>Yut→1</sub> = (OC<sub>x</sub> / OB<sub>x</sub>) × (AB<sub>x</sub> / AM<sub>x</sub>)</div>
+      <p>Sur la figure, en estimant les proportions :</p>
+      <ul>
+        <li>OC ≈ longueur de poignée ≈ 5 × OB</li>
+        <li>AB ≈ 3 × AM</li>
+      </ul>
+      <div class="formula-c">Amplification ≈ 5 × 3 = 15</div>
+      <p>Avec une force manuelle de 100 N, le coupe-boulons exerce environ <strong>1500 N</strong> aux mâchoires. C'est le principe du levier composé !</p>
+    </div>
+  </div>
+
+  <!-- ── EX 3 : Panier basket ── -->
+  <div class="section">
+    <h3>Exercice 3 — Panier de basket K900 : stabilité au vent</h3>
+
+    <div class="example-box">
+      <div class="ex-label">Données</div>
+      <p>Masse avec eau : m = 57 kg · Hauteur max : h<sub>max</sub> = 2200 mm · L = 800 mm · a = 150 mm</p>
+    </div>
+
+    <p><strong>Question 11</strong> — Poids du lest</p>
+    <button class="corrige-toggle" onclick="toggle(this)"><span class="arrow">▶</span> Voir le corrigé</button>
+    <div class="corrige-content">
+      <span class="tag">✓ Corrigé Q11</span>
+      <div class="formula-c">‖P<sub>eau</sub>‖ = (57 − 11) × 9,81 = 46 × 9,81 ≈ 451 N<br>‖P<sub>sable</sub>‖ = (75 − 11) × 9,81 = 64 × 9,81 ≈ 628 N</div>
+    </div>
+
+    <p><strong>Question 17</strong> — Force de vent déclenchant le basculement (eau, hauteur max)</p>
+    <button class="corrige-toggle" onclick="toggle(this)"><span class="arrow">▶</span> Voir le corrigé</button>
+    <div class="corrige-content">
+      <span class="tag">✓ Corrigé Q17</span>
+      <p>Au moment du basculement, le panier pivote autour d'un point de la base (M ou N). On écrit l'équilibre limite en moments autour de ce point :</p>
+      <p>Le basculement se produit quand le moment du vent compense le moment stabilisant du poids.</p>
+      <div class="formula-c">Σℳ<sub>M,z</sub> = 0 (condition limite de basculement)<br><br>F<sub>vent</sub> × h<sub>panneau</sub> − P<sub>lest</sub> × (L/2 − a) = 0<br><br>F<sub>vent</sub> = P<sub>lest</sub> × (L/2 − a) / h<sub>panneau</sub></div>
+      <p>Avec P<sub>lest</sub> = 451 N, L/2 − a = 400 − 150 = 250 mm = 0,25 m, h<sub>panneau</sub> ≈ h<sub>max</sub> = 2,2 m :</p>
+      <div class="formula-c">F<sub>vent</sub> = 451 × 0,25 / 2,2 ≈ 51 N</div>
+      <p>Il suffit d'environ <strong>51 N de force de vent</strong> pour renverser le panier rempli d'eau à sa hauteur maximale — une valeur cohérente avec un vent de 40 km/h sur la surface du panneau.</p>
+    </div>
+  </div>
+
+  <!-- ── EX 4 : Suspension VTT ── -->
+  <div class="section">
+    <h3>Exercice 4 — Suspension de VTT</h3>
+
+    <div class="example-box">
+      <div class="ex-label">Rappel du principe</div>
+      <p>Mécanisme à 5 solides (cadre 1, bras inf. 2, bras sup. 3, basculeur 4, amortisseur 5). Force roue : 1 kN vers le haut sur bras sup. 3. Poids négligé.</p>
+    </div>
+
+    <p><strong>Questions 1–4</strong> — Bilan des actions mécaniques sur chaque solide</p>
+    <button class="corrige-toggle" onclick="toggle(this)"><span class="arrow">▶</span> Voir le corrigé</button>
+    <div class="corrige-content">
+      <span class="tag">✓ Corrigé Q1→Q4</span>
+      <p><strong>Solide 2 (bras inférieur) :</strong> articulé en 2 pivots (au cadre 1 et au bras sup. 3) → 2 forces : F⃗<sub>1→2</sub> et F⃗<sub>3→2</sub>. Solide à 2 forces → colinéaires selon l'axe 1–2.</p>
+      <p><strong>Solide 3 (bras supérieur) :</strong> 3 forces : F⃗<sub>roue→3</sub> (connue, verticale ↑), F⃗<sub>2→3</sub>, F⃗<sub>4→3</sub>. Solide à 3 forces → concurrent en un point.</p>
+      <p><strong>Amortisseur 5 :</strong> articulé aux deux extrémités → 2 forces → colinéaires selon l'axe de l'amortisseur.</p>
+      <p><strong>Basculeur 4 :</strong> 3 forces F⃗<sub>1→4</sub>, F⃗<sub>3→4</sub>, F⃗<sub>5→4</sub> → concurrent.</p>
+    </div>
+
+    <p><strong>Question 5</strong> — Rapport d'amplification</p>
+    <button class="corrige-toggle" onclick="toggle(this)"><span class="arrow">▶</span> Voir le corrigé</button>
+    <div class="corrige-content">
+      <span class="tag">✓ Corrigé Q5</span>
+      <p>Par construction graphique (triangle des forces fermés sur solide 3 puis 4), on détermine les intensités de chaque force.</p>
+      <p>Le rapport entre la force roue (1 kN) et la force dans l'amortisseur dépend des bras de levier du basculeur. En lisant les proportions sur la figure :</p>
+      <div class="formula-c">‖F⃗<sub>amortisseur</sub>‖ ≈ 2 à 3 × ‖F⃗<sub>roue</sub>‖ = 2 à 3 kN</div>
+      <p>Le mécanisme <strong>amplifie</strong> la force dans l'amortisseur par rapport à la force de la roue — c'est pourquoi la pression dans l'amortisseur était trop élevée avec le mécanisme initial et a conduit GIANT à développer un nouveau design.</p>
+    </div>
+  </div>
+
+  <!-- ── RÉSUMÉ FINAL ── -->
+  <div class="section">
+    <h3>Récapitulatif — Ce qu'il faut absolument savoir</h3>
+
+    <table>
+      <tr><th>Notion</th><th>Formule / règle clé</th></tr>
+      <tr><td>Poids</td><td>P = mg (vers le bas, appliqué en G)</td></tr>
+      <tr><td>Moment 2D</td><td>𝓜 = d × ‖F⃗‖ &nbsp; (signe selon le sens de rotation)</td></tr>
+      <tr><td>Moment 3D</td><td>ℳ⃗<sub>A</sub> = AP⃗ ∧ F⃗ &nbsp; (produit vectoriel)</td></tr>
+      <tr><td>PFS (équilibre)</td><td>ΣF⃗ = 0⃗ &nbsp; ET &nbsp; Σℳ⃗<sub>A</sub> = 0⃗</td></tr>
+      <tr><td>2 forces</td><td>Colinéaires, opposées, égales (bielle, câble)</td></tr>
+      <tr><td>3 forces</td><td>Coplanaires et concourantes</td></tr>
+      <tr><td>Pivot</td><td>Aucun moment autour de l'axe de pivot → moteur nécessaire</td></tr>
+      <tr><td>Choix point moments</td><td>Toujours au niveau d'une liaison pour éliminer ses inconnues</td></tr>
+      <tr><td>Produit vectoriel</td><td>u⃗∧v⃗ : anti-commutatif, nul si colinéaires</td></tr>
+      <tr><td>BAME</td><td>Poids + contacts à la frontière + actions à distance</td></tr>
+    </table>
+  </div>
+
+</div><!-- end ch6 -->
+
+</div><!-- end container -->
+
+<footer>
+  Lycée Galilée · Terminale · Sciences de l'Ingénieur · Statique des solides indéformables · Cours complet
+</footer>
+
+<script>
+function toggle(btn) {
+  btn.classList.toggle('open');
+  const content = btn.nextElementSibling;
+  content.classList.toggle('visible');
+}
+</script>
+</body>
+</html>
