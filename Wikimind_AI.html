@@ -212,7 +212,7 @@ a{text-decoration:none;color:inherit;}
 }
 #model-dropdown-btn.open::after{transform:translateY(-50%) rotate(180deg);}
 #model-dropdown-list{
-  display:none;position:fixed;min-width:220px;
+  display:none;position:absolute;bottom:calc(100% + 6px);right:0;min-width:220px;
   background:var(--bg);border:1px solid var(--border2);border-radius:12px;
   box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:9999;overflow:hidden;
   animation:dropdownReveal .15s cubic-bezier(.34,1.3,.64,1);
@@ -6020,7 +6020,7 @@ function _closeModelDropdown(){
   const btn = document.getElementById('model-dropdown-btn');
   const list = document.getElementById('model-dropdown-list');
   if(btn) btn.classList.remove('open');
-  if(list){ list.classList.remove('open'); list.style.display=''; list.style.visibility=''; }
+  if(list) list.classList.remove('open');
 }
 
 function toggleModelDropdown(e){
@@ -6030,24 +6030,8 @@ function toggleModelDropdown(e){
   if(!btn||!list) return;
   if(list.classList.contains('open')){ _closeModelDropdown(); return; }
   _buildModelDropdownList();
-  // Afficher hors-écran pour mesurer la hauteur
-  list.style.visibility = 'hidden';
-  list.style.display = 'block';
-  list.classList.add('open');
   btn.classList.add('open');
-  requestAnimationFrame(()=>{
-    const rect = btn.getBoundingClientRect();
-    const listW = list.offsetWidth;
-    const listH = list.offsetHeight;
-    let left = rect.left + rect.width/2 - listW/2;
-    if(left + listW > window.innerWidth - 8) left = window.innerWidth - listW - 8;
-    if(left < 8) left = 8;
-    list.style.left = left + 'px';
-    // Position au-dessus du bouton, en utilisant bottom (distance depuis le bas de l'écran)
-    list.style.top = 'auto';
-    list.style.bottom = (window.innerHeight - rect.top + 8) + 'px';
-    list.style.visibility = 'visible';
-  });
+  list.classList.add('open');
 }
 
 function selectModelDropdown(val){
