@@ -212,9 +212,9 @@ a{text-decoration:none;color:inherit;}
 }
 #model-dropdown-btn.open::after{transform:translateY(-50%) rotate(180deg);}
 #model-dropdown-list{
-  display:none;position:absolute;bottom:calc(100% + 6px);left:0;min-width:220px;
+  display:none;position:fixed;min-width:220px;
   background:var(--bg);border:1px solid var(--border2);border-radius:12px;
-  box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:9999;overflow:hidden;
+  box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:9999;overflow:hidden;
   animation:dropdownReveal .15s cubic-bezier(.34,1.3,.64,1);
 }
 #model-dropdown-list.open{display:block;}
@@ -6025,6 +6025,16 @@ function toggleModelDropdown(e){
   if(!isOpen) _buildModelDropdownList();
   btn.classList.toggle('open', !isOpen);
   list.classList.toggle('open', !isOpen);
+  if(!isOpen){
+    const rect = btn.getBoundingClientRect();
+    list.style.display = 'block';
+    const listW = list.offsetWidth;
+    let left = rect.left + rect.width/2 - listW/2;
+    if(left + listW > window.innerWidth - 8) left = window.innerWidth - listW - 8;
+    if(left < 8) left = 8;
+    list.style.left = left + 'px';
+    list.style.top = (rect.top - list.offsetHeight - 6) + 'px';
+  }
 }
 
 function selectModelDropdown(val){
