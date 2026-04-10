@@ -6016,34 +6016,48 @@ function _buildModelDropdownList(){
   });
 }
 
+function _closeModelDropdown(){
+  const btn = document.getElementById('model-dropdown-btn');
+  const list = document.getElementById('model-dropdown-list');
+  if(btn) btn.classList.remove('open');
+  if(list){ list.classList.remove('open'); list.style.display=''; list.style.visibility=''; }
+}
+
 function toggleModelDropdown(e){
   e.stopPropagation();
   const btn = document.getElementById('model-dropdown-btn');
   const list = document.getElementById('model-dropdown-list');
   if(!btn||!list) return;
-  const isOpen = list.classList.contains('open');
-  if(!isOpen) _buildModelDropdownList();
-  btn.classList.toggle('open', !isOpen);
-  list.classList.toggle('open', !isOpen);
-  if(!isOpen){
+  if(list.classList.contains('open')){ _closeModelDropdown(); return; }
+  _buildModelDropdownList();
+  // Afficher hors-écran pour mesurer la hauteur
+  list.style.visibility = 'hidden';
+  list.style.display = 'block';
+  list.classList.add('open');
+  btn.classList.add('open');
+  requestAnimationFrame(()=>{
     const rect = btn.getBoundingClientRect();
-    list.style.display = 'block';
     const listW = list.offsetWidth;
+    const listH = list.offsetHeight;
     let left = rect.left + rect.width/2 - listW/2;
     if(left + listW > window.innerWidth - 8) left = window.innerWidth - listW - 8;
     if(left < 8) left = 8;
     list.style.left = left + 'px';
-    list.style.top = (rect.top - list.offsetHeight - 6) + 'px';
-  }
+    list.style.top = Math.max(8, rect.top - listH - 8) + 'px';
+    list.style.visibility = 'visible';
+  });
 }
 
 function selectModelDropdown(val){
   const btn = document.getElementById('model-dropdown-btn');
-  const list = document.getElementById('model-dropdown-list');
   const sel = document.getElementById('model-select');
-  if(btn) btn.textContent = (_MODEL_LABELS[val]||{label:val.toUpperCase()}).label;
-  if(list){ list.classList.remove('open'); }
-  if(btn) btn.classList.remove('open');
+  if(btn){
+    // Mettre à jour le label sans casser le ::after (chevron)
+    const label = (_MODEL_LABELS[val]||{label:val.toUpperCase()}).label;
+    const textNode = [...btn.childNodes].find(n=>n.nodeType===3);
+    if(textNode) textNode.textContent = label; else btn.prepend(document.createTextNode(label));
+  }
+  _closeModelDropdown();
   S.model = val;
   if(sel){ sel.value = val; }
   // Track modèle le plus utilisé
@@ -6052,11 +6066,12 @@ function selectModelDropdown(val){
 }
 
 // Fermer le dropdown si clic ailleurs
-document.addEventListener('click', ()=>{
-  const btn = document.getElementById('model-dropdown-btn');
+document.addEventListener('click', e=>{
   const list = document.getElementById('model-dropdown-list');
-  if(btn) btn.classList.remove('open');
-  if(list) list.classList.remove('open');
+  const btn = document.getElementById('model-dropdown-btn');
+  if(list && list.classList.contains('open') && !btn.contains(e.target)){
+    _closeModelDropdown();
+  }
 });
 
 // ── TRACKING MODÈLE & PRÉFÉRENCES UTILISATEUR ──
