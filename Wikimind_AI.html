@@ -190,26 +190,47 @@ a{text-decoration:none;color:inherit;}
 .float-btn:hover{background:var(--select-bg);transform:scale(1.05);}
 .float-btn svg{width:16px;height:16px;}
 
-/* Model selector — custom styled select */
+/* ── MODEL DROPDOWN CUSTOM ── */
 #model-select-wrap{display:flex;align-items:center;position:relative;}
-#model-select{
-  appearance:none;-webkit-appearance:none;
-  background:var(--select-bg);border:1.5px solid var(--border2);
-  padding:6px 26px 6px 10px;font-size:11px;font-weight:700;color:var(--text);
-  outline:none;cursor:pointer;font-family:'Inter',sans-serif;
-  text-transform:uppercase;letter-spacing:.06em;
-  border-radius:10px;max-width:185px;
-  transition:border-color .2s, box-shadow .2s;
+#model-select{display:none;} /* masqué, remplacé par le dropdown custom */
+#model-dropdown-btn{
+  appearance:none;background:var(--select-bg);border:1.5px solid var(--border2);
+  padding:6px 28px 6px 10px;font-size:11px;font-weight:700;color:var(--text);
+  cursor:pointer;font-family:'Inter',sans-serif;text-transform:uppercase;
+  letter-spacing:.06em;border-radius:10px;max-width:220px;min-width:130px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  transition:border-color .2s,box-shadow .2s;position:relative;
+  display:flex;align-items:center;gap:6px;
 }
-#model-select:hover{border-color:#999;}
-#model-select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(17,17,17,.08);}
-.dark-mode #model-select:focus{box-shadow:0 0 0 3px rgba(255,255,255,.1);}
-#model-select option{background:var(--bg);color:var(--text);font-weight:700;}
-#model-select-wrap::after{
-  content:'';position:absolute;right:9px;top:50%;transform:translateY(-50%);
+#model-dropdown-btn:hover{border-color:#999;}
+#model-dropdown-btn.open{border-color:var(--accent);box-shadow:0 0 0 3px rgba(17,17,17,.08);}
+.dark-mode #model-dropdown-btn.open{box-shadow:0 0 0 3px rgba(255,255,255,.1);}
+#model-dropdown-btn::after{
+  content:'';position:absolute;right:9px;top:50%;transform:translateY(-50%) rotate(0deg);
   width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;
-  border-top:5px solid #999;pointer-events:none;transition:.2s;
+  border-top:5px solid #999;pointer-events:none;transition:transform .2s;
 }
+#model-dropdown-btn.open::after{transform:translateY(-50%) rotate(180deg);}
+#model-dropdown-list{
+  display:none;position:absolute;bottom:calc(100% + 6px);left:0;min-width:220px;
+  background:var(--bg);border:1px solid var(--border2);border-radius:12px;
+  box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:9999;overflow:hidden;
+  animation:dropdownReveal .15s cubic-bezier(.34,1.3,.64,1);
+}
+#model-dropdown-list.open{display:block;}
+@keyframes dropdownReveal{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.model-dd-item{
+  padding:9px 14px;font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.06em;cursor:pointer;color:var(--text);display:flex;
+  align-items:center;gap:8px;transition:background .12s;
+}
+.model-dd-item:hover{background:var(--select-bg);}
+.model-dd-item.active{color:var(--accent);background:var(--select-bg);}
+.model-dd-item .model-dd-badge{
+  font-size:9px;font-weight:800;padding:1px 6px;border-radius:20px;margin-left:auto;
+  background:rgba(34,197,94,.12);color:#16a34a;letter-spacing:.04em;text-transform:uppercase;
+}
+.model-dd-sep{height:1px;background:var(--border);margin:4px 0;}
 
 /* Plan chip / avatar top-right */
 #plan-chip{position:absolute;top:24px;right:24px;z-index:50;display:flex;align-items:center;gap:8px;cursor:pointer;}
@@ -840,6 +861,11 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 #model-select.model-work{border-color:#22c55e !important;padding-right:20px;}
 #model-select.model-reflect{border-color:#06b6d4 !important;padding-right:20px;}
 #model-select.model-task{border-color:#f97316 !important;padding-right:20px;}
+#model-dropdown-btn.model-medium{border-color:#8b5cf6 !important;}
+#model-dropdown-btn.model-work{border-color:#22c55e !important;}
+#model-dropdown-btn.model-reflect{border-color:#06b6d4 !important;}
+#model-dropdown-btn.model-task{border-color:#f97316 !important;}
+#model-dropdown-btn.model-groq_flash_ultra{border-color:var(--accent) !important;}
 @keyframes dotPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.7;transform:scale(1.3);}}
 
 /* ── SPLASH SCREEN — WikiMind v8 : logo glisse+tourne → titre révélé ── */
@@ -2604,13 +2630,17 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
               <path d="M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8L19 13M17.8 6.2L19 5M12.2 6.2L11 5M12.2 11.8L11 13M15 9a3 3 0 110 .001"/>
               <path d="M5 3l-.75 1.5L3 5l1.25.5L5 7l.75-1.5L7 5l-1.25-.5L5 3zM3 16l-.5 1L2 18l1-.5 1 .5-.5-1L4 16l-1 .5-1-.5.5 1z" fill="currentColor" stroke="none"/>
             </svg>
-            <span class="wand-tooltip">Améliorer le prompt</span>
+            <span class="wand-tooltip">✨ Améliorer le prompt</span>
           </button>
           <div id="model-select-wrap">
             <select id="model-select" onchange="onModelChange()">
               <option value="groq_flash_ultra">WIKIMIND FLASH ULTRA</option>
               <option value="flash">WIKIMIND FLASH</option>
             </select>
+            <button id="model-dropdown-btn" onclick="toggleModelDropdown(event)" title="Choisir le modèle">
+              WIKIMIND FLASH ULTRA
+            </button>
+            <div id="model-dropdown-list"></div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:6px;">
@@ -3163,9 +3193,6 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
       <button class="stnav-btn active" id="stnav-interface" onclick="settingsNavClick('interface')" data-keywords="affichage sombre animation photo profil">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18"/></svg>Interface
       </button>
-      <button class="stnav-btn" id="stnav-theme" onclick="settingsNavClick('theme')" data-keywords="couleur thème fond image preset nuit forêt">
-        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 010 20"/><path d="M2 12h20"/></svg>Thème & Apparence
-      </button>
       <button class="stnav-btn" id="stnav-perso" onclick="settingsNavClick('perso')" data-keywords="instruction système personnalisation json import modèles">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Personnalisation IA
       </button>
@@ -3265,51 +3292,6 @@ onAuthStateChanged(auth,async user=>{if(user){const am=document.getElementById('
     </div>
 
     <!-- ── THÈME ── -->
-    <div id="stab-body-theme" class="stab-body" style="display:none">
-      <div class="st-section-title">Thèmes prédéfinis</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;margin-bottom:20px;">
-        <div class="preset-theme-chip" onclick="applyPresetTheme('default')" title="Défaut"><span style="font-size:18px">⬜</span><span>Défaut</span></div>
-        <div class="preset-theme-chip" onclick="applyPresetTheme('midnight')" title="Nuit"><span style="font-size:18px">🌙</span><span>Nuit</span></div>
-        <div class="preset-theme-chip" onclick="applyPresetTheme('forest')" title="Forêt"><span style="font-size:18px">🌿</span><span>Forêt</span></div>
-        <div class="preset-theme-chip" onclick="applyPresetTheme('ocean')" title="Océan"><span style="font-size:18px">🌊</span><span>Océan</span></div>
-        <div class="preset-theme-chip" onclick="applyPresetTheme('sunset')" title="Coucher de soleil"><span style="font-size:18px">🌅</span><span>Sunset</span></div>
-        <div class="preset-theme-chip" onclick="applyPresetTheme('rose')" title="Rose"><span style="font-size:18px">🌸</span><span>Rose</span></div>
-      </div>
-
-      <div class="st-section-title">Couleurs personnalisées</div>
-      <p style="font-size:12px;color:#888;margin-bottom:16px;line-height:1.6">Personnalisez chaque couleur de l'interface. Sauvegardées dans votre navigateur.</p>
-      <div id="theme-colors-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
-        <div class="theme-color-row"><label class="theme-color-label">Fond principal</label><div style="display:flex;align-items:center;gap:8px;"><input type="color" id="tc-bg" class="theme-color-input" onchange="applyCustomColor('--bg',this.value)"><input type="text" class="theme-hex-input" id="tc-bg-hex" onchange="applyCustomColorHex('--bg','tc-bg',this.value)" placeholder="#ffffff"></div></div>
-        <div class="theme-color-row"><label class="theme-color-label">Texte</label><div style="display:flex;align-items:center;gap:8px;"><input type="color" id="tc-text" class="theme-color-input" onchange="applyCustomColor('--text',this.value)"><input type="text" class="theme-hex-input" id="tc-text-hex" onchange="applyCustomColorHex('--text','tc-text',this.value)" placeholder="#111111"></div></div>
-        <div class="theme-color-row"><label class="theme-color-label">Sidebar</label><div style="display:flex;align-items:center;gap:8px;"><input type="color" id="tc-sidebar" class="theme-color-input" onchange="applyCustomColor('--sidebar',this.value)"><input type="text" class="theme-hex-input" id="tc-sidebar-hex" onchange="applyCustomColorHex('--sidebar','tc-sidebar',this.value)" placeholder="#fcfcfc"></div></div>
-        <div class="theme-color-row"><label class="theme-color-label">Accentuation</label><div style="display:flex;align-items:center;gap:8px;"><input type="color" id="tc-accent" class="theme-color-input" onchange="applyCustomColor('--accent',this.value)"><input type="text" class="theme-hex-input" id="tc-accent-hex" onchange="applyCustomColorHex('--accent','tc-accent',this.value)" placeholder="#111111"></div></div>
-        <div class="theme-color-row"><label class="theme-color-label">Bordure</label><div style="display:flex;align-items:center;gap:8px;"><input type="color" id="tc-border" class="theme-color-input" onchange="applyCustomColor('--border',this.value)"><input type="text" class="theme-hex-input" id="tc-border-hex" onchange="applyCustomColorHex('--border','tc-border',this.value)" placeholder="#f0f0f0"></div></div>
-        <div class="theme-color-row"><label class="theme-color-label">Fond input</label><div style="display:flex;align-items:center;gap:8px;"><input type="color" id="tc-input" class="theme-color-input" onchange="applyCustomColor('--input-bg',this.value)"><input type="text" class="theme-hex-input" id="tc-input-hex" onchange="applyCustomColorHex('--input-bg','tc-input',this.value)" placeholder="#ffffff"></div></div>
-      </div>
-      <div style="display:flex;gap:8px;margin-bottom:24px;">
-        <button class="st-action-btn" onclick="saveCustomTheme()">💾 Sauvegarder le thème</button>
-        <button class="st-action-btn secondary" onclick="resetCustomTheme()">↺ Réinitialiser</button>
-      </div>
-
-      <div class="st-section-title">Image de fond</div>
-      <p style="font-size:12px;color:#888;margin-bottom:12px">Importez une image de fond (stockée dans IndexedDB).</p>
-      <div id="bg-image-preview-wrap" style="display:none;margin-bottom:12px;border-radius:12px;overflow:hidden;max-height:160px;position:relative;">
-        <img id="bg-image-preview" src="" style="width:100%;object-fit:cover;max-height:160px;display:block;">
-        <button onclick="removeBgImage()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;">✕ Supprimer</button>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <label class="st-action-btn" style="cursor:pointer;">
-          📁 Importer une image
-          <input type="file" id="bg-image-input" accept="image/*" style="display:none" onchange="onBgImageSelected(event)">
-        </label>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <label style="font-size:12px;font-weight:600;">Opacité :</label>
-          <input type="range" id="bg-opacity-slider" min="0" max="100" value="20" style="width:100px;" oninput="setBgImageOpacity(this.value)">
-          <span id="bg-opacity-val" style="font-size:11px;color:#888;width:30px;">20%</span>
-        </div>
-      </div>
-    </div>
-
     <!-- ── PERSONNALISATION ── -->
     <div id="stab-body-perso" class="stab-body" style="display:none">
       <div id="advanced-params-wrap">
@@ -4735,9 +4717,15 @@ function _smartScroll(){
 // ── MODEL RING INDICATOR ──
 function updateModelRingIndicator(key){
   var sel=document.getElementById('model-select');
-  if(!sel) return;
-  sel.classList.remove('model-medium','model-work','model-reflect','model-task');
-  if(key&&key!=='flash') sel.classList.add('model-'+key);
+  var btn=document.getElementById('model-dropdown-btn');
+  if(sel){
+    sel.classList.remove('model-medium','model-work','model-reflect','model-task','model-groq_flash_ultra');
+    if(key&&key!=='flash') sel.classList.add('model-'+key);
+  }
+  if(btn){
+    btn.classList.remove('model-medium','model-work','model-reflect','model-task','model-groq_flash_ultra');
+    if(key) btn.classList.add('model-'+key);
+  }
   var wrap=document.getElementById('model-select-wrap');
   if(!wrap) return;
   var dot=wrap.querySelector('.model-color-dot');
@@ -5313,7 +5301,13 @@ function updateModelOptions(){
   sel.innerHTML='';
   models.forEach(m=>{ if(S.plan>=m.minPlan){const opt=document.createElement('option');opt.value=m.value;opt.textContent=m.label;sel.appendChild(opt);} });
   S.customModels.forEach(m=>{const opt=document.createElement('option');opt.value=m.id;opt.textContent=m.name.toUpperCase();sel.appendChild(opt);});
-  if(!sel.querySelector(`option[value="${S.model}"]`)){S.model='flash';sel.value='flash';}else{sel.value=S.model;}
+  if(!sel.querySelector(`option[value="${S.model}"]`)){S.model='groq_flash_ultra';sel.value='groq_flash_ultra';}else{sel.value=S.model;}
+  // Sync custom dropdown button label
+  const btn=G('model-dropdown-btn');
+  if(btn){
+    const info=_MODEL_LABELS[S.model]||{label:S.model.toUpperCase()};
+    btn.textContent=info.label;
+  }
 }
 
 // ── PLAN OVERLAY ──
@@ -5977,13 +5971,144 @@ function typewriterEffect(el,fullText){
 }
 
 // ── EDIT / REGEN ──
-function toggleLike(i){
+// ── MODEL DROPDOWN CUSTOM ──
+const _MODEL_LABELS = {
+  groq_flash_ultra: {label:'WIKIMIND FLASH ULTRA', badge:'GROQ'},
+  flash:   {label:'WIKIMIND FLASH 4.1'},
+  medium:  {label:'WIKIMIND MEDIUM 4.1'},
+  work:    {label:'WIKIMIND WORK 4.1'},
+  reflect: {label:'WIKIMIND RÉFLEXION 4.1'},
+  task:    {label:'WIKIMIND TASK 4.1'},
+  code:    {label:'WIKIMIND CODE 4.1'},
+};
+
+function _buildModelDropdownList(){
+  const list = document.getElementById('model-dropdown-list');
+  if(!list) return;
+  const models = [
+    {value:'groq_flash_ultra', minPlan:1, badge:'GROQ'},
+    {value:'flash',  minPlan:1},
+    {value:'medium', minPlan:2},
+    {value:'work',   minPlan:2},
+    {value:'reflect',minPlan:2},
+    {value:'task',   minPlan:2},
+    {value:'code',   minPlan:2},
+  ];
+  list.innerHTML = '';
+  // Separator after flash ultra
+  models.forEach((m, idx)=>{
+    if(S.plan < m.minPlan) return;
+    const info = _MODEL_LABELS[m.value] || {label: m.value.toUpperCase()};
+    const item = document.createElement('div');
+    item.className = 'model-dd-item' + (S.model === m.value ? ' active' : '');
+    item.onclick = ()=>{ selectModelDropdown(m.value); };
+    item.innerHTML = info.label + (m.badge ? `<span class="model-dd-badge">${m.badge}</span>` : '');
+    list.appendChild(item);
+    if(idx === 0){ const sep=document.createElement('div'); sep.className='model-dd-sep'; list.appendChild(sep); }
+  });
+  // Custom models
+  (S.customModels||[]).forEach(m=>{
+    const item = document.createElement('div');
+    item.className = 'model-dd-item' + (S.model === m.id ? ' active' : '');
+    item.onclick = ()=>{ selectModelDropdown(m.id); };
+    item.textContent = (m.name||m.id).toUpperCase();
+    list.appendChild(item);
+  });
+}
+
+function toggleModelDropdown(e){
+  e.stopPropagation();
+  const btn = document.getElementById('model-dropdown-btn');
+  const list = document.getElementById('model-dropdown-list');
+  if(!btn||!list) return;
+  const isOpen = list.classList.contains('open');
+  if(!isOpen) _buildModelDropdownList();
+  btn.classList.toggle('open', !isOpen);
+  list.classList.toggle('open', !isOpen);
+}
+
+function selectModelDropdown(val){
+  const btn = document.getElementById('model-dropdown-btn');
+  const list = document.getElementById('model-dropdown-list');
+  const sel = document.getElementById('model-select');
+  if(btn) btn.textContent = (_MODEL_LABELS[val]||{label:val.toUpperCase()}).label;
+  if(list){ list.classList.remove('open'); }
+  if(btn) btn.classList.remove('open');
+  S.model = val;
+  if(sel){ sel.value = val; }
+  // Track modèle le plus utilisé
+  _trackModelUsage(val);
+  if(typeof onModelChange === 'function') onModelChange();
+}
+
+// Fermer le dropdown si clic ailleurs
+document.addEventListener('click', ()=>{
+  const btn = document.getElementById('model-dropdown-btn');
+  const list = document.getElementById('model-dropdown-list');
+  if(btn) btn.classList.remove('open');
+  if(list) list.classList.remove('open');
+});
+
+// ── TRACKING MODÈLE & PRÉFÉRENCES UTILISATEUR ──
+function _trackModelUsage(modelVal){
+  try{
+    const key = 'wm_model_usage';
+    const usage = JSON.parse(localStorage.getItem(key)||'{}');
+    usage[modelVal] = (usage[modelVal]||0) + 1;
+    localStorage.setItem(key, JSON.stringify(usage));
+    // Mettre à jour le modèle favori
+    const fav = Object.entries(usage).sort((a,b)=>b[1]-a[1])[0]?.[0];
+    if(fav) localStorage.setItem('wm_fav_model', fav);
+  }catch(_){}
+}
+
+function _getMostUsedModel(){
+  try{
+    const key = 'wm_model_usage';
+    const usage = JSON.parse(localStorage.getItem(key)||'{}');
+    return Object.entries(usage).sort((a,b)=>b[1]-a[1])[0]?.[0] || 'groq_flash_ultra';
+  }catch(_){ return 'groq_flash_ultra'; }
+}
+
+// ── LIKE/DISLIKE → RAG + PRÉFÉRENCES ──
+async function _saveFeedbackToRag(msgIndex, isLike){
+  try{
+    const msg = S.msgs[msgIndex];
+    if(!msg || msg.role !== 'assistant') return;
+    const content = (msg.content||'').substring(0, 500);
+    const feedbackType = isLike ? 'like' : 'dislike';
+    const ragKey = 'feedback_' + feedbackType + '_' + Date.now();
+    const ragEntry = {
+      type: feedbackType,
+      msgIndex,
+      model: msg._model || S.model,
+      modelLabel: msg._modelLabel || S.model,
+      contentPreview: content,
+      ts: Date.now(),
+    };
+    // Sauvegarder dans localforage (RAG caché)
+    await localforage.setItem(ragKey, ragEntry);
+    // Mémoriser aussi les préférences de style dans localStorage
+    const prefKey = 'wm_response_prefs';
+    const prefs = JSON.parse(localStorage.getItem(prefKey)||'{"liked":[],"disliked":[]}');
+    if(isLike){
+      prefs.liked.push({model: ragEntry.model, ts: ragEntry.ts});
+      if(prefs.liked.length > 50) prefs.liked = prefs.liked.slice(-50);
+    } else {
+      prefs.disliked.push({model: ragEntry.model, ts: ragEntry.ts});
+      if(prefs.disliked.length > 50) prefs.disliked = prefs.disliked.slice(-50);
+    }
+    localStorage.setItem(prefKey, JSON.stringify(prefs));
+  }catch(e){ console.warn('[WM] Feedback RAG save error:', e); }
+}
+
+
   const likeBtn=G('like-'+i); const dislikeBtn=G('dislike-'+i);
   if(!likeBtn) return;
   const wasLiked=likeBtn.classList.contains('liked');
   likeBtn.classList.toggle('liked',!wasLiked);
   if(dislikeBtn) dislikeBtn.classList.remove('disliked');
-  
+  if(!wasLiked) _saveFeedbackToRag(i, true);
 }
 function toggleDislike(i){
   const likeBtn=G('like-'+i); const dislikeBtn=G('dislike-'+i);
@@ -5991,7 +6116,7 @@ function toggleDislike(i){
   const wasDisliked=dislikeBtn.classList.contains('disliked');
   dislikeBtn.classList.toggle('disliked',!wasDisliked);
   if(likeBtn) likeBtn.classList.remove('liked');
-  
+  if(!wasDisliked) _saveFeedbackToRag(i, false);
 }
 // ── BRANCHES DE CONVERSATION ──
 // Les branches permettent d'explorer des alternatives sans perdre l'historique
@@ -7474,6 +7599,7 @@ function animLike(btn,i){
   const wasLiked=likeBtn.classList.contains('liked');
   likeBtn.classList.toggle('liked',!wasLiked);
   if(dislikeBtn) dislikeBtn.classList.remove('disliked');
+  if(!wasLiked) _saveFeedbackToRag(i, true);
   likeBtn.classList.remove('pop-anim');
   void likeBtn.offsetWidth;
   likeBtn.classList.add('pop-anim');
@@ -7486,6 +7612,7 @@ function animDislike(btn,i){
   const wasDisliked=dislikeBtn.classList.contains('disliked');
   dislikeBtn.classList.toggle('disliked',!wasDisliked);
   if(likeBtn) likeBtn.classList.remove('liked');
+  if(!wasDisliked) _saveFeedbackToRag(i, false);
   dislikeBtn.classList.remove('pop-anim');
   void dislikeBtn.offsetWidth;
   dislikeBtn.classList.add('pop-anim');
@@ -15241,7 +15368,7 @@ console.log('%c✅ Import universel | ✅ RAG illimité | ✅ PDF Viewer | ✅ G
 <!-- ══════════════════════════════════════════════════════
      THEME SELECTOR MODAL — WikiMind v6
      ══════════════════════════════════════════════════════ -->
-<div class="modal" id="theme-selector-modal" onclick="if(event.target===this)closeModal('theme-selector-modal')">
+<div class="modal" id="theme-selector-modal" style="z-index:9000" onclick="if(event.target===this)closeModal('theme-selector-modal')">
   <div class="modal-content" onclick="event.stopPropagation()" style="max-width:600px;padding:0;overflow:hidden;max-height:88vh;display:flex;flex-direction:column;">
     <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
       <div>
@@ -15898,8 +16025,10 @@ let _currentWMTheme = 'default';
 let _themeAnimId = null;
 
 function openThemeSelector(){
-  // Thèmes disponibles pour tous
-  // sync current
+  // Fermer les paramètres si ouverts (sinon la modale apparaît derrière)
+  const sp = document.getElementById('settings-panel');
+  if(sp && sp.style.display !== 'none') closeSettingsPanel();
+  // Sync current theme badges
   WM_THEMES_LIST.forEach(t=>{
     const badge = document.getElementById('themebadge-'+t);
     const card = document.getElementById('themecard-'+t);
@@ -17077,7 +17206,7 @@ function closeSettingsPanel(){
 }
 
 // ── Settings Tab navigation ──
-const _ST_TABS = ['interface','theme','perso','notifs','api','skills','privacy','connect','plans','account','security','help'];
+const _ST_TABS = ['interface','perso','notifs','api','skills','privacy','connect','plans','account','security','help'];
 
 function settingsTab(tab){
   _ST_TABS.forEach(t=>{
@@ -17089,10 +17218,9 @@ function settingsTab(tab){
   if(tab==='skills') renderSkillsList();
   if(tab==='privacy') _loadPrivacySettings();
   if(tab==='api') _loadByokStatus();
-  if(tab==='theme') _loadThemeColorInputs();
   if(tab==='plans') _renderSettingsPlanCards();
   // Update section title in content
-  const titles = {interface:'Interface',theme:'Thème & Apparence',perso:'Personnalisation IA',notifs:'Notifications',api:'API & BYOK',skills:'Skills IA',privacy:'Données & Vie privée',connect:'Connecteurs & Apps',plans:'Forfaits & Abonnement',account:'Compte',security:'Sécurité',help:'Aide'};
+  const titles = {interface:'Interface',perso:'Personnalisation IA',notifs:'Notifications',api:'API & BYOK',skills:'Skills IA',privacy:'Données & Vie privée',connect:'Connecteurs & Apps',plans:'Forfaits & Abonnement',account:'Compte',security:'Sécurité',help:'Aide'};
   const titleEl = document.getElementById('settings-section-title');
   if(titleEl) titleEl.textContent = titles[tab]||tab;
 }
