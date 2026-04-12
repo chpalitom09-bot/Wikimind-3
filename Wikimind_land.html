@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TerraConquest</title>
+<meta name="theme-color" content="#080b14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+<style>
+:root {
+  --bg: #080b14;
+  --bg2: #0d1220;
+  --panel: rgba(10,15,30,0.85);
+  --border: rgba(0,200,255,0.15);
+  --border2: rgba(0,200,255,0.3);
+  --cyan: #00c8ff;
+  --cyan2: #0ef;
+  --green: #00ff88;
+  --orange: #ff6b00;
+  --red: #ff3355;
+  --gold: #ffd700;
+  --text: #e0eaff;
+  --text2: rgba(224,234,255,0.5);
+  --text3: rgba(224,234,255,0.25);
+  --glow: 0 0 20px rgba(0,200,255,0.3);
+  --glow2: 0 0 40px rgba(0,200,255,0.2);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  overflow: hidden;
+  height: 100dvh;
+  width: 100vw;
+  user-select: none;
+}
+
+/* ====== SPLASH ====== */
+#splash {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 24px;
+}
+#splash.out { animation: splashOut 0.6s ease-in forwards; }
+@keyframes splashOut { to { opacity:0; transform:scale(1.05); pointer-events:none; } }
+
+.splash-logo {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  animation: logoIn 0.7s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+  opacity: 0;
+}
+@keyframes logoIn { from { opacity:0; transform:scale(0.4) translateY(20px); } to { opacity:1; transform:scale(1) translateY(0); } }
+
+.splash-icon {
+  width: 80px; height: 80px;
+  background: linear-gradient(135deg, #00c8ff20, #00ff8820);
+  border: 2px solid var(--cyan);
+  border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+  box-shadow: 0 0 60px rgba(0,200,255,0.5), inset 0 0 30px rgba(0,200,255,0.1);
+  position: relative;
+}
+.splash-icon::after {
+  content: '';
+  position: absolute; inset: -4px;
+  border-radius: 24px;
+  border: 1px solid rgba(0,200,255,0.2);
+  animation: iconPulse 2s infinite;
+}
+@keyframes iconPulse { 0%,100% { transform:scale(1); opacity:0.5; } 50% { transform:scale(1.08); opacity:1; } }
+
+.splash-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 28px; font-weight: 900;
+  letter-spacing: 4px;
+  background: linear-gradient(90deg, var(--cyan), var(--green));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  animation: wordIn 0.5s ease 0.3s forwards; opacity: 0;
+}
+@keyframes wordIn { to { opacity:1; } }
+
+.splash-sub {
+  font-size: 11px; letter-spacing: 6px; color: var(--text3);
+  text-transform: uppercase;
+  animation: wordIn 0.5s ease 0.5s forwards; opacity: 0;
+}
+
+.splash-bar-wrap {
+  width: 200px; height: 2px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 2px; overflow: hidden;
+  animation: wordIn 0.3s ease 0.6s forwards; opacity: 0;
+}
+.splash-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan), var(--green));
+  border-radius: 2px;
+  animation: barFill 1.4s cubic-bezier(0.4,0,0.2,1) 0.7s forwards;
+  width: 0;
+}
+@keyframes barFill { to { width: 100%; } }
+
+/* ====== AUTH SCREEN ====== */
+#auth-screen {
+  position: fixed; inset: 0; z-index: 900;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+#auth-screen.hidden { display: none; }
+
+.auth-card {
+  width: 100%; max-width: 400px;
+  background: var(--panel);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 36px 28px;
+  backdrop-filter: blur(20px);
+  box-shadow: var(--glow2), inset 0 1px 0 rgba(0,200,255,0.1);
+}
+.auth-logo {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 28px;
+}
+.auth-logo-icon {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, rgba(0,200,255,0.2), rgba(0,255,136,0.1));
+  border: 1px solid var(--cyan);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 0 20px rgba(0,200,255,0.3);
+}
+.auth-logo-text {
+  font-family: 'Orbitron', monospace;
+  font-size: 18px; font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--cyan);
+}
+.auth-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.auth-sub { font-size: 13px; color: var(--text2); margin-bottom: 28px; }
+
+.form-group { margin-bottom: 16px; }
+.form-label { font-size: 11px; font-weight: 600; letter-spacing: 2px; color: var(--text2); text-transform: uppercase; display: block; margin-bottom: 8px; }
+.form-input {
+  width: 100%; padding: 12px 16px;
+  background: rgba(0,200,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,200,255,0.1); }
+.form-input::placeholder { color: var(--text3); }
+
+.btn-primary {
+  width: 100%; padding: 14px;
+  background: linear-gradient(135deg, var(--cyan), #0099cc);
+  border: none; border-radius: 10px;
+  color: #000; font-family: 'Orbitron', monospace;
+  font-size: 13px; font-weight: 700; letter-spacing: 2px;
+  cursor: pointer; text-transform: uppercase;
+  transition: all 0.2s;
+  box-shadow: 0 4px 20px rgba(0,200,255,0.3);
+  margin-top: 8px;
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 30px rgba(0,200,255,0.4); }
+.btn-primary:active { transform: translateY(0); }
+
+.btn-google {
+  width: 100%; padding: 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px; font-weight: 600;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  transition: all 0.2s;
+  margin-top: 10px;
+}
+.btn-google:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.25); }
+
+.auth-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 16px 0; color: var(--text3); font-size: 12px;
+}
+.auth-divider::before, .auth-divider::after {
+  content: ''; flex: 1; height: 1px;
+  background: rgba(255,255,255,0.08);
+}
+
+.auth-switch { text-align: center; margin-top: 20px; font-size: 13px; color: var(--text2); }
+.auth-switch a { color: var(--cyan); cursor: pointer; text-decoration: none; font-weight: 600; }
+
+.auth-error {
+  background: rgba(255,51,85,0.1);
+  border: 1px solid rgba(255,51,85,0.3);
+  border-radius: 8px; padding: 10px 14px;
+  font-size: 13px; color: #ff6680;
+  margin-bottom: 16px; display: none;
+}
+
+/* ====== MAIN APP ====== */
+#app { position: fixed; inset: 0; display: flex; flex-direction: column; }
+#app.hidden { display: none; }
+
+/* ====== MAP ====== */
+#map { flex: 1; position: relative; }
+
+#map .leaflet-container {
+  background: #080b14 !important;
+}
+
+/* Custom dark map tiles filter */
+.leaflet-tile { filter: brightness(0.5) saturate(0.3) hue-rotate(180deg) invert(1) brightness(0.4) contrast(1.2); }
+
+/* ====== TOP BAR ====== */
+#topbar {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 500;
+  padding: 10px 14px;
+  background: linear-gradient(to bottom, rgba(8,11,20,0.95), transparent);
+  display: flex; align-items: center; gap: 10px;
+}
+
+.tb-logo {
+  font-family: 'Orbitron', monospace;
+  font-size: 14px; font-weight: 700; letter-spacing: 2px;
+  color: var(--cyan);
+  text-shadow: 0 0 20px rgba(0,200,255,0.5);
+  white-space: nowrap;
+}
+
+.tb-stat {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 13px; font-weight: 600;
+  backdrop-filter: blur(10px);
+}
+.tb-stat-icon { font-size: 14px; }
+.tb-stat-val { color: var(--green); font-family: 'Orbitron', monospace; font-size: 11px; }
+.tb-stat-lbl { color: var(--text2); font-size: 10px; }
+
+.tb-spacer { flex: 1; }
+
+.tb-avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: 2px solid var(--cyan);
+  background: linear-gradient(135deg, var(--cyan)40, var(--green)40);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 0 15px rgba(0,200,255,0.4);
+  color: var(--bg);
+  font-family: 'Orbitron', monospace;
+}
+
+/* ====== BOTTOM HUD ====== */
+#bottomhud {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 500;
+  padding: 0 14px 14px;
+}
+
+/* Revenue ticker */
+#revenue-ticker {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 14px;
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px;
+  backdrop-filter: blur(16px);
+}
+.ticker-icon { font-size: 16px; }
+.ticker-content { flex: 1; }
+.ticker-val {
+  font-family: 'Orbitron', monospace; font-size: 16px; font-weight: 700;
+  color: var(--gold);
+  text-shadow: 0 0 20px rgba(255,215,0,0.5);
+}
+.ticker-rate { font-size: 11px; color: var(--text2); }
+.ticker-tiles { font-size: 11px; color: var(--text2); }
+
+/* Bottom nav */
+#bottomnav {
+  display: flex; gap: 8px;
+}
+
+.nav-btn {
+  flex: 1; padding: 10px 6px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text2);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px; font-weight: 600; letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  backdrop-filter: blur(16px);
+  transition: all 0.2s;
+}
+.nav-btn:hover, .nav-btn.active {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: var(--glow);
+  background: rgba(0,200,255,0.08);
+}
+.nav-btn span { font-size: 18px; }
+
+/* ====== CONQUER BUTTON ====== */
+#conquer-btn {
+  position: absolute; bottom: 130px; right: 16px; z-index: 500;
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--cyan), var(--green));
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  box-shadow: 0 4px 30px rgba(0,200,255,0.5), inset 0 1px 0 rgba(255,255,255,0.3);
+  transition: all 0.2s;
+  animation: conquestPulse 2s infinite;
+}
+@keyframes conquestPulse {
+  0%,100% { box-shadow: 0 4px 30px rgba(0,200,255,0.5), inset 0 1px 0 rgba(255,255,255,0.3); }
+  50% { box-shadow: 0 4px 50px rgba(0,200,255,0.8), 0 0 80px rgba(0,255,136,0.3), inset 0 1px 0 rgba(255,255,255,0.3); }
+}
+#conquer-btn:active { transform: scale(0.92); }
+#conquer-btn.loading { animation: none; background: var(--panel); }
+
+#locate-btn {
+  position: absolute; bottom: 205px; right: 20px; z-index: 500;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--panel);
+  border: 1px solid var(--border2);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s;
+}
+#locate-btn:active { transform: scale(0.92); }
+
+/* ====== PANEL OVERLAYS ====== */
+.panel-overlay {
+  position: fixed; inset: 0; z-index: 800;
+  background: rgba(0,0,0,0.6);
+  display: flex; align-items: flex-end;
+  backdrop-filter: blur(4px);
+}
+.panel-overlay.hidden { display: none; }
+
+.panel-sheet {
+  width: 100%; max-height: 85vh;
+  background: var(--bg2);
+  border-radius: 20px 20px 0 0;
+  border-top: 1px solid var(--border2);
+  overflow-y: auto;
+  animation: sheetUp 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
+}
+.panel-sheet.wide { max-width: 500px; margin: 0 auto; border-radius: 20px; max-height: 90vh; align-self: center; }
+@keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+.panel-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0;
+  background: var(--bg2);
+  z-index: 10;
+}
+.panel-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 16px; font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: 1px;
+  flex: 1;
+}
+.panel-close {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+.panel-close:hover { background: rgba(255,51,85,0.1); border-color: var(--red); color: var(--red); }
+
+/* ====== LEADERBOARD ====== */
+.leaderboard-wrap { padding: 16px; }
+
+.lb-my-stats {
+  background: rgba(0,200,255,0.06);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+.lb-stat { text-align: center; }
+.lb-stat-val {
+  font-family: 'Orbitron', monospace;
+  font-size: 20px; font-weight: 700;
+  color: var(--cyan);
+  display: block;
+}
+.lb-stat-lbl { font-size: 10px; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; }
+
+.lb-list { display: flex; flex-direction: column; gap: 8px; }
+
+.lb-item {
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 12px 14px;
+  transition: all 0.2s;
+}
+.lb-item.me {
+  background: rgba(0,200,255,0.06);
+  border-color: var(--border2);
+}
+.lb-item.top1 { background: rgba(255,215,0,0.06); border-color: rgba(255,215,0,0.3); }
+.lb-item.top2 { background: rgba(192,192,192,0.06); border-color: rgba(192,192,192,0.25); }
+.lb-item.top3 { background: rgba(205,127,50,0.06); border-color: rgba(205,127,50,0.25); }
+
+.lb-rank {
+  font-family: 'Orbitron', monospace;
+  font-size: 14px; font-weight: 700;
+  width: 28px; text-align: center;
+  color: var(--text2);
+}
+.lb-item.top1 .lb-rank { color: var(--gold); }
+.lb-item.top2 .lb-rank { color: #c0c0c0; }
+.lb-item.top3 .lb-rank { color: #cd7f32; }
+
+.lb-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700;
+  font-family: 'Orbitron', monospace;
+  color: var(--bg);
+  flex-shrink: 0;
+}
+.lb-info { flex: 1; min-width: 0; }
+.lb-name { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-tiles { font-size: 11px; color: var(--text2); }
+
+.lb-revenue {
+  font-family: 'Orbitron', monospace;
+  font-size: 12px; font-weight: 700;
+  color: var(--gold);
+  text-align: right;
+  white-space: nowrap;
+}
+.lb-revenue-lbl { font-size: 9px; color: var(--text3); }
+
+/* ====== PROFILE PANEL ====== */
+.profile-wrap { padding: 20px; }
+.profile-header-card {
+  text-align: center;
+  padding: 24px 20px;
+  background: rgba(0,200,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  margin-bottom: 20px;
+}
+.profile-av-big {
+  width: 72px; height: 72px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; font-weight: 700;
+  font-family: 'Orbitron', monospace;
+  color: var(--bg);
+  margin: 0 auto 12px;
+  border: 3px solid var(--cyan);
+  box-shadow: 0 0 30px rgba(0,200,255,0.4);
+}
+.profile-username { font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 700; }
+.profile-email { font-size: 12px; color: var(--text2); margin-top: 4px; }
+.profile-rank-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 14px;
+  background: rgba(0,200,255,0.1);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  font-size: 11px; font-weight: 600; letter-spacing: 1px;
+  color: var(--cyan);
+  margin-top: 12px;
+  text-transform: uppercase;
+}
+
+.profile-stats {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; margin-bottom: 20px;
+}
+.profile-stat-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px; padding: 14px;
+}
+.profile-stat-val {
+  font-family: 'Orbitron', monospace; font-size: 20px; font-weight: 700;
+  color: var(--cyan); display: block;
+}
+.profile-stat-lbl { font-size: 11px; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; }
+
+.btn-danger {
+  width: 100%; padding: 12px;
+  background: rgba(255,51,85,0.1);
+  border: 1px solid rgba(255,51,85,0.3);
+  border-radius: 10px;
+  color: var(--red); font-family: 'Rajdhani', sans-serif;
+  font-size: 14px; font-weight: 700; letter-spacing: 1px;
+  cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+}
+.btn-danger:hover { background: rgba(255,51,85,0.2); border-color: var(--red); }
+
+/* ====== TOAST ====== */
+#toast-container {
+  position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+  z-index: 9000; display: flex; flex-direction: column; gap: 8px;
+  pointer-events: none; align-items: center;
+}
+.toast {
+  padding: 10px 18px;
+  border-radius: 50px;
+  font-size: 13px; font-weight: 600; letter-spacing: 0.5px;
+  backdrop-filter: blur(20px);
+  animation: toastIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+  white-space: nowrap;
+}
+.toast.success { background: rgba(0,255,136,0.15); border: 1px solid rgba(0,255,136,0.4); color: var(--green); }
+.toast.error { background: rgba(255,51,85,0.15); border: 1px solid rgba(255,51,85,0.4); color: var(--red); }
+.toast.info { background: rgba(0,200,255,0.15); border: 1px solid rgba(0,200,255,0.4); color: var(--cyan); }
+.toast.warning { background: rgba(255,107,0,0.15); border: 1px solid rgba(255,107,0,0.4); color: var(--orange); }
+@keyframes toastIn { from { opacity:0; transform:scale(0.8) translateY(10px); } to { opacity:1; transform:scale(1) translateY(0); } }
+
+/* ====== CONQUEST EFFECT ====== */
+.conquest-flash {
+  position: fixed; inset: 0; z-index: 9998; pointer-events: none;
+  background: radial-gradient(circle at center, rgba(0,255,136,0.3), transparent 70%);
+  animation: flashIn 0.6s ease-out forwards;
+}
+@keyframes flashIn { 0% { opacity:0; } 30% { opacity:1; } 100% { opacity:0; } }
+
+/* ====== MAP OVERLAYS ====== */
+.player-marker {
+  width: 16px; height: 16px;
+  background: var(--cyan);
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 0 0 4px rgba(0,200,255,0.3), 0 0 20px rgba(0,200,255,0.6);
+  animation: playerPulse 1.5s infinite;
+}
+@keyframes playerPulse {
+  0%,100% { box-shadow: 0 0 0 4px rgba(0,200,255,0.3), 0 0 20px rgba(0,200,255,0.6); }
+  50% { box-shadow: 0 0 0 8px rgba(0,200,255,0.1), 0 0 40px rgba(0,200,255,0.8); }
+}
+
+/* ====== LOADING SPINNER ====== */
+.spinner {
+  width: 24px; height: 24px;
+  border: 2px solid rgba(255,255,255,0.1);
+  border-top-color: var(--cyan);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ====== SECTION HEADERS ====== */
+.section-label {
+  font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--text3); font-weight: 600;
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px;
+}
+.section-label::before {
+  content: ''; flex: 0 0 20px; height: 1px;
+  background: linear-gradient(to right, var(--cyan), transparent);
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: rgba(0,200,255,0.2); border-radius: 4px; }
+
+/* ====== ZONE RANGE CIRCLE ====== */
+.conquest-range-circle {
+  border: 2px dashed rgba(0,200,255,0.4) !important;
+  background: rgba(0,200,255,0.04) !important;
+}
+
+/* ====== HELP SCREEN ====== */
+.help-wrap { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.help-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px; padding: 16px;
+  display: flex; gap: 14px; align-items: flex-start;
+}
+.help-icon { font-size: 28px; flex-shrink: 0; }
+.help-card h3 { font-size: 15px; font-weight: 700; color: var(--cyan); margin-bottom: 4px; }
+.help-card p { font-size: 12px; color: var(--text2); line-height: 1.6; }
+
+/* RESPONSIVE */
+@media (min-width: 768px) {
+  #bottomhud { padding: 0 20px 20px; }
+  #topbar { padding: 14px 20px; }
+  .tb-logo { font-size: 16px; }
+  #conquer-btn { width: 72px; height: 72px; font-size: 30px; bottom: 140px; right: 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-logo">
+    <div class="splash-icon">🌍</div>
+  </div>
+  <div class="splash-title">TERRACONQUEST</div>
+  <div class="splash-sub">Conquiers le monde</div>
+  <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
+</div>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen" class="hidden">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">🌍</div>
+      <div class="auth-logo-text">TERRA</div>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="login-form-wrap">
+      <div class="auth-title">Connexion</div>
+      <div class="auth-sub">Reprends la conquête là où tu t'es arrêté</div>
+      <div id="login-error" class="auth-error"></div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" id="login-email" class="form-input" placeholder="ton@email.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <input type="password" id="login-password" class="form-input" placeholder="••••••••">
+      </div>
+      <button class="btn-primary" onclick="loginWithEmail()">CONNEXION</button>
+      <div class="auth-divider">ou</div>
+      <button class="btn-google" onclick="loginWithGoogle()">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continuer avec Google
+      </button>
+      <div class="auth-switch">Pas encore de compte ? <a onclick="showRegister()">S'inscrire</a></div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="register-form-wrap" style="display:none">
+      <div class="auth-title">Créer un compte</div>
+      <div class="auth-sub">Commence ta conquête mondiale dès maintenant</div>
+      <div id="reg-error" class="auth-error"></div>
+      <div class="form-group">
+        <label class="form-label">Pseudo</label>
+        <input type="text" id="reg-username" class="form-input" placeholder="CommandantXYZ" maxlength="20">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" id="reg-email" class="form-input" placeholder="ton@email.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <input type="password" id="reg-password" class="form-input" placeholder="Min. 6 caractères">
+      </div>
+      <button class="btn-primary" onclick="registerWithEmail()">CRÉER MON COMPTE</button>
+      <div class="auth-switch">Déjà un compte ? <a onclick="showLogin()">Se connecter</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" class="hidden">
+
+  <!-- MAP -->
+  <div id="map"></div>
+
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div class="tb-logo">TERRA</div>
+    <div class="tb-stat">
+      <span class="tb-stat-icon">🗺️</span>
+      <div>
+        <div class="tb-stat-val" id="tb-tiles">0</div>
+        <div class="tb-stat-lbl">Tiles</div>
+      </div>
+    </div>
+    <div class="tb-stat">
+      <span class="tb-stat-icon">💰</span>
+      <div>
+        <div class="tb-stat-val" id="tb-money">0 Mt</div>
+        <div class="tb-stat-lbl">Fortune</div>
+      </div>
+    </div>
+    <div class="tb-spacer"></div>
+    <div class="tb-avatar" id="topbar-avatar" onclick="openProfile()">?</div>
+  </div>
+
+  <!-- CONQUER BUTTON -->
+  <button id="conquer-btn" onclick="conquerArea()" title="Conquérir la zone">🚩</button>
+
+  <!-- LOCATE BUTTON -->
+  <button id="locate-btn" onclick="locateMe()" title="Me localiser">📍</button>
+
+  <!-- BOTTOM HUD -->
+  <div id="bottomhud">
+    <div id="revenue-ticker">
+      <span class="ticker-icon">⚡</span>
+      <div class="ticker-content">
+        <div class="ticker-val" id="ticker-money">0.000 Mt</div>
+        <div class="ticker-rate" id="ticker-rate">+0.0 Mt/h passif</div>
+      </div>
+      <div class="ticker-tiles" id="ticker-tiles-info">0 tiles possédés</div>
+    </div>
+    <div id="bottomnav">
+      <button class="nav-btn" onclick="showMap()">
+        <span>🗺️</span>Carte
+      </button>
+      <button class="nav-btn" onclick="openLeaderboard()">
+        <span>🏆</span>Classement
+      </button>
+      <button class="nav-btn" onclick="openHelp()">
+        <span>❓</span>Aide
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<!-- LEADERBOARD PANEL -->
+<div id="lb-panel" class="panel-overlay hidden" onclick="closeLbPanel(event)">
+  <div class="panel-sheet">
+    <div class="panel-header">
+      <span>🏆</span>
+      <div class="panel-title">CLASSEMENT MONDIAL</div>
+      <button class="panel-close" onclick="closeLbPanel()">✕</button>
+    </div>
+    <div class="leaderboard-wrap">
+      <div class="lb-my-stats">
+        <div class="lb-stat">
+          <span class="lb-stat-val" id="my-rank-val">#-</span>
+          <span class="lb-stat-lbl">Mon rang</span>
+        </div>
+        <div class="lb-stat">
+          <span class="lb-stat-val" id="my-tiles-val">0</span>
+          <span class="lb-stat-lbl">Mes tiles</span>
+        </div>
+        <div class="lb-stat">
+          <span class="lb-stat-val" id="my-income-val">0</span>
+          <span class="lb-stat-lbl">Mt/h</span>
+        </div>
+      </div>
+      <div class="section-label">Top Conquérants</div>
+      <div class="lb-list" id="lb-list">
+        <div style="text-align:center;padding:30px;color:var(--text2);">
+          <div class="spinner" style="margin:0 auto 10px;"></div>Chargement...
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE PANEL -->
+<div id="profile-panel" class="panel-overlay hidden" onclick="closeProfilePanel(event)">
+  <div class="panel-sheet">
+    <div class="panel-header">
+      <span>👤</span>
+      <div class="panel-title">MON PROFIL</div>
+      <button class="panel-close" onclick="closeProfilePanel()">✕</button>
+    </div>
+    <div class="profile-wrap">
+      <div class="profile-header-card">
+        <div class="profile-av-big" id="prof-avatar-big">?</div>
+        <div class="profile-username" id="prof-username">Joueur</div>
+        <div class="profile-email" id="prof-email"></div>
+        <div class="profile-rank-badge">
+          <span>⭐</span>
+          <span id="prof-rank-badge">Rang #-</span>
+        </div>
+      </div>
+      <div class="profile-stats">
+        <div class="profile-stat-card">
+          <span class="profile-stat-val" id="prof-tiles">0</span>
+          <span class="profile-stat-lbl">Tiles conquis</span>
+        </div>
+        <div class="profile-stat-card">
+          <span class="profile-stat-val" id="prof-fortune">0</span>
+          <span class="profile-stat-lbl">Fortune (Mt)</span>
+        </div>
+        <div class="profile-stat-card">
+          <span class="profile-stat-val" id="prof-income">0.0</span>
+          <span class="profile-stat-lbl">Mt/heure</span>
+        </div>
+        <div class="profile-stat-card">
+          <span class="profile-stat-val" id="prof-conquests">0</span>
+          <span class="profile-stat-lbl">Conquêtes</span>
+        </div>
+      </div>
+      <button class="btn-danger" onclick="logout()">🚪 Déconnexion</button>
+    </div>
+  </div>
+</div>
+
+<!-- HELP PANEL -->
+<div id="help-panel" class="panel-overlay hidden" onclick="closeHelpPanel(event)">
+  <div class="panel-sheet">
+    <div class="panel-header">
+      <span>❓</span>
+      <div class="panel-title">COMMENT JOUER</div>
+      <button class="panel-close" onclick="closeHelpPanel()">✕</button>
+    </div>
+    <div class="help-wrap">
+      <div class="help-card">
+        <div class="help-icon">📍</div>
+        <div>
+          <h3>Localisation</h3>
+          <p>Le jeu utilise ta position GPS réelle pour placer tes tiles sur la carte du monde. Autorise la localisation pour jouer.</p>
+        </div>
+      </div>
+      <div class="help-card">
+        <div class="help-icon">🚩</div>
+        <div>
+          <h3>Conquérir un territoire</h3>
+          <p>Appuie sur le bouton 🚩 pour conquérir une zone de <strong>5×5 tiles</strong> autour de toi. Chaque tile = 20m×20m de terrain réel.</p>
+        </div>
+      </div>
+      <div class="help-card">
+        <div class="help-icon">💰</div>
+        <div>
+          <h3>Revenus passifs</h3>
+          <p>Chaque tile rapporte <strong>0.1 Mt/heure</strong> en passif — même quand tu n'es pas connecté. Plus tu conquiers, plus tu gagnes !</p>
+        </div>
+      </div>
+      <div class="help-card">
+        <div class="help-icon">🏆</div>
+        <div>
+          <h3>Classement</h3>
+          <p>Comparetoi aux autres joueurs du monde entier. Le joueur avec le plus de tiles gagne le titre de <strong>Maître du Monde</strong>.</p>
+        </div>
+      </div>
+      <div class="help-card">
+        <div class="help-icon">🌍</div>
+        <div>
+          <h3>Zone de conquête</h3>
+          <p>Le cercle bleu en pointillés sur la carte montre ta zone de conquête (100m de rayon). Déplace-toi pour conquérir de nouvelles régions !</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FIREBASE + GAME SCRIPTS -->
+<script type="module">
+// ============================================================
+// FIREBASE CONFIG — Remplace par ta propre config Firebase !
+// ============================================================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, orderBy, limit, getDocs, increment, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ⚠️ REMPLACE CES VALEURS PAR TA CONFIG FIREBASE
+const firebaseConfig = {
+  apiKey: "AIzaSyDEMO_REPLACE_WITH_YOUR_KEY",
+  authDomain: "terraconquest-demo.firebaseapp.com",
+  projectId: "terraconquest-demo",
+  storageBucket: "terraconquest-demo.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef123456"
+};
+
+// ============================================================
+// INIT FIREBASE
+// ============================================================
+let app, auth, db, googleProvider;
+let isFirebaseReady = false;
+let useDemoMode = false;
+
+try {
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+  googleProvider = new GoogleAuthProvider();
+  isFirebaseReady = true;
+} catch(e) {
+  console.warn("Firebase non configuré, mode démo activé");
+  useDemoMode = true;
+}
+
+// ============================================================
+// GAME STATE
+// ============================================================
+window.gameState = {
+  user: null,
+  userData: {
+    username: "Joueur",
+    tiles: 0,
+    fortune: 0,
+    income: 0,
+    conquests: 0,
+    lastOnline: null,
+    tilesList: []
+  },
+  map: null,
+  playerMarker: null,
+  rangeCircle: null,
+  tileLayerGroup: null,
+  position: null,
+  watchId: null,
+  passiveTimer: null,
+  leaderboardData: [],
+  myRank: null,
+  isConquering: false,
+  colors: ['#00c8ff','#00ff88','#ff6b00','#ff3355','#ffd700','#b44fff','#ff4da6','#4dffb4']
+};
+
+const GS = window.gameState;
+
+// ============================================================
+// DEMO MODE — données locales si Firebase pas configuré
+// ============================================================
+function initDemoMode() {
+  useDemoMode = true;
+  const saved = JSON.parse(localStorage.getItem('terra_demo') || '{}');
+  GS.userData = {
+    username: saved.username || 'Commandant',
+    tiles: saved.tiles || 0,
+    fortune: saved.fortune || 0,
+    income: saved.income || 0,
+    conquests: saved.conquests || 0,
+    lastOnline: saved.lastOnline || Date.now(),
+    tilesList: saved.tilesList || [],
+    color: saved.color || GS.colors[0]
+  };
+  GS.user = { uid: 'demo', email: 'demo@terra.game', displayName: GS.userData.username };
+  calcPassiveIncome();
+  startApp();
+}
+
+function saveDemoData() {
+  if (!useDemoMode) return;
+  localStorage.setItem('terra_demo', JSON.stringify(GS.userData));
+}
+
+// ============================================================
+// SPLASH → AUTH
+// ============================================================
+setTimeout(() => {
+  document.getElementById('splash').classList.add('out');
+  setTimeout(() => {
+    document.getElementById('splash').style.display = 'none';
+    if (useDemoMode) {
+      initDemoMode();
+    } else if (isFirebaseReady) {
+      onAuthStateChanged(auth, handleAuthState);
+    } else {
+      initDemoMode();
+    }
+  }, 600);
+}, 2200);
+
+function handleAuthState(user) {
+  if (user) {
+    GS.user = user;
+    loadUserData(user).then(() => startApp());
+  } else {
+    document.getElementById('auth-screen').classList.remove('hidden');
+  }
+}
+
+// ============================================================
+// AUTH FUNCTIONS
+// ============================================================
+window.showLogin = function() {
+  document.getElementById('login-form-wrap').style.display = 'block';
+  document.getElementById('register-form-wrap').style.display = 'none';
+};
+window.showRegister = function() {
+  document.getElementById('login-form-wrap').style.display = 'none';
+  document.getElementById('register-form-wrap').style.display = 'block';
+};
+
+window.loginWithEmail = async function() {
+  if (useDemoMode) { initDemoMode(); return; }
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  if (!email || !pass) { errEl.textContent = 'Remplis tous les champs.'; errEl.style.display = 'block'; return; }
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    errEl.textContent = getAuthError(e.code);
+    errEl.style.display = 'block';
+  }
+};
+
+window.registerWithEmail = async function() {
+  if (useDemoMode) { initDemoMode(); return; }
+  const username = document.getElementById('reg-username').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass = document.getElementById('reg-password').value;
+  const errEl = document.getElementById('reg-error');
+  errEl.style.display = 'none';
+  if (!username || !email || !pass) { errEl.textContent = 'Remplis tous les champs.'; errEl.style.display = 'block'; return; }
+  if (pass.length < 6) { errEl.textContent = 'Mot de passe trop court (6 car. min).'; errEl.style.display = 'block'; return; }
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await updateProfile(cred.user, { displayName: username });
+    await createUserDoc(cred.user, username);
+  } catch(e) {
+    errEl.textContent = getAuthError(e.code);
+    errEl.style.display = 'block';
+  }
+};
+
+window.loginWithGoogle = async function() {
+  if (useDemoMode) { initDemoMode(); return; }
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    const user = result.user;
+    const docRef = doc(db, 'users', user.uid);
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) {
+      await createUserDoc(user, user.displayName || 'Joueur');
+    }
+  } catch(e) {
+    showToast('Erreur Google: ' + e.message, 'error');
+  }
+};
+
+window.logout = async function() {
+  closeProfilePanel();
+  if (useDemoMode) {
+    saveDemoData();
+    GS.user = null;
+    stopGame();
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('auth-screen').classList.remove('hidden');
+    return;
+  }
+  try { await signOut(auth); } catch(e) {}
+  stopGame();
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('auth-screen').classList.remove('hidden');
+};
+
+function getAuthError(code) {
+  const map = {
+    'auth/user-not-found': 'Aucun compte avec cet email.',
+    'auth/wrong-password': 'Mot de passe incorrect.',
+    'auth/email-already-in-use': 'Email déjà utilisé.',
+    'auth/invalid-email': 'Email invalide.',
+    'auth/weak-password': 'Mot de passe trop faible.',
+    'auth/invalid-credential': 'Email ou mot de passe incorrect.'
+  };
+  return map[code] || 'Erreur: ' + code;
+}
+
+// ============================================================
+// FIRESTORE USER
+// ============================================================
+async function createUserDoc(user, username) {
+  const color = GS.colors[Math.floor(Math.random() * GS.colors.length)];
+  await setDoc(doc(db, 'users', user.uid), {
+    username, email: user.email, color,
+    tiles: 0, fortune: 0, income: 0, conquests: 0,
+    lastOnline: Date.now(),
+    tilesList: [], createdAt: serverTimestamp()
+  });
+}
+
+async function loadUserData(user) {
+  if (!db) return;
+  const snap = await getDoc(doc(db, 'users', user.uid));
+  if (snap.exists()) {
+    GS.userData = snap.data();
+    calcPassiveIncome();
+  } else {
+    await createUserDoc(user, user.displayName || 'Joueur');
+    GS.userData = { username: user.displayName || 'Joueur', tiles: 0, fortune: 0, income: 0, conquests: 0, lastOnline: Date.now(), tilesList: [], color: GS.colors[0] };
+  }
+}
+
+async function saveUserData() {
+  if (useDemoMode) { saveDemoData(); return; }
+  if (!db || !GS.user) return;
+  try {
+    await setDoc(doc(db, 'users', GS.user.uid), GS.userData, { merge: true });
+  } catch(e) { console.warn('Save error:', e); }
+}
+
+// ============================================================
+// PASSIVE INCOME CALC
+// ============================================================
+function calcPassiveIncome() {
+  // 0.1 Mt per tile per hour
+  GS.userData.income = GS.userData.tiles * 0.1;
+  // Add offline earnings
+  if (GS.userData.lastOnline) {
+    const hoursOffline = (Date.now() - GS.userData.lastOnline) / 3600000;
+    const earned = Math.min(hoursOffline * GS.userData.income, GS.userData.income * 24); // cap 24h
+    GS.userData.fortune = (GS.userData.fortune || 0) + earned;
+    if (earned > 0.001) {
+      setTimeout(() => showToast(`+${earned.toFixed(3)} Mt gagnés hors-ligne ! 💰`, 'success'), 1500);
+    }
+  }
+  GS.userData.lastOnline = Date.now();
+}
+
+// ============================================================
+// START APP
+// ============================================================
+function startApp() {
+  document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  updateUI();
+  initMap();
+  startPassiveTimer();
+  startGeolocation();
+}
+
+function stopGame() {
+  if (GS.watchId) navigator.geolocation.clearWatch(GS.watchId);
+  if (GS.passiveTimer) clearInterval(GS.passiveTimer);
+  if (GS.map) { GS.map.remove(); GS.map = null; }
+}
+
+// ============================================================
+// UI UPDATE
+// ============================================================
+function updateUI() {
+  const u = GS.userData;
+  const initials = (u.username || 'J')[0].toUpperCase();
+  const color = u.color || GS.colors[0];
+
+  // Topbar
+  document.getElementById('tb-tiles').textContent = u.tiles || 0;
+  document.getElementById('tb-money').textContent = formatMoney(u.fortune || 0) + ' Mt';
+  const av = document.getElementById('topbar-avatar');
+  av.textContent = initials;
+  av.style.background = color;
+
+  // Revenue ticker
+  document.getElementById('ticker-money').textContent = formatMoney(u.fortune || 0) + ' Mt';
+  document.getElementById('ticker-rate').textContent = '+' + (u.income || 0).toFixed(1) + ' Mt/h passif';
+  document.getElementById('ticker-tiles-info').textContent = (u.tiles || 0) + ' tiles';
+
+  // Profile
+  const profAv = document.getElementById('prof-avatar-big');
+  profAv.textContent = initials;
+  profAv.style.background = color;
+  document.getElementById('prof-username').textContent = u.username || 'Joueur';
+  document.getElementById('prof-email').textContent = GS.user?.email || '';
+  document.getElementById('prof-tiles').textContent = u.tiles || 0;
+  document.getElementById('prof-fortune').textContent = formatMoney(u.fortune || 0);
+  document.getElementById('prof-income').textContent = (u.income || 0).toFixed(1);
+  document.getElementById('prof-conquests').textContent = u.conquests || 0;
+  if (GS.myRank) {
+    document.getElementById('prof-rank-badge').textContent = 'Rang #' + GS.myRank;
+  }
+
+  // LB my stats
+  document.getElementById('my-tiles-val').textContent = u.tiles || 0;
+  document.getElementById('my-income-val').textContent = (u.income || 0).toFixed(1);
+  if (GS.myRank) document.getElementById('my-rank-val').textContent = '#' + GS.myRank;
+}
+
+function formatMoney(n) {
+  if (n >= 1e9) return (n/1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return (n/1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(2) + 'K';
+  return n.toFixed(3);
+}
+
+// ============================================================
+// LEAFLET MAP
+// ============================================================
+function initMap() {
+  if (GS.map) return;
+  GS.map = L.map('map', {
+    zoomControl: false,
+    attributionControl: false,
+    minZoom: 3, maxZoom: 18
+  }).setView([48.8566, 2.3522], 15);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    subdomains: 'abc'
+  }).addTo(GS.map);
+
+  // Zoom control top-right
+  L.control.zoom({ position: 'topright' }).addTo(GS.map);
+
+  // Tile layer group
+  GS.tileLayerGroup = L.layerGroup().addTo(GS.map);
+
+  // Draw existing tiles
+  drawAllTiles();
+}
+
+function drawAllTiles() {
+  if (!GS.tileLayerGroup) return;
+  GS.tileLayerGroup.clearLayers();
+  const tiles = GS.userData.tilesList || [];
+  tiles.forEach(tile => drawTile(tile));
+}
+
+function drawTile(tile) {
+  if (!GS.map || !GS.tileLayerGroup) return;
+  const color = tile.color || (GS.userData.color || GS.colors[0]);
+  const rect = L.rectangle(
+    [[tile.s, tile.w], [tile.n, tile.e]],
+    {
+      color: color,
+      fillColor: color,
+      fillOpacity: 0.3,
+      weight: 1,
+      opacity: 0.7
+    }
+  );
+  rect.addTo(GS.tileLayerGroup);
+}
+
+// ============================================================
+// GEOLOCATION
+// ============================================================
+function startGeolocation() {
+  if (!navigator.geolocation) {
+    showToast('Géolocalisation non supportée', 'error');
+    return;
+  }
+  GS.watchId = navigator.geolocation.watchPosition(
+    onPosition, onGeoError,
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+  );
+}
+
+function onPosition(pos) {
+  const { latitude: lat, longitude: lng } = pos.coords;
+  GS.position = { lat, lng };
+  updatePlayerMarker(lat, lng);
+  updateRangeCircle(lat, lng);
+}
+
+function onGeoError(err) {
+  if (err.code === 1) {
+    showToast('❌ Localisation refusée. Active-la pour jouer.', 'error');
+  } else {
+    showToast('GPS en attente...', 'warning');
+  }
+  // Use demo position Paris
+  GS.position = { lat: 48.8566, lng: 2.3522 };
+  updatePlayerMarker(48.8566, 2.3522);
+  updateRangeCircle(48.8566, 2.3522);
+}
+
+function updatePlayerMarker(lat, lng) {
+  if (!GS.map) return;
+  if (GS.playerMarker) {
+    GS.playerMarker.setLatLng([lat, lng]);
+  } else {
+    const icon = L.divIcon({
+      html: '<div class="player-marker"></div>',
+      iconSize: [16, 16], iconAnchor: [8, 8], className: ''
+    });
+    GS.playerMarker = L.marker([lat, lng], { icon, zIndexOffset: 1000 }).addTo(GS.map);
+  }
+}
+
+function updateRangeCircle(lat, lng) {
+  if (!GS.map) return;
+  if (GS.rangeCircle) {
+    GS.rangeCircle.setLatLng([lat, lng]);
+  } else {
+    GS.rangeCircle = L.circle([lat, lng], {
+      radius: 100,
+      className: 'conquest-range-circle',
+      dashArray: '6, 4',
+      weight: 2
+    }).addTo(GS.map);
+  }
+}
+
+window.locateMe = function() {
+  if (!GS.position || !GS.map) return;
+  GS.map.setView([GS.position.lat, GS.position.lng], 17, { animate: true });
+};
+
+// ============================================================
+// CONQUER FUNCTION
+// ============================================================
+window.conquerArea = async function() {
+  if (GS.isConquering) return;
+  if (!GS.position) { showToast('🗺️ Position GPS non disponible', 'warning'); return; }
+
+  GS.isConquering = true;
+  const btn = document.getElementById('conquer-btn');
+  btn.classList.add('loading');
+  btn.innerHTML = '<div class="spinner" style="width:24px;height:24px;border-width:3px;"></div>';
+
+  const { lat, lng } = GS.position;
+  const newTiles = [];
+  const tileSize = 20 / 111320; // 20m in degrees lat
+  const tileSize_lng = 20 / (111320 * Math.cos(lat * Math.PI / 180));
+
+  // Generate 5x5 grid centered on player
+  for (let dx = -2; dx <= 2; dx++) {
+    for (let dy = -2; dy <= 2; dy++) {
+      const centerLat = lat + (dy * tileSize);
+      const centerLng = lng + (dx * tileSize_lng);
+      const s = centerLat - tileSize / 2;
+      const n = centerLat + tileSize / 2;
+      const w = centerLng - tileSize_lng / 2;
+      const e = centerLng + tileSize_lng / 2;
+      const tileId = `${Math.round(s * 10000)}_${Math.round(w * 10000)}`;
+      newTiles.push({ id: tileId, s, n, w, e, color: GS.userData.color || GS.colors[0] });
+    }
+  }
+
+  // Filter out already owned tiles
+  const existingIds = new Set((GS.userData.tilesList || []).map(t => t.id));
+  const toAdd = newTiles.filter(t => !existingIds.has(t.id));
+
+  if (toAdd.length === 0) {
+    showToast('⚡ Zone déjà conquise ! Déplace-toi.', 'warning');
+    btn.classList.remove('loading'); btn.innerHTML = '🚩';
+    GS.isConquering = false;
+    return;
+  }
+
+  // Add tiles
+  GS.userData.tilesList = [...(GS.userData.tilesList || []), ...toAdd];
+  GS.userData.tiles = GS.userData.tilesList.length;
+  GS.userData.conquests = (GS.userData.conquests || 0) + 1;
+  GS.userData.income = GS.userData.tiles * 0.1;
+  GS.userData.lastOnline = Date.now();
+
+  // Draw new tiles
+  toAdd.forEach(tile => drawTile(tile));
+
+  // Save
+  await saveUserData();
+
+  // Effects
+  flashConquest();
+  showToast(`🚩 +${toAdd.length} tiles conquis ! (+${(toAdd.length * 0.1).toFixed(1)} Mt/h)`, 'success');
+  updateUI();
+
+  btn.classList.remove('loading');
+  btn.innerHTML = '🚩';
+  GS.isConquering = false;
+};
+
+function flashConquest() {
+  const flash = document.createElement('div');
+  flash.className = 'conquest-flash';
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 800);
+}
+
+// ============================================================
+// PASSIVE INCOME TIMER
+// ============================================================
+function startPassiveTimer() {
+  // Update every second (income per second = income/3600)
+  GS.passiveTimer = setInterval(() => {
+    const perSec = (GS.userData.income || 0) / 3600;
+    GS.userData.fortune = (GS.userData.fortune || 0) + perSec;
+    GS.userData.lastOnline = Date.now();
+    // Update display every tick
+    document.getElementById('tb-money').textContent = formatMoney(GS.userData.fortune) + ' Mt';
+    document.getElementById('ticker-money').textContent = formatMoney(GS.userData.fortune) + ' Mt';
+    document.getElementById('prof-fortune').textContent = formatMoney(GS.userData.fortune);
+  }, 1000);
+
+  // Save to DB every 30s
+  setInterval(() => saveUserData(), 30000);
+}
+
+// ============================================================
+// LEADERBOARD
+// ============================================================
+window.openLeaderboard = async function() {
+  document.getElementById('lb-panel').classList.remove('hidden');
+  loadLeaderboard();
+};
+
+async function loadLeaderboard() {
+  const lbList = document.getElementById('lb-list');
+
+  if (useDemoMode) {
+    // Demo leaderboard
+    const demoPlayers = [
+      { username: 'CyberWarlord', tiles: 1247, fortune: 15823.4, color: '#ff6b00' },
+      { username: 'QuantumConq', tiles: 986, fortune: 12103.7, color: '#b44fff' },
+      { username: 'NeoEmperor', tiles: 742, fortune: 9014.2, color: '#ff3355' },
+      { username: 'TechOverlord', tiles: 621, fortune: 7841.1, color: '#ffd700' },
+      { username: 'DataDuke', tiles: 489, fortune: 5923.3, color: '#00ff88' },
+      { username: GS.userData.username, tiles: GS.userData.tiles, fortune: GS.userData.fortune, color: GS.userData.color, isMe: true },
+    ];
+    demoPlayers.sort((a,b) => b.tiles - a.tiles);
+    renderLeaderboard(demoPlayers);
+    return;
+  }
+
+  try {
+    const q = query(collection(db, 'users'), orderBy('tiles', 'desc'), limit(50));
+    const snap = await getDocs(q);
+    const players = snap.docs.map(d => ({ ...d.data(), uid: d.id }));
+    GS.leaderboardData = players;
+
+    const myIdx = players.findIndex(p => p.uid === GS.user?.uid);
+    GS.myRank = myIdx >= 0 ? myIdx + 1 : null;
+    if (GS.myRank) {
+      document.getElementById('my-rank-val').textContent = '#' + GS.myRank;
+      document.getElementById('prof-rank-badge').textContent = 'Rang #' + GS.myRank;
+    }
+
+    const withMe = players.map((p, i) => ({ ...p, isMe: p.uid === GS.user?.uid }));
+    renderLeaderboard(withMe);
+  } catch(e) {
+    lbList.innerHTML = '<div style="color:var(--text2);padding:20px;text-align:center;">Impossible de charger le classement.</div>';
+  }
+}
+
+function renderLeaderboard(players) {
+  const lbList = document.getElementById('lb-list');
+  if (players.length === 0) {
+    lbList.innerHTML = '<div style="color:var(--text2);padding:20px;text-align:center;">Aucun joueur encore. Sois le premier ! 🏆</div>';
+    return;
+  }
+  lbList.innerHTML = players.slice(0, 50).map((p, i) => {
+    const rank = i + 1;
+    const rankClass = rank === 1 ? 'top1' : rank === 2 ? 'top2' : rank === 3 ? 'top3' : '';
+    const meClass = p.isMe ? 'me' : '';
+    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+    const color = p.color || '#00c8ff';
+    const income = (p.tiles || 0) * 0.1;
+    return `
+    <div class="lb-item ${rankClass} ${meClass}">
+      <div class="lb-rank">${medal}</div>
+      <div class="lb-avatar" style="background:${color}">${(p.username||'?')[0].toUpperCase()}</div>
+      <div class="lb-info">
+        <div class="lb-name">${p.username || 'Joueur'}${p.isMe ? ' <span style="color:var(--cyan);font-size:10px;">(moi)</span>' : ''}</div>
+        <div class="lb-tiles">🗺️ ${p.tiles || 0} tiles</div>
+      </div>
+      <div>
+        <div class="lb-revenue">+${income.toFixed(1)}</div>
+        <div class="lb-revenue-lbl">Mt/h</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.closeLbPanel = function(e) {
+  if (!e || e.target === document.getElementById('lb-panel')) {
+    document.getElementById('lb-panel').classList.add('hidden');
+  }
+};
+
+// ============================================================
+// PROFILE
+// ============================================================
+window.openProfile = function() {
+  updateUI();
+  if (GS.leaderboardData.length > 0) {
+    const idx = GS.leaderboardData.findIndex(p => p.uid === GS.user?.uid);
+    GS.myRank = idx >= 0 ? idx + 1 : null;
+  }
+  document.getElementById('profile-panel').classList.remove('hidden');
+};
+window.closeProfilePanel = function(e) {
+  if (!e || e.target === document.getElementById('profile-panel')) {
+    document.getElementById('profile-panel').classList.add('hidden');
+  }
+};
+
+// ============================================================
+// HELP
+// ============================================================
+window.openHelp = function() { document.getElementById('help-panel').classList.remove('hidden'); };
+window.closeHelpPanel = function(e) {
+  if (!e || e.target === document.getElementById('help-panel')) {
+    document.getElementById('help-panel').classList.add('hidden');
+  }
+};
+
+// ============================================================
+// MAP NAV
+// ============================================================
+window.showMap = function() {
+  document.getElementById('help-panel').classList.add('hidden');
+  document.getElementById('lb-panel').classList.add('hidden');
+  document.getElementById('profile-panel').classList.add('hidden');
+  if (GS.position && GS.map) {
+    GS.map.setView([GS.position.lat, GS.position.lng], 16, { animate: true });
+  }
+};
+
+// ============================================================
+// TOAST
+// ============================================================
+window.showToast = function(msg, type = 'info') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.style.opacity = '0', 2800);
+  setTimeout(() => t.remove(), 3200);
+};
+
+</script>
+</body>
+</html>
