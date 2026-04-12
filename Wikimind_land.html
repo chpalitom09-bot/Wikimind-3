@@ -885,39 +885,31 @@ body {
 <!-- FIREBASE + GAME SCRIPTS -->
 <script type="module">
 // ============================================================
-// FIREBASE CONFIG — Remplace par ta propre config Firebase !
+// FIREBASE CONFIG — Même projet que WikiMind-3 → session partagée
 // ============================================================
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, orderBy, limit, getDocs, increment, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
-// ⚠️ REMPLACE CES VALEURS PAR TA CONFIG FIREBASE
+// ✅ Même config que WikiMind-3 → auth partagée automatiquement (même domaine)
 const firebaseConfig = {
-  apiKey: "AIzaSyDEMO_REPLACE_WITH_YOUR_KEY",
-  authDomain: "terraconquest-demo.firebaseapp.com",
-  projectId: "terraconquest-demo",
-  storageBucket: "terraconquest-demo.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef123456"
+  apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+  authDomain: "wikimind-3-comments.firebaseapp.com",
+  databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "wikimind-3-comments",
+  storageBucket: "wikimind-3-comments.firebasestorage.app",
+  messagingSenderId: "137479541640",
+  appId: "1:137479541640:web:4ed2510a9908055052e03d"
 };
 
 // ============================================================
-// INIT FIREBASE
+// INIT FIREBASE — même projet WikiMind-3, session partagée
 // ============================================================
-let app, auth, db, googleProvider;
-let isFirebaseReady = false;
-let useDemoMode = false;
-
-try {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-  googleProvider = new GoogleAuthProvider();
-  isFirebaseReady = true;
-} catch(e) {
-  console.warn("Firebase non configuré, mode démo activé");
-  useDemoMode = true;
-}
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 // ============================================================
 // GAME STATE
@@ -949,45 +941,15 @@ window.gameState = {
 const GS = window.gameState;
 
 // ============================================================
-// DEMO MODE — données locales si Firebase pas configuré
-// ============================================================
-function initDemoMode() {
-  useDemoMode = true;
-  const saved = JSON.parse(localStorage.getItem('terra_demo') || '{}');
-  GS.userData = {
-    username: saved.username || 'Commandant',
-    tiles: saved.tiles || 0,
-    fortune: saved.fortune || 0,
-    income: saved.income || 0,
-    conquests: saved.conquests || 0,
-    lastOnline: saved.lastOnline || Date.now(),
-    tilesList: saved.tilesList || [],
-    color: saved.color || GS.colors[0]
-  };
-  GS.user = { uid: 'demo', email: 'demo@terra.game', displayName: GS.userData.username };
-  calcPassiveIncome();
-  startApp();
-}
-
-function saveDemoData() {
-  if (!useDemoMode) return;
-  localStorage.setItem('terra_demo', JSON.stringify(GS.userData));
-}
-
-// ============================================================
-// SPLASH → AUTH
+// SPLASH → AUTH — session partagée WikiMind-3 via Firebase
 // ============================================================
 setTimeout(() => {
   document.getElementById('splash').classList.add('out');
   setTimeout(() => {
     document.getElementById('splash').style.display = 'none';
-    if (useDemoMode) {
-      initDemoMode();
-    } else if (isFirebaseReady) {
-      onAuthStateChanged(auth, handleAuthState);
-    } else {
-      initDemoMode();
-    }
+    // Firebase persiste la session en IndexedDB — si le joueur est
+    // déjà connecté sur WikiMind-3 (même domaine), il arrive directement en jeu.
+    onAuthStateChanged(auth, handleAuthState);
   }, 600);
 }, 2200);
 
@@ -1013,7 +975,6 @@ window.showRegister = function() {
 };
 
 window.loginWithEmail = async function() {
-  if (useDemoMode) { initDemoMode(); return; }
   const email = document.getElementById('login-email').value.trim();
   const pass = document.getElementById('login-password').value;
   const errEl = document.getElementById('login-error');
@@ -1028,7 +989,6 @@ window.loginWithEmail = async function() {
 };
 
 window.registerWithEmail = async function() {
-  if (useDemoMode) { initDemoMode(); return; }
   const username = document.getElementById('reg-username').value.trim();
   const email = document.getElementById('reg-email').value.trim();
   const pass = document.getElementById('reg-password').value;
@@ -1047,11 +1007,10 @@ window.registerWithEmail = async function() {
 };
 
 window.loginWithGoogle = async function() {
-  if (useDemoMode) { initDemoMode(); return; }
   try {
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
-    const docRef = doc(db, 'users', user.uid);
+    const docRef = doc(db, 'terra_players', user.uid);
     const snap = await getDoc(docRef);
     if (!snap.exists()) {
       await createUserDoc(user, user.displayName || 'Joueur');
@@ -1063,15 +1022,7 @@ window.loginWithGoogle = async function() {
 
 window.logout = async function() {
   closeProfilePanel();
-  if (useDemoMode) {
-    saveDemoData();
-    GS.user = null;
-    stopGame();
-    document.getElementById('app').classList.add('hidden');
-    document.getElementById('auth-screen').classList.remove('hidden');
-    return;
-  }
-  try { await signOut(auth); } catch(e) {}
+  try { await signOut(auth); } catch(e) { console.warn(e); }
   stopGame();
   document.getElementById('app').classList.add('hidden');
   document.getElementById('auth-screen').classList.remove('hidden');
@@ -1094,7 +1045,7 @@ function getAuthError(code) {
 // ============================================================
 async function createUserDoc(user, username) {
   const color = GS.colors[Math.floor(Math.random() * GS.colors.length)];
-  await setDoc(doc(db, 'users', user.uid), {
+  await setDoc(doc(db, 'terra_players', user.uid), {
     username, email: user.email, color,
     tiles: 0, fortune: 0, income: 0, conquests: 0,
     lastOnline: Date.now(),
@@ -1103,22 +1054,21 @@ async function createUserDoc(user, username) {
 }
 
 async function loadUserData(user) {
-  if (!db) return;
-  const snap = await getDoc(doc(db, 'users', user.uid));
+  const snap = await getDoc(doc(db, 'terra_players', user.uid));
   if (snap.exists()) {
     GS.userData = snap.data();
     calcPassiveIncome();
   } else {
-    await createUserDoc(user, user.displayName || 'Joueur');
-    GS.userData = { username: user.displayName || 'Joueur', tiles: 0, fortune: 0, income: 0, conquests: 0, lastOnline: Date.now(), tilesList: [], color: GS.colors[0] };
+    const color = GS.colors[Math.floor(Math.random() * GS.colors.length)];
+    GS.userData = { username: user.displayName || user.email.split('@')[0] || 'Joueur', tiles: 0, fortune: 0, income: 0, conquests: 0, lastOnline: Date.now(), tilesList: [], color };
+    await setDoc(doc(db, 'terra_players', user.uid), { ...GS.userData, createdAt: serverTimestamp() });
   }
 }
 
 async function saveUserData() {
-  if (useDemoMode) { saveDemoData(); return; }
-  if (!db || !GS.user) return;
+  if (!GS.user) return;
   try {
-    await setDoc(doc(db, 'users', GS.user.uid), GS.userData, { merge: true });
+    await setDoc(doc(db, 'terra_players', GS.user.uid), GS.userData, { merge: true });
   } catch(e) { console.warn('Save error:', e); }
 }
 
@@ -1421,23 +1371,8 @@ window.openLeaderboard = async function() {
 async function loadLeaderboard() {
   const lbList = document.getElementById('lb-list');
 
-  if (useDemoMode) {
-    // Demo leaderboard
-    const demoPlayers = [
-      { username: 'CyberWarlord', tiles: 1247, fortune: 15823.4, color: '#ff6b00' },
-      { username: 'QuantumConq', tiles: 986, fortune: 12103.7, color: '#b44fff' },
-      { username: 'NeoEmperor', tiles: 742, fortune: 9014.2, color: '#ff3355' },
-      { username: 'TechOverlord', tiles: 621, fortune: 7841.1, color: '#ffd700' },
-      { username: 'DataDuke', tiles: 489, fortune: 5923.3, color: '#00ff88' },
-      { username: GS.userData.username, tiles: GS.userData.tiles, fortune: GS.userData.fortune, color: GS.userData.color, isMe: true },
-    ];
-    demoPlayers.sort((a,b) => b.tiles - a.tiles);
-    renderLeaderboard(demoPlayers);
-    return;
-  }
-
   try {
-    const q = query(collection(db, 'users'), orderBy('tiles', 'desc'), limit(50));
+    const q = query(collection(db, 'terra_players'), orderBy('tiles', 'desc'), limit(50));
     const snap = await getDocs(q);
     const players = snap.docs.map(d => ({ ...d.data(), uid: d.id }));
     GS.leaderboardData = players;
