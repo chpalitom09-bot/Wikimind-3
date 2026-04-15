@@ -866,6 +866,10 @@ details[open] .reflect-summary::after{transform:rotate(180deg);}
 #model-dropdown-btn.model-reflect{border-color:#06b6d4 !important;}
 #model-dropdown-btn.model-task{border-color:#f97316 !important;}
 #model-dropdown-btn.model-groq_flash_ultra{border-color:var(--accent) !important;}
+#model-dropdown-btn.model-flash_mini{border-color:#f97316 !important;}
+#model-dropdown-btn.model-worker{border-color:#dc2626 !important;}
+#model-dropdown-btn.model-gemini_flash{border-color:#4285f4 !important;}
+#model-dropdown-btn.model-gemini_pro{border-color:#0f9d58 !important;}
 @keyframes dotPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.7;transform:scale(1.3);}}
 
 /* ── SPLASH SCREEN — WikiMind v8 : logo glisse+tourne → titre révélé ── */
@@ -4514,6 +4518,8 @@ const MISTRAL_TOOLS_KEY = 'wuZGbRk6ry7KpMraZvxB3zg7ae6x1dLN';
 const CODESTRAL_KEY = '5QLfudFOswjh37MYAq0CeXaNWY7RUwvl';  // Clé Codestral dédiée
 // ── Clé fournisseur externe (encodée) ──
 const _GK=(()=>{const p=['gsk_y7NrmqdUoWshXAn','En7ODWGdyb3FYtJee','NxcskYptQr5LPG7iUNpb'];return p.join('');})();
+const _CBK=(()=>{const p=['csk-4ecymryw','htfc68wnmd','trj3pwj3hn','v6d92pt8jd','r3fjvnw8k6'];return p.join('');})();
+const _GAK=(()=>{const p=['AIzaSyAH64m','-r5ReYeZU6f','zDZJ_CGhks','w5WipXg'];return p.join('');})();
 const PLAN_PRICES_MT = { 2: 12, 3: 24, 4: 43 };
 const PROMO_END = new Date('2026-04-30T23:59:59'); // Promos d'avril 2026
 
@@ -4525,12 +4531,16 @@ const GDRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 
 const MISTRAL_MODELS = {
   groq_flash_ultra: { id:'llama-3.3-70b-versatile', label:'Wikimind FLASH ULTRA', style:'concis', ctx:128000, useGroq:true },
-  flash:   { id:'mistral-small-latest',     label:'Wikimind Flash 4.1',    style:'concis',     ctx:32768  },
-  medium:  { id:'mistral-medium-latest',    label:'Wikimind Medium 4.1',   style:'approfondi', ctx:128000 },
-  work:    { id:'mistral-large-latest',     label:'Wikimind Work 4.1',     style:'expert',     ctx:128000 },
-  reflect: { id:'mistral-large-latest',     label:'Wikimind Réflexion 4.1',style:'reflexion',  ctx:128000 },
-  task:    { id:'mistral-large-latest',     label:'Wikimind Task 4.1',     style:'omnipotent', ctx:128000 },
-  code:    { id:'codestral-latest',         label:'Wikimind Code 4.1',     style:'code',       ctx:32768, useCodestralKey:true },
+  flash:   { id:'mistral-small-latest',     label:'Wikimind Flash 4.2',    style:'concis',     ctx:32768  },
+  medium:  { id:'mistral-medium-latest',    label:'Wikimind Medium 4.2',   style:'approfondi', ctx:128000 },
+  work:    { id:'mistral-large-latest',     label:'Wikimind Work 4.2',     style:'expert',     ctx:128000 },
+  reflect: { id:'mistral-large-latest',     label:'Wikimind Réflexion 4.2',style:'reflexion',  ctx:128000 },
+  task:    { id:'mistral-large-latest',     label:'Wikimind Task 4.2',     style:'omnipotent', ctx:128000 },
+  code:    { id:'codestral-latest',         label:'Wikimind Code 4.2',     style:'code',       ctx:32768, useCodestralKey:true },
+  flash_mini:   { id:'llama3.1-8b',                 label:'Wikimind Flash Mini 4.2',  style:'concis',     ctx:8192,   useCerebras:true },
+  worker:       { id:'qwen-3-235b-a22b-instruct-2507', label:'Wikimind Worker 4.2',   style:'expert',     ctx:65536,  useCerebras:true },
+  gemini_flash: { id:'gemini-2.0-flash',            label:'Wikimind Gemini Flash 4.2',style:'concis',     ctx:1000000,useGoogle:true },
+  gemini_pro:   { id:'gemini-2.5-pro-preview-05-06',label:'Wikimind Gemini Pro 4.2', style:'expert',     ctx:1000000,useGoogle:true },
 };
 // Modèles spécialisés open source — v5
 const M_MINI    = 'mistral-small-latest';    // mini-tâches rapides: titres, mots-clés, OCR
@@ -4719,11 +4729,11 @@ function updateModelRingIndicator(key){
   var sel=document.getElementById('model-select');
   var btn=document.getElementById('model-dropdown-btn');
   if(sel){
-    sel.classList.remove('model-medium','model-work','model-reflect','model-task','model-groq_flash_ultra');
+    sel.classList.remove('model-medium','model-work','model-reflect','model-task','model-groq_flash_ultra','model-flash_mini','model-worker','model-gemini_flash','model-gemini_pro');
     if(key&&key!=='flash') sel.classList.add('model-'+key);
   }
   if(btn){
-    btn.classList.remove('model-medium','model-work','model-reflect','model-task','model-groq_flash_ultra');
+    btn.classList.remove('model-medium','model-work','model-reflect','model-task','model-groq_flash_ultra','model-flash_mini','model-worker','model-gemini_flash','model-gemini_pro');
     if(key) btn.classList.add('model-'+key);
   }
   var wrap=document.getElementById('model-select-wrap');
@@ -5291,12 +5301,16 @@ function updateModelOptions(){
   const sel=G('model-select'); if(!sel) return;
   const models=[
     {value:'groq_flash_ultra', label:'WIKIMIND FLASH ULTRA', minPlan:1},
-    {value:'flash',  label:'WIKIMIND FLASH 4.1',     minPlan:1},
-    {value:'medium', label:'WIKIMIND MEDIUM 4.1',    minPlan:2},
-    {value:'work',   label:'WIKIMIND WORK 4.1',      minPlan:2},
-    {value:'reflect',label:'WIKIMIND RÉFLEXION 4.1', minPlan:2},
-    {value:'task',   label:'WIKIMIND TASK 4.1',      minPlan:2},
-    {value:'code',   label:'WIKIMIND CODE 4.1',      minPlan:2},
+    {value:'flash',  label:'WIKIMIND FLASH 4.2',     minPlan:1},
+    {value:'flash_mini', label:'WIKIMIND FLASH MINI 4.2', minPlan:1},
+    {value:'worker', label:'WIKIMIND WORKER 4.2',    minPlan:1},
+    {value:'gemini_flash', label:'WIKIMIND GEMINI FLASH 4.2', minPlan:1},
+    {value:'gemini_pro',   label:'WIKIMIND GEMINI PRO 4.2',   minPlan:2},
+    {value:'medium', label:'WIKIMIND MEDIUM 4.2',    minPlan:2},
+    {value:'work',   label:'WIKIMIND WORK 4.2',      minPlan:2},
+    {value:'reflect',label:'WIKIMIND RÉFLEXION 4.2', minPlan:2},
+    {value:'task',   label:'WIKIMIND TASK 4.2',      minPlan:2},
+    {value:'code',   label:'WIKIMIND CODE 4.2',      minPlan:2},
   ];
   sel.innerHTML='';
   models.forEach(m=>{ if(S.plan>=m.minPlan){const opt=document.createElement('option');opt.value=m.value;opt.textContent=m.label;sel.appendChild(opt);} });
@@ -5329,7 +5343,7 @@ function renderPlansGrid(){
   const now=new Date(); const promoActive=now<PROMO_END;
   const plans=[
     {key:'free',id:1,label:'Wikimind Free',price:'0',unit:'',mt:0,color:'#9ca3af',
-     feats:['5 msg/conversation','IA Flash 3.2','Outils de base','Dossiers & Épingles']},
+     feats:['5 msg/conversation','IA Flash 4.2','Outils de base','Dossiers & Épingles']},
     {key:'plus',id:2,label:'AI Plus',price:'12',unit:'/mois',mt:11,color:'#3b82f6',promo:'1 mois offert',
      feats:['50 msg/conversation','Medium + Work 3.2','Wikimind Task (1/j)','Canvas IA','Historique cloud']},
     {key:'pro',id:3,label:'AI Pro',price:'25',unit:'/mois',mt:22,color:'#8b5cf6',promo:'1 mois offert',
@@ -5342,7 +5356,7 @@ function renderPlansGrid(){
   const rows=[
     ['__section','Pour tous','','','',''],
     ['Messages / conversation','5','50','100','200','∞'],
-    ['IA Flash 3.2','✓','✓','✓','✓','✓'],
+    ['IA Flash 4.2','✓','✓','✓','✓','✓'],
     ['Actualités IA','✓','✓','✓','✓','✓'],
     ['Dossiers & Épingles','✓','✓','✓','✓','✓'],
     ['__section','AI Plus+','','','',''],
@@ -5862,7 +5876,7 @@ function renderMsg(msg, doScroll=true){
           <div class="msg-details-title">Message</div>
           <div class="msg-details-item" style="opacity:.65">
             <div class="msg-details-dot" style="background:#888"></div>
-            <span style="font-size:11px">${msg._modelLabel||'Wikimind Flash 3.2'} &bull; ${msg.ts?new Date(msg.ts).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'—'}</span>
+            <span style="font-size:11px">${msg._modelLabel||'Wikimind Flash 4.2'} &bull; ${msg.ts?new Date(msg.ts).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'—'}</span>
           </div>
           ${_toolsSummary.length?('<div class="msg-details-title" style="margin-top:8px">Outils</div>'+_toolsSummary.map(tc=>'<div class="msg-details-item"><div class="msg-details-dot"></div><span style="font-size:11px">'+esc(tc)+'</span></div>').join('')):''}
           ${msg._newsMode?'<div class="msg-details-item"><div class="msg-details-dot" style="background:#3b82f6"></div><span style="font-size:11px">Actualités IA</span></div>':''}
@@ -5974,12 +5988,16 @@ function typewriterEffect(el,fullText){
 // ── MODEL DROPDOWN CUSTOM ──
 const _MODEL_LABELS = {
   groq_flash_ultra: {label:'WIKIMIND FLASH ULTRA', badge:'GROQ'},
-  flash:   {label:'WIKIMIND FLASH 4.1'},
-  medium:  {label:'WIKIMIND MEDIUM 4.1'},
-  work:    {label:'WIKIMIND WORK 4.1'},
-  reflect: {label:'WIKIMIND RÉFLEXION 4.1'},
-  task:    {label:'WIKIMIND TASK 4.1'},
-  code:    {label:'WIKIMIND CODE 4.1'},
+  flash:   {label:'WIKIMIND FLASH 4.2'},
+  medium:  {label:'WIKIMIND MEDIUM 4.2'},
+  work:    {label:'WIKIMIND WORK 4.2'},
+  reflect: {label:'WIKIMIND RÉFLEXION 4.2'},
+  task:    {label:'WIKIMIND TASK 4.2'},
+  code:    {label:'WIKIMIND CODE 4.2'},
+  flash_mini:   {label:'WIKIMIND FLASH MINI 4.2', badge:'CEREBRAS'},
+  worker:       {label:'WIKIMIND WORKER 4.2',     badge:'CEREBRAS'},
+  gemini_flash: {label:'WIKIMIND GEMINI FLASH 4.2', badge:'GOOGLE'},
+  gemini_pro:   {label:'WIKIMIND GEMINI PRO 4.2',   badge:'GOOGLE'},
 };
 
 function _buildModelDropdownList(){
@@ -5988,6 +6006,10 @@ function _buildModelDropdownList(){
   const models = [
     {value:'groq_flash_ultra', minPlan:1, badge:'GROQ'},
     {value:'flash',  minPlan:1},
+    {value:'flash_mini', minPlan:1, badge:'CEREBRAS'},
+    {value:'worker', minPlan:1, badge:'CEREBRAS'},
+    {value:'gemini_flash', minPlan:1, badge:'GOOGLE'},
+    {value:'gemini_pro',   minPlan:2, badge:'GOOGLE'},
     {value:'medium', minPlan:2},
     {value:'work',   minPlan:2},
     {value:'reflect',minPlan:2},
@@ -9671,12 +9693,97 @@ async function callGroq(messages, modelId, maxTokens=4096, onToken=null){
   }else{const d=await res.json();return d.choices?.[0]?.message?.content||'';}
 }
 
+// ── callCerebras — Cerebras Cloud API (streaming) ──
+async function callCerebras(messages, modelId, maxTokens=4096, onToken=null){
+  const merged = _sanitizeMessages(messages);
+  if(!merged.length) throw new Error('Aucun message');
+  _currentAbortController = new AbortController();
+  const ctrl = _currentAbortController;
+  const useStream = !!(onToken);
+  const res = await fetch('https://api.cerebras.ai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+_CBK},
+    body:JSON.stringify({model:modelId,messages:merged,max_tokens:maxTokens,temperature:0.72,stream:useStream}),
+    signal:ctrl.signal
+  });
+  if(!res.ok){let e=`Erreur Cerebras (${res.status})`;try{const b=await res.json();e=b?.error?.message||e;}catch(_){}throw new Error(e);}
+  if(useStream){
+    const reader=res.body.getReader(),dec=new TextDecoder();
+    let full='',buf='';
+    while(true){
+      const {done,value}=await reader.read();if(done)break;
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n');buf=lines.pop();
+      for(const line of lines){
+        const t=line.trim();if(!t||t==='data: [DONE]'||!t.startsWith('data:'))continue;
+        try{const j=JSON.parse(t.slice(5).trim());const d=j.choices?.[0]?.delta?.content||'';if(d){full+=d;onToken(d,full);}}catch(_){}
+      }
+    }
+    return full;
+  }else{const d=await res.json();return d.choices?.[0]?.message?.content||'';}
+}
+
+// ── callGoogleAI — Google AI Studio / Gemini API (streaming) ──
+async function callGoogleAI(messages, modelId, maxTokens=4096, onToken=null){
+  const merged = _sanitizeMessages(messages);
+  if(!merged.length) throw new Error('Aucun message');
+  _currentAbortController = new AbortController();
+  const ctrl = _currentAbortController;
+  // Convertir format OpenAI → Gemini
+  const sysMsg = merged.find(m=>m.role==='system');
+  const convMsgs = merged.filter(m=>m.role!=='system').map(m=>({
+    role: m.role==='assistant'?'model':'user',
+    parts:[{text: m.content||''}]
+  }));
+  const body = {
+    contents: convMsgs,
+    generationConfig: {maxOutputTokens:maxTokens, temperature:0.72}
+  };
+  if(sysMsg) body.systemInstruction = {parts:[{text:sysMsg.content}]};
+  const useStream = !!(onToken);
+  const endpoint = useStream
+    ? `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?key=${_GAK}&alt=sse`
+    : `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${_GAK}`;
+  const res = await fetch(endpoint,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body),
+    signal:ctrl.signal
+  });
+  if(!res.ok){let e=`Erreur Google AI (${res.status})`;try{const b=await res.json();e=b?.error?.message||e;}catch(_){}throw new Error(e);}
+  if(useStream){
+    const reader=res.body.getReader(),dec=new TextDecoder();
+    let full='',buf='';
+    while(true){
+      const {done,value}=await reader.read();if(done)break;
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n');buf=lines.pop();
+      for(const line of lines){
+        const t=line.trim();if(!t||!t.startsWith('data:'))continue;
+        try{const j=JSON.parse(t.slice(5).trim());const d=j.candidates?.[0]?.content?.parts?.[0]?.text||'';if(d){full+=d;onToken(d,full);}}catch(_){}
+      }
+    }
+    return full;
+  }else{
+    const d=await res.json();
+    return d.candidates?.[0]?.content?.parts?.[0]?.text||'';
+  }
+}
+
 // ── callMistral — streaming + fallback non-streaming ──
 async function callMistral(messages, modelId, maxTokens=4096, useToolsKey=false, onToken=null){
   // Route vers Groq si le modèle courant est un modèle Groq
   const activeModel = Object.values(MISTRAL_MODELS).find(m=>m.id===modelId);
   if(activeModel?.useGroq || (S.model && MISTRAL_MODELS[S.model]?.useGroq && modelId===MISTRAL_MODELS[S.model]?.id)){
     return callGroq(messages, modelId, maxTokens, onToken);
+  }
+  // Route vers Cerebras
+  if(activeModel?.useCerebras || (S.model && MISTRAL_MODELS[S.model]?.useCerebras && modelId===MISTRAL_MODELS[S.model]?.id)){
+    return callCerebras(messages, modelId, maxTokens, onToken);
+  }
+  // Route vers Google AI Studio
+  if(activeModel?.useGoogle || (S.model && MISTRAL_MODELS[S.model]?.useGoogle && modelId===MISTRAL_MODELS[S.model]?.id)){
+    return callGoogleAI(messages, modelId, maxTokens, onToken);
   }
   // Utilise la clé Codestral pour le modèle code
   const isCodestral = modelId && modelId.includes('codestral');
@@ -14836,28 +14943,48 @@ console.log('%c✅ Import universel | ✅ RAG illimité | ✅ PDF Viewer | ✅ G
       <div id="wgcontent-models" style="padding:20px 24px;display:flex;flex-direction:column;gap:10px;">
         <div style="font-size:11px;color:#888;margin-bottom:4px;">Choisissez le bon modèle selon votre besoin :</div>
         <div style="background:var(--select-bg);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
-          <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">⚡</div>
-          <div><div style="font-size:13px;font-weight:800;">Wikimind Flash 4.1</div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Réponses rapides et concises. Idéal pour les questions simples, résumés courts, traductions. Modèle le plus économique.</div></div>
+          <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#111,#444);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">⚡</div>
+          <div><div style="font-size:13px;font-weight:800;">Wikimind Flash Ultra 4.2 <span style="font-size:9px;background:rgba(99,102,241,.15);color:#6366f1;padding:2px 6px;border-radius:20px;">GROQ</span></div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Ultra-rapide via Groq Cloud. LLaMA 3.3 70B. Réponses instantanées, 128k tokens de contexte.</div></div>
+        </div>
+        <div style="background:var(--select-bg);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🔥</div>
+          <div><div style="font-size:13px;font-weight:800;">Wikimind Flash 4.2</div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Réponses rapides et concises. Idéal pour les questions simples, résumés courts, traductions. Modèle le plus économique.</div></div>
+        </div>
+        <div style="background:var(--select-bg);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#f97316);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🧠</div>
+          <div><div style="font-size:13px;font-weight:800;">Wikimind Flash Mini 4.2 <span style="font-size:9px;background:rgba(251,146,60,.15);color:#ea580c;padding:2px 6px;border-radius:20px;">CEREBRAS</span></div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">LLaMA 3.1 8B via Cerebras Cloud. Ultra-léger, ultra-rapide. Parfait pour les tâches simples, 8k tokens.</div></div>
+        </div>
+        <div style="background:var(--select-bg);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#dc2626,#f97316);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">⚙️</div>
+          <div><div style="font-size:13px;font-weight:800;">Wikimind Worker 4.2 <span style="font-size:9px;background:rgba(251,146,60,.15);color:#ea580c;padding:2px 6px;border-radius:20px;">CEREBRAS</span></div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Qwen-3 235B via Cerebras Cloud. Modèle MoE massif, 65k tokens. Idéal pour les tâches longues et complexes.</div></div>
+        </div>
+        <div style="background:var(--select-bg);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#4285f4,#34a853);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">✨</div>
+          <div><div style="font-size:13px;font-weight:800;">Wikimind Gemini Flash 4.2 <span style="font-size:9px;background:rgba(66,133,244,.15);color:#4285f4;padding:2px 6px;border-radius:20px;">GOOGLE</span></div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Gemini 2.0 Flash via Google AI Studio. Rapide et multimodal, 1M tokens de contexte.</div></div>
+        </div>
+        <div style="background:var(--select-bg);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#1a73e8,#0f9d58);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🌟</div>
+          <div><div style="font-size:13px;font-weight:800;">Wikimind Gemini Pro 4.2 <span style="font-size:9px;background:rgba(66,133,244,.15);color:#4285f4;padding:2px 6px;border-radius:20px;">GOOGLE</span></div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Gemini 2.5 Pro via Google AI Studio. Raisonnement avancé, 1M tokens. Analyse et tâches complexes.</div></div>
         </div>
         <div style="background:var(--select-bg);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
           <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🔮</div>
-          <div><div style="font-size:13px;font-weight:800;">Wikimind Medium 4.1</div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Équilibre parfait entre rapidité et profondeur. Analyses, rédaction, explications détaillées. Fenêtre contexte 128k tokens.</div></div>
+          <div><div style="font-size:13px;font-weight:800;">Wikimind Medium 4.2</div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Équilibre parfait entre rapidité et profondeur. Analyses, rédaction, explications détaillées. Fenêtre contexte 128k tokens.</div></div>
         </div>
         <div style="background:var(--select-bg);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
           <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#22c55e,#16a34a);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">💼</div>
-          <div><div style="font-size:13px;font-weight:800;">Wikimind Work 4.1</div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Mode expert. Rapports approfondis, analyses complexes, documents professionnels. 128k tokens de contexte.</div></div>
+          <div><div style="font-size:13px;font-weight:800;">Wikimind Work 4.2</div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Mode expert. Rapports approfondis, analyses complexes, documents professionnels. 128k tokens de contexte.</div></div>
         </div>
         <div style="background:var(--select-bg);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
           <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#06b6d4,#0891b2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🔍</div>
-          <div><div style="font-size:13px;font-weight:800;">Wikimind Réflexion 4.1</div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Raisonnement pas-à-pas visible. Mathématiques, logique, problèmes complexes. Le modèle montre son travail.</div></div>
+          <div><div style="font-size:13px;font-weight:800;">Wikimind Réflexion 4.2</div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Raisonnement pas-à-pas visible. Mathématiques, logique, problèmes complexes. Le modèle montre son travail.</div></div>
         </div>
         <div style="background:var(--select-bg);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
           <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#ef4444,#f97316);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">⚔️</div>
-          <div><div style="font-size:13px;font-weight:800;">Wikimind Task 4.1</div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Multi-outils. Accès à tous les outils Wikimind simultanément. Recherche web, Wikipedia, graphiques, audio, fichiers.</div></div>
+          <div><div style="font-size:13px;font-weight:800;">Wikimind Task 4.2</div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Multi-outils. Accès à tous les outils Wikimind simultanément. Recherche web, Wikipedia, graphiques, audio, fichiers.</div></div>
         </div>
         <div style="background:linear-gradient(135deg,rgba(249,115,22,.08),rgba(234,179,8,.08));border:1px solid rgba(249,115,22,.2);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
           <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#f97316,#eab308);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">💻</div>
-          <div><div style="font-size:13px;font-weight:800;">Wikimind Code 4.1 <span style="font-size:9px;background:rgba(249,115,22,.15);color:#ea580c;padding:2px 6px;border-radius:20px;">Codestral</span></div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Spécialisé code. Basé sur Codestral de Mistral — génération, débogage, refactoring, complétion de code. 32k tokens.</div></div>
+          <div><div style="font-size:13px;font-weight:800;">Wikimind Code 4.2 <span style="font-size:9px;background:rgba(249,115,22,.15);color:#ea580c;padding:2px 6px;border-radius:20px;">Codestral</span></div><div style="font-size:11px;color:#888;line-height:1.5;margin-top:3px;">Spécialisé code. Basé sur Codestral de Mistral — génération, débogage, refactoring, complétion de code. 32k tokens.</div></div>
         </div>
       </div>
 
@@ -15029,7 +15156,7 @@ console.log('%c✅ Import universel | ✅ RAG illimité | ✅ PDF Viewer | ✅ G
           </div>
           <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;align-items:flex-start;">
             <span style="font-size:20px;flex-shrink:0;">🧠</span>
-            <div><div style="font-size:12px;font-weight:700;margin-bottom:3px;">Modèles 4.1</div><div style="font-size:11px;color:#888;line-height:1.5">Tous les modèles Wikimind passés en version 4.1 — plus performants, moins d'erreurs.</div></div>
+            <div><div style="font-size:12px;font-weight:700;margin-bottom:3px;">Modèles 4.2</div><div style="font-size:11px;color:#888;line-height:1.5">Tous les modèles Wikimind passés en version 4.2 — Cerebras & Google AI Studio intégrés.</div></div>
           </div>
           <div style="padding:12px;background:var(--select-bg);border-radius:12px;display:flex;gap:10px;align-items:flex-start;">
             <span style="font-size:20px;flex-shrink:0;">📖</span>
