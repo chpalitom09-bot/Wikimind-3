@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WikiMind Excel</title>
+
+    <!-- PWA indépendant -->
+    <link rel="manifest" href="manifest_xls.json">
+    <meta name="theme-color" content="#16a34a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="WM Excel">
+    <link rel="apple-touch-icon" href="xls.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter','sans-serif'], display: ['Space Grotesk','sans-serif'] },
+                    colors: {
+                        glass: { panel: 'rgba(20,20,20,0.6)', border: 'rgba(255,255,255,0.08)' },
+                        brand: { 500: '#6366f1', 600: '#4f46e5', glow: '#818cf8' },
+                        xls:  { 500: '#16a34a', 600: '#15803d', 400: '#4ade80', glow: '#86efac' }
+                    },
+                    animation: {
+                        'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+                        'fade-in': 'fadeIn 0.3s ease-out forwards',
+                        'toast-enter': 'toastEnter 0.3s cubic-bezier(0.175,0.885,0.32,1.275) forwards',
+                        'toast-leave': 'toastLeave 0.3s ease-in forwards',
+                    },
+                    keyframes: {
+                        fadeInUp: { '0%': {opacity:0, transform:'translateY(15px)'}, '100%': {opacity:1, transform:'translateY(0)'} },
+                        fadeIn: { '0%': {opacity:0}, '100%': {opacity:1} },
+                        toastEnter: { '0%': {opacity:0, transform:'translateY(100%) scale(0.9)'}, '100%': {opacity:1, transform:'translateY(0) scale(1)'} },
+                        toastLeave: { '0%': {opacity:1, transform:'scale(1)'}, '100%': {opacity:0, transform:'scale(0.9)'} },
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #050505; color: #ffffff; overflow-x: hidden; font-family: 'Inter', sans-serif; }
+
+        /* ── GLASS ── */
+        .glass-panel {
+            background: rgba(20,20,20,0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 8px 32px 0 rgba(0,0,0,0.3);
+        }
+        .glass-xls {
+            background: rgba(10,30,15,0.55); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(74,222,128,0.12); box-shadow: 0 8px 32px 0 rgba(0,0,0,0.3);
+        }
+
+        /* ── TYPOGRAPHY ── */
+        .text-gradient { background: linear-gradient(135deg,#ffffff 0%,#a5a6f6 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        .text-gradient-xls { background: linear-gradient(135deg,#4ade80 0%,#86efac 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+
+        /* ── PLAN RINGS (identiques index.html) ── */
+        .plan-badge { font-size:9px; font-weight:800; text-transform:uppercase; padding:2px 6px; border-radius:20px; letter-spacing:.04em; }
+        .plan-free  { background:#27272a; color:#a1a1aa; }
+        .plan-plus  { background:#1e3a5f; color:#60a5fa; }
+        .plan-pro   { background:#3b1f5e; color:#c084fc; }
+        .plan-premium { background:#44330f; color:#fbbf24; }
+        .plan-premium-plus { background:linear-gradient(135deg,#44110f,#44330f); color:#fb923c; }
+        .plan-chip-avatar { position:relative; width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+        .plan-chip-avatar img { width:32px; height:32px; object-fit:cover; border-radius:50%; position:relative; z-index:2; }
+        .plan-chip-avatar::after  { content:''; position:absolute; inset:-2px; border-radius:50%; z-index:0; }
+        .plan-chip-avatar::before { content:''; position:absolute; inset:2px;  border-radius:50%; z-index:1; background:#050505; }
+        .ring-free::after         { background:conic-gradient(#9ca3af,#d1d5db,#9ca3af); }
+        .ring-plus::after         { background:conic-gradient(#fff,#aaa,#fff,#aaa,#fff); animation:ringRotate 4s linear infinite; }
+        .ring-pro::after          { background:conic-gradient(#22c55e,#4ade80,#16a34a,#86efac,#22c55e); animation:ringRotate 3s linear infinite; }
+        .ring-premium::after      { background:conic-gradient(#f59e0b,#fcd34d,#d97706,#fef08a,#f59e0b); animation:ringRotate 2.5s linear infinite; }
+        .ring-premium-plus::after { background:conic-gradient(#ef4444,#f97316,#eab308,#f97316,#ef4444); animation:ringRotateFire 1.8s linear infinite; }
+        @keyframes ringRotate     { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        @keyframes ringRotateFire { 0%{transform:rotate(0deg);filter:brightness(1)} 50%{transform:rotate(180deg);filter:brightness(1.3)} 100%{transform:rotate(360deg);filter:brightness(1)} }
+
+        /* ── NAV ── */
+        .nav-link { font-size:13px; font-weight:600; color:rgba(255,255,255,0.6); transition:all .2s; text-transform:uppercase; letter-spacing:.05em; padding:6px 12px; border-radius:8px; }
+        .nav-link:hover { color:#fff; background:rgba(255,255,255,0.05); }
+        .nav-link.active { color:#fff; background:rgba(255,255,255,0.1); }
+
+        /* ── TOAST ── */
+        #toast-container { position:fixed; bottom:20px; right:20px; z-index:9999; display:flex; flex-direction:column; gap:10px; }
+
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar { width:5px; }
+        ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:4px; }
+
+        /* ── CHAT ── */
+        #chat-messages { scrollbar-width: thin; }
+        .msg-user  { background:rgba(22,163,74,0.15); border:1px solid rgba(74,222,128,0.2); border-radius:18px 18px 4px 18px; }
+        .msg-ai    { background:rgba(20,20,20,0.8); border:1px solid rgba(255,255,255,0.08); border-radius:18px 18px 18px 4px; }
+        .msg-ai code { background:rgba(74,222,128,0.12); color:#86efac; padding:2px 6px; border-radius:4px; font-size:0.85em; font-family:monospace; }
+        .msg-ai strong { color:#4ade80; }
+
+        /* ── FORMULE CARD ── */
+        .formula-card {
+            background: rgba(15,25,18,0.7); border:1px solid rgba(74,222,128,0.1);
+            border-radius:14px; padding:14px; cursor:pointer; transition:all .2s; position:relative; overflow:hidden;
+        }
+        .formula-card::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(22,163,74,0.05),transparent); opacity:0; transition:.2s; }
+        .formula-card:hover { border-color:rgba(74,222,128,0.35); transform:translateY(-1px); box-shadow:0 4px 20px rgba(22,163,74,0.15); }
+        .formula-card:hover::before { opacity:1; }
+        .formula-card.active-card { border-color:rgba(74,222,128,0.5); background:rgba(22,163,74,0.1); }
+
+        .cat-badge { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:2px 7px; border-radius:20px; }
+        .cat-Maths    { background:rgba(99,102,241,0.2);  color:#a5b4fc; }
+        .cat-Logique  { background:rgba(234,179,8,0.2);   color:#fde047; }
+        .cat-Texte    { background:rgba(236,72,153,0.2);  color:#f9a8d4; }
+        .cat-Recherche{ background:rgba(22,163,74,0.25);  color:#86efac; }
+
+        /* ── SYNTAX HIGHLIGHT ── */
+        .syntax-box { background:rgba(0,0,0,0.4); border:1px solid rgba(74,222,128,0.2); border-radius:10px; padding:12px 16px; font-family:monospace; font-size:13px; color:#86efac; line-height:1.6; }
+        .syntax-fn  { color:#4ade80; font-weight:700; }
+        .syntax-arg { color:#fde047; }
+
+        /* ── AURORA BG ── */
+        #aurora-bg { position:fixed; top:0; left:0; width:100%; height:100%; z-index:-1; pointer-events:none; }
+
+        /* ── SPLASH ── */
+        #wm-splash { position:fixed; inset:0; z-index:9999; background:#050505; display:flex; align-items:center; justify-content:center; }
+        #wm-splash.wm-splash-out { animation:splashOut 0.6s cubic-bezier(0.7,0,1,1) forwards; pointer-events:none; }
+        @keyframes splashOut { 0%{opacity:1;transform:scale(1)} 60%{opacity:1;transform:scale(1.04)} 100%{opacity:0;transform:scale(1.08)} }
+        #splash-logo { opacity:0; transform:scale(0.5) translateY(10px); animation:splashLogoIn 0.55s cubic-bezier(0.175,0.885,0.32,1.275) 0.1s forwards; }
+        @keyframes splashLogoIn { to{opacity:1;transform:scale(1) translateY(0)} }
+        #splash-wordmark { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:28px; letter-spacing:-0.03em; color:#fff; opacity:0; animation:splashWordIn .5s ease-out .35s forwards; }
+        #splash-sub { font-family:'Space Grotesk',sans-serif; font-weight:300; font-size:13px; color:rgba(255,255,255,0.3); letter-spacing:.15em; margin-top:4px; opacity:0; animation:splashWordIn .5s ease-out .5s forwards; }
+        @keyframes splashWordIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+        #splash-bar-wrap { width:120px; height:2px; background:rgba(255,255,255,0.06); border-radius:2px; margin-top:32px; overflow:hidden; opacity:0; animation:splashWordIn .3s ease-out .65s forwards; }
+        #splash-bar { height:100%; width:0%; background:linear-gradient(90deg,#16a34a,#4ade80); border-radius:2px; animation:splashBarFill 1.1s cubic-bezier(0.4,0,0.2,1) 0.7s forwards; }
+        @keyframes splashBarFill { 0%{width:0%;opacity:1} 80%{width:100%;opacity:1} 100%{width:100%;opacity:0.5} }
+
+        /* ── PWA INSTALL ── */
+        #pwa-install-btn { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(120%); z-index:500; transition:transform .5s cubic-bezier(0.175,0.885,0.32,1.275),opacity .3s ease; opacity:0; }
+        #pwa-install-btn.pwa-visible { transform:translateX(-50%) translateY(0); opacity:1; }
+        #pwa-install-inner { display:flex; align-items:center; gap:12px; padding:12px 16px 12px 14px; background:rgba(18,18,18,0.85); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border:1px solid rgba(255,255,255,0.12); border-radius:18px; box-shadow:0 8px 40px rgba(0,0,0,0.5),0 0 0 0.5px rgba(22,163,74,0.3); cursor:pointer; white-space:nowrap; user-select:none; transition:background .2s,border-color .2s,transform .15s; }
+        #pwa-install-inner:hover { background:rgba(28,28,28,0.95); border-color:rgba(22,163,74,0.5); transform:translateY(-2px); }
+        #pwa-install-icon { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#16a34a,#4ade80); display:flex; align-items:center; justify-content:center; color:white; font-size:15px; flex-shrink:0; box-shadow:0 4px 12px rgba(22,163,74,0.4); }
+        #pwa-install-title { font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13px; color:#fff; line-height:1.2; }
+        #pwa-install-sub { font-size:10px; color:rgba(255,255,255,0.4); margin-top:1px; }
+        #pwa-install-close { width:24px; height:24px; border-radius:50%; background:rgba(255,255,255,0.07); border:none; color:rgba(255,255,255,0.5); font-size:11px; cursor:pointer; display:flex; align-items:center; justify-content:center; margin-left:4px; transition:background .2s,color .2s; }
+        #pwa-install-close:hover { background:rgba(255,255,255,0.15); color:#fff; }
+
+        /* ── MODAL FORMULE ── */
+        #formula-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:200; align-items:center; justify-content:center; padding:16px; }
+        #formula-modal.open { display:flex; }
+        #formula-modal-content { max-width:560px; width:100%; max-height:90vh; overflow-y:auto; }
+
+        /* ── TYPING INDICATOR ── */
+        .typing-dot { width:7px; height:7px; border-radius:50%; background:#4ade80; animation:typingBounce 1.2s ease-in-out infinite; }
+        .typing-dot:nth-child(2) { animation-delay:.2s; }
+        .typing-dot:nth-child(3) { animation-delay:.4s; }
+        @keyframes typingBounce { 0%,80%,100%{transform:scale(0.8);opacity:0.5} 40%{transform:scale(1.1);opacity:1} }
+
+        /* ── SEARCH ── */
+        .formula-card.hidden-search { display:none; }
+
+        /* ── SUGGESTED CARD ── */
+        .suggested-card {
+            background: rgba(22,163,74,0.08); border:1px solid rgba(74,222,128,0.2); border-radius:12px;
+            padding:10px 14px; cursor:pointer; transition:all .2s; display:flex; align-items:center; gap:10px;
+        }
+        .suggested-card:hover { background:rgba(22,163,74,0.15); border-color:rgba(74,222,128,0.4); }
+    </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- SPLASH                                     -->
+<!-- ══════════════════════════════════════════ -->
+<div id="wm-splash" aria-hidden="true">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:0">
+        <div id="splash-logo">
+            <div style="width:72px;height:72px;background:linear-gradient(135deg,#4ade80,#16a34a);border-radius:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 60px rgba(22,163,74,0.4),0 0 120px rgba(22,163,74,0.15);margin-bottom:20px;">
+                <i class="fa-solid fa-table" style="font-size:30px;color:#050505;"></i>
+            </div>
+        </div>
+        <div id="splash-wordmark">WikiMind <span style="color:rgba(255,255,255,0.4);font-weight:300">Excel</span></div>
+        <div id="splash-sub">ASSISTANT FORMULES IA</div>
+        <div id="splash-bar-wrap"><div id="splash-bar"></div></div>
+    </div>
+</div>
+
+<!-- AURORA BG -->
+<canvas id="aurora-bg"></canvas>
+
+<!-- TOAST -->
+<div id="toast-container"></div>
+
+<!-- PWA INSTALL -->
+<div id="pwa-install-btn" class="hidden" role="button" tabindex="0" aria-label="Installer WikiMind Excel">
+    <div id="pwa-install-inner">
+        <div id="pwa-install-icon"><i class="fa-solid fa-arrow-down-to-line"></i></div>
+        <div>
+            <div id="pwa-install-title">Installer WM Excel</div>
+            <div id="pwa-install-sub">Accès rapide · Hors-ligne</div>
+        </div>
+        <button id="pwa-install-close" aria-label="Fermer"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+</div>
+
+<!-- MODAL FORMULE DÉTAIL -->
+<div id="formula-modal" onclick="closeFormulaModal()">
+    <div id="formula-modal-content" class="glass-panel rounded-3xl p-6" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between mb-5">
+            <div class="flex items-center gap-3">
+                <span id="modal-emoji" class="text-3xl"></span>
+                <div>
+                    <h2 id="modal-nom" class="text-xl font-display font-bold text-gradient-xls"></h2>
+                    <span id="modal-cat" class="cat-badge cat-Maths mt-1 inline-block"></span>
+                </div>
+            </div>
+            <button onclick="closeFormulaModal()" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition">
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+        </div>
+        <p id="modal-desc" class="text-white/70 text-sm mb-4"></p>
+        <div class="mb-4">
+            <div class="text-[10px] uppercase font-bold tracking-widest text-white/30 mb-2">Syntaxe</div>
+            <div id="modal-syntaxe" class="syntax-box"></div>
+        </div>
+        <div class="mb-4">
+            <div class="text-[10px] uppercase font-bold tracking-widest text-white/30 mb-2">Explication</div>
+            <p id="modal-explication" class="text-white/70 text-sm leading-relaxed"></p>
+        </div>
+        <div class="mb-5">
+            <div class="text-[10px] uppercase font-bold tracking-widest text-white/30 mb-2">Exemple concret</div>
+            <div id="modal-exemple" class="syntax-box text-xs text-white/80"></div>
+        </div>
+        <button onclick="askAboutFormula()" class="w-full py-3 rounded-2xl bg-gradient-to-r from-xls-600 to-xls-500 text-white font-bold text-sm hover:opacity-90 transition flex items-center justify-center gap-2 shadow-lg shadow-xls-500/20">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Demander à l'IA de m'expliquer
+        </button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- NAVBAR                                     -->
+<!-- ══════════════════════════════════════════ -->
+<nav class="fixed top-0 w-full z-50 px-4 md:px-6 py-4" id="navbar">
+    <div class="max-w-7xl mx-auto flex justify-between items-center glass-panel rounded-full px-5 py-2">
+        <!-- Logo -->
+        <a href="index.html" class="flex items-center gap-3 group">
+            <div class="w-8 h-8 bg-gradient-to-tr from-xls-400 to-xls-600 rounded-lg flex items-center justify-center">
+                <i class="fa-solid fa-table text-white text-xs"></i>
+            </div>
+            <span class="font-display font-bold text-lg tracking-tight hidden sm:block">
+                WikiMind <span class="text-xls-400">Excel</span>
+            </span>
+        </a>
+
+        <!-- Desktop Nav -->
+        <div class="hidden md:flex items-center gap-2">
+            <a href="index.html" class="nav-link"><i class="fa-solid fa-house mr-1"></i>Accueil</a>
+            <span class="text-white/20">|</span>
+            <span class="nav-link active">Assistant Excel</span>
+        </div>
+
+        <!-- Mobile toggle -->
+        <button id="mobile-menu-btn" class="md:hidden text-white p-2">
+            <i class="fa-solid fa-bars text-xl"></i>
+        </button>
+
+        <!-- Auth / User -->
+        <div id="auth-container" class="flex items-center gap-4">
+            <a href="Wikimind_user.html" id="login-btn" class="px-5 py-2 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-gray-200 transition-colors">
+                Connexion
+            </a>
+            <div id="user-logged" class="hidden flex items-center gap-3">
+                <button id="sync-btn" onclick="syncUserData()" title="Synchroniser" class="w-7 h-7 flex items-center justify-center rounded-full text-white/30 hover:text-white/70 hover:bg-white/5 transition-all duration-200">
+                    <i id="sync-icon" class="fa-solid fa-rotate text-xs"></i>
+                </button>
+                <div class="text-right hidden sm:block">
+                    <div id="user-name-display" class="text-xs font-bold text-white">Utilisateur</div>
+                    <div id="nav-plan-badge" class="plan-badge plan-free mt-1">Free</div>
+                </div>
+                <a href="Wikimind_user.html" class="relative group">
+                    <div id="nav-avatar-ring" class="plan-chip-avatar ring-free">
+                        <img id="nav-avatar" src="" class="bg-gray-800" alt="Avatar">
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+    <!-- Mobile dropdown -->
+    <div id="mobile-dropdown" class="hidden absolute top-full left-4 right-4 mt-2 glass-panel rounded-2xl p-4 flex flex-col gap-2 shadow-2xl z-50">
+        <a href="index.html" class="nav-link text-left"><i class="fa-solid fa-house mr-2"></i>Accueil WikiMind</a>
+        <span class="nav-link active">Assistant Excel</span>
+    </div>
+</nav>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- MAIN : 2 COLONNES                          -->
+<!-- ══════════════════════════════════════════ -->
+<main class="relative pt-24 pb-20 px-4 md:px-6">
+    <div class="max-w-7xl mx-auto">
+
+        <!-- Hero badge -->
+        <div class="flex items-center justify-center mb-6 animate-fade-in-up">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-xls-500/30 bg-xls-500/10 text-xls-400 text-[10px] uppercase font-bold tracking-[0.2em]">
+                <span class="w-1.5 h-1.5 rounded-full bg-xls-400 animate-pulse"></span>
+                IA · Formules Excel · Personnalisé
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- ══════════════════════════ -->
+            <!-- COLONNE GAUCHE : CHAT IA  -->
+            <!-- ══════════════════════════ -->
+            <div class="flex flex-col gap-4">
+
+                <!-- Header chat -->
+                <div class="glass-xls rounded-3xl p-5">
+                    <div class="flex items-center gap-3 mb-1">
+                        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-xls-600 to-xls-400 flex items-center justify-center shadow-lg shadow-xls-500/30">
+                            <i class="fa-solid fa-wand-magic-sparkles text-white text-base"></i>
+                        </div>
+                        <div>
+                            <h1 class="font-display font-bold text-lg text-gradient-xls leading-tight">Assistant Formules</h1>
+                            <p class="text-xs text-white/40">Posez votre question en langage naturel</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div class="glass-panel rounded-3xl flex flex-col overflow-hidden" style="height:460px">
+                    <div id="chat-messages" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+                        <!-- Message de bienvenue IA -->
+                        <div class="msg-ai p-4 text-sm leading-relaxed max-w-[92%]" style="animation: fadeInUp 0.4s ease-out forwards">
+                            <div class="flex items-center gap-2 mb-2">
+                                <i class="fa-solid fa-table text-xls-400 text-xs"></i>
+                                <span class="text-xls-400 text-xs font-bold uppercase tracking-wider">Assistant Excel</span>
+                            </div>
+                            Bonjour ! 👋 Je suis votre expert formules Excel.<br><br>
+                            Posez-moi une question comme :<br>
+                            <span class="text-white/60 text-xs">• "Comment additionner uniquement les cellules rouges ?"</span><br>
+                            <span class="text-white/60 text-xs">• "Chercher une valeur dans un tableau ?"</span><br>
+                            <span class="text-white/60 text-xs">• "Compter les doublons ?"</span><br><br>
+                            Je vous donnerai la formule exacte et une explication claire ! 🎯
+                        </div>
+                    </div>
+
+                    <!-- Input -->
+                    <div class="border-t border-white/5 p-4">
+                        <div class="flex gap-3 items-end">
+                            <textarea id="chat-input"
+                                placeholder="Ex: Comment chercher un prénom dans mon tableau et afficher son numéro ?"
+                                class="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-xls-500/50 resize-none transition"
+                                rows="2"
+                                onkeydown="handleChatKey(event)"></textarea>
+                            <button id="send-btn" onclick="sendMessage()"
+                                class="w-12 h-12 rounded-2xl bg-gradient-to-br from-xls-600 to-xls-400 flex items-center justify-center text-white shadow-lg shadow-xls-500/30 hover:opacity-90 transition flex-shrink-0">
+                                <i class="fa-solid fa-paper-plane text-sm"></i>
+                            </button>
+                        </div>
+                        <p class="text-white/20 text-[10px] mt-2 text-center">Entrée pour envoyer · Maj+Entrée pour saut de ligne</p>
+                    </div>
+                </div>
+
+                <!-- Suggestions rapides -->
+                <div class="glass-panel rounded-2xl p-4">
+                    <div class="text-[10px] uppercase font-bold tracking-widest text-white/30 mb-3">Questions rapides</div>
+                    <div class="flex flex-wrap gap-2" id="quick-suggestions">
+                        <button onclick="quickAsk('Comment faire un RECHERCHEV ?')" class="px-3 py-1.5 rounded-full text-xs bg-xls-500/10 border border-xls-500/20 text-xls-400 hover:bg-xls-500/20 transition">🔍 RECHERCHEV</button>
+                        <button onclick="quickAsk('Comment additionner avec des conditions ?')" class="px-3 py-1.5 rounded-full text-xs bg-xls-500/10 border border-xls-500/20 text-xls-400 hover:bg-xls-500/20 transition">➕ Somme conditionnelle</button>
+                        <button onclick="quickAsk('Comment éviter les erreurs #N/A ?')" class="px-3 py-1.5 rounded-full text-xs bg-xls-500/10 border border-xls-500/20 text-xls-400 hover:bg-xls-500/20 transition">🛡️ Gérer les erreurs</button>
+                        <button onclick="quickAsk('Comment extraire du texte depuis une cellule ?')" class="px-3 py-1.5 rounded-full text-xs bg-xls-500/10 border border-xls-500/20 text-xls-400 hover:bg-xls-500/20 transition">✂️ Extraire du texte</button>
+                        <button onclick="quickAsk('Quelle différence entre INDEX EQUIV et RECHERCHEV ?')" class="px-3 py-1.5 rounded-full text-xs bg-xls-500/10 border border-xls-500/20 text-xls-400 hover:bg-xls-500/20 transition">🎯 INDEX vs RECHERCHEV</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════════════════════ -->
+            <!-- COLONNE DROITE : EXPLORATEUR       -->
+            <!-- ══════════════════════════════════ -->
+            <div class="flex flex-col gap-4">
+
+                <!-- Recherche -->
+                <div class="glass-panel rounded-2xl p-4">
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm"></i>
+                        <input id="search-input" type="text" placeholder="Rechercher une formule..."
+                            class="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-xls-500/50 transition"
+                            oninput="filterFormulas(this.value)">
+                    </div>
+                </div>
+
+                <!-- Formules suggérées -->
+                <div class="glass-xls rounded-2xl p-4" id="suggested-section">
+                    <div class="flex items-center gap-2 mb-3">
+                        <i class="fa-solid fa-star text-yellow-400 text-xs"></i>
+                        <span class="text-[10px] uppercase font-bold tracking-widest text-white/40">Vos formules favorites</span>
+                    </div>
+                    <div id="suggested-list" class="flex flex-col gap-2">
+                        <p class="text-white/25 text-xs italic">Connectez-vous pour voir vos formules personnalisées</p>
+                    </div>
+                </div>
+
+                <!-- Filtre catégories -->
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="filterByCategory('all')" class="cat-filter px-3 py-1.5 rounded-full text-xs font-bold bg-white/10 text-white border border-white/10 transition hover:bg-white/20 active-cat" data-cat="all">Tout</button>
+                    <button onclick="filterByCategory('Maths')" class="cat-filter px-3 py-1.5 rounded-full text-xs font-bold bg-white/5 text-white/50 border border-white/5 transition hover:bg-white/10" data-cat="Maths">📐 Maths</button>
+                    <button onclick="filterByCategory('Logique')" class="cat-filter px-3 py-1.5 rounded-full text-xs font-bold bg-white/5 text-white/50 border border-white/5 transition hover:bg-white/10" data-cat="Logique">⚖️ Logique</button>
+                    <button onclick="filterByCategory('Texte')" class="cat-filter px-3 py-1.5 rounded-full text-xs font-bold bg-white/5 text-white/50 border border-white/5 transition hover:bg-white/10" data-cat="Texte">🔤 Texte</button>
+                    <button onclick="filterByCategory('Recherche')" class="cat-filter px-3 py-1.5 rounded-full text-xs font-bold bg-white/5 text-white/50 border border-white/5 transition hover:bg-white/10" data-cat="Recherche">🔍 Recherche</button>
+                </div>
+
+                <!-- Liste des formules -->
+                <div class="glass-panel rounded-3xl p-4 overflow-y-auto" style="max-height:540px">
+                    <div class="text-[10px] uppercase font-bold tracking-widest text-white/30 mb-3">Bibliothèque de formules</div>
+                    <div id="formulas-list" class="flex flex-col gap-3">
+                        <p class="text-white/25 text-xs text-center py-8">Chargement...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- SCRIPTS                                    -->
+<!-- ══════════════════════════════════════════ -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getDatabase, ref, get, child, set, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    // ══════════════════════════════════════════
+    // CONFIG
+    // ══════════════════════════════════════════
+    const MISTRAL_API_KEY = "wuZGbRk6ry7KpMraZvxB3zg7ae6x1dLN";
+    const FIREBASE_CONFIG = {
+        apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+        authDomain: "wikimind-3-comments.firebaseapp.com",
+        databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "wikimind-3-comments",
+        storageBucket: "wikimind-3-comments.firebasestorage.app",
+        messagingSenderId: "137479541640",
+        appId: "1:137479541640:web:4ed2510a9908055052e03d"
+    };
+
+    const app  = initializeApp(FIREBASE_CONFIG);
+    const auth = getAuth(app);
+    const db   = getDatabase(app);
+
+    // ══════════════════════════════════════════
+    // STATE
+    // ══════════════════════════════════════════
+    let currentUser   = null;
+    let formulasData  = [];
+    let xlsHistory    = {}; // { formulaId: count }
+    let activeFormula = null; // formule ouverte dans le modal
+    let chatHistory   = [];   // historique pour l'IA
+    let currentCatFilter = 'all';
+
+    // ══════════════════════════════════════════
+    // SPLASH SCREEN
+    // ══════════════════════════════════════════
+    function hideSplash() {
+        const splash = document.getElementById('wm-splash');
+        if (!splash) return;
+        splash.classList.add('wm-splash-out');
+        setTimeout(() => splash.style.display = 'none', 700);
+    }
+    setTimeout(hideSplash, 2000);
+
+    // ══════════════════════════════════════════
+    // AURORA CANVAS
+    // ══════════════════════════════════════════
+    (function initAurora() {
+        const canvas = document.getElementById('aurora-bg');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let t = 0;
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        resize(); window.addEventListener('resize', resize);
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Blob vert (couleur xls)
+            const gx = ctx.createRadialGradient(canvas.width*0.3 + Math.sin(t*0.4)*80, canvas.height*0.25 + Math.cos(t*0.3)*60, 0, canvas.width*0.3, canvas.height*0.25, canvas.width*0.5);
+            gx.addColorStop(0, 'rgba(22,163,74,0.07)');
+            gx.addColorStop(1, 'transparent');
+            ctx.fillStyle = gx; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Blob bleu/violet
+            const gb = ctx.createRadialGradient(canvas.width*0.75 + Math.cos(t*0.25)*100, canvas.height*0.7 + Math.sin(t*0.35)*80, 0, canvas.width*0.75, canvas.height*0.7, canvas.width*0.45);
+            gb.addColorStop(0, 'rgba(99,102,241,0.06)');
+            gb.addColorStop(1, 'transparent');
+            ctx.fillStyle = gb; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            t += 0.005;
+            requestAnimationFrame(draw);
+        }
+        draw();
+    })();
+
+    // ══════════════════════════════════════════
+    // TOAST
+    // ══════════════════════════════════════════
+    window.showToast = (message, type = 'info') => {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = `px-4 py-3 rounded-lg text-sm font-medium shadow-xl flex items-center gap-3 animate-toast-enter backdrop-blur-md border ${
+            type === 'error'   ? 'bg-red-500/20 text-red-200 border-red-500/30' :
+            type === 'success' ? 'bg-green-500/20 text-green-200 border-green-500/30' :
+            'bg-white/10 text-white border-white/10'
+        }`;
+        const icon = type === 'error' ? '⚠️' : type === 'success' ? '✅' : 'ℹ️';
+        toast.innerHTML = `${icon} <span>${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => { toast.style.animation = 'toastLeave 0.3s ease-in forwards'; setTimeout(() => toast.remove(), 300); }, 4000);
+    };
+
+    // ══════════════════════════════════════════
+    // PLAN RINGS (copie exacte index.html)
+    // ══════════════════════════════════════════
+    const CACHE_KEY_PREFIX = 'wm_user_cache_v1_';
+    const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
+
+    function getCachedUserData(uid) {
+        try { const r = localStorage.getItem(CACHE_KEY_PREFIX + uid); if (!r) return null; const p = JSON.parse(r); if (Date.now()-p.ts>CACHE_TTL_MS) return null; return p.data; } catch(e){ return null; }
+    }
+    function setCachedUserData(uid, data) {
+        try { localStorage.setItem(CACHE_KEY_PREFIX + uid, JSON.stringify({ts:Date.now(),data})); } catch(e){}
+    }
+    function clearCachedUserData(uid) {
+        try { localStorage.removeItem(CACHE_KEY_PREFIX + uid); } catch(e){}
+    }
+
+    function updateNavPlanUI(plan) {
+        const ringEl  = document.getElementById('nav-avatar-ring');
+        const badgeEl = document.getElementById('nav-plan-badge');
+        ringEl.className  = 'plan-chip-avatar';
+        badgeEl.className = 'plan-badge mt-1';
+        const PM = { 1:['Free','plan-free','ring-free'], 2:['AI Plus','plan-plus','ring-plus'], 3:['AI Pro','plan-pro','ring-pro'], 4:['AI Premium','plan-premium','ring-premium'], 5:['AI Premium+','plan-premium-plus','ring-premium-plus'] };
+        const [label, badgeClass, ringClass] = PM[plan] || PM[1];
+        badgeEl.innerText = label;
+        badgeEl.classList.add(badgeClass);
+        ringEl.classList.add(ringClass);
+    }
+
+    async function fetchAndCacheUserData(user) {
+        const syncIcon = document.getElementById('sync-icon');
+        if (syncIcon) syncIcon.className = 'fa-solid fa-rotate fa-spin text-xs';
+        try {
+            const snapshot = await get(child(ref(db), `users/${user.uid}/FORFAIT`));
+            const plan = snapshot.exists() ? snapshot.val() : 1;
+            const displayName = user.displayName || user.email.split('@')[0];
+            const photoUrl = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email)}&background=16a34a&color=fff&bold=true`;
+            const data = { plan, displayName, photoUrl };
+            setCachedUserData(user.uid, data);
+            applyUserUI(user, data);
+            if (syncIcon) syncIcon.className = 'fa-solid fa-rotate text-xs';
+        } catch(e) {
+            if (syncIcon) syncIcon.className = 'fa-solid fa-rotate text-xs';
+            updateNavPlanUI(1);
+        }
+    }
+
+    function applyUserUI(user, data) {
+        const displayName = data.displayName || user.displayName || user.email.split('@')[0];
+        const photoUrl = data.photoUrl || user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email)}&background=16a34a&color=fff&bold=true`;
+        document.getElementById('nav-avatar').src = photoUrl;
+        document.getElementById('user-name-display').innerText = displayName;
+        updateNavPlanUI(data.plan || 1);
+    }
+
+    window.syncUserData = async function() {
+        if (!currentUser) return;
+        clearCachedUserData(currentUser.uid);
+        await fetchAndCacheUserData(currentUser);
+        window.showToast('Données synchronisées ✓', 'success');
+    };
+
+    // ══════════════════════════════════════════
+    // FIREBASE AUTH
+    // ══════════════════════════════════════════
+    onAuthStateChanged(auth, async (user) => {
+        const loginBtn  = document.getElementById('login-btn');
+        const userLogged = document.getElementById('user-logged');
+        if (user) {
+            currentUser = user;
+            loginBtn.classList.add('hidden');
+            userLogged.classList.remove('hidden');
+            userLogged.classList.add('flex');
+
+            // Cache d'abord, puis Firebase
+            const cached = getCachedUserData(user.uid);
+            if (cached) {
+                applyUserUI(user, cached);
+            } else {
+                await fetchAndCacheUserData(user);
+            }
+
+            // Charger l'historique XLS
+            await loadXlsHistory(user.uid);
+        } else {
+            currentUser = null;
+            loginBtn.classList.remove('hidden');
+            userLogged.classList.add('hidden');
+        }
+    });
+
+    // ══════════════════════════════════════════
+    // HISTORIQUE XLS (Firebase)
+    // ══════════════════════════════════════════
+    async function loadXlsHistory(uid) {
+        try {
+            const snap = await get(ref(db, `users/${uid}/xls_history`));
+            if (snap.exists()) {
+                xlsHistory = snap.val();
+                renderSuggestedFormulas();
+            }
+        } catch(e) {}
+    }
+
+    async function trackFormulaUsage(formulaId) {
+        if (!currentUser) return;
+        const count = (xlsHistory[formulaId] || 0) + 1;
+        xlsHistory[formulaId] = count;
+        try {
+            await set(ref(db, `users/${currentUser.uid}/xls_history/${formulaId}`), count);
+        } catch(e) {}
+        renderSuggestedFormulas();
+    }
+
+    function renderSuggestedFormulas() {
+        const container = document.getElementById('suggested-list');
+        if (!currentUser) {
+            container.innerHTML = '<p class="text-white/25 text-xs italic">Connectez-vous pour voir vos formules personnalisées</p>';
+            return;
+        }
+        const sorted = Object.entries(xlsHistory).sort((a,b)=>b[1]-a[1]).slice(0,4);
+        if (sorted.length === 0) {
+            container.innerHTML = '<p class="text-white/25 text-xs italic">Commencez à explorer des formules pour les voir ici !</p>';
+            return;
+        }
+        container.innerHTML = sorted.map(([id, count]) => {
+            const f = formulasData.find(x => x.id === id);
+            if (!f) return '';
+            return `<div class="suggested-card" onclick="openFormulaModal('${f.id}')">
+                <span class="text-xl">${f.emoji}</span>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-bold text-white truncate">${f.nom}</div>
+                    <div class="text-xs text-white/40">${f.categorie} · utilisée ${count} fois</div>
+                </div>
+                <i class="fa-solid fa-chevron-right text-white/20 text-xs flex-shrink-0"></i>
+            </div>`;
+        }).join('');
+    }
+
+    // ══════════════════════════════════════════
+    // CHARGEMENT DES FORMULES
+    // ══════════════════════════════════════════
+    async function loadFormulas() {
+        try {
+            const res = await fetch('./formules.json');
+            formulasData = await res.json();
+        } catch(e) {
+            // Fallback inline si le fichier n'est pas accessible
+            formulasData = [];
+        }
+        renderFormulasList();
+        renderSuggestedFormulas();
+    }
+
+    function renderFormulasList(filter = '', cat = 'all') {
+        const container = document.getElementById('formulas-list');
+        const filtered = formulasData.filter(f =>
+            (cat === 'all' || f.categorie === cat) &&
+            (filter === '' || f.nom.toLowerCase().includes(filter.toLowerCase()) || f.description_courte.toLowerCase().includes(filter.toLowerCase()))
+        );
+        if (filtered.length === 0) {
+            container.innerHTML = '<p class="text-white/25 text-xs text-center py-8">Aucune formule trouvée</p>';
+            return;
+        }
+        container.innerHTML = filtered.map(f => `
+            <div class="formula-card" onclick="openFormulaModal('${f.id}')" data-cat="${f.categorie}" data-id="${f.id}">
+                <div class="flex items-start gap-3">
+                    <span class="text-2xl flex-shrink-0">${f.emoji}</span>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                            <span class="font-display font-bold text-sm text-white">${f.nom}</span>
+                            <span class="cat-badge cat-${f.categorie}">${f.categorie}</span>
+                        </div>
+                        <p class="text-white/50 text-xs leading-relaxed">${f.description_courte}</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-white/20 text-xs flex-shrink-0 mt-1"></i>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    window.filterFormulas = function(value) {
+        renderFormulasList(value, currentCatFilter);
+    };
+
+    window.filterByCategory = function(cat) {
+        currentCatFilter = cat;
+        document.querySelectorAll('.cat-filter').forEach(btn => {
+            const isActive = btn.dataset.cat === cat;
+            btn.className = `cat-filter px-3 py-1.5 rounded-full text-xs font-bold border transition ${
+                isActive ? 'bg-white/15 text-white border-white/20 active-cat' : 'bg-white/5 text-white/50 border-white/5 hover:bg-white/10'
+            }`;
+        });
+        const searchVal = document.getElementById('search-input').value;
+        renderFormulasList(searchVal, cat);
+    };
+
+    // ══════════════════════════════════════════
+    // MODAL FORMULE
+    // ══════════════════════════════════════════
+    window.openFormulaModal = function(formulaId) {
+        const f = formulasData.find(x => x.id === formulaId);
+        if (!f) return;
+        activeFormula = f;
+        document.getElementById('modal-emoji').textContent      = f.emoji;
+        document.getElementById('modal-nom').textContent        = f.nom;
+        document.getElementById('modal-cat').textContent        = f.categorie;
+        document.getElementById('modal-cat').className          = `cat-badge cat-${f.categorie} mt-1 inline-block`;
+        document.getElementById('modal-desc').textContent       = f.description_courte;
+        document.getElementById('modal-syntaxe').textContent    = f.syntaxe;
+        document.getElementById('modal-explication').textContent = f.explication_detaillee;
+        document.getElementById('modal-exemple').textContent    = f.exemple_utilisation;
+        document.getElementById('formula-modal').classList.add('open');
+        trackFormulaUsage(formulaId);
+    };
+
+    window.closeFormulaModal = function() {
+        document.getElementById('formula-modal').classList.remove('open');
+    };
+
+    // ══════════════════════════════════════════
+    // MISTRAL IA
+    // ══════════════════════════════════════════
+    async function callMistral(messages) {
+        try {
+            const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${MISTRAL_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: 'mistral-small-latest', messages, temperature: 0.4, max_tokens: 800 })
+            });
+            if (!res.ok) return null;
+            const data = await res.json();
+            return data?.choices?.[0]?.message?.content || null;
+        } catch(e) { return null; }
+    }
+
+    function buildSystemPrompt() {
+        const formulasSummary = formulasData.map(f =>
+            `- ${f.nom} (${f.categorie}) : ${f.description_courte}\n  Syntaxe : ${f.syntaxe}\n  Exemple : ${f.exemple_utilisation}`
+        ).join('\n\n');
+
+        return `Tu es un expert Excel bienveillant et pédagogue. Tu aides une utilisatrice non-technique à comprendre et utiliser les formules Excel.
+
+Voici ta base de formules :
+${formulasSummary}
+
+Règles :
+- Réponds toujours en français, de façon simple et chaleureuse.
+- Identifie la formule la plus adaptée à la question.
+- Explique étape par étape, avec un exemple concret et simple.
+- Formate les formules Excel avec des guillemets (ex: =RECHERCHEV(...)).
+- Si tu ne connais pas la réponse exacte, dis-le honnêtement.
+- Garde les réponses concises (max 250 mots) et lisibles.
+- Utilise **gras** pour mettre en valeur les formules et concepts clés.`;
+    }
+
+    // ══════════════════════════════════════════
+    // CHAT
+    // ══════════════════════════════════════════
+    function appendMessage(role, text) {
+        const container = document.getElementById('chat-messages');
+        const div = document.createElement('div');
+        div.className = role === 'user'
+            ? 'msg-user p-4 text-sm leading-relaxed self-end max-w-[88%] ml-auto animate-fade-in'
+            : 'msg-ai p-4 text-sm leading-relaxed max-w-[92%] animate-fade-in';
+
+        if (role === 'user') {
+            div.innerHTML = `<span class="text-white/90">${escHtml(text)}</span>`;
+        } else {
+            // Formater le markdown basique de l'IA
+            const formatted = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                .replace(/\n/g, '<br>');
+            div.innerHTML = `<div class="flex items-center gap-2 mb-2"><i class="fa-solid fa-table text-xls-400 text-xs"></i><span class="text-xls-400 text-xs font-bold uppercase tracking-wider">Excel IA</span></div>${formatted}`;
+        }
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function appendTyping() {
+        const container = document.getElementById('chat-messages');
+        const div = document.createElement('div');
+        div.id = 'typing-indicator';
+        div.className = 'msg-ai p-4 flex items-center gap-2';
+        div.innerHTML = `<div class="flex items-center gap-2"><i class="fa-solid fa-table text-xls-400 text-xs"></i><div class="flex gap-1.5"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function removeTyping() {
+        document.getElementById('typing-indicator')?.remove();
+    }
+
+    function escHtml(str) {
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    window.sendMessage = async function() {
+        const input = document.getElementById('chat-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        input.value = '';
+        input.style.height = '';
+        appendMessage('user', text);
+
+        // Ajouter au contexte (garder 6 derniers échanges pour pas exploser les tokens)
+        chatHistory.push({ role: 'user', content: text });
+        if (chatHistory.length > 12) chatHistory = chatHistory.slice(-12);
+
+        appendTyping();
+        document.getElementById('send-btn').disabled = true;
+
+        const messages = [
+            { role: 'system', content: buildSystemPrompt() },
+            ...chatHistory
+        ];
+
+        const reply = await callMistral(messages);
+        removeTyping();
+        document.getElementById('send-btn').disabled = false;
+
+        if (reply) {
+            chatHistory.push({ role: 'assistant', content: reply });
+            appendMessage('ai', reply);
+            // Tracker la catégorie si une formule est mentionnée
+            formulasData.forEach(f => {
+                if (text.toLowerCase().includes(f.nom.toLowerCase())) {
+                    trackFormulaUsage(f.id);
+                }
+            });
+        } else {
+            appendMessage('ai', 'Désolée, je n\'arrive pas à me connecter en ce moment. Vérifiez votre connexion et réessayez ! 🌐');
+        }
+    };
+
+    window.handleChatKey = function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.sendMessage(); }
+    };
+
+    window.quickAsk = function(question) {
+        document.getElementById('chat-input').value = question;
+        window.sendMessage();
+    };
+
+    // ══════════════════════════════════════════
+    // DEMANDER À L'IA À PARTIR DU MODAL
+    // ══════════════════════════════════════════
+    window.askAboutFormula = function() {
+        if (!activeFormula) return;
+        closeFormulaModal();
+        const q = `Explique-moi comment utiliser la formule ${activeFormula.nom} avec un exemple pratique. ${activeFormula.description_courte}`;
+        document.getElementById('chat-input').value = q;
+        window.sendMessage();
+        // Scroll vers le chat sur mobile
+        document.getElementById('chat-messages').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    // ══════════════════════════════════════════
+    // MOBILE MENU
+    // ══════════════════════════════════════════
+    document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+        document.getElementById('mobile-dropdown').classList.toggle('hidden');
+    });
+
+    // ══════════════════════════════════════════
+    // PWA INSTALL
+    // ══════════════════════════════════════════
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        const btn = document.getElementById('pwa-install-btn');
+        btn.classList.remove('hidden');
+        setTimeout(() => btn.classList.add('pwa-visible'), 100);
+    });
+
+    document.getElementById('pwa-install-inner').addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') window.showToast('WikiMind Excel installé ! 🎉', 'success');
+        deferredPrompt = null;
+        document.getElementById('pwa-install-btn').classList.remove('pwa-visible');
+    });
+
+    document.getElementById('pwa-install-close').addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.getElementById('pwa-install-btn').classList.remove('pwa-visible');
+        setTimeout(() => document.getElementById('pwa-install-btn').classList.add('hidden'), 500);
+    });
+
+    // ══════════════════════════════════════════
+    // SERVICE WORKER
+    // ══════════════════════════════════════════
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw_xls.js')
+            .then(reg => console.log('[WM Excel] SW enregistré :', reg.scope))
+            .catch(err => console.warn('[WM Excel] SW erreur :', err));
+    }
+
+    // ══════════════════════════════════════════
+    // INIT
+    // ══════════════════════════════════════════
+    loadFormulas();
+
+</script>
+</body>
+</html>
