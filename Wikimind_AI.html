@@ -4491,41 +4491,96 @@ const MISTRAL_MODELS = {
 };
 
 // ── POLLINATIONS IMAGE API ──
-const POLLINATIONS_IMAGE_KEY = 'pk_UHLVrPM9QnBs1YIs';
-const POLLINATIONS_IMAGE_LIMIT_MS = 3600000; // 1h par IP
-const POLLINATIONS_IMAGE_LIMIT_KEY = 'wm_pollinations_last';
+// Quota par plan : free=1, plus=2, pro=3, premium=4, premium+=5 (par heure)
+const POLLINATIONS_POLLEN_KEY = 'sk_VwaBYUiCLypIRXEPMG6TwjCQuH0sXZ5l'; // token pollen perso (10 img/h)
+const POLLINATIONS_IP_KEY     = 'pk_UHLVrPM9QnBs1YIs'; // token IP publique (1 img/h)
+const POLLINATIONS_LIMIT_MS   = 3600000; // fenêtre 1h
+const POLLINATIONS_STORE_KEY  = 'wm_img_quota'; // {slots:[timestamp,...]}
 
-function _canGeneratePollinationsImage(){
-  const last = parseInt(localStorage.getItem(POLLINATIONS_IMAGE_LIMIT_KEY)||'0',10);
-  return (Date.now() - last) >= POLLINATIONS_IMAGE_LIMIT_MS;
+function _imgQuotaForPlan(){
+  const p = S.plan||1;
+  if(p>=5) return 5; // premium+
+  if(p>=4) return 4; // premium
+  if(p>=3) return 3; // pro
+  if(p>=2) return 2; // plus
+  return 1;          // free
 }
-function _markPollinationsImageUsed(){
-  localStorage.setItem(POLLINATIONS_IMAGE_LIMIT_KEY, String(Date.now()));
+function _imgGetSlots(){
+  try{ return JSON.parse(localStorage.getItem(POLLINATIONS_STORE_KEY)||'[]'); }catch(_){ return []; }
 }
-function _pollinationsTimeLeft(){
-  const last = parseInt(localStorage.getItem(POLLINATIONS_IMAGE_LIMIT_KEY)||'0',10);
-  const ms = POLLINATIONS_IMAGE_LIMIT_MS - (Date.now()-last);
+function _imgSaveSlots(slots){
+  localStorage.setItem(POLLINATIONS_STORE_KEY, JSON.stringify(slots));
+}
+function _imgActiveSlots(){
+  const now = Date.now();
+  return _imgGetSlots().filter(t => (now - t) < POLLINATIONS_LIMIT_MS);
+}
+function _canGenerateImage(){
+  return _imgActiveSlots().length < _imgQuotaForPlan();
+}
+function _imgUsedCount(){ return _imgActiveSlots().length; }
+function _imgTimeLeft(){
+  // Temps avant que le slot le plus ancien expire
+  const slots = _imgActiveSlots().sort((a,b)=>a-b);
+  if(!slots.length) return '';
+  const ms = POLLINATIONS_LIMIT_MS - (Date.now() - slots[0]);
   if(ms<=0) return '';
   const m = Math.ceil(ms/60000);
-  return m >= 60 ? `${Math.floor(m/60)}h${m%60?m%60+'min':''}` : `${m} min`;
+  return m >= 60 ? `${Math.floor(m/60)}h${m%60?String(m%60)+'min':''}` : `${m} min`;
+}
+function _imgMarkUsed(){
+  const slots = _imgActiveSlots();
+  slots.push(Date.now());
+  _imgSaveSlots(slots);
+}
+
+// Met à jour la bannière au-dessus de l'input quand le modèle image est actif
+function _updateImgQuotaBanner(){
+  let banner = document.getElementById('img-quota-banner');
+  if(S.model !== 'wikimind_image'){
+    if(banner) banner.style.display = 'none';
+    return;
+  }
+  if(!banner){
+    banner = document.createElement('div');
+    banner.id = 'img-quota-banner';
+    banner.style.cssText = 'font-size:11px;font-weight:600;padding:5px 20px 2px;color:#888;text-align:center;transition:color .3s;';
+    const iw = document.getElementById('input-wrapper');
+    if(iw) iw.parentNode.insertBefore(banner, iw);
+  }
+  const used = _imgUsedCount();
+  const max  = _imgQuotaForPlan();
+  const left = max - used;
+  if(left <= 0){
+    const t = _imgTimeLeft();
+    banner.style.color = '#ef4444';
+    banner.textContent = `🚫 Plus d'images disponibles — réessayez dans ${t||'1h'}`;
+  } else {
+    banner.style.color = '#9ca3af';
+    banner.textContent = `🎨 ${left} image${left>1?'s':''} restante${left>1?'s':''} cette heure`;
+  }
+  banner.style.display = 'block';
 }
 
 async function callPollinationsImage(prompt){
-  if(!_canGeneratePollinationsImage()){
-    const t = _pollinationsTimeLeft();
-    throw new Error(`Limite atteinte — 1 image par heure (encore ${t}). Réessayez plus tard.`);
+  if(!_canGenerateImage()){
+    const t = _imgTimeLeft();
+    throw new Error(`__IMG_LIMIT__${t}`);
   }
   const encodedPrompt = encodeURIComponent(prompt);
   const seed = Math.floor(Math.random()*99999);
-  const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?model=flux&width=1024&height=1024&seed=${seed}&nologo=true&token=${POLLINATIONS_IMAGE_KEY}`;
-  // Préchargement pour vérifier que l'image est disponible
+  // 1ère image = token IP publique, suivantes = pollen perso
+  const used = _imgUsedCount();
+  const token = used === 0 ? POLLINATIONS_IP_KEY : POLLINATIONS_POLLEN_KEY;
+  const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?model=schnell&width=1024&height=1024&seed=${seed}&nologo=true&token=${token}`;
   await new Promise((resolve, reject)=>{
     const img = new Image();
     img.onload = resolve;
     img.onerror = ()=>reject(new Error('Erreur de génération d\'image'));
     img.src = url;
   });
-  _markPollinationsImageUsed();
+  _imgMarkUsed();
+  _updateImgQuotaBanner();
   return url;
 }
 // Modèles spécialisés open source — v5
@@ -8380,24 +8435,61 @@ ${_summary}
     // ── WIKIMIND IMAGE — Pollinations API ──
     if(S.model==='wikimind_image'){
       const userPrompt = S.msgs.filter(m=>m.role==='user').slice(-1)[0]?.content || '';
-      // Supprimer les éventuelles images attachées du prompt
       const cleanPrompt = userPrompt.replace(/\[Image:.*?\]/gi,'').trim();
-      if(!cleanPrompt){toast('Décrivez l\'image à générer');return;}
-      // Afficher un message d'attente
-      const waitId = 'img-wait-'+Date.now();
-      {const _cc=G('chat-container');const _row=document.createElement('div');_row.id=waitId;_row.className='chat-bubble model';_row.textContent='🎨 Génération en cours…';_cc.appendChild(_row);_cc.scrollTop=_cc.scrollHeight;}
+      if(!cleanPrompt){toast('Décrivez l\'image à générer');S.generating=false;G('send-btn').disabled=false;G('stop-btn')?.classList.remove('show');rmTyping(tyId);return;}
+      // Bloquer si quota épuisé
+      if(!_canGenerateImage()){
+        const t=_imgTimeLeft();
+        rmTyping(tyId);
+        S.generating=false;G('send-btn').disabled=false;G('stop-btn')?.classList.remove('show');
+        _updateImgQuotaBanner();
+        toast(`🚫 Quota images épuisé — encore ${t||'moins d\'1h'}`);
+        return;
+      }
+      // Placeholder flou animé
+      const waitId='img-wait-'+Date.now();
+      {
+        const _cc=G('chat-container');
+        const _row=document.createElement('div');
+        _row.id=waitId; _row.className='chat-bubble model';
+        _row.innerHTML=`<div style="width:100%;max-width:480px;height:300px;border-radius:16px;background:linear-gradient(135deg,#d1d5db,#9ca3af,#6b7280);background-size:400% 400%;animation:imgBlurPulse 1.8s ease infinite;overflow:hidden;position:relative;"><div style="position:absolute;inset:0;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:rgba(200,200,200,.35);"></div></div>`;
+        _cc.appendChild(_row); _cc.scrollTop=_cc.scrollHeight;
+      }
+      // Injecter l'animation si pas encore présente
+      if(!document.getElementById('img-blur-style')){
+        const st=document.createElement('style'); st.id='img-blur-style';
+        st.textContent='@keyframes imgBlurPulse{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}';
+        document.head.appendChild(st);
+      }
       try{
         const imgUrl = await callPollinationsImage(cleanPrompt);
-        // Supprimer le message d'attente
-        const waitEl = document.getElementById(waitId);
+        // Caption courte via Groq (non bloquant)
+        let caption = '';
+        try{
+          const capRes = await callGroq([
+            {role:'system',content:'Tu génères UNE seule phrase courte (max 15 mots) décrivant agréablement l\'image qui vient d\'être créée. Pas de guillemets, juste la phrase.'},
+            {role:'user',content:`Image générée pour : "${cleanPrompt}"`}
+          ],'llama-3.3-70b-versatile',80);
+          caption = capRes.trim();
+        }catch(_){}
+        const waitEl=document.getElementById(waitId);
         if(waitEl) waitEl.remove();
-        // Afficher l'image dans le chat
-        aiContent = `🎨 **Image générée**\n\n![Image WikiMind](${imgUrl})\n\n*Prompt : ${cleanPrompt}*\n\n> ⚠️ Limite : 1 image / heure par appareil`;
+        const left=_imgQuotaForPlan()-_imgUsedCount();
+        aiContent=`![Image WikiMind](${imgUrl})\n\n${caption?caption+'\n\n':''}`;
+        // Pas de "1 image par heure" → la bannière gère ça
       }catch(imgErr){
-        const waitEl = document.getElementById(waitId);
+        const waitEl=document.getElementById(waitId);
         if(waitEl) waitEl.remove();
-        toast(imgErr.message||'Erreur de génération d\'image');
-        setBusy(false); return;
+        if(imgErr.message&&imgErr.message.startsWith('__IMG_LIMIT__')){
+          const t=imgErr.message.slice(13);
+          _updateImgQuotaBanner();
+          toast(`🚫 Quota épuisé — encore ${t||'moins d\'1h'}`);
+        } else {
+          toast(imgErr.message||'Erreur de génération d\'image');
+        }
+        rmTyping(tyId);
+        S.generating=false;G('send-btn').disabled=false;G('stop-btn')?.classList.remove('show');
+        return;
       }
     }
     else if(S.model==='reflect'){const res=await runReflection(finalFullContent);aiContent=res.content;steps=res.steps;}
@@ -9946,6 +10038,7 @@ function onModelChange(){
   if((key==='medium'||key==='work'||key==='task')&&S.plan<2){toast('Mod\u00e8le \u2014 plan AI Plus requis');G('model-select').value=S.model;openPlansOverlay();return;}
   S.model=key;
   updateModelRingIndicator(key);
+  _updateImgQuotaBanner();
   const _mhints={flash:'⚡ Flash 4.0 — Mistral Small',medium:'🧠 Medium 4.0 — Mistral Medium',work:'💼 Work 4.0 — Mistral Large',reflect:'🔍 Réflexion 4.0 — Raisonnement chaîné',task:'✦ Task 4.0 — Omnipotent, tous outils'};
   if(_mhints[key]) toast(_mhints[key]);
 }
