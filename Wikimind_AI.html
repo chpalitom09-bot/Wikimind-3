@@ -5859,7 +5859,8 @@ function renderMsg(msg, doScroll=true){
     const div=document.createElement('div'); div.className='chat-bubble model';
     if(msg.content&&msg.content.startsWith('[WM_IMAGE:')){
       const dataUrl=msg.content.replace('[WM_IMAGE:','').replace(']','');
-      div.innerHTML=`<div style="margin:8px 0"><img src="${dataUrl}" style="max-width:100%;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.12)" alt="Image générée"><div style="font-size:11px;color:#999;margin-top:6px;display:flex;align-items:center;gap:6px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Générée par Stable Diffusion XL · <a href="${dataUrl}" download="wikimind-image.png" style="color:#2563eb;text-decoration:underline;cursor:pointer">Télécharger</a></div></div>`;
+      const imgEl=_renderGenImageInChat(dataUrl,'');
+      div.appendChild(imgEl.firstChild||imgEl);
     } else if(S.writingAnim&&doScroll){ typewriterEffect(div,msg.content); }
     else{
       // Strip [TOOL:...] tags from displayed content before markdown render
@@ -6339,6 +6340,28 @@ function formatMarkdown(text){
   let html=marked.parse(text);
   html=html.replace(/WMATHBLOCK(\d+)END/g,(_,idx)=>{const m=ph[+idx];if(!m)return'';const s=m[1];return`<div class="wm-math-display">\\[${s}\\]</div>`;});
   html=html.replace(/WMATHINLINE(\d+)END/g,(_,idx)=>{const m=ph[+idx];if(!m)return'';return`\\(${m[1]}\\)`;});
+  // Intercept generated images (pollinations / wiki) — add viewer + download + brush
+  html=html.replace(/<img([^>]*?)src="(https:\/\/image\.pollinations\.ai[^"]*|data:image[^"]*)"([^>]*?)>/gi,(_,pre,src,post)=>{
+    const esc=src.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    const ts=Date.now()+Math.random();
+    return `<div class="wm-gen-img-wrap">
+      <img${pre}src="${src}"${post} style="max-width:100%;border-radius:14px;box-shadow:0 4px 28px rgba(0,0,0,.14);display:block;cursor:zoom-in;transition:transform .2s,box-shadow .2s" onclick="window._wmIV&&window._wmIV.open('${esc}')" title="Cliquer pour agrandir">
+      <div class="wm-gen-img-actions">
+        <button class="wm-gen-img-action-btn" onclick="window._wmIV&&window._wmIV.open('${esc}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><path d="M8 3H5a2 2 0 00-2 2v3"/><path d="M21 8V5a2 2 0 00-2-2h-3"/><path d="M3 16v3a2 2 0 002 2h3"/><path d="M16 21h3a2 2 0 002-2v-3"/></svg>
+          Plein écran
+        </button>
+        <button class="wm-gen-img-action-btn brush" onclick="_wmIV_openBrush('${esc}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><path d="M2 21c.6-3 3-5.5 7-6l2-8c.2-.7.9-1 1.5-.8.7.2 1 .9.8 1.6l-1.3 5.2c2.5-.6 5 .5 6 3-5 1-9 2.5-10 5H2z"/></svg>
+          Pinceau IA
+        </button>
+        <a class="wm-gen-img-action-btn" href="${src}" download="wikimind-${Math.floor(ts)}.png" target="_blank">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Télécharger
+        </a>
+      </div>
+    </div>`;
+  });
   if(!window._wmCopyStore) window._wmCopyStore={};
   // Intercept Mermaid blocks
   let _mermaidIdx = window._mermaidIdx = (window._mermaidIdx||0);
@@ -7620,6 +7643,397 @@ async function interceptAndExecuteTools(aiContent, msgDiv){
   return cleaned.trim();
 }
 
+// ── DÉTECTION INTENTION IMAGE — tous modèles ──
+const _IMG_INTENT_PATTERNS=[
+  /g[eé]n[eè]re?\s+(une?\s+)?image/i,
+  /cr[eé][eé]e?\s+(une?\s+)?image/i,
+  /dessine?[\s-]moi/i,
+  /illustre?\s+(ça|cela|ceci|ce)/i,
+  /fais?\s+(moi\s+)?une?\s+image/i,
+  /produis?\s+(une?\s+)?image/i,
+  /montre?[\s-]moi\s+(une?\s+)?image\s+de/i,
+  /image\s+(de|pour|du|d[''])/i,
+  /photo\s+(de|pour|du|d[''])/i,
+  /illustration\s+(de|pour|du|d[''])/i,
+  /crée?\s+(un\s+)?visuel/i,
+  /generate\s+(an?\s+)?image/i,
+  /create\s+(an?\s+)?image/i,
+  /draw\s+(me\s+)?a/i,
+];
+function _detectImageIntent(text){
+  if(!text) return false;
+  return _IMG_INTENT_PATTERNS.some(p=>p.test(text));
+}
+
+// ── VIEWER IMAGE WIKIMIND ──
+(function(){
+  if(document.getElementById('wm-imgviewer-style')) return;
+  const st=document.createElement('style'); st.id='wm-imgviewer-style';
+  st.textContent=`
+#wm-imgviewer{position:fixed;inset:0;z-index:9999;display:none;flex-direction:column;background:rgba(0,0,0,.92);backdrop-filter:blur(12px);}
+#wm-imgviewer.open{display:flex;}
+#wm-imgviewer-toolbar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;}
+#wm-imgviewer-toolbar .wm-iv-title{flex:1;font-size:12px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.06em;text-transform:uppercase;}
+.wm-iv-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#fff;padding:7px 13px;font-size:11px;font-weight:700;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:5px;}
+.wm-iv-btn:hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.25);}
+.wm-iv-btn.accent{background:var(--accent,#2563eb);border-color:var(--accent,#2563eb);}
+.wm-iv-btn.accent:hover{opacity:.85;}
+.wm-iv-btn.danger{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.3);color:#f87171;}
+#wm-imgviewer-body{flex:1;display:flex;overflow:hidden;position:relative;}
+#wm-iv-canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+#wm-iv-canvas{max-width:100%;max-height:100%;display:block;border-radius:8px;cursor:default;touch-action:none;}
+#wm-iv-canvas.brush-mode{cursor:none !important;}
+#wm-iv-brush-panel{width:280px;background:rgba(15,15,15,.9);border-left:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:0;overflow-y:auto;flex-shrink:0;}
+#wm-iv-brush-panel.hidden{display:none;}
+.wm-iv-panel-section{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06);}
+.wm-iv-panel-title{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.35);margin-bottom:10px;}
+.wm-iv-brush-cursor{position:fixed;pointer-events:none;border-radius:50%;border:2px solid rgba(255,100,50,.8);background:rgba(255,100,50,.12);transform:translate(-50%,-50%);display:none;z-index:10001;transition:width .1s,height .1s;}
+.wm-iv-mask-layer{position:absolute;top:0;left:0;pointer-events:none;}
+.wm-iv-slider-label{display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,.4);margin-bottom:5px;}
+.wm-iv-slider{width:100%;accent-color:var(--accent,#2563eb);}
+.wm-iv-prompt-input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#fff;padding:8px 10px;font-size:11px;resize:vertical;min-height:60px;outline:none;font-family:inherit;}
+.wm-iv-prompt-input:focus{border-color:rgba(var(--accent-rgb,37,99,235),.5);}
+.wm-iv-erase-btn{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.25);color:#f87171;width:100%;justify-content:center;margin-top:6px;}
+.wm-iv-apply-loading{display:none;align-items:center;justify-content:center;gap:6px;font-size:10px;color:rgba(255,255,255,.5);padding:8px 0;}
+.wm-iv-apply-loading .spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.15);border-top-color:var(--accent,#2563eb);border-radius:50%;animation:ivSpin .7s linear infinite;}
+@keyframes ivSpin{to{transform:rotate(360deg);}}
+.wm-iv-brush-active-ring{position:absolute;inset:0;border-radius:8px;pointer-events:none;box-shadow:inset 0 0 0 2px rgba(255,100,50,.6);opacity:0;transition:opacity .2s;}
+.wm-iv-brush-active-ring.on{opacity:1;}
+/* Wikimind brush icon — orange/rouge */
+.wm-iv-brush-icon{width:18px;height:18px;flex-shrink:0;}
+/* Image chips in chat */
+.wm-gen-img-wrap{margin:8px 0;position:relative;display:inline-block;max-width:100%;}
+.wm-gen-img-wrap img{max-width:100%;border-radius:14px;box-shadow:0 4px 28px rgba(0,0,0,.14);display:block;cursor:zoom-in;transition:transform .2s,box-shadow .2s;}
+.wm-gen-img-wrap img:hover{transform:scale(1.01);box-shadow:0 8px 36px rgba(0,0,0,.22);}
+.wm-gen-img-actions{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;}
+.wm-gen-img-action-btn{background:var(--select-bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:5px 11px;font-size:11px;font-weight:700;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:5px;}
+.wm-gen-img-action-btn:hover{background:var(--border2);}
+.wm-gen-img-action-btn.brush{background:rgba(255,100,50,.1);border-color:rgba(255,100,50,.3);color:#f97316;}
+.wm-gen-img-action-btn.brush:hover{background:rgba(255,100,50,.18);}
+`;
+  document.head.appendChild(st);
+
+  // Créer le viewer DOM
+  const viewer=document.createElement('div'); viewer.id='wm-imgviewer';
+  viewer.innerHTML=`
+<div id="wm-imgviewer-toolbar">
+  <span class="wm-iv-title">
+    <svg class="wm-iv-brush-icon" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:6px"><path d="M2 21c.6-3 3-5.5 7-6l2-8c.2-.7.9-1 1.5-.8.7.2 1 .9.8 1.6l-1.3 5.2c2.5-.6 5 .5 6 3-5 1-9 2.5-10 5H2z"/><path d="M17 3l4 4-7 7-4-4 7-7z"/></svg>
+    WikiMind Viewer
+  </span>
+  <button class="wm-iv-btn" id="wm-iv-brush-toggle" onclick="window._wmIV.toggleBrush()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M2 21c.6-3 3-5.5 7-6l2-8c.2-.7.9-1 1.5-.8.7.2 1 .9.8 1.6l-1.3 5.2c2.5-.6 5 .5 6 3-5 1-9 2.5-10 5H2z"/></svg>
+    Pinceau IA
+  </button>
+  <button class="wm-iv-btn" onclick="window._wmIV.download()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Télécharger
+  </button>
+  <button class="wm-iv-btn" onclick="window._wmIV.sendToChat()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+    Envoyer au chat
+  </button>
+  <button class="wm-iv-btn danger" onclick="window._wmIV.close()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    Fermer
+  </button>
+</div>
+<div id="wm-imgviewer-body">
+  <div id="wm-iv-canvas-wrap">
+    <div style="position:relative;display:inline-block;">
+      <canvas id="wm-iv-canvas"></canvas>
+      <canvas id="wm-iv-mask-canvas" class="wm-iv-mask-layer"></canvas>
+      <div class="wm-iv-brush-active-ring" id="wm-iv-active-ring"></div>
+    </div>
+  </div>
+  <div id="wm-iv-brush-panel" class="hidden">
+    <div class="wm-iv-panel-section">
+      <div class="wm-iv-panel-title">🎨 Pinceau WikiMind</div>
+      <div class="wm-iv-slider-label"><span>Taille</span><span id="wm-iv-size-val">40px</span></div>
+      <input type="range" class="wm-iv-slider" id="wm-iv-size" min="10" max="120" value="40" oninput="window._wmIV.updateBrush()">
+      <div class="wm-iv-slider-label" style="margin-top:8px"><span>Opacité masque</span><span id="wm-iv-opac-val">60%</span></div>
+      <input type="range" class="wm-iv-slider" id="wm-iv-opac" min="20" max="100" value="60" oninput="window._wmIV.updateBrush()">
+    </div>
+    <div class="wm-iv-panel-section">
+      <div class="wm-iv-panel-title">✦ Instruction IA</div>
+      <textarea class="wm-iv-prompt-input" id="wm-iv-prompt" placeholder="Décris la modification… ex: remplace le fond par un coucher de soleil, ajoute des lunettes, change la couleur du t-shirt en rouge…"></textarea>
+      <button class="wm-iv-btn accent" style="width:100%;justify-content:center;margin-top:8px;" onclick="window._wmIV.applyBrush()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg>
+        Appliquer IA
+      </button>
+      <div class="wm-iv-apply-loading" id="wm-iv-loading">
+        <div class="spin"></div> Génération en cours…
+      </div>
+      <button class="wm-iv-btn wm-iv-erase-btn" onclick="window._wmIV.clearMask()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M20 20H7L3 16l10-10 7 7-2.5 2.5"/><path d="M6.5 17.5l5-5"/></svg>
+        Effacer masque
+      </button>
+    </div>
+    <div class="wm-iv-panel-section" style="font-size:10px;color:rgba(255,255,255,.25);line-height:1.6;">
+      Peins la zone à modifier, puis décris la modification. L'IA WikiMind régénèrera uniquement la zone sélectionnée.
+    </div>
+  </div>
+</div>
+<div class="wm-iv-brush-cursor" id="wm-iv-cursor"></div>
+`;
+  document.body.appendChild(viewer);
+
+  // ── Logique viewer ──
+  window._wmIV = {
+    _src: null, _origDataUrl: null, _brushMode: false,
+    _painting: false, _brushSize: 40, _brushOpac: 0.6,
+    _hasMask: false,
+
+    open(src){
+      this._src=src; this._brushMode=false;
+      const v=document.getElementById('wm-imgviewer');
+      const canvas=document.getElementById('wm-iv-canvas');
+      const maskCanvas=document.getElementById('wm-iv-mask-canvas');
+      const panel=document.getElementById('wm-iv-brush-panel');
+      const ring=document.getElementById('wm-iv-active-ring');
+      panel.classList.add('hidden');
+      ring.classList.remove('on');
+      document.getElementById('wm-iv-brush-toggle').classList.remove('accent');
+      v.classList.add('open');
+      // Load image onto canvas
+      const img=new Image(); img.crossOrigin='anonymous';
+      img.onload=()=>{
+        canvas.width=img.naturalWidth; canvas.height=img.naturalHeight;
+        maskCanvas.width=img.naturalWidth; maskCanvas.height=img.naturalHeight;
+        canvas.style.maxWidth='100%'; canvas.style.maxHeight='calc(100vh - 80px)';
+        maskCanvas.style.width=canvas.style.width; maskCanvas.style.height=canvas.style.height;
+        maskCanvas.style.maxWidth='100%'; maskCanvas.style.maxHeight='calc(100vh - 80px)';
+        const ctx=canvas.getContext('2d'); ctx.drawImage(img,0,0);
+        // cache original
+        this._origDataUrl=canvas.toDataURL('image/png');
+        // sync mask canvas display size on resize
+        this._syncMask();
+      };
+      img.onerror=()=>{
+        // fallback: try direct draw
+        canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+      };
+      img.src=src;
+      // Keyboard close
+      this._keyHandler=(e)=>{if(e.key==='Escape')this.close();};
+      document.addEventListener('keydown',this._keyHandler);
+      this._setupBrushEvents();
+    },
+
+    _syncMask(){
+      const c=document.getElementById('wm-iv-canvas');
+      const m=document.getElementById('wm-iv-mask-canvas');
+      if(!c||!m) return;
+      m.style.width=c.offsetWidth+'px'; m.style.height=c.offsetHeight+'px';
+      m.style.top='0'; m.style.left='0';
+    },
+
+    close(){
+      document.getElementById('wm-imgviewer').classList.remove('open');
+      document.getElementById('wm-iv-cursor').style.display='none';
+      if(this._keyHandler) document.removeEventListener('keydown',this._keyHandler);
+      this.clearMask();
+    },
+
+    toggleBrush(){
+      this._brushMode=!this._brushMode;
+      const canvas=document.getElementById('wm-iv-canvas');
+      const panel=document.getElementById('wm-iv-brush-panel');
+      const btn=document.getElementById('wm-iv-brush-toggle');
+      const ring=document.getElementById('wm-iv-active-ring');
+      panel.classList.toggle('hidden',!this._brushMode);
+      btn.classList.toggle('accent',this._brushMode);
+      ring.classList.toggle('on',this._brushMode);
+      canvas.classList.toggle('brush-mode',this._brushMode);
+      if(!this._brushMode) document.getElementById('wm-iv-cursor').style.display='none';
+    },
+
+    updateBrush(){
+      this._brushSize=+document.getElementById('wm-iv-size').value;
+      this._brushOpac=+document.getElementById('wm-iv-opac').value/100;
+      document.getElementById('wm-iv-size-val').textContent=this._brushSize+'px';
+      document.getElementById('wm-iv-opac-val').textContent=Math.round(this._brushOpac*100)+'%';
+      const cur=document.getElementById('wm-iv-cursor');
+      cur.style.width=this._brushSize*2+'px'; cur.style.height=this._brushSize*2+'px';
+    },
+
+    _getCanvasPos(e, canvas){
+      const rect=canvas.getBoundingClientRect();
+      const scaleX=canvas.width/rect.width;
+      const scaleY=canvas.height/rect.height;
+      const clientX=e.touches?e.touches[0].clientX:e.clientX;
+      const clientY=e.touches?e.touches[0].clientY:e.clientY;
+      return {x:(clientX-rect.left)*scaleX, y:(clientY-rect.top)*scaleY};
+    },
+
+    _paintMask(e){
+      const maskCanvas=document.getElementById('wm-iv-mask-canvas');
+      const mctx=maskCanvas.getContext('2d');
+      const pos=this._getCanvasPos(e, maskCanvas);
+      mctx.globalAlpha=this._brushOpac;
+      mctx.fillStyle='rgba(255,100,50,1)';
+      mctx.beginPath();
+      mctx.arc(pos.x, pos.y, this._brushSize, 0, Math.PI*2);
+      mctx.fill();
+      this._hasMask=true;
+    },
+
+    _setupBrushEvents(){
+      const canvas=document.getElementById('wm-iv-canvas');
+      const cur=document.getElementById('wm-iv-cursor');
+      const onMove=(e)=>{
+        if(!this._brushMode) return;
+        e.preventDefault();
+        const cx=e.touches?e.touches[0].clientX:e.clientX;
+        const cy=e.touches?e.touches[0].clientY:e.clientY;
+        cur.style.display='block';
+        cur.style.left=cx+'px'; cur.style.top=cy+'px';
+        cur.style.width=this._brushSize*2+'px'; cur.style.height=this._brushSize*2+'px';
+        if(this._painting) this._paintMask(e);
+      };
+      const onDown=(e)=>{
+        if(!this._brushMode) return;
+        e.preventDefault();
+        this._painting=true;
+        this._paintMask(e);
+      };
+      const onUp=()=>{ this._painting=false; };
+      canvas.addEventListener('mousemove',onMove);
+      canvas.addEventListener('mousedown',onDown);
+      canvas.addEventListener('mouseup',onUp);
+      canvas.addEventListener('mouseleave',()=>{ cur.style.display='none'; this._painting=false; });
+      canvas.addEventListener('touchmove',onMove,{passive:false});
+      canvas.addEventListener('touchstart',onDown,{passive:false});
+      canvas.addEventListener('touchend',onUp);
+    },
+
+    clearMask(){
+      const m=document.getElementById('wm-iv-mask-canvas');
+      if(m) m.getContext('2d').clearRect(0,0,m.width,m.height);
+      this._hasMask=false;
+    },
+
+    download(){
+      const canvas=document.getElementById('wm-iv-canvas');
+      const link=document.createElement('a');
+      link.download='wikimind-image-'+Date.now()+'.png';
+      link.href=canvas.toDataURL('image/png');
+      link.click();
+    },
+
+    sendToChat(){
+      const canvas=document.getElementById('wm-iv-canvas');
+      const dataUrl=canvas.toDataURL('image/png');
+      // Injecter comme image attachée dans le chat
+      if(typeof S!=='undefined'&&typeof updateAttachmentPreview==='function'){
+        S.attachments=S.attachments||[];
+        S.attachments.push({type:'image',name:'wikimind-viewer-export.png',content:dataUrl});
+        updateAttachmentPreview();
+        toast('Image ajoutée en pièce jointe !');
+      } else {
+        toast('Impossible d\'injecter l\'image dans le chat');
+      }
+      this.close();
+    },
+
+    async applyBrush(){
+      if(!this._hasMask){toast('🖌️ Peignez d\'abord une zone à modifier');return;}
+      const prompt=document.getElementById('wm-iv-prompt').value.trim();
+      if(!prompt){toast('✍️ Décrivez la modification souhaitée');return;}
+      const loading=document.getElementById('wm-iv-loading');
+      loading.style.display='flex';
+      const applyBtn=document.querySelector('#wm-iv-brush-panel .wm-iv-btn.accent');
+      if(applyBtn) applyBtn.disabled=true;
+      try{
+        // Build prompt: describe masked area modification using pollinations
+        const fullPrompt=`${prompt}, professional photo, high quality, seamless, 8k`;
+        const encodedPrompt=encodeURIComponent(fullPrompt);
+        const seed=Math.floor(Math.random()*99999);
+        const imgUrl=`https://image.pollinations.ai/prompt/${encodedPrompt}?model=schnell&width=1024&height=1024&seed=${seed}&nologo=true`;
+        // Load new image and composite with mask
+        const newImg=await new Promise((res,rej)=>{
+          const i=new Image(); i.crossOrigin='anonymous';
+          i.onload=()=>res(i); i.onerror=rej;
+          i.src=imgUrl;
+        });
+        const canvas=document.getElementById('wm-iv-canvas');
+        const maskCanvas=document.getElementById('wm-iv-mask-canvas');
+        const ctx=canvas.getContext('2d');
+        const mctx=maskCanvas.getContext('2d');
+        // Composite: paint new image only where mask exists
+        const maskData=mctx.getImageData(0,0,maskCanvas.width,maskCanvas.height);
+        // Draw new image to offscreen canvas
+        const offscreen=document.createElement('canvas');
+        offscreen.width=canvas.width; offscreen.height=canvas.height;
+        const octx=offscreen.getContext('2d');
+        octx.drawImage(newImg,0,0,canvas.width,canvas.height);
+        const newPixels=octx.getImageData(0,0,canvas.width,canvas.height);
+        const origImg=await new Promise((res,rej)=>{const i=new Image();i.crossOrigin='anonymous';i.onload=()=>res(i);i.onerror=rej;i.src=this._origDataUrl;});
+        const origOffscreen=document.createElement('canvas');
+        origOffscreen.width=canvas.width; origOffscreen.height=canvas.height;
+        const ooctx=origOffscreen.getContext('2d');
+        ooctx.drawImage(origImg,0,0,canvas.width,canvas.height);
+        const origPixels=ooctx.getImageData(0,0,canvas.width,canvas.height);
+        // Blend
+        const result=ctx.createImageData(canvas.width,canvas.height);
+        for(let i=0;i<maskData.data.length;i+=4){
+          const alpha=maskData.data[i+3]/255;
+          result.data[i]  =Math.round(origPixels.data[i]*(1-alpha)+newPixels.data[i]*alpha);
+          result.data[i+1]=Math.round(origPixels.data[i+1]*(1-alpha)+newPixels.data[i+1]*alpha);
+          result.data[i+2]=Math.round(origPixels.data[i+2]*(1-alpha)+newPixels.data[i+2]*alpha);
+          result.data[i+3]=255;
+        }
+        ctx.putImageData(result,0,0);
+        this._origDataUrl=canvas.toDataURL('image/png');
+        this.clearMask();
+        toast('✅ Zone modifiée par l\'IA !');
+      }catch(err){
+        toast('❌ Erreur lors de la modification : '+(err.message||''));
+      }finally{
+        loading.style.display='none';
+        if(applyBtn) applyBtn.disabled=false;
+      }
+    }
+  };
+
+  // Fermer viewer en cliquant sur le fond
+  document.getElementById('wm-imgviewer').addEventListener('click',(e)=>{
+    if(e.target.id==='wm-imgviewer') window._wmIV.close();
+  });
+})();
+
+// ── HELPER: rendre une image générée dans le chat avec viewer ──
+function _renderGenImageInChat(imgUrl, caption){
+  const div=document.createElement('div');
+  div.className='chat-bubble model';
+  const ts=Date.now();
+  const imgId='wm-gen-img-'+ts;
+  const escaped=imgUrl.replace(/'/g,"\\'");
+  div.innerHTML=`<div class="wm-gen-img-wrap" id="${imgId}">
+    <img src="${imgUrl}" alt="Image générée" loading="lazy" onclick="window._wmIV&&window._wmIV.open('${escaped}')" title="Cliquer pour agrandir">
+    <div class="wm-gen-img-actions">
+      <button class="wm-gen-img-action-btn" onclick="window._wmIV&&window._wmIV.open('${escaped}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><path d="M8 3H5a2 2 0 00-2 2v3"/><path d="M21 8V5a2 2 0 00-2-2h-3"/><path d="M3 16v3a2 2 0 002 2h3"/><path d="M16 21h3a2 2 0 002-2v-3"/></svg>
+        Plein écran
+      </button>
+      <button class="wm-gen-img-action-btn brush" onclick="_wmIV_openBrush('${escaped}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><path d="M2 21c.6-3 3-5.5 7-6l2-8c.2-.7.9-1 1.5-.8.7.2 1 .9.8 1.6l-1.3 5.2c2.5-.6 5 .5 6 3-5 1-9 2.5-10 5H2z"/></svg>
+        Pinceau IA
+      </button>
+      <a class="wm-gen-img-action-btn" href="${imgUrl}" download="wikimind-${ts}.png" target="_blank">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Télécharger
+      </a>
+    </div>
+    ${caption?`<div style="font-size:12px;color:var(--text);opacity:.6;margin-top:6px;line-height:1.5">${caption}</div>`:''}
+  </div>`;
+  return div;
+}
+function _wmIV_openBrush(src){
+  window._wmIV.open(src);
+  setTimeout(()=>window._wmIV.toggleBrush(), 300);
+}
+
 async function fetchAndRenderWikiImages(keyword){
   try{
     // Translate keyword to English if needed
@@ -8432,6 +8846,42 @@ ${_summary}
   try{
     let aiContent='',steps=null,toolCalls=[],raw='';
 
+    // ── DÉTECTION INTENTION IMAGE — tous modèles sauf wikimind_image ──
+    if(S.model!=='wikimind_image' && _detectImageIntent(displayText) && _canGenerateImage()){
+      // Générer l'image en parallèle de la réponse texte
+      const _imgPromptRaw=displayText.replace(/g[eé]n[eè]re?|cr[eé][eé]e?|dessine?|fais?\s+une?\s+image|illustre?|produis?/gi,'').replace(/une?\s+(image|photo|illustration)\s+(de\s+|pour\s+|du\s+|d[''])?/gi,'').trim();
+      const _imgPrompt=_imgPromptRaw||displayText;
+      // Skeleton
+      const _imgWaitId='img-wait-intent-'+Date.now();
+      {
+        const _cc=G('chat-container');
+        const _row=document.createElement('div');
+        _row.id=_imgWaitId; _row.className='chat-bubble model';
+        const _isDark=document.body.classList.contains('dark-mode');
+        if(!document.getElementById('img-blur-style')){
+          const st=document.createElement('style'); st.id='img-blur-style';
+          st.textContent=`.wm-img-skeleton{width:100%;max-width:480px;height:300px;border-radius:16px;overflow:hidden;position:relative;box-shadow:0 4px 24px rgba(0,0,0,.1);}.wm-img-skeleton-svg{width:100%;height:100%;display:block;}.wm-blob{transform-origin:center;will-change:transform,opacity;}.wm-blob.b1{animation:wmBlob1 6s ease-in-out infinite;}.wm-blob.b2{animation:wmBlob2 7.5s ease-in-out infinite;}.wm-blob.b3{animation:wmBlob3 5s ease-in-out infinite;}.wm-blob.b4{animation:wmBlob4 8s ease-in-out infinite;}.wm-blob.b5{animation:wmBlob5 6.5s ease-in-out infinite;}.wm-blob.b6{animation:wmBlob6 9s ease-in-out infinite;}.wm-shimmer{animation:wmShimmerSlide 2.4s cubic-bezier(.4,0,.6,1) infinite;}@keyframes wmBlob1{0%,100%{transform:translate(0,0) scale(1);}33%{transform:translate(30px,20px) scale(1.12);}66%{transform:translate(-15px,35px) scale(0.92);}}@keyframes wmBlob2{0%,100%{transform:translate(0,0) scale(1);}40%{transform:translate(-40px,-25px) scale(1.08);}70%{transform:translate(20px,15px) scale(0.95);}}@keyframes wmBlob3{0%,100%{transform:translate(0,0) scale(1);}25%{transform:translate(25px,-30px) scale(1.05);}75%{transform:translate(-20px,20px) scale(1.1);}}@keyframes wmBlob4{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(-35px,30px) scale(0.88);}}@keyframes wmBlob5{0%,100%{transform:translate(0,0) scale(1);}45%{transform:translate(40px,-20px) scale(1.15);}85%{transform:translate(-10px,10px) scale(0.9);}}@keyframes wmBlob6{0%,100%{transform:translate(0,0) scale(1);}30%{transform:translate(15px,40px) scale(1.07);}60%{transform:translate(-25px,-15px) scale(0.94);}}@keyframes wmShimmerSlide{0%{transform:translateX(0);}100%{transform:translateX(960px);}}.wm-img-skeleton-label{position:absolute;bottom:14px;left:16px;display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:rgba(128,128,128,.8);letter-spacing:.04em;text-transform:uppercase;}.wm-img-skel-dot{width:7px;height:7px;border-radius:50%;background:var(--accent,#2563eb);opacity:.8;animation:wmDotPulse 1.2s ease-in-out infinite;}@keyframes wmDotPulse{0%,100%{transform:scale(1);opacity:.8;}50%{transform:scale(1.5);opacity:.4;}}@keyframes imgBlurPulse{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}`;
+          document.head.appendChild(st);
+        }
+        _row.innerHTML=`<div class="wm-img-skeleton"><svg class="wm-img-skeleton-svg" viewBox="0 0 480 300" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice"><defs><filter id="wm-blob-blur2b"><feGaussianBlur stdDeviation="28"/></filter></defs><rect width="480" height="300" fill="${_isDark?'#111':'#e8e8e8'}"/><ellipse class="wm-blob b1" cx="80" cy="60" rx="110" ry="90" fill="${_isDark?'#1c1c1c':'#d0d0d0'}" filter="url(#wm-blob-blur2b)"/><ellipse class="wm-blob b2" cx="380" cy="240" rx="130" ry="100" fill="${_isDark?'#222':'#c8c8c8'}" filter="url(#wm-blob-blur2b)"/><ellipse class="wm-blob b3" cx="240" cy="150" rx="150" ry="80" fill="${_isDark?'#181818':'#d8d8d8'}" filter="url(#wm-blob-blur2b)"/><ellipse class="wm-blob b4" cx="430" cy="50" rx="80" ry="70" fill="${_isDark?'#1a1a1a':'#cbcbcb'}" filter="url(#wm-blob-blur2b)"/><rect class="wm-shimmer" x="-480" y="0" width="480" height="300" fill="url(#wm-sg2)" opacity="0.15"/><defs><linearGradient id="wm-sg2" x1="0" x2="1"><stop offset="0%" stop-color="#fff" stop-opacity="0"/><stop offset="50%" stop-color="#fff" stop-opacity="1"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></linearGradient></defs></svg><div class="wm-img-skeleton-label"><span class="wm-img-skel-dot"></span>Image en cours…</div></div>`;
+        _cc.appendChild(_row); _cc.scrollTop=_cc.scrollHeight;
+      }
+      // Générer en background
+      callPollinationsImage(_imgPrompt).then(imgUrl=>{
+        const waitEl=document.getElementById(_imgWaitId);
+        if(waitEl){
+          const imgDiv=_renderGenImageInChat(imgUrl,'');
+          waitEl.replaceWith(imgDiv);
+          const cc=G('chat-container'); cc.scrollTop=cc.scrollHeight;
+          _imgMarkUsed(); _updateImgQuotaBanner();
+        }
+      }).catch(e=>{
+        const waitEl=document.getElementById(_imgWaitId);
+        if(waitEl) waitEl.remove();
+        // Silencieux — l'IA répondra normalement
+      });
+    }
+
     // ── WIKIMIND IMAGE — Pollinations API ──
     if(S.model==='wikimind_image'){
       const userPrompt = S.msgs.filter(m=>m.role==='user').slice(-1)[0]?.content || '';
@@ -8446,19 +8896,71 @@ ${_summary}
         toast(`🚫 Quota images épuisé — encore ${t||'moins d\'1h'}`);
         return;
       }
-      // Placeholder flou animé
+      // Skeleton ChatGPT-style — blobs organiques animés
       const waitId='img-wait-'+Date.now();
       {
         const _cc=G('chat-container');
         const _row=document.createElement('div');
         _row.id=waitId; _row.className='chat-bubble model';
-        _row.innerHTML=`<div style="width:100%;max-width:480px;height:300px;border-radius:16px;background:linear-gradient(135deg,#d1d5db,#9ca3af,#6b7280);background-size:400% 400%;animation:imgBlurPulse 1.8s ease infinite;overflow:hidden;position:relative;"><div style="position:absolute;inset:0;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:rgba(200,200,200,.35);"></div></div>`;
+        const _isDark=document.body.classList.contains('dark-mode');
+        _row.innerHTML=`<div class="wm-img-skeleton" data-dark="${_isDark}">
+          <svg class="wm-img-skeleton-svg" viewBox="0 0 480 300" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+            <defs>
+              <filter id="wm-blob-blur"><feGaussianBlur stdDeviation="28" result="blur"/></filter>
+              <filter id="wm-blob-blur2"><feGaussianBlur stdDeviation="42" result="blur"/></filter>
+              <filter id="wm-noise-f"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feBlend in="SourceGraphic" mode="multiply"/></filter>
+            </defs>
+            <!-- fond de base -->
+            <rect width="480" height="300" fill="${_isDark?'#111':'#e8e8e8'}"/>
+            <!-- blobs principaux -->
+            <ellipse class="wm-blob b1" cx="80" cy="60" rx="110" ry="90" fill="${_isDark?'#1c1c1c':'#d0d0d0'}" filter="url(#wm-blob-blur)"/>
+            <ellipse class="wm-blob b2" cx="380" cy="240" rx="130" ry="100" fill="${_isDark?'#222':'#c8c8c8'}" filter="url(#wm-blob-blur)"/>
+            <ellipse class="wm-blob b3" cx="240" cy="150" rx="150" ry="80" fill="${_isDark?'#181818':'#d8d8d8'}" filter="url(#wm-blob-blur)"/>
+            <ellipse class="wm-blob b4" cx="430" cy="50" rx="80" ry="70" fill="${_isDark?'#1a1a1a':'#cbcbcb'}" filter="url(#wm-blob-blur2)"/>
+            <ellipse class="wm-blob b5" cx="50" cy="260" rx="90" ry="60" fill="${_isDark?'#202020':'#d5d5d5'}" filter="url(#wm-blob-blur2)"/>
+            <ellipse class="wm-blob b6" cx="300" cy="40" rx="70" ry="55" fill="${_isDark?'#161616':'#c2c2c2'}" filter="url(#wm-blob-blur)"/>
+            <!-- shimmer sweep -->
+            <rect class="wm-shimmer" x="-480" y="0" width="480" height="300" fill="url(#wm-shimmer-grad)" opacity="0.18"/>
+            <defs>
+              <linearGradient id="wm-shimmer-grad" x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0%" stop-color="${_isDark?'#fff':'#fff'}" stop-opacity="0"/>
+                <stop offset="50%" stop-color="${_isDark?'#fff':'#fff'}" stop-opacity="1"/>
+                <stop offset="100%" stop-color="${_isDark?'#fff':'#fff'}" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="wm-img-skeleton-label">
+            <span class="wm-img-skel-dot"></span>
+            Génération en cours…
+          </div>
+        </div>`;
         _cc.appendChild(_row); _cc.scrollTop=_cc.scrollHeight;
       }
-      // Injecter l'animation si pas encore présente
+      // Injecter les styles skeleton si pas encore présents
       if(!document.getElementById('img-blur-style')){
         const st=document.createElement('style'); st.id='img-blur-style';
-        st.textContent='@keyframes imgBlurPulse{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}';
+        st.textContent=`
+.wm-img-skeleton{width:100%;max-width:480px;height:300px;border-radius:16px;overflow:hidden;position:relative;box-shadow:0 4px 24px rgba(0,0,0,.1);}
+.wm-img-skeleton-svg{width:100%;height:100%;display:block;}
+.wm-blob{transform-origin:center;will-change:transform,opacity;}
+.wm-blob.b1{animation:wmBlob1 6s ease-in-out infinite;}
+.wm-blob.b2{animation:wmBlob2 7.5s ease-in-out infinite;}
+.wm-blob.b3{animation:wmBlob3 5s ease-in-out infinite;}
+.wm-blob.b4{animation:wmBlob4 8s ease-in-out infinite;}
+.wm-blob.b5{animation:wmBlob5 6.5s ease-in-out infinite;}
+.wm-blob.b6{animation:wmBlob6 9s ease-in-out infinite;}
+.wm-shimmer{animation:wmShimmerSlide 2.4s cubic-bezier(.4,0,.6,1) infinite;}
+@keyframes wmBlob1{0%,100%{transform:translate(0,0) scale(1);}33%{transform:translate(30px,20px) scale(1.12);}66%{transform:translate(-15px,35px) scale(0.92);}}
+@keyframes wmBlob2{0%,100%{transform:translate(0,0) scale(1);}40%{transform:translate(-40px,-25px) scale(1.08);}70%{transform:translate(20px,15px) scale(0.95);}}
+@keyframes wmBlob3{0%,100%{transform:translate(0,0) scale(1);}25%{transform:translate(25px,-30px) scale(1.05);}75%{transform:translate(-20px,20px) scale(1.1);}}
+@keyframes wmBlob4{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(-35px,30px) scale(0.88);}}
+@keyframes wmBlob5{0%,100%{transform:translate(0,0) scale(1);}45%{transform:translate(40px,-20px) scale(1.15);}85%{transform:translate(-10px,10px) scale(0.9);}}
+@keyframes wmBlob6{0%,100%{transform:translate(0,0) scale(1);}30%{transform:translate(15px,40px) scale(1.07);}60%{transform:translate(-25px,-15px) scale(0.94);}}
+@keyframes wmShimmerSlide{0%{transform:translateX(0);}100%{transform:translateX(960px);}}
+.wm-img-skeleton-label{position:absolute;bottom:14px;left:16px;display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:rgba(128,128,128,.8);letter-spacing:.04em;text-transform:uppercase;}
+.wm-img-skel-dot{width:7px;height:7px;border-radius:50%;background:var(--accent,#2563eb);opacity:.8;animation:wmDotPulse 1.2s ease-in-out infinite;}
+@keyframes wmDotPulse{0%,100%{transform:scale(1);opacity:.8;}50%{transform:scale(1.5);opacity:.4;}}
+@keyframes imgBlurPulse{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}`;
         document.head.appendChild(st);
       }
       try{
