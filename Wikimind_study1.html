@@ -1,0 +1,1836 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-29XYBNJ2CB"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-29XYBNJ2CB');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WikiMind Study</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&family=Syne:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+<style>
+:root {
+  --bg: #09090f;
+  --surface: rgba(18,18,30,0.7);
+  --surface2: rgba(28,28,45,0.8);
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #f0f0ff;
+  --text-muted: rgba(200,200,230,0.5);
+  --accent: #7c6fff;
+  --accent2: #a78bfa;
+  --accent-glow: rgba(124,111,255,0.35);
+  --green: #34d399;
+  --red: #f87171;
+  --blue: #60a5fa;
+  --gold: #fbbf24;
+  --timer-work: #7c6fff;
+  --timer-break: #34d399;
+  --timer-long: #60a5fa;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- AURORA BG ---- */
+.aurora {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+}
+.aurora-blob {
+  position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.12;
+  animation: auroraFloat 14s ease-in-out infinite;
+}
+.aurora-blob:nth-child(1) { width: 600px; height: 600px; background: #7c6fff; top: -200px; left: -100px; animation-delay: 0s; }
+.aurora-blob:nth-child(2) { width: 400px; height: 400px; background: #a78bfa; top: 40%; right: -100px; animation-delay: -5s; }
+.aurora-blob:nth-child(3) { width: 300px; height: 300px; background: #60a5fa; bottom: -50px; left: 30%; animation-delay: -9s; }
+@keyframes auroraFloat {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33% { transform: translate(30px,-30px) scale(1.05); }
+  66% { transform: translate(-20px,20px) scale(0.97); }
+}
+
+/* ---- GLASS ---- */
+.glass {
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+}
+.glass2 {
+  background: var(--surface2);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+}
+
+/* ---- HEADER ---- */
+header {
+  position: relative; z-index: 10;
+  padding: 14px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  background: rgba(9,9,15,0.6);
+  backdrop-filter: blur(16px);
+  flex-shrink: 0;
+}
+
+.logo-mark {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-weight: 900; font-size: 18px; color: white;
+  box-shadow: 0 0 20px var(--accent-glow);
+  text-decoration: none;
+}
+.app-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: -0.04em;
+  color: var(--text);
+}
+.app-title span { color: var(--text-muted); font-weight: 400; }
+
+/* ---- ACCOUNT HEADER ---- */
+#account-header-area {
+  display: flex; align-items: center; gap: 10px;
+}
+
+/* Plan badge rings (same as index.html) */
+.plan-chip-avatar { position:relative; width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+.plan-chip-avatar .avatar-inner { width:30px; height:30px; object-fit:cover; border-radius:50%; position:relative; z-index:2; display:flex; align-items:center; justify-content:center; background: linear-gradient(135deg, #7c6fff, #a78bfa); font-size:13px; font-weight:800; color:white; }
+.plan-chip-avatar::after { content:''; position:absolute; inset:-2px; border-radius:50%; z-index:0; }
+.plan-chip-avatar::before { content:''; position:absolute; inset:2px; border-radius:50%; z-index:1; background:var(--bg); }
+.ring-free::after { background:conic-gradient(#9ca3af,#d1d5db,#9ca3af); }
+.ring-plus::after { background:conic-gradient(#fff,#aaa,#fff,#aaa,#fff); animation:ringRotate 4s linear infinite; }
+.ring-pro::after { background:conic-gradient(#22c55e,#4ade80,#16a34a,#86efac,#22c55e); animation:ringRotate 3s linear infinite; }
+.ring-premium::after { background:conic-gradient(#f59e0b,#fcd34d,#d97706,#fef08a,#f59e0b); animation:ringRotate 2.5s linear infinite; }
+.ring-premium-plus::after { background:conic-gradient(#ef4444,#f97316,#eab308,#f97316,#ef4444); animation:ringRotateFire 1.8s linear infinite; }
+@keyframes ringRotate { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes ringRotateFire { 0%{transform:rotate(0deg);filter:brightness(1)} 50%{transform:rotate(180deg);filter:brightness(1.3)} 100%{transform:rotate(360deg);filter:brightness(1)} }
+
+.plan-badge-text { font-size:9px; font-weight:800; text-transform:uppercase; padding:2px 7px; border-radius:20px; letter-spacing:.04em; }
+.plan-free { background:#27272a; color:#a1a1aa; }
+.plan-plus { background:#1e3a5f; color:#60a5fa; }
+.plan-pro { background:#3b1f5e; color:#c084fc; }
+.plan-premium { background:#44330f; color:#fbbf24; }
+.plan-premium-plus { background:linear-gradient(135deg,#44110f,#44330f); color:#fb923c; }
+
+#account-name {
+  font-size: 13px; font-weight: 700; color: var(--text);
+  max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.header-btn {
+  height: 34px; padding: 0 14px;
+  border-radius: 99px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  color: var(--text-muted);
+  font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; gap: 6px;
+}
+.header-btn:hover { color: var(--text); border-color: var(--accent); background: rgba(124,111,255,0.1); }
+
+/* ---- MUSIC BAR ---- */
+#media-bar {
+  display: none;
+  align-items: center; gap: 10px;
+  padding: 8px 16px;
+  background: rgba(52,211,153,0.08);
+  border-bottom: 1px solid rgba(52,211,153,0.15);
+  font-size: 12px; color: var(--green);
+  font-weight: 600;
+  z-index: 9; position: relative;
+  flex-shrink: 0;
+}
+#media-bar.visible { display: flex; }
+#media-bar .media-title { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#media-pause-btn {
+  background: rgba(52,211,153,0.15);
+  border: 1px solid rgba(52,211,153,0.3);
+  border-radius: 8px; padding: 4px 12px;
+  color: var(--green); font-size: 11px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; flex-shrink:0;
+}
+#media-pause-btn:hover { background: rgba(52,211,153,0.25); }
+
+/* ---- MAIN VIEW CONTAINER ---- */
+#app-wrapper {
+  flex: 1; overflow: hidden; position: relative; z-index: 1;
+  display: flex; flex-direction: column;
+}
+
+/* ---- SLIDER / MODE SWITCHER ---- */
+#mode-slider-bar {
+  display: flex; align-items: center; gap: 0;
+  padding: 10px 24px;
+  position: relative; z-index: 5;
+  flex-shrink: 0;
+}
+.mode-pill {
+  display: flex;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 4px;
+  gap: 2px;
+}
+.mode-btn {
+  padding: 7px 20px;
+  border-radius: 99px;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all 0.25s;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  display: flex; align-items: center; gap: 6px;
+  white-space: nowrap;
+}
+.mode-btn.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white;
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+
+/* ---- VIEWS ---- */
+.view { display: none; flex: 1; overflow: hidden; }
+.view.active { display: flex; }
+
+/* ---- STUDY VIEW ---- */
+#study-view {
+  padding: 12px 20px 20px;
+  gap: 16px;
+  overflow: hidden;
+}
+@media (min-width: 1024px) {
+  #study-view { flex-direction: row; align-items: stretch; }
+}
+@media (max-width: 1023px) {
+  #study-view { flex-direction: column; overflow-y: auto; }
+}
+
+/* Timer column */
+.timer-col {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  min-width: 0;
+}
+
+/* SVG timer */
+.timer-ring circle {
+  transition: stroke-dashoffset 1s linear, stroke 0.4s ease;
+  transform-origin: 50% 50%;
+}
+@keyframes spinRing { from{transform:rotate(-90deg)} to{transform:rotate(270deg)} }
+.ring-spin { animation: spinRingCont 8s linear infinite; transform-origin: 50% 50%; }
+@keyframes spinRingCont { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+#timer-display {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(52px, 8vw, 88px);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--text);
+}
+
+.ctrl-btn {
+  width: 52px; height: 52px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.2s; border: none;
+}
+.ctrl-btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  box-shadow: 0 0 20px var(--accent-glow), 0 4px 12px rgba(0,0,0,0.3);
+  color: white;
+}
+.ctrl-btn-primary:hover { transform: scale(1.08); box-shadow: 0 0 30px var(--accent-glow); }
+.ctrl-btn-secondary {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text-muted);
+}
+.ctrl-btn-secondary:hover { color: var(--text); border-color: var(--border2); }
+
+/* Tasks column */
+.tasks-col {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+.task-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+}
+.task-item:hover { background: rgba(255,255,255,0.02); }
+.task-item:last-child { border-bottom: none; }
+.task-item.completed { opacity: 0.4; }
+.task-item.completed .task-name { text-decoration: line-through; }
+.check-btn {
+  width: 24px; height: 24px; border-radius: 8px; flex-shrink: 0;
+  border: 2px solid var(--border2);
+  background: transparent; cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; color: white;
+}
+.check-btn.done { background: var(--green); border-color: var(--green); }
+.del-btn {
+  background: transparent; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: 16px; padding: 4px;
+  border-radius: 6px; transition: all 0.2s; margin-left: auto;
+}
+.del-btn:hover { color: var(--red); background: rgba(248,113,113,0.1); }
+
+/* Cycle dots */
+.cycle-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border2); transition: all 0.3s;
+}
+.cycle-dot.done { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
+
+/* Mini music player */
+#mini-music-player {
+  display: none; align-items: center; gap: 8px;
+  padding: 8px 16px; border-radius: 99px;
+  background: rgba(124,111,255,0.08);
+  border: 1px solid rgba(124,111,255,0.2);
+  font-size: 12px; font-weight: 600; color: var(--accent2);
+}
+#mini-music-player.visible { display: flex; }
+
+/* Stats bar */
+#global-stats {
+  display: none; align-items: center; justify-content: space-between;
+  padding: 8px 14px; border-radius: 12px;
+  background: rgba(124,111,255,0.06);
+  border: 1px solid rgba(124,111,255,0.12);
+  font-size: 11px; font-weight: 700;
+  color: var(--text-muted); margin-top: 8px;
+}
+#global-stats.visible { display: flex; }
+
+/* ---- AI VIEW ---- */
+#ai-view {
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Split: file panel (left) + chat (right) */
+.ai-layout {
+  flex: 1; display: flex; overflow: hidden; gap: 0;
+}
+
+/* Left context panel */
+#context-panel {
+  width: 280px; flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  transition: width 0.3s ease;
+}
+#context-panel.collapsed { width: 0; overflow: hidden; border: none; }
+
+.ctx-section { padding: 16px; border-bottom: 1px solid var(--border); }
+.ctx-section-title {
+  font-size: 10px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 10px;
+}
+
+/* Subject selector */
+#subject-input {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 10px; padding: 8px 12px; color: var(--text);
+  font-size: 13px; outline: none; transition: border-color 0.2s;
+}
+#subject-input:focus { border-color: var(--accent); }
+
+/* File uploads */
+#file-drop-zone {
+  border: 2px dashed var(--border2); border-radius: 12px;
+  padding: 16px; text-align: center; cursor: pointer;
+  transition: all 0.2s; color: var(--text-muted); font-size: 12px;
+}
+#file-drop-zone:hover, #file-drop-zone.dragover {
+  border-color: var(--accent); color: var(--accent2);
+  background: rgba(124,111,255,0.05);
+}
+#file-drop-zone input { display: none; }
+
+.file-chip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 10px;
+  background: var(--surface2); border: 1px solid var(--border2);
+  font-size: 11px; color: var(--text-muted); margin-top: 6px;
+}
+.file-chip-icon { font-size: 16px; }
+.file-chip-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-chip-del { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; padding:0; }
+.file-chip-del:hover { color: var(--red); }
+
+/* Level selector */
+#level-select {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 10px; padding: 8px 12px; color: var(--text);
+  font-size: 13px; outline: none; cursor: pointer;
+}
+
+/* Chat area */
+#chat-area {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden;
+  min-width: 0;
+}
+
+#chat-messages {
+  flex: 1; overflow-y: auto; padding: 20px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+
+.msg {
+  max-width: 85%; border-radius: 16px;
+  padding: 12px 16px; font-size: 14px; line-height: 1.6;
+  animation: msgIn 0.3s cubic-bezier(0.16,1,0.3,1);
+}
+@keyframes msgIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.msg.user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+.msg.ai {
+  align-self: flex-start;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+}
+.msg.ai .msg-subject {
+  display: inline-block;
+  font-size: 10px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--accent2);
+  margin-bottom: 6px; padding: 2px 8px;
+  background: rgba(124,111,255,0.1); border-radius: 99px;
+}
+
+/* Markdown in AI messages */
+.msg.ai h1,.msg.ai h2,.msg.ai h3 { font-family:'Syne',sans-serif; font-weight:800; margin:12px 0 6px; color:var(--text); }
+.msg.ai h1{font-size:18px;} .msg.ai h2{font-size:16px;} .msg.ai h3{font-size:14px;}
+.msg.ai p { margin-bottom: 8px; }
+.msg.ai ul,.msg.ai ol { padding-left: 20px; margin-bottom: 8px; }
+.msg.ai li { margin-bottom: 4px; }
+.msg.ai code { background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 5px; font-size: 13px; font-family: monospace; }
+.msg.ai pre { background: rgba(0,0,0,0.3); border:1px solid var(--border2); border-radius:10px; padding:12px; overflow-x:auto; margin:8px 0; }
+.msg.ai pre code { background:none; padding:0; }
+.msg.ai strong { color: var(--accent2); font-weight: 700; }
+.msg.ai em { color: var(--text-muted); }
+.msg.ai blockquote { border-left: 3px solid var(--accent); padding-left: 12px; color: var(--text-muted); margin: 8px 0; }
+.msg.ai table { width:100%; border-collapse:collapse; margin:8px 0; font-size:13px; }
+.msg.ai th { background:rgba(124,111,255,0.1); padding:8px; text-align:left; font-weight:700; border:1px solid var(--border2); }
+.msg.ai td { padding:8px; border:1px solid var(--border); }
+
+/* KaTeX inline */
+.katex-display { overflow-x: auto; padding: 4px 0; }
+
+/* Typing indicator */
+.typing-dot { width:6px; height:6px; background:var(--accent2); border-radius:50%; display:inline-block; animation:typeBounce 1.4s infinite ease-in-out both; }
+.typing-dot:nth-child(1){animation-delay:-0.32s;} .typing-dot:nth-child(2){animation-delay:-0.16s;}
+@keyframes typeBounce { 0%,80%,100%{transform:scale(0)} 40%{transform:scale(1)} }
+
+/* Chat input bar */
+#chat-input-bar {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: rgba(9,9,15,0.7);
+  display: flex; gap: 8px; align-items: flex-end;
+}
+#chat-input {
+  flex: 1; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 14px; padding: 10px 14px;
+  color: var(--text); font-size: 14px; font-family: 'DM Sans', sans-serif;
+  outline: none; resize: none; max-height: 120px;
+  transition: border-color 0.2s;
+  line-height: 1.5;
+}
+#chat-input:focus { border-color: var(--accent); }
+#chat-input::placeholder { color: var(--text-muted); }
+#send-btn {
+  width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none; color: white; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 14px var(--accent-glow);
+  transition: all 0.2s;
+}
+#send-btn:hover { transform: scale(1.05); }
+#send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Panel toggle btn */
+#toggle-ctx-btn {
+  width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border2);
+  background: var(--surface); color: var(--text-muted);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; transition: all 0.2s;
+}
+#toggle-ctx-btn:hover { color: var(--text); border-color: var(--accent); }
+
+/* ---- SETTINGS MODAL ---- */
+.modal-overlay {
+  position: fixed; inset:0;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+  z-index: 100; display: none; align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-card {
+  width: 90%; max-width: 440px; max-height: 88vh;
+  background: #141420; border: 1px solid var(--border2);
+  border-radius: 24px; overflow-y: auto; padding: 24px;
+  animation: scaleIn 0.3s cubic-bezier(0.16,1,0.3,1);
+}
+@keyframes scaleIn { from{transform:scale(0.95);opacity:0} to{transform:scale(1);opacity:1} }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+.settings-section-title {
+  font-size: 10px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 12px;
+}
+.settings-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0;
+}
+.settings-label { font-size: 13px; font-weight: 600; color: var(--text); }
+
+/* Custom toggle */
+.toggle-checkbox { display: none; }
+.toggle-label {
+  width: 42px; height: 24px; background: rgba(255,255,255,0.1);
+  border-radius: 99px; position: relative; cursor: pointer;
+  transition: 0.3s; border: 1px solid var(--border2);
+}
+.toggle-label::after {
+  content: ''; width: 18px; height: 18px; background: white;
+  border-radius: 50%; position: absolute; top: 2px; left: 2px;
+  transition: 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.toggle-checkbox:checked + .toggle-label { background: var(--accent); border-color: var(--accent); }
+.toggle-checkbox:checked + .toggle-label::after { transform: translateX(18px); }
+
+.settings-input {
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 10px; padding: 8px 12px; color: var(--text);
+  font-size: 14px; font-weight: 700; text-align: center;
+  width: 70px; outline: none;
+}
+.settings-select {
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 10px; padding: 8px 12px; color: var(--text);
+  font-size: 13px; outline: none; cursor: pointer; width: 100%;
+}
+.settings-range {
+  width: 100%; accent-color: var(--accent); cursor: pointer;
+}
+.settings-divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+
+/* Save btn */
+.save-btn {
+  width: 100%; padding: 12px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none; border-radius: 14px;
+  color: white; font-size: 14px; font-weight: 800;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  cursor: pointer; margin-top: 16px;
+  box-shadow: 0 0 24px var(--accent-glow);
+  transition: all 0.2s;
+}
+.save-btn:hover { transform: translateY(-1px); box-shadow: 0 0 32px var(--accent-glow); }
+
+/* Sign in btn */
+.signin-btn {
+  padding: 7px 16px; border-radius: 99px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none; color: white; font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; letter-spacing: 0.03em;
+  box-shadow: 0 0 14px var(--accent-glow);
+}
+.signin-btn:hover { transform: scale(1.03); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+/* Live clock */
+#live-clock { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 17px; color: var(--text-muted); letter-spacing: -0.02em; }
+
+/* ---- MOBILE ---- */
+@media (max-width: 768px) {
+  #context-panel { display: none; }
+  #context-panel.mobile-open {
+    display: flex;
+    position: fixed; inset: 0; z-index: 50;
+    width: 100%; border: none;
+    background: #0e0e1a;
+    animation: fadeIn 0.25s ease;
+  }
+  #ai-view .ai-layout { flex-direction: column; }
+  #study-view { padding: 10px; }
+  header { padding: 10px 14px; }
+}
+
+/* Empty state */
+.empty-state {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  color: var(--text-muted); text-align: center; padding: 32px;
+}
+.empty-state-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+
+/* Quick suggestions chips */
+.suggestion-chip {
+  display: inline-block; padding: 6px 12px;
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 99px; font-size: 12px; font-weight: 600;
+  color: var(--text-muted); cursor: pointer; transition: all 0.2s;
+  white-space: nowrap;
+}
+.suggestion-chip:hover { color: var(--accent2); border-color: var(--accent); background: rgba(124,111,255,0.08); }
+
+/* Context panel close btn on mobile */
+#ctx-close-mobile { display: none; }
+@media (max-width: 768px) {
+  #ctx-close-mobile { display: flex; }
+}
+
+/* Mobile AI context trigger */
+#open-ctx-mobile {
+  display: none; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 8px;
+  background: var(--surface2); border: 1px solid var(--border2);
+  font-size: 11px; font-weight: 700; color: var(--text-muted);
+  cursor: pointer;
+}
+@media (max-width: 768px) {
+  #open-ctx-mobile { display: flex; }
+}
+
+/* Attach btn */
+#attach-btn {
+  width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+  background: var(--surface2); border: 1px solid var(--border2);
+  color: var(--text-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+#attach-btn:hover { color: var(--accent2); border-color: var(--accent); }
+#attach-file-input { display: none; }
+</style>
+</head>
+<body>
+
+<div class="aurora" aria-hidden="true">
+  <div class="aurora-blob"></div>
+  <div class="aurora-blob"></div>
+  <div class="aurora-blob"></div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div id="settings-modal" class="modal-overlay" onclick="if(event.target===this)closeSettings()">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h3 style="font-family:'Syne',sans-serif;font-weight:900;font-size:20px">Paramètres</h3>
+      <button onclick="closeSettings()" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer">✕</button>
+    </div>
+
+    <!-- Apparence -->
+    <p class="settings-section-title">Apparence</p>
+    <div class="settings-row">
+      <span class="settings-label">Mode sombre</span>
+      <input type="checkbox" id="check-dark" class="toggle-checkbox" onchange="toggleTheme()">
+      <label for="check-dark" class="toggle-label"></label>
+    </div>
+    <div class="settings-row">
+      <span class="settings-label">Afficher l'heure</span>
+      <input type="checkbox" id="check-clock" class="toggle-checkbox" onchange="saveSettings()">
+      <label for="check-clock" class="toggle-label"></label>
+    </div>
+    <div class="settings-row">
+      <span class="settings-label">Temps total révisé</span>
+      <input type="checkbox" id="check-total" class="toggle-checkbox" onchange="saveSettings()">
+      <label for="check-total" class="toggle-label"></label>
+    </div>
+
+    <hr class="settings-divider">
+
+    <!-- Audio -->
+    <p class="settings-section-title">Audio & Musique</p>
+    <div class="settings-row">
+      <span class="settings-label">Sons timer</span>
+      <input type="checkbox" id="check-sound" class="toggle-checkbox">
+      <label for="check-sound" class="toggle-label"></label>
+    </div>
+    <div style="margin-top:10px">
+      <span class="settings-label" style="display:block;margin-bottom:6px">Musique d'ambiance</span>
+      <select id="select-music" class="settings-select" onchange="saveSettings()">
+        <option value="none">Aucune</option>
+        <option value="rain">Pluie Intense</option>
+        <option value="forest">Forêt & Nature</option>
+        <option value="fire">Cheminée Crépitante</option>
+        <option value="lofi">Lo-Fi Beats</option>
+      </select>
+    </div>
+    <div style="margin-top:10px">
+      <span class="settings-label" style="display:block;margin-bottom:6px">Volume <span id="vol-label">50</span>%</span>
+      <input type="range" id="range-volume" min="0" max="100" value="50" class="settings-range" oninput="document.getElementById('vol-label').textContent=this.value;saveSettings()">
+    </div>
+
+    <hr class="settings-divider">
+
+    <!-- Timer -->
+    <p class="settings-section-title">Minuteur (minutes)</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+      <div>
+        <span class="settings-label" style="font-size:11px;display:block;margin-bottom:4px;color:var(--text-muted)">Travail</span>
+        <input type="number" id="set-work" class="settings-input" value="25">
+      </div>
+      <div>
+        <span class="settings-label" style="font-size:11px;display:block;margin-bottom:4px;color:var(--text-muted)">Pause C.</span>
+        <input type="number" id="set-short" class="settings-input" value="5">
+      </div>
+      <div>
+        <span class="settings-label" style="font-size:11px;display:block;margin-bottom:4px;color:var(--text-muted)">Pause L.</span>
+        <input type="number" id="set-long" class="settings-input" value="15">
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <span class="settings-label" style="font-size:11px;display:block;margin-bottom:4px;color:var(--text-muted)">Cycles avant pause longue</span>
+      <input type="number" id="set-cycles" class="settings-input" value="4" style="width:100%">
+    </div>
+
+    <button class="save-btn" onclick="saveSettings();closeSettings()">Enregistrer & Fermer</button>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div style="display:flex;align-items:center;gap:12px">
+    <a href="Wikimind_home.html" class="logo-mark">W</a>
+    <div>
+      <div class="app-title">WikiMind <span>Study</span></div>
+      <div style="font-size:10px;color:var(--text-muted);font-weight:700;letter-spacing:0.08em;text-transform:uppercase">RÉVISER INTELLIGEMMENT</div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:10px">
+    <!-- Live clock -->
+    <div id="live-clock" style="display:none">00:00</div>
+
+    <!-- Spotify/YouTube media bar pill -->
+    <div id="header-media-pill" style="display:none;align-items:center;gap:8px;padding:6px 14px;border-radius:99px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);font-size:12px;font-weight:600;color:var(--green)">
+      <span style="font-size:14px" id="media-icon-pill">🎵</span>
+      <span id="media-title-pill" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</span>
+      <button id="media-pause-pill" onclick="toggleMediaPlayback()" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);border-radius:6px;padding:3px 10px;color:var(--green);font-size:11px;font-weight:700;cursor:pointer">⏸ Pause</button>
+    </div>
+
+    <!-- Account area -->
+    <div id="account-header-area">
+      <!-- Filled by Firebase auth -->
+      <button class="signin-btn" id="signin-header-btn" onclick="window.location.href='user.html'">Se connecter</button>
+    </div>
+
+    <button class="header-btn" onclick="openSettings()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Réglages
+    </button>
+  </div>
+</header>
+
+<!-- APP WRAPPER -->
+<div id="app-wrapper">
+
+  <!-- MODE SLIDER -->
+  <div id="mode-slider-bar">
+    <div class="mode-pill">
+      <button class="mode-btn active" id="btn-study" onclick="switchMode('study')">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Pomodoro
+      </button>
+      <button class="mode-btn" id="btn-ai" onclick="switchMode('ai')">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+        WikiMind IA
+      </button>
+    </div>
+    <!-- Mobile AI ctx btn -->
+    <button id="open-ctx-mobile" onclick="openMobileCtx()" style="margin-left:auto">
+      <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+      Contexte & Fichiers
+    </button>
+  </div>
+
+  <!-- ======== STUDY VIEW ======== -->
+  <div id="study-view" class="view active" style="display:flex">
+
+    <!-- LEFT: TIMER -->
+    <div class="timer-col">
+      <div style="position:relative;width:min(280px,70vw);height:min(280px,70vw);display:flex;align-items:center;justify-content:center">
+        <svg class="timer-ring" style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 100 100">
+          <!-- Decorative spin ring -->
+          <circle cx="50" cy="50" r="46" stroke="rgba(255,255,255,0.04)" stroke-width="1.5" fill="none" stroke-dasharray="6 6" class="ring-spin"/>
+          <!-- Base ring -->
+          <circle cx="50" cy="50" r="44" stroke="rgba(255,255,255,0.06)" stroke-width="6" fill="none"/>
+          <!-- Progress ring -->
+          <circle id="progress-ring" cx="50" cy="50" r="44" stroke="var(--timer-work)" stroke-width="6" fill="none" stroke-linecap="round" stroke-dasharray="0 276.46" transform="rotate(-90 50 50)"/>
+        </svg>
+        <div style="text-align:center;z-index:1">
+          <div id="timer-label" style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.15em;color:var(--text-muted);margin-bottom:6px">Focus</div>
+          <div id="timer-display">25:00</div>
+          <div style="margin-top:20px;display:flex;gap:12px;justify-content:center">
+            <button class="ctrl-btn ctrl-btn-secondary" onclick="timer.reset()">
+              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            </button>
+            <button class="ctrl-btn ctrl-btn-primary" onclick="timer.toggle()" id="btn-toggle">
+              <svg id="icon-play" width="22" height="22" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              <svg id="icon-pause" width="22" height="22" fill="currentColor" viewBox="0 0 24 24" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            </button>
+            <button class="ctrl-btn ctrl-btn-secondary" onclick="timer.skip()">
+              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 18V6l12 6z"/><line x1="21" y1="6" x2="21" y2="18" stroke-linecap="round" stroke-width="2"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:12px">
+        <div id="cycle-dots" style="display:flex;gap:8px"></div>
+        <div id="mini-music-player">
+          <span>🎵</span>
+          <span id="music-name">Musique active</span>
+          <button onclick="musicManager.toggle()" style="background:rgba(124,111,255,0.15);border:1px solid rgba(124,111,255,0.3);border-radius:6px;padding:3px 10px;color:var(--accent2);font-size:11px;font-weight:700;cursor:pointer">⏸</button>
+        </div>
+        <div id="global-stats">
+          <span>⏱ TEMPS RÉVISÉ TOTAL</span>
+          <span id="global-revision-time">0h 00m</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: TASKS -->
+    <div class="tasks-col glass" style="padding:20px;overflow:hidden;display:flex;flex-direction:column">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px">
+        <div>
+          <h2 style="font-family:'Syne',sans-serif;font-weight:900;font-size:18px">Mes Tâches</h2>
+          <p style="font-size:11px;color:var(--text-muted);margin-top:2px">Géré par vous ou WikiMind IA</p>
+        </div>
+        <button onclick="taskManager.promptAdd()" style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;border:1px solid var(--border2);padding:7px 14px;border-radius:99px;background:none;color:var(--text-muted);cursor:pointer;transition:all 0.2s" onmouseover="this.style.color='white';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border2)'">+ Ajouter</button>
+      </div>
+
+      <div id="task-list" style="flex:1;overflow-y:auto;position:relative">
+        <div id="empty-state" class="empty-state">
+          <div class="empty-state-icon">📋</div>
+          <p style="font-weight:700;font-size:14px">Aucune tâche prévue</p>
+          <p style="font-size:12px;margin-top:6px">Demandez à WikiMind IA d'organiser votre session.</p>
+          <button onclick="switchMode('ai')" style="margin-top:16px;padding:8px 18px;border-radius:99px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:white;font-size:12px;font-weight:700;cursor:pointer">Ouvrir WikiMind IA →</button>
+        </div>
+      </div>
+
+      <div style="padding-top:12px;border-top:1px solid var(--border);margin-top:8px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:var(--text-muted)">
+          <span>PLANIFIÉ: <span id="total-time">0h 00m</span></span>
+          <span id="finish-time">Fin: --:--</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ======== AI VIEW ======== -->
+  <div id="ai-view" class="view">
+    <div class="ai-layout">
+
+      <!-- Context Panel (left) -->
+      <div id="context-panel">
+        <!-- Mobile close -->
+        <button id="ctx-close-mobile" onclick="closeMobileCtx()" style="position:absolute;top:14px;right:14px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;color:var(--text-muted);cursor:pointer;font-size:12px;font-weight:700;z-index:2">✕ Fermer</button>
+
+        <!-- Subject -->
+        <div class="ctx-section">
+          <div class="ctx-section-title">📚 Sujet de travail</div>
+          <input type="text" id="subject-input" placeholder="Ex: Bac Maths Terminale S..." oninput="updateSubjectContext()">
+          <div style="margin-top:8px">
+            <select id="level-select" class="settings-select" onchange="updateSubjectContext()">
+              <option value="">Niveau scolaire...</option>
+              <option value="college">Collège</option>
+              <option value="seconde">Seconde</option>
+              <option value="premiere">Première</option>
+              <option value="terminale">Terminale</option>
+              <option value="bts">BTS / BUT</option>
+              <option value="licence">Licence</option>
+              <option value="master">Master / Grande École</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Files -->
+        <div class="ctx-section" style="flex:1;overflow-y:auto">
+          <div class="ctx-section-title">📎 Fichiers de contexte</div>
+          <div id="file-drop-zone" onclick="document.getElementById('ctx-file-input').click()">
+            <input type="file" id="ctx-file-input" multiple accept=".pdf,.txt,.md,.docx,.png,.jpg,.jpeg" onchange="handleCtxFiles(event)">
+            <div style="font-size:22px;margin-bottom:6px">📁</div>
+            <div style="font-weight:700">Glisser / Cliquer</div>
+            <div style="font-size:10px;margin-top:4px;opacity:0.6">PDF, TXT, Images...</div>
+          </div>
+          <div id="ctx-files-list" style="margin-top:10px"></div>
+        </div>
+
+        <!-- Suggestions -->
+        <div class="ctx-section">
+          <div class="ctx-section-title">💡 Suggestions rapides</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <span class="suggestion-chip" onclick="insertSuggestion('Explique-moi ce concept étape par étape')">Explique étape par étape</span>
+            <span class="suggestion-chip" onclick="insertSuggestion('Génère 5 exercices sur ce sujet avec corrigés')">Exercices + corrigés</span>
+            <span class="suggestion-chip" onclick="insertSuggestion('Résume les points clés à retenir')">Points clés</span>
+            <span class="suggestion-chip" onclick="insertSuggestion('Je bloque sur ce problème, aide-moi')">Je bloque ici</span>
+            <span class="suggestion-chip" onclick="insertSuggestion('Crée un quiz de 10 questions sur ce cours')">Quiz</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat area (right) -->
+      <div id="chat-area">
+        <!-- Top bar -->
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:rgba(9,9,15,0.5);flex-shrink:0">
+          <button id="toggle-ctx-btn" onclick="toggleCtxPanel()" title="Panneau contexte">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
+          </button>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:900;font-size:11px;color:white">WM</div>
+            <div>
+              <div style="font-size:13px;font-weight:700">WikiMind Brain</div>
+              <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted)">
+                <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block"></span>
+                MISTRAL · EN LIGNE
+              </div>
+            </div>
+          </div>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+            <span id="ctx-subject-pill" style="display:none;font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:rgba(124,111,255,0.1);border:1px solid rgba(124,111,255,0.2);color:var(--accent2)"></span>
+          </div>
+        </div>
+
+        <div id="chat-messages">
+          <div class="msg ai" style="max-width:100%">
+            <div class="msg-subject">WikiMind Brain</div>
+            <div>Bonjour ! Je suis votre assistant d'étude intelligent propulsé par Mistral.<br><br>
+            🎯 <strong>Définissez votre sujet</strong> dans le panneau gauche pour un accompagnement personnalisé.<br>
+            📎 <strong>Importez vos cours</strong> (PDF, notes...) pour que je les analyse.<br>
+            ✏️ <strong>Posez vos questions</strong> — je supporte les formules mathématiques (LaTeX), les tableaux, le code...<br><br>
+            Que travaille-t-on aujourd'hui ?</div>
+          </div>
+        </div>
+
+        <!-- Input bar -->
+        <div id="chat-input-bar">
+          <button id="attach-btn" onclick="document.getElementById('attach-file-input').click()" title="Joindre un fichier">
+            <input type="file" id="attach-file-input" accept=".pdf,.txt,.md,.docx,.png,.jpg" onchange="attachFileToMessage(event)">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+          </button>
+          <textarea id="chat-input" placeholder="Posez votre question... (Shift+Entrée = nouvelle ligne)" rows="1" onkeydown="handleChatKey(event)" oninput="autoResizeInput(this)"></textarea>
+          <button id="send-btn" onclick="sendMessage()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- AUDIO -->
+<audio id="bg-music" loop></audio>
+
+<!-- FIREBASE MODULE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+  import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAsV27OD4bARFOSDlZN1MAARSv9q2WBkdo",
+    authDomain: "wikimind-pro.firebaseapp.com",
+    databaseURL: "https://wikimind-pro-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "wikimind-pro",
+    storageBucket: "wikimind-pro.firebasestorage.app",
+    messagingSenderId: "154490257518",
+    appId: "1:154490257518:web:3276b1e64f2db9894be67f"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  const PLAN_NAMES = ['Free','Plus','Pro','Premium','Premium+'];
+  const PLAN_KEYS  = ['free','plus','pro','premium','premium-plus'];
+  const PLAN_EMOJIS = ['🌱','⚡','🚀','👑','🔥'];
+
+  onAuthStateChanged(auth, async (user) => {
+    const area = document.getElementById('account-header-area');
+    if (!user) {
+      area.innerHTML = `<button class="signin-btn" onclick="window.location.href='user.html'">Se connecter</button>`;
+      return;
+    }
+
+    // Get forfait
+    let forfait = 0;
+    try {
+      const snap = await get(ref(db, `users/${user.uid}/FORFAIT`));
+      if (snap.exists()) forfait = parseInt(snap.val()) - 1;
+    } catch(e) {}
+
+    const planKey = PLAN_KEYS[forfait] || 'free';
+    const planName = PLAN_NAMES[forfait] || 'Free';
+    const planEmoji = PLAN_EMOJIS[forfait] || '🌱';
+    const planClass = `plan-${planKey.replace('+','-plus')}`;
+
+    const displayName = user.displayName || user.email?.split('@')[0] || 'Étudiant';
+    const photoURL = user.photoURL;
+
+    let avatarHtml = photoURL
+      ? `<img src="${photoURL}" class="avatar-inner" style="width:30px;height:30px;object-fit:cover;border-radius:50%;position:relative;z-index:2;">`
+      : `<div class="avatar-inner">${displayName.charAt(0).toUpperCase()}</div>`;
+
+    area.innerHTML = `
+      <a href="user.html" style="display:flex;align-items:center;gap:8px;text-decoration:none;cursor:pointer">
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+          <span id="account-name">${displayName}</span>
+          <span class="plan-badge-text ${planClass}">${planEmoji} ${planName}</span>
+        </div>
+        <div class="plan-chip-avatar ring-${planKey.replace('+','-plus')}">${avatarHtml}</div>
+      </a>
+    `;
+  });
+</script>
+
+<script>
+// ==============================
+// WIKIMIND STUDY v2 — ENGINE
+// ==============================
+
+const MISTRAL_API_KEY = "wuZGbRk6ry7KpMraZvxB3zg7ae6x1dLN";
+const MISTRAL_MODEL = "mistral-large-latest";
+
+// ---- STATE ----
+const STATE = {
+  settings: {
+    workTime: 25, shortBreak: 5, longBreak: 15, cyclesBeforeLong: 4,
+    theme: 'dark', showClock: false, showTotalTime: false,
+    soundEnabled: true, musicTrack: 'none', musicVolume: 50
+  },
+  stats: { totalSeconds: 0 },
+  timer: {
+    time: 25*60, totalDuration: 25*60, active: false,
+    mode: 'work', cycleCount: 0, interval: null
+  },
+  tasks: [],
+  chatHistory: [],
+  currentMode: 'study',
+  subject: '',
+  level: '',
+  ctxFiles: [],         // [{name, content, type}]
+  attachedFile: null,   // file attached to next message
+  ctxPanelOpen: true,
+  mediaSrc: null,
+};
+
+const MUSIC_SOURCES = {
+  rain: "https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg",
+  forest: "https://actions.google.com/sounds/v1/nature/forest_morning.ogg",
+  fire: "https://actions.google.com/sounds/v1/ambiences/fireplace.ogg",
+  lofi: "https://actions.google.com/sounds/v1/ambiences/city_traffic_and_distant_police_siren.ogg"
+};
+
+// ---- STORAGE ----
+function loadStorage() {
+  try {
+    const saved = localStorage.getItem('wikimind_study_v3');
+    if (saved) {
+      const p = JSON.parse(saved);
+      STATE.settings = {...STATE.settings, ...p.settings};
+      STATE.stats = {...STATE.stats, ...p.stats};
+      STATE.tasks = p.tasks || [];
+      if (p.timerState) {
+        STATE.timer.time = p.timerState.time;
+        STATE.timer.totalDuration = p.timerState.totalDuration;
+        STATE.timer.mode = p.timerState.mode;
+        STATE.timer.cycleCount = p.timerState.cycleCount;
+      }
+    }
+  } catch(e) {}
+  applyTheme(STATE.settings.theme);
+  applySettingsUI();
+}
+
+function saveStorage() {
+  try {
+    localStorage.setItem('wikimind_study_v3', JSON.stringify({
+      settings: STATE.settings,
+      stats: STATE.stats,
+      tasks: STATE.tasks,
+      timerState: {
+        time: STATE.timer.time,
+        totalDuration: STATE.timer.totalDuration,
+        mode: STATE.timer.mode,
+        cycleCount: STATE.timer.cycleCount
+      }
+    }));
+  } catch(e) {}
+  updateGlobalStats();
+}
+
+function updateGlobalStats() {
+  const t = STATE.stats.totalSeconds;
+  const h = Math.floor(t/3600);
+  const m = Math.floor((t%3600)/60);
+  const el = document.getElementById('global-revision-time');
+  if (el) el.textContent = `${h}h ${m.toString().padStart(2,'0')}m`;
+}
+
+// ---- THEME ----
+function applyTheme(theme) {
+  STATE.settings.theme = theme;
+  const chk = document.getElementById('check-dark');
+  if (chk) chk.checked = (theme === 'dark');
+}
+
+function toggleTheme() {
+  STATE.settings.theme = STATE.settings.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(STATE.settings.theme);
+  saveStorage();
+}
+
+// ---- SETTINGS ----
+function applySettingsUI() {
+  const s = STATE.settings;
+  const setVal = (id, v) => { const el = document.getElementById(id); if(el) el.checked = v; };
+  setVal('check-clock', s.showClock);
+  setVal('check-total', s.showTotalTime);
+  setVal('check-sound', s.soundEnabled);
+  setVal('check-dark', s.theme === 'dark');
+  const sm = document.getElementById('select-music');
+  if (sm) sm.value = s.musicTrack;
+  const rv = document.getElementById('range-volume');
+  if (rv) { rv.value = s.musicVolume; document.getElementById('vol-label').textContent = s.musicVolume; }
+  const sw = document.getElementById('set-work');  if(sw) sw.value = s.workTime;
+  const ss = document.getElementById('set-short'); if(ss) ss.value = s.shortBreak;
+  const sl = document.getElementById('set-long');  if(sl) sl.value = s.longBreak;
+  const sc = document.getElementById('set-cycles');if(sc) sc.value = s.cyclesBeforeLong;
+
+  document.getElementById('live-clock').style.display = s.showClock ? 'block' : 'none';
+  const gs = document.getElementById('global-stats');
+  if (s.showTotalTime) gs.classList.add('visible'); else gs.classList.remove('visible');
+
+  musicManager.setVolume(s.musicVolume);
+  const mp = document.getElementById('mini-music-player');
+  if (s.musicTrack !== 'none') {
+    mp.classList.add('visible');
+    const names = {rain:'Pluie Intense', forest:'Forêt', fire:'Cheminée', lofi:'Lo-Fi Beats'};
+    document.getElementById('music-name').textContent = names[s.musicTrack] || s.musicTrack;
+  } else {
+    mp.classList.remove('visible');
+  }
+}
+
+function saveSettings() {
+  const s = STATE.settings;
+  s.showClock = document.getElementById('check-clock').checked;
+  s.showTotalTime = document.getElementById('check-total').checked;
+  s.soundEnabled = document.getElementById('check-sound').checked;
+  s.musicTrack = document.getElementById('select-music').value;
+  s.musicVolume = parseInt(document.getElementById('range-volume').value);
+  s.workTime = parseInt(document.getElementById('set-work').value) || 25;
+  s.shortBreak = parseInt(document.getElementById('set-short').value) || 5;
+  s.longBreak = parseInt(document.getElementById('set-long').value) || 15;
+  s.cyclesBeforeLong = parseInt(document.getElementById('set-cycles').value) || 4;
+  saveStorage();
+  applySettingsUI();
+  musicManager.load();
+  if (STATE.timer.active && STATE.timer.mode === 'work') musicManager.play();
+  else musicManager.pause();
+  timer.setDurationBasedOnMode();
+  timer.updateDisplay();
+  timer.renderDots();
+}
+
+function openSettings() { document.getElementById('settings-modal').classList.add('open'); }
+function closeSettings() { document.getElementById('settings-modal').classList.remove('open'); }
+
+// ---- MUSIC MANAGER ----
+const musicManager = {
+  audio: null,
+  load() {
+    if (!this.audio) this.audio = document.getElementById('bg-music');
+    const src = MUSIC_SOURCES[STATE.settings.musicTrack];
+    if (src) {
+      this.audio.src = src;
+      this.audio.volume = STATE.settings.musicVolume / 100;
+    } else {
+      this.audio.src = '';
+    }
+  },
+  play() { if (this.audio && this.audio.src && STATE.settings.musicTrack !== 'none') this.audio.play().catch(()=>{}); },
+  pause() { if (this.audio) this.audio.pause(); },
+  toggle() {
+    if (!this.audio) this.audio = document.getElementById('bg-music');
+    if (this.audio.paused) this.play(); else this.pause();
+  },
+  setVolume(v) { if (this.audio) this.audio.volume = v/100; }
+};
+
+// ---- TIMER ----
+const timer = {
+  init() {
+    this.setDurationBasedOnMode();
+    this.updateDisplay();
+    this.renderDots();
+  },
+  setDurationBasedOnMode() {
+    const s = STATE.settings;
+    if (STATE.timer.mode === 'work') STATE.timer.totalDuration = s.workTime * 60;
+    else if (STATE.timer.mode === 'short') STATE.timer.totalDuration = s.shortBreak * 60;
+    else STATE.timer.totalDuration = s.longBreak * 60;
+    if (!STATE.timer.active) STATE.timer.time = STATE.timer.totalDuration;
+  },
+  toggle() {
+    if (STATE.timer.active) this.pause(); else this.start();
+  },
+  start() {
+    STATE.timer.active = true;
+    document.getElementById('icon-play').style.display = 'none';
+    document.getElementById('icon-pause').style.display = 'block';
+    if (STATE.timer.mode === 'work') musicManager.play();
+    STATE.timer.interval = setInterval(() => {
+      if (STATE.timer.time > 0) {
+        STATE.timer.time--;
+        if (STATE.timer.mode === 'work') STATE.stats.totalSeconds++;
+        this.updateDisplay();
+        saveStorage();
+      } else {
+        this.complete();
+      }
+    }, 1000);
+  },
+  pause() {
+    STATE.timer.active = false;
+    clearInterval(STATE.timer.interval);
+    musicManager.pause();
+    document.getElementById('icon-play').style.display = 'block';
+    document.getElementById('icon-pause').style.display = 'none';
+  },
+  reset() {
+    this.pause();
+    this.setDurationBasedOnMode();
+    this.updateDisplay();
+  },
+  skip() {
+    this.pause();
+    this.complete();
+  },
+  complete() {
+    this.pause();
+    if (STATE.settings.soundEnabled) this.playBeep();
+    if (STATE.timer.mode === 'work') {
+      STATE.timer.cycleCount++;
+      if (STATE.timer.cycleCount >= STATE.settings.cyclesBeforeLong) {
+        STATE.timer.mode = 'long'; STATE.timer.cycleCount = 0;
+      } else {
+        STATE.timer.mode = 'short';
+      }
+    } else {
+      STATE.timer.mode = 'work';
+    }
+    this.setDurationBasedOnMode();
+    this.updateDisplay();
+    this.renderDots();
+    this.start();
+  },
+  updateDisplay() {
+    const m = Math.floor(STATE.timer.time / 60).toString().padStart(2,'0');
+    const s = (STATE.timer.time % 60).toString().padStart(2,'0');
+    document.getElementById('timer-display').textContent = `${m}:${s}`;
+    const lbl = document.getElementById('timer-label');
+    if (STATE.timer.mode === 'work') { lbl.textContent = 'Focus'; document.documentElement.style.setProperty('--timer-current','var(--timer-work)'); }
+    else if (STATE.timer.mode === 'short') { lbl.textContent = 'Pause Courte'; document.documentElement.style.setProperty('--timer-current','var(--timer-break)'); }
+    else { lbl.textContent = 'Pause Longue'; document.documentElement.style.setProperty('--timer-current','var(--timer-long)'); }
+    this.updateRing();
+  },
+  updateRing() {
+    const circ = 2 * Math.PI * 44;
+    const progress = STATE.timer.time / STATE.timer.totalDuration;
+    const offset = circ * (1 - progress);
+    const ring = document.getElementById('progress-ring');
+    if (ring) {
+      ring.style.strokeDasharray = `${circ}`;
+      ring.style.strokeDashoffset = `${offset}`;
+      const c = STATE.timer.mode === 'work' ? 'var(--accent)' : (STATE.timer.mode === 'short' ? 'var(--green)' : 'var(--blue)');
+      ring.style.stroke = c;
+    }
+  },
+  renderDots() {
+    const container = document.getElementById('cycle-dots');
+    if (!container) return;
+    container.innerHTML = '';
+    for (let i = 0; i < STATE.settings.cyclesBeforeLong; i++) {
+      const d = document.createElement('div');
+      d.className = 'cycle-dot' + (i < STATE.timer.cycleCount ? ' done' : '');
+      container.appendChild(d);
+    }
+  },
+  playBeep() {
+    try {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.setValueAtTime(660, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+      osc.start(); osc.stop(ctx.currentTime + 0.5);
+    } catch(e) {}
+  }
+};
+
+// ---- TASK MANAGER ----
+const taskManager = {
+  render() {
+    const list = document.getElementById('task-list');
+    const empty = document.getElementById('empty-state');
+    if (!list) return;
+    // Clear task items (not empty-state)
+    [...list.querySelectorAll('.task-item')].forEach(el => el.remove());
+
+    if (STATE.tasks.length === 0) {
+      empty.style.display = 'flex';
+    } else {
+      empty.style.display = 'none';
+      STATE.tasks.forEach((t, i) => {
+        const el = document.createElement('div');
+        el.className = 'task-item' + (t.done ? ' completed' : '');
+        el.innerHTML = `
+          <button class="check-btn ${t.done?'done':''}" onclick="taskManager.toggle(${i})">
+            ${t.done ? '<svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>' : ''}
+          </button>
+          <span class="task-name" style="flex:1;font-size:13px;font-weight:600">${t.name}</span>
+          ${t.duration ? `<span style="font-size:11px;font-weight:700;color:var(--text-muted);padding:3px 8px;border-radius:6px;background:rgba(255,255,255,0.05)">${t.duration}min</span>` : ''}
+          <button class="del-btn" onclick="taskManager.remove(${i})">×</button>
+        `;
+        list.appendChild(el);
+      });
+    }
+    this.updateTotals();
+  },
+  toggle(i) {
+    STATE.tasks[i].done = !STATE.tasks[i].done;
+    saveStorage(); this.render();
+  },
+  remove(i) {
+    STATE.tasks.splice(i, 1);
+    saveStorage(); this.render();
+  },
+  add(name, duration) {
+    STATE.tasks.push({name, duration: duration||0, done:false});
+    saveStorage(); this.render();
+  },
+  clear() {
+    STATE.tasks = [];
+    saveStorage(); this.render();
+  },
+  promptAdd() {
+    const name = prompt('Nom de la tâche :');
+    if (!name) return;
+    const dur = parseInt(prompt('Durée (minutes, 0 si vide) :')) || 0;
+    this.add(name, dur);
+  },
+  updateTotals() {
+    let total = 0;
+    STATE.tasks.forEach(t => total += (t.duration||0));
+    const h = Math.floor(total/60), m = total%60;
+    const el = document.getElementById('total-time');
+    if (el) el.textContent = `${h}h ${m.toString().padStart(2,'0')}m`;
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + total);
+    const fin = document.getElementById('finish-time');
+    if (fin) fin.textContent = `Fin: ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+  }
+};
+
+// ---- LIVE CLOCK ----
+function updateClock() {
+  const el = document.getElementById('live-clock');
+  if (el && STATE.settings.showClock) {
+    const n = new Date();
+    el.textContent = `${n.getHours().toString().padStart(2,'0')}:${n.getMinutes().toString().padStart(2,'0')}`;
+  }
+}
+setInterval(updateClock, 1000);
+
+// ---- MODE SWITCHER ----
+function switchMode(mode) {
+  STATE.currentMode = mode;
+  document.getElementById('study-view').classList.toggle('active', mode === 'study');
+  document.getElementById('ai-view').classList.toggle('active', mode === 'ai');
+  document.getElementById('btn-study').classList.toggle('active', mode === 'study');
+  document.getElementById('btn-ai').classList.toggle('active', mode === 'ai');
+  // Mobile: show context panel trigger only in ai mode
+  document.getElementById('open-ctx-mobile').style.display = mode === 'ai' ? 'flex' : 'none';
+}
+
+// ---- CONTEXT PANEL ----
+function toggleCtxPanel() {
+  STATE.ctxPanelOpen = !STATE.ctxPanelOpen;
+  document.getElementById('context-panel').classList.toggle('collapsed', !STATE.ctxPanelOpen);
+}
+
+function openMobileCtx() {
+  const panel = document.getElementById('context-panel');
+  panel.classList.add('mobile-open');
+}
+function closeMobileCtx() {
+  const panel = document.getElementById('context-panel');
+  panel.classList.remove('mobile-open');
+}
+
+// ---- SUBJECT UPDATE ----
+function updateSubjectContext() {
+  STATE.subject = document.getElementById('subject-input').value;
+  STATE.level = document.getElementById('level-select').value;
+  const pill = document.getElementById('ctx-subject-pill');
+  if (STATE.subject) {
+    pill.textContent = STATE.subject;
+    pill.style.display = 'inline-block';
+  } else {
+    pill.style.display = 'none';
+  }
+}
+
+// ---- FILE HANDLING ----
+function handleCtxFiles(e) {
+  const files = Array.from(e.target.files);
+  files.forEach(f => readFileCtx(f));
+  e.target.value = '';
+}
+
+// Drag & drop
+const dropZone = document.getElementById('file-drop-zone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('dragover');
+  Array.from(e.dataTransfer.files).forEach(f => readFileCtx(f));
+});
+
+function readFileCtx(file) {
+  const reader = new FileReader();
+  if (file.type.startsWith('image/')) {
+    reader.onload = e => {
+      STATE.ctxFiles.push({ name: file.name, content: e.target.result, type: 'image' });
+      renderCtxFiles();
+    };
+    reader.readAsDataURL(file);
+  } else {
+    reader.onload = e => {
+      STATE.ctxFiles.push({ name: file.name, content: e.target.result, type: 'text' });
+      renderCtxFiles();
+    };
+    reader.readAsText(file);
+  }
+}
+
+function renderCtxFiles() {
+  const list = document.getElementById('ctx-files-list');
+  list.innerHTML = '';
+  STATE.ctxFiles.forEach((f, i) => {
+    const icon = f.type === 'image' ? '🖼️' : '📄';
+    const chip = document.createElement('div');
+    chip.className = 'file-chip';
+    chip.innerHTML = `
+      <span class="file-chip-icon">${icon}</span>
+      <span class="file-chip-name">${f.name}</span>
+      <button class="file-chip-del" onclick="removeCtxFile(${i})">×</button>
+    `;
+    list.appendChild(chip);
+  });
+}
+
+function removeCtxFile(i) {
+  STATE.ctxFiles.splice(i, 1);
+  renderCtxFiles();
+}
+
+// Attach file to message
+function attachFileToMessage(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  if (file.type.startsWith('image/')) {
+    reader.onload = ev => { STATE.attachedFile = { name: file.name, content: ev.target.result, type: 'image' }; showAttachPill(); };
+    reader.readAsDataURL(file);
+  } else {
+    reader.onload = ev => { STATE.attachedFile = { name: file.name, content: ev.target.result, type: 'text' }; showAttachPill(); };
+    reader.readAsText(file);
+  }
+  e.target.value = '';
+}
+
+function showAttachPill() {
+  let pill = document.getElementById('attach-pill');
+  if (!pill) {
+    pill = document.createElement('div');
+    pill.id = 'attach-pill';
+    pill.style.cssText = 'display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;background:rgba(124,111,255,0.1);border:1px solid rgba(124,111,255,0.2);font-size:11px;font-weight:600;color:var(--accent2);margin-bottom:6px';
+    document.getElementById('chat-input-bar').prepend(pill);
+    pill.style.position = 'absolute'; pill.style.bottom = '70px'; pill.style.left = '16px';
+  }
+  if (STATE.attachedFile) {
+    pill.innerHTML = `📎 ${STATE.attachedFile.name} <button onclick="STATE.attachedFile=null;document.getElementById('attach-pill').remove()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:0 2px">×</button>`;
+  }
+}
+
+// ---- SUGGESTION CHIPS ----
+function insertSuggestion(text) {
+  const input = document.getElementById('chat-input');
+  input.value = text;
+  input.focus();
+  autoResizeInput(input);
+}
+
+// ---- CHAT INPUT RESIZE ----
+function autoResizeInput(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+}
+
+function handleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+// ---- CHAT ENGINE ----
+const Chat = {
+  addMessage(text, role) {
+    const container = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.className = `msg ${role}`;
+
+    if (role === 'ai') {
+      const subj = STATE.subject ? `<div class="msg-subject">WikiMind Brain${STATE.subject ? ' · ' + STATE.subject : ''}</div>` : '';
+      div.innerHTML = subj + '<div class="msg-body"></div>';
+      container.appendChild(div);
+      div.querySelector('.msg-body').innerHTML = this.renderMarkdown(text);
+      // Render KaTeX
+      renderMathInElement(div, {
+        delimiters: [
+          {left:'$$',right:'$$',display:true},
+          {left:'$',right:'$',display:false},
+          {left:'\\(',right:'\\)',display:false},
+          {left:'\\[',right:'\\]',display:true}
+        ],
+        throwOnError: false
+      });
+    } else {
+      div.textContent = text;
+      container.appendChild(div);
+    }
+
+    STATE.chatHistory.push({ role: role === 'user' ? 'user' : 'assistant', content: text });
+    container.scrollTop = container.scrollHeight;
+  },
+
+  renderMarkdown(text) {
+    if (typeof marked !== 'undefined') {
+      return marked.parse(text);
+    }
+    return text.replace(/\n/g, '<br>');
+  },
+
+  showTyping() {
+    const container = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.id = 'typing-indicator';
+    div.className = 'msg ai';
+    div.innerHTML = '<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>';
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+  },
+  removeTyping() {
+    const el = document.getElementById('typing-indicator');
+    if (el) el.remove();
+  },
+
+  handleCommand(jsonStr) {
+    try {
+      const cmd = JSON.parse(jsonStr);
+      if (cmd.action === 'add_task') {
+        taskManager.add(cmd.name, cmd.duration);
+        return `✅ Tâche ajoutée : **${cmd.name}** (${cmd.duration} min).`;
+      } else if (cmd.action === 'clear_tasks') {
+        taskManager.clear();
+        return '🗑️ Toutes les tâches ont été supprimées.';
+      } else if (cmd.action === 'set_timer') {
+        STATE.settings.workTime = parseInt(cmd.duration);
+        if (STATE.timer.mode === 'work') { timer.setDurationBasedOnMode(); timer.updateDisplay(); }
+        return `⏱️ Timer réglé sur ${cmd.duration} minutes.`;
+      } else if (cmd.action === 'schedule') {
+        STATE.tasks = [];
+        cmd.tasks.forEach(t => taskManager.add(t.name, t.duration));
+        return '📅 Programme de révision généré et appliqué !';
+      }
+    } catch(e) {}
+    return null;
+  },
+
+  buildSystemPrompt() {
+    const subjectCtx = STATE.subject ? `Sujet actuel : ${STATE.subject}${STATE.level ? ` (niveau: ${STATE.level})` : ''}.` : 'Pas de sujet défini.';
+    const filesCtx = STATE.ctxFiles.length > 0
+      ? `\nFichiers importés (${STATE.ctxFiles.length}) :\n` + STATE.ctxFiles.filter(f=>f.type==='text').map(f => `--- ${f.name} ---\n${f.content.substring(0,3000)}`).join('\n\n')
+      : '';
+    const taskCtx = `Tâches: ${JSON.stringify(STATE.tasks)}`;
+    const timerCtx = `Timer: ${STATE.timer.mode}, ${Math.floor(STATE.timer.time/60)}min restantes.`;
+
+    return `Tu es WikiMind Brain, un assistant pédagogique expert intégré à une application de révision Pomodoro.
+
+IDENTITÉ : Tu combines l'expertise d'un professeur particulier et d'un coach d'étude. Tu es précis, bienveillant et motivant.
+
+SUJET & CONTEXTE :
+${subjectCtx}
+${taskCtx}
+${timerCtx}
+${filesCtx}
+
+FORMATAGE (IMPORTANT) :
+- Utilise TOUJOURS le Markdown (titres, listes, gras, tableaux)
+- Pour les formules mathématiques : $formule$ pour inline, $$formule$$ pour bloc
+- Pour les formules chimiques, physiques : même approche LaTeX
+- Sois structuré et clair
+- Pour les longues explications, décompose en étapes numérotées
+- Si on te demande des exercices, fournis TOUJOURS le corrigé détaillé
+- Adapte ton niveau au niveau scolaire indiqué
+
+CAPACITÉS D'ACTION (JSON uniquement si action demandée) :
+- Ajouter tâche : \`\`\`json {"action":"add_task","name":"Nom","duration":25}\`\`\`
+- Vider tâches : \`\`\`json {"action":"clear_tasks"}\`\`\`
+- Générer programme : \`\`\`json {"action":"schedule","tasks":[{"name":"T1","duration":25}]}\`\`\`
+
+Si c'est une question de cours, un exercice, ou une explication : réponds en Markdown riche avec LaTeX si besoin. Ne génère PAS de JSON dans ce cas.`;
+  },
+
+  async send(userText) {
+    document.getElementById('send-btn').disabled = true;
+    this.addMessage(userText, 'user');
+    this.showTyping();
+
+    // Build messages array
+    const messages = [
+      { role: 'system', content: this.buildSystemPrompt() },
+      ...STATE.chatHistory.slice(-12).filter(m => m.role !== 'system')
+    ];
+
+    // If there's an attached file (image), add it
+    if (STATE.attachedFile) {
+      if (STATE.attachedFile.type === 'image') {
+        // Can't send image to text API, add as description
+        messages[messages.length-1].content += `\n\n[Image jointe: ${STATE.attachedFile.name}]`;
+      } else {
+        messages[messages.length-1].content += `\n\nContenu du fichier "${STATE.attachedFile.name}":\n${STATE.attachedFile.content.substring(0,4000)}`;
+      }
+      STATE.attachedFile = null;
+      const pill = document.getElementById('attach-pill');
+      if (pill) pill.remove();
+    }
+
+    try {
+      const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${MISTRAL_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: MISTRAL_MODEL,
+          messages: messages,
+          max_tokens: 4096,
+          temperature: 0.7
+        })
+      });
+
+      const data = await res.json();
+      let reply = data.choices?.[0]?.message?.content || 'Erreur : réponse vide.';
+
+      this.removeTyping();
+
+      // Check for JSON command
+      let jsonStr = '';
+      const jsonBlock = reply.match(/```json\s*([\s\S]*?)\s*```/);
+      if (jsonBlock) {
+        jsonStr = jsonBlock[1];
+      } else if (reply.trim().startsWith('{')) {
+        jsonStr = reply.trim();
+      }
+
+      if (jsonStr) {
+        const cmdResult = this.handleCommand(jsonStr);
+        if (cmdResult) { this.addMessage(cmdResult, 'ai'); }
+        else { this.addMessage(reply, 'ai'); }
+      } else {
+        this.addMessage(reply, 'ai');
+      }
+
+    } catch(e) {
+      this.removeTyping();
+      this.addMessage(`❌ Erreur de connexion au serveur Mistral. Vérifiez votre connexion.\n\n\`${e.message}\``, 'ai');
+    }
+
+    document.getElementById('send-btn').disabled = false;
+  }
+};
+
+function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const val = input.value.trim();
+  if (!val) return;
+  Chat.send(val);
+  input.value = '';
+  input.style.height = 'auto';
+}
+
+// ---- MEDIA DETECTION (Media Session API) ----
+const mediaDetector = {
+  interval: null,
+  lastTitle: '',
+  lastState: null,
+
+  start() {
+    this.interval = setInterval(() => this.check(), 2000);
+  },
+
+  check() {
+    // Try Media Session API
+    if ('mediaSession' in navigator && navigator.mediaSession.metadata) {
+      const meta = navigator.mediaSession.metadata;
+      const state = navigator.mediaSession.playbackState;
+      const title = [meta.artist, meta.title].filter(Boolean).join(' — ') || meta.title || 'Média en cours';
+
+      if (title !== this.lastTitle || state !== this.lastState) {
+        this.lastTitle = title;
+        this.lastState = state;
+        const isPlaying = state === 'playing' || state === 'none';
+        if (isPlaying) {
+          this.showPill(title, meta.artwork?.[0]?.src);
+        } else if (state === 'paused') {
+          this.updatePillState('paused');
+        } else {
+          this.hidePill();
+        }
+      }
+    } else {
+      // Fallback: check if any audio/video is playing in DOM
+      const audios = document.querySelectorAll('audio, video');
+      let playing = false;
+      audios.forEach(a => { if (!a.paused && !a.muted && a.id !== 'bg-music') playing = true; });
+      if (!playing && this.lastTitle) {
+        this.hidePill();
+        this.lastTitle = '';
+      }
+    }
+  },
+
+  showPill(title, artwork) {
+    STATE.mediaSrc = title;
+    const pill = document.getElementById('header-media-pill');
+    pill.style.display = 'flex';
+    document.getElementById('media-title-pill').textContent = title;
+    document.getElementById('media-pause-pill').textContent = '⏸ Pause';
+  },
+
+  updatePillState(state) {
+    const btn = document.getElementById('media-pause-pill');
+    if (btn) btn.textContent = state === 'paused' ? '▶ Reprendre' : '⏸ Pause';
+  },
+
+  hidePill() {
+    STATE.mediaSrc = null;
+    const pill = document.getElementById('header-media-pill');
+    pill.style.display = 'none';
+  }
+};
+
+function toggleMediaPlayback() {
+  if ('mediaSession' in navigator) {
+    const state = navigator.mediaSession.playbackState;
+    if (state === 'playing' || state === 'none') {
+      navigator.mediaSession.playbackState = 'paused';
+      // Try dispatching pause action
+      try { navigator.mediaSession.callActionHandler?.('pause', null); } catch(e) {}
+      document.getElementById('media-pause-pill').textContent = '▶ Reprendre';
+    } else {
+      navigator.mediaSession.playbackState = 'playing';
+      try { navigator.mediaSession.callActionHandler?.('play', null); } catch(e) {}
+      document.getElementById('media-pause-pill').textContent = '⏸ Pause';
+    }
+  }
+  // Also try postMessage to YouTube/Spotify iframes if present
+  try {
+    document.querySelectorAll('iframe').forEach(iframe => {
+      iframe.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+    });
+  } catch(e) {}
+}
+
+// ---- INIT ----
+window.addEventListener('DOMContentLoaded', () => {
+  loadStorage();
+  document.getElementById('set-work').value = STATE.settings.workTime;
+  document.getElementById('set-short').value = STATE.settings.shortBreak;
+  document.getElementById('set-long').value = STATE.settings.longBreak;
+  document.getElementById('set-cycles').value = STATE.settings.cyclesBeforeLong;
+  timer.init();
+  taskManager.render();
+  updateGlobalStats();
+  musicManager.load();
+  mediaDetector.start();
+  // Mobile: hide open ctx btn initially (only show when in AI mode)
+  document.getElementById('open-ctx-mobile').style.display = 'none';
+});
+</script>
+</body>
+</html>
