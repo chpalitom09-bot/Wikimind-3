@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WikiMind 3.0</title>
+    <title>WikiMind 3.5</title>
 
     <!-- ✅ PWA: Manifest -->
     <link rel="manifest" href="App/manifest.json">
@@ -59,22 +59,31 @@
     <style>
         body { background-color: #050505; color: #ffffff; overflow-x: hidden; }
 
-        /* ── GEMINI BLUE GLOW ── */
-        /* Mobile: blue from bottom */
+        /* ── GEMINI BLUE GLOW — stronger ── */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(ellipse 80% 60% at 50% 55%, rgba(26,115,232,0.22) 0%, rgba(17,85,180,0.10) 35%, transparent 65%);
+            pointer-events: none;
+            z-index: 0;
+        }
         body::after {
             content: '';
             position: fixed;
             bottom: 0; left: 0; right: 0;
-            height: 45vh;
-            background: radial-gradient(ellipse 100% 100% at 50% 100%, rgba(26,115,232,0.18) 0%, transparent 70%);
+            height: 50vh;
+            background: radial-gradient(ellipse 100% 100% at 50% 100%, rgba(26,115,232,0.28) 0%, rgba(26,115,232,0.10) 45%, transparent 70%);
             pointer-events: none;
             z-index: 0;
         }
-        /* PC: additional blue center glow */
         @media (min-width: 769px) {
+            body::before {
+                background: radial-gradient(ellipse 90% 70% at 50% 50%, rgba(26,115,232,0.20) 0%, rgba(17,85,180,0.08) 40%, transparent 65%);
+            }
             body::after {
-                top: 0; height: 100%;
-                background: radial-gradient(ellipse 70% 55% at 50% 60%, rgba(26,115,232,0.12) 0%, transparent 65%);
+                height: 100%;
+                background: radial-gradient(ellipse 60% 45% at 50% 65%, rgba(26,115,232,0.18) 0%, transparent 60%);
             }
         }
 
@@ -222,8 +231,107 @@
         .sort-btn.active { background: rgba(99,102,241,0.2); border-color: rgba(99,102,241,0.5); color: #818cf8; }
 
         /* ========================================== */
-        /* REVIEWS CAROUSEL                           */
+        /* DESKTOP AI BAR (Gemini-style overlay)      */
         /* ========================================== */
+        #wm-desktop-ai-bar {
+            display: none;
+            position: fixed;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(680px, calc(100vw - 48px));
+            z-index: 400;
+        }
+        @media (min-width: 769px) {
+            #wm-desktop-ai-bar { display: block; }
+            body { padding-bottom: 100px; }
+        }
+        .wm-desktop-pill {
+            display: flex; align-items: center; gap: 12px;
+            background: rgba(18,18,22,0.85);
+            border: 1px solid rgba(255,255,255,0.10);
+            border-radius: 100px; padding: 12px 16px 12px 20px;
+            backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+            transition: border-color 0.25s, border-radius 0.25s, box-shadow 0.25s;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(26,115,232,0.06);
+        }
+        .wm-desktop-pill:focus-within {
+            border-color: rgba(99,102,241,0.35);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.15), 0 0 30px rgba(26,115,232,0.10);
+        }
+        #wm-desktop-input {
+            flex:1; background: transparent; border: none; outline: none;
+            color: #fff; font-size: 15px; font-family: 'Inter', sans-serif;
+        }
+        #wm-desktop-input::placeholder { color: rgba(255,255,255,0.30); }
+        .wm-desktop-send {
+            width: 36px; height: 36px; border-radius: 50%; border: none; cursor: pointer;
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 13px; flex-shrink: 0; transition: transform 0.15s, opacity 0.15s;
+            box-shadow: 0 2px 12px rgba(99,102,241,0.45);
+        }
+        .wm-desktop-send:hover { transform: scale(1.07); }
+        .wm-desktop-send:disabled { opacity: 0.35; cursor: default; transform: none; }
+        .wm-desktop-overlay-btn {
+            width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.10);
+            background: rgba(255,255,255,0.05); cursor: pointer; display: flex; align-items: center;
+            justify-content: center; color: rgba(255,255,255,0.45); flex-shrink: 0;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+        .wm-desktop-overlay-btn:hover { background: rgba(255,255,255,0.10); color: rgba(255,255,255,0.8); border-color: rgba(255,255,255,0.2); }
+
+        /* Overlay réponse desktop (style Gemini) */
+        #wm-desktop-overlay {
+            display: none;
+            position: fixed; inset: 0; z-index: 395;
+            pointer-events: none;
+        }
+        #wm-desktop-overlay.active { display: block; pointer-events: all; }
+        #wm-desktop-overlay-bg {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,0.0);
+            transition: background 0.3s;
+        }
+        #wm-desktop-overlay.active #wm-desktop-overlay-bg {
+            background: rgba(0,0,0,0.45);
+        }
+        #wm-desktop-response {
+            position: absolute;
+            bottom: 110px;
+            left: 50%; transform: translateX(-50%);
+            width: min(680px, calc(100vw - 48px));
+            background: rgba(14,14,18,0.96);
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 24px;
+            padding: 24px 28px;
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.08);
+            opacity: 0; transform: translateX(-50%) translateY(12px);
+            transition: opacity 0.3s, transform 0.3s;
+            max-height: 55vh; overflow-y: auto;
+        }
+        #wm-desktop-overlay.active #wm-desktop-response {
+            opacity: 1; transform: translateX(-50%) translateY(0);
+        }
+
+        /* Stats section */
+        .stat-item { text-align: center; }
+        .stat-number { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; font-family: 'Space Grotesk', sans-serif; line-height: 1; }
+        .stat-label { font-size: 0.75rem; color: rgba(255,255,255,0.40); text-transform: uppercase; letter-spacing: 0.12em; margin-top: 0.35rem; font-weight: 600; }
+        .stat-divider { width: 1px; background: rgba(255,255,255,0.07); align-self: stretch; }
+
+        /* Modern app cards */
+        .app-card-icon {
+            width: 48px; height: 48px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; flex-shrink: 0;
+            margin-bottom: 1rem;
+        }
+        .app-card-icon svg { width: 24px; height: 24px; }
+
+
         #reviews-carousel-track {
             will-change: transform;
         }
@@ -519,6 +627,28 @@
         <div id="wm-ai-sheet-content" class="text-sm text-white/80 leading-relaxed pr-4"></div>
     </div>
 
+    <!-- ========================================== -->
+    <!-- DESKTOP AI BAR (Gemini overlay style)      -->
+    <!-- ========================================== -->
+    <div id="wm-desktop-overlay">
+        <div id="wm-desktop-overlay-bg" onclick="closeDesktopOverlay()"></div>
+        <div id="wm-desktop-response">
+            <div id="wm-desktop-response-content" class="text-sm text-white/85 leading-relaxed"></div>
+        </div>
+    </div>
+    <div id="wm-desktop-ai-bar">
+        <div class="wm-desktop-pill">
+            <i class="fa-solid fa-sparkles text-brand-glow text-sm shrink-0"></i>
+            <input id="wm-desktop-input" type="text" placeholder="Demandez à WikiMind…" autocomplete="off" maxlength="300">
+            <button class="wm-desktop-overlay-btn" id="wm-desktop-overlay-btn" title="Afficher en overlay" aria-label="Mode écran">
+                <i class="fa-regular fa-window-maximize" style="font-size:14px;"></i>
+            </button>
+            <button class="wm-desktop-send" id="wm-desktop-send" disabled aria-label="Envoyer">
+                <i class="fa-solid fa-arrow-up"></i>
+            </button>
+        </div>
+    </div>
+
     <!-- UI CUSTOM CONFIRM MODAL -->
     <div id="custom-confirm-modal" class="modal" onclick="window.closeConfirm()">
         <div class="modal-content glass-panel p-6 rounded-2xl border border-white/10" onclick="event.stopPropagation()">
@@ -564,7 +694,7 @@
                 <div class="w-8 h-8 bg-gradient-to-tr from-white to-gray-400 rounded-lg flex items-center justify-center">
                     <span class="font-bold text-black text-xs">W</span>
                 </div>
-                <span class="font-display font-bold text-lg tracking-tight hidden sm:block">WikiMind <span class="text-white/40 font-normal">3.0</span></span>
+                <span class="font-display font-bold text-lg tracking-tight hidden sm:block">WikiMind <span class="text-white/40 font-normal">3.5</span></span>
             </a>
 
             <!-- Desktop Menu -->
@@ -620,10 +750,6 @@
         <!-- ========================================== -->
         <section id="sec-home" class="tab-section active max-w-7xl mx-auto">
             <div class="text-center min-h-[50vh] flex flex-col justify-center items-center py-12">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-brand-500/30 bg-brand-500/10 text-brand-glow text-[10px] uppercase font-bold tracking-[0.2em] mb-8 animate-fade-in-up">
-                    <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                    Outils Innovants
-                </div>
 
                 <h1 class="text-5xl md:text-8xl font-display font-bold leading-tight mb-8 tracking-tighter" id="hero-greeting">
                     <span class="text-gradient" id="greeting-line">Bonjour !</span>
@@ -632,8 +758,8 @@
                 <p id="hero-quote" class="text-sm md:text-base text-white/40 max-w-lg mx-auto mb-4 font-light italic hidden"></p>
 
                 <p class="text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-12 font-light leading-relaxed animate-fade-in-up" style="animation-delay: 0.2s;">
-                    WikiMind 3.0 est une suite d'outils interconnectés pour apprendre, créer et s'organiser. 
-                    <br><span class="text-xs text-white/40 mt-2 block">🔒 Architecture Hybride &amp; Sécurisée.</span>
+                    WikiMind 3.5 — la suite d'outils IA pour apprendre, créer et s'organiser.
+                    <br><span class="text-xs text-white/40 mt-2 block">&#x1F512; Architecture Hybride &amp; Sécurisée.</span>
                 </p>
 
                 <div class="flex flex-col sm:flex-row items-center justify-center gap-3 animate-fade-in-up" style="animation-delay: 0.3s;">
@@ -648,6 +774,33 @@
                     </button>
                 </div>
             </div>
+
+<!-- ========================================== -->
+<!-- BLOC STATS WIKIMIND                        -->
+<!-- ========================================== -->
+<div class="max-w-2xl mx-auto mt-16 mb-4 animate-fade-in-up" style="animation-delay: 0.4s;">
+  <div class="relative overflow-hidden rounded-2xl border border-white/6"
+       style="background: rgba(14,14,20,0.65); backdrop-filter: blur(24px);">
+    <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.07) 0%, transparent 60%);"></div>
+    <div class="relative z-10 flex items-center justify-around py-6 px-4 gap-2">
+      <div class="stat-item flex-1">
+        <div class="stat-number text-gradient">+10</div>
+        <div class="stat-label">Modèles IA</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item flex-1">
+        <div class="stat-number text-gradient">+400k</div>
+        <div class="stat-label">Lignes de code</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item flex-1">
+        <div class="stat-number text-gradient">+60</div>
+        <div class="stat-label">Utilisateurs</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ========================================== -->
 <!-- BLOC INSTAGRAM TACTERA -->
 <!-- ========================================== -->
@@ -705,7 +858,7 @@
           <!-- Stats -->
           <div class="flex items-center gap-3 mt-1.5">
             <span class="text-[10px] text-white/35 font-medium"><span class="text-white/70 font-bold">19</span> posts</span>
-            <span class="text-[10px] text-white/35 font-medium"><span class="text-white/70 font-bold">128</span> abonnés</span>
+            <span class="text-[10px] text-white/35 font-medium"><span class="text-white/70 font-bold">547</span> abonnés</span>
           </div>
         </div>
 
@@ -743,7 +896,9 @@
                 <h2 class="text-xl font-display font-bold text-center mb-6 text-white/60">L'Application Principale</h2>
                 <a href="Wikimind_AI.html" class="opt-card p-8 md:p-12 block mx-auto">
                     <div class="opt-card-content flex flex-col md:flex-row items-center gap-8">
-                        <div class="card-icon w-20 h-20 rounded-3xl bg-gradient-to-br from-brand-500/30 to-brand-600/10 border border-brand-500/40 flex items-center justify-center text-4xl shadow-lg shadow-brand-500/30 shrink-0">🧠</div>
+                        <div class="card-icon w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500/25 to-indigo-600/5 border border-indigo-500/35 flex items-center justify-center shadow-lg shadow-indigo-500/25 shrink-0">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="1.3" width="40" height="40"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"/></svg>
+                            </div>
                         <div>
                             <h3 class="text-4xl font-display font-bold mb-3 text-white transition-colors duration-300">WikiMind AI</h3>
                             <p class="text-white/70 text-sm leading-relaxed mb-4">L'Intelligence Artificielle de WikiMind : Discutez, générez du code, des diagrammes, révisez vos cours et créez des documents complets au sein d'une même interface propulsée par les meilleurs modèles.</p>
@@ -760,7 +915,7 @@
             <!-- ========================================== -->
             <!-- SECTION AVIS COMMUNAUTÉ (accueil)         -->
             <!-- ========================================== -->
-            <div class="max-w-5xl mx-auto mt-20 mb-4" id="reviews-home-section" style="display:none">
+            <div class="max-w-5xl mx-auto mt-20 mb-4" id="reviews-home-section" style="display:none!important">
                 <div class="text-center mb-10">
                     <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-brand-500/30 bg-brand-500/10 text-brand-glow text-[10px] uppercase font-bold tracking-[0.2em] mb-4">
                         <i class="fa-solid fa-star text-yellow-400"></i>
@@ -1173,13 +1328,18 @@
                 <a href="Wikimind_AI.html" class="module-card opt-card md:col-span-2 p-8" data-name="wikimind core chat ai gpt llama">
                     <div class="opt-card-content justify-between">
                         <div>
-                            <div class="card-icon w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500/30 to-brand-600/10 border border-brand-500/40 flex items-center justify-center text-3xl mb-6 shadow-lg shadow-brand-500/30">🧠</div>
+                            <div class="app-card-icon bg-gradient-to-br from-indigo-500/25 to-indigo-600/5 border border-indigo-500/35 shadow-lg shadow-indigo-500/20">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#818cf8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"/>
+                                </svg>
+                            </div>
                             <h3 class="text-3xl font-display font-bold mb-3 text-white">WikiMind AI</h3>
-                            <p class="text-white/70 max-w-md text-sm leading-relaxed">L'Intelligence Artificielle Wikimind simple, efficace, puissante.</p>
+                            <p class="text-white/70 max-w-md text-sm leading-relaxed">L'Intelligence Artificielle de WikiMind : Discutez, générez du code, des diagrammes, révisez vos cours et créez des documents complets au sein d'une même interface propulsée par les meilleurs modèles.</p>
                         </div>
-                        <div class="mt-6 flex gap-2">
-                            <span class="text-[10px] bg-brand-500/20 text-brand-200 px-3 py-1.5 rounded-full border border-brand-500/30 font-bold tracking-wider uppercase">Multi-Modèles</span>
-                            <span class="text-[10px] bg-brand-500/20 text-brand-200 px-3 py-1.5 rounded-full border border-brand-500/30 font-bold tracking-wider uppercase">Canvas IA</span>
+                        <div class="mt-6 flex gap-2 flex-wrap">
+                            <span class="text-[10px] bg-indigo-500/15 text-indigo-200 px-3 py-1.5 rounded-full border border-indigo-500/25 font-bold uppercase tracking-wider">Multi-Modèles</span>
+                            <span class="text-[10px] bg-indigo-500/15 text-indigo-200 px-3 py-1.5 rounded-full border border-indigo-500/25 font-bold uppercase tracking-wider">Canvas IA</span>
+                            <span class="text-[10px] bg-indigo-500/15 text-indigo-200 px-3 py-1.5 rounded-full border border-indigo-500/25 font-bold uppercase tracking-wider">Images</span>
                         </div>
                     </div>
                 </a>
@@ -1189,145 +1349,205 @@
                 <!-- Autres Apps -->
                 <a href="Wikimind_office.html" class="module-card opt-card p-6" data-name="cours notes ecole office">
                     <div class="opt-card-content">
-                        <div class="card-icon w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/25 to-blue-500/5 border border-blue-500/30 flex items-center justify-center text-2xl mb-4 shadow-lg shadow-blue-500/15">📝</div>
+                        <div class="app-card-icon bg-gradient-to-br from-blue-500/20 to-blue-500/0 border border-blue-500/25 shadow-lg shadow-blue-500/10">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#60a5fa">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/>
+                            </svg>
+                        </div>
                         <h3 class="text-xl font-display font-bold mb-2">Wikimind Office</h3>
-                        <p class="text-white/60 text-xs leading-relaxed mb-4 flex-grow">Création de documents, tableurs et présentations connectés à l'IA.</p>
-                        <div class="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Ouvrir →</div>
+                        <p class="text-white/55 text-xs leading-relaxed mb-4 flex-grow">Création de documents, tableurs et présentations connectés à l'IA.</p>
+                        <div class="text-[10px] text-blue-400 font-bold uppercase tracking-wider flex items-center gap-1">Ouvrir <span>→</span></div>
                     </div>
                 </a>
 
-                <a href="Wikimind_BAC.html" class="module-card opt-card md:col-span-2 p-8" data-name="wikimind core chat ai gpt llama">
+                <a href="Wikimind_BAC.html" class="module-card opt-card md:col-span-2 p-8" data-name="wikimind bac lycee notes calcul">
                     <div class="opt-card-content justify-between">
                         <div>
-                            <div class="card-icon w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500/30 to-brand-600/10 border border-brand-500/40 flex items-center justify-center text-3xl mb-6 shadow-lg shadow-brand-500/30">🎓</div>
+                            <div class="app-card-icon bg-gradient-to-br from-emerald-500/25 to-emerald-500/5 border border-emerald-500/30 shadow-lg shadow-emerald-500/15">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#34d399">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 3.741-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5"/>
+                                </svg>
+                            </div>
                             <h3 class="text-3xl font-display font-bold mb-3 text-white">WikiMind BAC</h3>
-                            <p class="text-white/70 max-w-md text-sm leading-relaxed">Calculateur de note au bac.</p>
+                            <p class="text-white/70 max-w-md text-sm leading-relaxed">Calculateur de note au bac — toutes filières, simulation en temps réel.</p>
                         </div>
                         <div class="mt-6 flex gap-2">
-                            <span class="text-[10px] bg-brand-500/20 text-brand-200 px-3 py-1.5 rounded-full border border-brand-500/30 font-bold tracking-wider uppercase">Bac 2026</span>
-                            <span class="text-[10px] bg-brand-500/20 text-brand-200 px-3 py-1.5 rounded-full border border-brand-500/30 font-bold tracking-wider uppercase">PLusieurs fillières</span>
+                            <span class="text-[10px] bg-emerald-500/15 text-emerald-200 px-3 py-1.5 rounded-full border border-emerald-500/25 font-bold tracking-wider uppercase">Bac 2026</span>
+                            <span class="text-[10px] bg-emerald-500/15 text-emerald-200 px-3 py-1.5 rounded-full border border-emerald-500/25 font-bold tracking-wider uppercase">Toutes filières</span>
                         </div>
                     </div>
                 </a>
                 
                 <a href="Wikimind_extension.html" class="module-card opt-card p-6" data-name="extension chrome">
                     <div class="opt-card-content">
-                        <div class="card-icon w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/25 to-purple-500/5 border border-purple-500/30 flex items-center justify-center text-2xl mb-4 shadow-lg shadow-purple-500/15">📱</div>
+                        <div class="app-card-icon bg-gradient-to-br from-purple-500/20 to-purple-500/0 border border-purple-500/25 shadow-lg shadow-purple-500/10">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#c084fc">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875c-1.243 0-2.25.84-2.25 1.875 0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 0 1-.657.643 48.39 48.39 0 0 1-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 0 1-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 0 0-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 0 1-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 0 0 .657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 0 1-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 0 0 5.427-.63 48.05 48.05 0 0 0 .582-4.717.532.532 0 0 0-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.96.401v0a.656.656 0 0 0 .658-.663 48.422 48.422 0 0 0-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 0 1-.61-.58v0Z"/>
+                            </svg>
+                        </div>
                         <h3 class="text-xl font-display font-bold mb-2">Wikimind Ext.</h3>
-                        <p class="text-white/60 text-xs leading-relaxed mb-4 flex-grow">Découvrez l'extension Google Chrome Wikimind.</p>
-                        <div class="text-[10px] text-purple-400 font-bold uppercase tracking-wider">Découvrir →</div>
+                        <p class="text-white/55 text-xs leading-relaxed mb-4 flex-grow">Extension Google Chrome — génération IA dans n'importe quel champ web.</p>
+                        <div class="text-[10px] text-purple-400 font-bold uppercase tracking-wider flex items-center gap-1">Découvrir <span>→</span></div>
                     </div>
                 </a>
                 
                 <a href="Wikimind_AI_tool.html" class="module-card opt-card p-6" data-name="bac ecole simulateur notes">
                     <div class="opt-card-content">
-                        <div class="card-icon w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500/25 to-teal-500/5 border border-teal-500/30 flex items-center justify-center text-2xl mb-4 shadow-lg shadow-teal-500/15">🎓</div>
+                        <div class="app-card-icon bg-gradient-to-br from-teal-500/20 to-teal-500/0 border border-teal-500/25 shadow-lg shadow-teal-500/10">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#2dd4bf">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z"/>
+                            </svg>
+                        </div>
                         <h3 class="text-xl font-display font-bold mb-2">AI Tools</h3>
-                        <p class="text-white/60 text-xs leading-relaxed mb-4 flex-grow">Détecteur d'IA Wikimind accompagné d'un humaniseur de texte.</p>
-                        <div class="text-[10px] text-teal-400 font-bold uppercase tracking-wider">Lancer →</div>
+                        <p class="text-white/55 text-xs leading-relaxed mb-4 flex-grow">Détecteur d'IA et humaniseur de texte intégrés.</p>
+                        <div class="text-[10px] text-teal-400 font-bold uppercase tracking-wider flex items-center gap-1">Lancer <span>→</span></div>
                     </div>
                 </a>
                 
                 <a href="Wikimind_info.html" class="module-card opt-card p-6" data-name="info news">
                     <div class="opt-card-content">
-                        <div class="card-icon w-12 h-12 rounded-2xl bg-gradient-to-br from-yellow-500/25 to-yellow-500/5 border border-yellow-500/30 flex items-center justify-center text-2xl mb-4 shadow-lg shadow-yellow-500/15">ℹ️</div>
+                        <div class="app-card-icon bg-gradient-to-br from-yellow-500/20 to-yellow-500/0 border border-yellow-500/25 shadow-lg shadow-yellow-500/10">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#fbbf24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 0 1-2.25 2.25M16.5 7.5V18a2.25 2.25 0 0 0 2.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 0 0 2.25 2.25h13.5M6 7.5h3v3H6v-3Z"/>
+                            </svg>
+                        </div>
                         <h3 class="text-xl font-display font-bold mb-2">Wikimind Info</h3>
-                        <p class="text-white/60 text-xs leading-relaxed mb-4 flex-grow">Chaque jour, l'IA vous envoie une nouvelle information pour apprendre.</p>
-                        <div class="text-[10px] text-yellow-400 font-bold uppercase tracking-wider">S'informer →</div>
+                        <p class="text-white/55 text-xs leading-relaxed mb-4 flex-grow">Chaque jour, l'IA vous envoie une nouvelle information pour apprendre.</p>
+                        <div class="text-[10px] text-yellow-400 font-bold uppercase tracking-wider flex items-center gap-1">S'informer <span>→</span></div>
                     </div>
                 </a>
                 
                 <a href="Wikimind_flash.html" class="module-card opt-card p-6" data-name="academy education math calcul">
                     <div class="opt-card-content">
-                        <div class="card-icon w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500/25 to-rose-500/5 border border-rose-500/30 flex items-center justify-center text-2xl mb-4 shadow-lg shadow-rose-500/15">📚</div>
+                        <div class="app-card-icon bg-gradient-to-br from-rose-500/20 to-rose-500/0 border border-rose-500/25 shadow-lg shadow-rose-500/10">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#fb7185">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/>
+                            </svg>
+                        </div>
                         <h3 class="text-xl font-display font-bold mb-2">Wikimind Flash</h3>
-                        <p class="text-white/60 text-xs leading-relaxed mb-4 flex-grow">Générez des quiz et des flash cards pour réviser rapidement.</p>
-                        <div class="text-[10px] text-rose-400 font-bold uppercase tracking-wider">Réviser →</div>
+                        <p class="text-white/55 text-xs leading-relaxed mb-4 flex-grow">Générez des quiz et des flash cards pour réviser rapidement.</p>
+                        <div class="text-[10px] text-rose-400 font-bold uppercase tracking-wider flex items-center gap-1">Réviser <span>→</span></div>
                     </div>
                 </a>
 
                 <a href="Wikimind_calories.html" class="module-card opt-card md:col-span-2 p-6" data-name="focus flow productivity calories">
-                    <div class="opt-card-content flex flex-row items-center gap-4">
-                        <div class="card-icon w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-2xl shrink-0">🍎</div>
+                    <div class="opt-card-content flex flex-row items-center gap-5">
+                        <div class="app-card-icon mb-0 bg-gradient-to-br from-lime-500/20 to-lime-500/0 border border-lime-500/25 shadow-lg shadow-lime-500/10" style="margin-bottom:0;flex-shrink:0;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#a3e635">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"/>
+                            </svg>
+                        </div>
                         <div>
                             <h3 class="text-xl font-display font-bold">Wikimind Calories</h3>
-                            <p class="text-white/60 text-sm mt-1">Compteur de calories avec assistant IA.</p>
+                            <p class="text-white/55 text-sm mt-1">Compteur de calories avec assistant IA nutritionnel.</p>
                         </div>
                     </div>
                 </a>
 
                 <a href="Cloud/Wikimind_cloud.html" class="module-card opt-card p-6" data-name="cloud stockage drive">
                     <div class="opt-card-content">
-                        <div class="card-icon w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">☁️</div>
+                        <div class="app-card-icon bg-gradient-to-br from-sky-500/20 to-sky-500/0 border border-sky-500/25 shadow-lg shadow-sky-500/10">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#38bdf8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z"/>
+                            </svg>
+                        </div>
                         <h3 class="text-lg font-display font-bold mb-1">Cloud</h3>
-                        <p class="text-white/60 text-xs">Stockage sécurisé, connexion Google Drive.</p>
+                        <p class="text-white/55 text-xs">Stockage sécurisé, connexion Google Drive.</p>
                     </div>
                 </a>
 
                 <a href="tools/Wikimind_CV.html" class="module-card opt-card p-6" data-name="cv travail emploi">
                     <div class="opt-card-content">
-                        <div class="card-icon w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">💼</div>
+                        <div class="app-card-icon bg-gradient-to-br from-orange-500/20 to-orange-500/0 border border-orange-500/25 shadow-lg shadow-orange-500/10">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#fb923c">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z"/>
+                            </svg>
+                        </div>
                         <h3 class="text-lg font-display font-bold mb-1">Wikimind CV</h3>
-                        <p class="text-white/60 text-xs">Créateur de CV avec IA et modèles gratuits.</p>
+                        <p class="text-white/55 text-xs">Créateur de CV avec IA et modèles gratuits.</p>
                     </div>
                 </a>
 
                 <a href="AI/Wikimind_call.html" class="module-card opt-card p-6" data-name="Wikimind Call">
                     <div class="opt-card-content">
-                        <div class="card-icon w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl mb-4">🧊</div>
+                        <div class="app-card-icon bg-gradient-to-br from-cyan-500/20 to-cyan-500/0 border border-cyan-500/25 shadow-lg shadow-cyan-500/10">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#22d3ee">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z"/>
+                            </svg>
+                        </div>
                         <h3 class="text-lg font-display font-bold mb-1">Wikimind Call</h3>
-                        <p class="text-white/60 text-xs">Vous pouvez appeler et parler avec l'IA.</p>
+                        <p class="text-white/55 text-xs">Appelez et parlez directement avec l'IA.</p>
                     </div>
                 </a>
 
                 <!-- ✅ NOUVELLES APPS -->
                 <a href="tools/Wikimind_data.html" class="module-card opt-card p-6" data-name="data graphiques charts diagrammes statistiques">
                     <div class="opt-card-content">
-                        <div class="card-icon w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/25 to-cyan-500/5 border border-cyan-500/30 flex items-center justify-center text-xl mb-4 shadow-lg shadow-cyan-500/15">📊</div>
+                        <div class="app-card-icon bg-gradient-to-br from-cyan-500/20 to-cyan-500/0 border border-cyan-500/25 shadow-lg shadow-cyan-500/10">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#22d3ee">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z"/>
+                            </svg>
+                        </div>
                         <h3 class="text-lg font-display font-bold mb-1">Wikimind Data</h3>
-                        <p class="text-white/60 text-xs">Générateur de graphiques et diagrammes boosté par l'IA.</p>
-                        <div class="text-[10px] text-cyan-400 font-bold uppercase tracking-wider mt-3">Analyser →</div>
+                        <p class="text-white/55 text-xs">Générateur de graphiques et diagrammes boosté par l'IA.</p>
+                        <div class="text-[10px] text-cyan-400 font-bold uppercase tracking-wider mt-3 flex items-center gap-1">Analyser <span>→</span></div>
                     </div>
                 </a>
 
                 <a href="tools/Wikimind_gallerie.html" class="module-card opt-card p-6" data-name="galerie images recherche photos wikipedia commons">
                     <div class="opt-card-content">
-                        <div class="card-icon w-10 h-10 rounded-xl bg-gradient-to-br from-fuchsia-500/25 to-fuchsia-500/5 border border-fuchsia-500/30 flex items-center justify-center text-xl mb-4 shadow-lg shadow-fuchsia-500/15">🖼️</div>
+                        <div class="app-card-icon bg-gradient-to-br from-fuchsia-500/20 to-fuchsia-500/0 border border-fuchsia-500/25 shadow-lg shadow-fuchsia-500/10">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#e879f9">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
+                            </svg>
+                        </div>
                         <h3 class="text-lg font-display font-bold mb-1">Wikimind Galerie</h3>
-                        <p class="text-white/60 text-xs">Recherche d'images via Wikimind AI et Wikimedia Commons.</p>
-                        <div class="text-[10px] text-fuchsia-400 font-bold uppercase tracking-wider mt-3">Explorer →</div>
+                        <p class="text-white/55 text-xs">Recherche d'images via Wikimind AI et Wikimedia Commons.</p>
+                        <div class="text-[10px] text-fuchsia-400 font-bold uppercase tracking-wider mt-3 flex items-center gap-1">Explorer <span>→</span></div>
                     </div>
                 </a>
 
-                <a href="Wikimind_xls.html" class="module-card opt-card p-6" data-name="galerie images recherche photos wikipedia commons">
+                <a href="Wikimind_xls.html" class="module-card opt-card p-6" data-name="excel formules tableur xls">
                     <div class="opt-card-content">
-                        <div class="card-icon w-10 h-10 rounded-xl bg-gradient-to-br from-fuchsia-500/25 to-fuchsia-500/5 border border-fuchsia-500/30 flex items-center justify-center text-xl mb-4 shadow-lg shadow-fuchsia-500/15">💻</div>
+                        <div class="app-card-icon bg-gradient-to-br from-green-500/20 to-green-500/0 border border-green-500/25 shadow-lg shadow-green-500/10">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#4ade80">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 0 1-1.125-1.125M3.375 19.5h1.5C5.496 19.5 6 18.996 6 18.375m-3.75.125L3 18.375m0 0V9.75c0-.621.504-1.125 1.125-1.125H6m0 0h12.375c.621 0 1.125.504 1.125 1.125v8.625M6 9.75V5.25A1.5 1.5 0 0 1 7.5 3.75h9A1.5 1.5 0 0 1 18 5.25v4.5M6 9.75h12M9 12.75h.008v.008H9v-.008Zm0 3h.008v.008H9v-.008Zm3-3h.008v.008H12v-.008Zm0 3h.008v.008H12v-.008Zm3-3h.008v.008H15v-.008Zm0 3h.008v.008H15v-.008Z"/>
+                            </svg>
+                        </div>
                         <h3 class="text-lg font-display font-bold mb-1">Wikimind Excel</h3>
-                        <p class="text-white/60 text-xs">Base de données des formules excel avec assistant IA</p>
-                        <div class="text-[10px] text-fuchsia-400 font-bold uppercase tracking-wider mt-3">Explorer →</div>
+                        <p class="text-white/55 text-xs">Base de données des formules Excel avec assistant IA.</p>
+                        <div class="text-[10px] text-green-400 font-bold uppercase tracking-wider mt-3 flex items-center gap-1">Explorer <span>→</span></div>
                     </div>
                 </a>
                 
                 <a href="tools/Wikimind_bacoral.html" class="module-card opt-card p-6" data-name="bac oral examen scolaire lycée epreuve">
                     <div class="opt-card-content">
-                        <div class="card-icon w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/25 to-amber-500/5 border border-amber-500/30 flex items-center justify-center text-xl mb-4 shadow-lg shadow-amber-500/15">🎓</div>
-                        <h3 class="text-lg font-display font-bold mb-1">Wikimind Oral de Bac</h3>
-                        <p class="text-white/60 text-xs">Créez votre oral de bac de A à Z avec l'IA Wikimind.</p>
-                        <div class="text-[10px] text-amber-400 font-bold uppercase tracking-wider mt-3">Préparer →</div>
+                        <div class="app-card-icon bg-gradient-to-br from-amber-500/20 to-amber-500/0 border border-amber-500/25 shadow-lg shadow-amber-500/10">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#fbbf24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-display font-bold mb-1">Oral de Bac</h3>
+                        <p class="text-white/55 text-xs">Créez votre oral de bac de A à Z avec l'IA Wikimind.</p>
+                        <div class="text-[10px] text-amber-400 font-bold uppercase tracking-wider mt-3 flex items-center gap-1">Préparer <span>→</span></div>
                     </div>
                 </a>
 
                 <a href="tools/Wikimind_impressai.html" class="module-card opt-card md:col-span-2 p-6" data-name="diaporama slides powerpoint presentation impressai images animees">
-                    <div class="opt-card-content flex flex-row items-center gap-4">
-                        <div class="card-icon w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500/30 to-violet-500/5 border border-violet-500/40 flex items-center justify-center text-3xl shrink-0 shadow-lg shadow-violet-500/20">✨</div>
+                    <div class="opt-card-content flex flex-row items-center gap-5">
+                        <div class="app-card-icon mb-0 bg-gradient-to-br from-violet-500/25 to-violet-500/0 border border-violet-500/30 shadow-lg shadow-violet-500/15" style="margin-bottom:0;flex-shrink:0;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:#a78bfa">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5m.75-9 3-3 2.148 2.148A12.061 12.061 0 0 1 16.5 7.605"/>
+                            </svg>
+                        </div>
                         <div>
                             <h3 class="text-xl font-display font-bold">Wikimind ImpressAI</h3>
-                            <p class="text-white/60 text-sm mt-1">Générateur de diaporamas professionnels boosté IA — images Wikimedia, animations, export, édition complète.</p>
+                            <p class="text-white/55 text-sm mt-1">Générateur de diaporamas professionnels boosté IA — images Wikimedia, animations, export, édition complète.</p>
                             <div class="flex gap-2 mt-3 flex-wrap">
-                                <span class="text-[10px] bg-violet-500/20 text-violet-200 px-2 py-1 rounded-full border border-violet-500/30 font-bold uppercase">IA Mistral</span>
-                                <span class="text-[10px] bg-violet-500/20 text-violet-200 px-2 py-1 rounded-full border border-violet-500/30 font-bold uppercase">Images Wiki</span>
-                                <span class="text-[10px] bg-violet-500/20 text-violet-200 px-2 py-1 rounded-full border border-violet-500/30 font-bold uppercase">Animations</span>
-                                <span class="text-[10px] bg-violet-500/20 text-violet-200 px-2 py-1 rounded-full border border-violet-500/30 font-bold uppercase">Export HTML</span>
+                                <span class="text-[10px] bg-violet-500/15 text-violet-200 px-2 py-1 rounded-full border border-violet-500/25 font-bold uppercase">IA Mistral</span>
+                                <span class="text-[10px] bg-violet-500/15 text-violet-200 px-2 py-1 rounded-full border border-violet-500/25 font-bold uppercase">Images Wiki</span>
+                                <span class="text-[10px] bg-violet-500/15 text-violet-200 px-2 py-1 rounded-full border border-violet-500/25 font-bold uppercase">Animations</span>
+                                <span class="text-[10px] bg-violet-500/15 text-violet-200 px-2 py-1 rounded-full border border-violet-500/25 font-bold uppercase">Export HTML</span>
                             </div>
                         </div>
                     </div>
@@ -3018,6 +3238,126 @@ Sinon réponds normalement à la question.`;
         document.addEventListener('click', (e) => {
             if (sheet.classList.contains('visible') && !sheet.contains(e.target) && !pill.contains(e.target)) {
                 window.closeAiSheet();
+            }
+        });
+    })();
+    </script>
+
+    <!-- ========================================== -->
+    <!-- DESKTOP AI BAR LOGIC                        -->
+    <!-- ========================================== -->
+    <script>
+    (function() {
+        const APPS = [
+            { names: ['wikimind ai', 'chat', 'ia', 'intelligence', 'assistant', 'core'], url: 'Wikimind_AI.html', label: 'WikiMind AI' },
+            { names: ['office', 'document', 'docs', 'tableur'], url: 'Wikimind_office.html', label: 'WikiMind Office' },
+            { names: ['bac', 'révision bac'], url: 'Wikimind_BAC.html', label: 'WikiMind BAC' },
+            { names: ['flash', 'flashcard', 'quiz', 'réviser'], url: 'Wikimind_flash.html', label: 'WikiMind Flash' },
+            { names: ['extension', 'chrome', 'ext'], url: 'Wikimind_extension.html', label: 'WikiMind Extension' },
+            { names: ['ai tool', 'détecteur', 'humaniseur'], url: 'Wikimind_AI_tool.html', label: 'AI Tools' },
+            { names: ['info', 'news', 'actualité'], url: 'Wikimind_info.html', label: 'WikiMind Info' },
+            { names: ['calories', 'nutrition', 'manger'], url: 'Wikimind_calories.html', label: 'WikiMind Calories' },
+            { names: ['cloud', 'stockage', 'drive'], url: 'Cloud/Wikimind_cloud.html', label: 'WikiMind Cloud' },
+            { names: ['cv', 'curriculum', 'emploi'], url: 'tools/Wikimind_CV.html', label: 'WikiMind CV' },
+            { names: ['call', 'appel', 'vocal', 'voix'], url: 'AI/Wikimind_call.html', label: 'WikiMind Call' },
+            { names: ['data', 'graphique', 'chart'], url: 'tools/Wikimind_data.html', label: 'WikiMind Data' },
+            { names: ['galerie', 'image', 'photo'], url: 'tools/Wikimind_gallerie.html', label: 'WikiMind Galerie' },
+            { names: ['excel', 'formule', 'xls'], url: 'Wikimind_xls.html', label: 'WikiMind Excel' },
+            { names: ['oral', 'bac oral'], url: 'tools/Wikimind_bacoral.html', label: 'WikiMind Oral de Bac' },
+            { names: ['impressai', 'diaporama', 'slide', 'powerpoint'], url: 'tools/Wikimind_impressai.html', label: 'WikiMind ImpressAI' },
+            { names: ['3d', 'tinkercad', 'modélisation'], url: 'Wikimind_3D.html', label: 'WikiMind 3D' },
+            { names: ['compte', 'profil', 'connexion', 'user'], url: 'Wikimind_user.html', label: 'Mon Compte' },
+        ];
+
+        const MISTRAL_API_KEY = 'wuZGbRk6ry7KpMraZvxB3zg7ae6x1dLN';
+
+        const input = document.getElementById('wm-desktop-input');
+        const sendBtn = document.getElementById('wm-desktop-send');
+        const overlayBtn = document.getElementById('wm-desktop-overlay-btn');
+        const overlay = document.getElementById('wm-desktop-overlay');
+        const responseContent = document.getElementById('wm-desktop-response-content');
+
+        if (!input || !sendBtn) return;
+
+        let overlayMode = false;
+
+        input.addEventListener('input', () => {
+            sendBtn.disabled = input.value.trim().length === 0;
+        });
+
+        overlayBtn.addEventListener('click', () => {
+            overlayMode = !overlayMode;
+            overlayBtn.style.color = overlayMode ? '#818cf8' : '';
+            overlayBtn.style.borderColor = overlayMode ? 'rgba(99,102,241,0.4)' : '';
+            overlayBtn.style.background = overlayMode ? 'rgba(99,102,241,0.15)' : '';
+        });
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !sendBtn.disabled) sendDesktopQuery();
+            if (e.key === 'Escape') closeDesktopOverlay();
+        });
+
+        sendBtn.addEventListener('click', sendDesktopQuery);
+
+        async function sendDesktopQuery() {
+            const q = input.value.trim();
+            if (!q) return;
+
+            // Open app command
+            const lower = q.toLowerCase();
+            const openMatch = lower.match(/^(?:ouvre?|lance|va sur?|accède à?|affiche|démarre?)\s+(.+)$/);
+            if (openMatch) {
+                const target = openMatch[1].trim();
+                const app = APPS.find(a => a.names.some(n => target.includes(n)));
+                if (app) {
+                    input.value = ''; sendBtn.disabled = true;
+                    showDesktopOverlay(`<div class="flex items-center gap-3"><i class="fa-solid fa-arrow-up-right-from-square text-brand-glow"></i><span class="font-semibold text-white">Ouverture de ${app.label}…</span></div>`);
+                    setTimeout(() => { window.location.href = app.url; }, 700);
+                    return;
+                }
+            }
+
+            input.value = '';
+            sendBtn.disabled = true;
+            showDesktopOverlay(`<div class="flex items-center gap-3 text-white/40"><span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse flex-shrink-0"></span><span class="text-sm">WikiMind réfléchit…</span></div>`);
+
+            const systemPrompt = `Tu es l'assistant de WikiMind, une suite d'applications IA françaises. Tu réponds en français, de façon concise (max 3 phrases). Applications disponibles: ${APPS.map(a => `${a.label} → ${a.url}`).join(', ')}`;
+
+            try {
+                const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${MISTRAL_API_KEY}` },
+                    body: JSON.stringify({
+                        model: 'mistral-small-latest',
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: q }
+                        ],
+                        max_tokens: 250, temperature: 0.5
+                    })
+                });
+                const data = await res.json();
+                const reply = data?.choices?.[0]?.message?.content || 'Désolé, je n\'ai pas pu répondre.';
+                showDesktopOverlay(`<div class="flex items-start gap-3"><i class="fa-solid fa-sparkles text-indigo-400 shrink-0 mt-0.5 text-xs"></i><div class="text-sm text-white/85 leading-relaxed">${reply}</div></div>`);
+            } catch(e) {
+                showDesktopOverlay(`<div class="text-white/30 text-xs">Erreur de connexion.</div>`);
+            }
+        }
+
+        function showDesktopOverlay(html) {
+            responseContent.innerHTML = html;
+            overlay.classList.add('active');
+        }
+
+        window.closeDesktopOverlay = function() {
+            overlay.classList.remove('active');
+        };
+
+        // Click outside closes overlay
+        document.addEventListener('click', (e) => {
+            const bar = document.getElementById('wm-desktop-ai-bar');
+            if (overlay.classList.contains('active') && !overlay.contains(e.target) && bar && !bar.contains(e.target)) {
+                window.closeDesktopOverlay();
             }
         });
     })();
