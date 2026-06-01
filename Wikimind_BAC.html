@@ -1,589 +1,625 @@
-<!-- START OF FILE Wikimind_BAC.html -->
 <!DOCTYPE html>
-<html lang="fr" data-theme="dark">
+<html lang="fr" class="scroll-smooth">
 <head>
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-29XYBNJ2CB"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-29XYBNJ2CB');
-</script>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WikiMind BAC 2026 - Simulateur de Moyenne</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>WikiMind BAC 2026 — Simulateur de Moyenne</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-29XYBNJ2CB"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-29XYBNJ2CB');</script>
 <script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    darkMode:'class',
+    theme:{extend:{
+      fontFamily:{sans:['Inter','sans-serif'],display:['Space Grotesk','sans-serif']},
+      colors:{glass:{panel:'rgba(20,20,20,0.6)',border:'rgba(255,255,255,0.08)'},brand:{500:'#6366f1',600:'#4f46e5',glow:'#818cf8'}},
+      animation:{'fade-in-up':'fadeInUp 0.5s ease-out forwards','fade-in':'fadeIn 0.3s ease-out forwards'},
+      keyframes:{
+        fadeInUp:{'0%':{opacity:0,transform:'translateY(15px)'},'100%':{opacity:1,transform:'translateY(0)'}},
+        fadeIn:{'0%':{opacity:0},'100%':{opacity:1}}
+      }
+    }}
+  }
+</script>
 <style>
-:root {
-  --bg: #0a0a0f;
-  --bg2: #13131a;
-  --bg3: #1c1c27;
-  --border: #2a2a3a;
-  --text: #f0f0f5;
-  --text2: #8888aa;
-  --accent: #6c63ff;
-  --accent2: #a78bfa;
-  --card: #16161f;
-  --card-hover: #1e1e2e;
-  --input-bg: #0f0f18;
-  --ring-1: #6c63ff;
-  --ring-2: #f59e0b;
-  --ring-3: #10b981;
-  --ring-4: #3b82f6;
-  --ring-5: #ec4899;
-  --success: #10b981;
-  --warn: #f59e0b;
-  --danger: #ef4444;
-}
-[data-theme="light"] {
-  --bg: #f4f4f8;
-  --bg2: #ffffff;
-  --bg3: #eeeef4;
-  --border: #d8d8e8;
-  --text: #111118;
-  --text2: #6666aa;
-  --accent: #5b52ef;
-  --accent2: #7c6fe0;
-  --card: #ffffff;
-  --card-hover: #f8f8ff;
-  --input-bg: #f0f0f8;
-  --ring-1: #5b52ef;
-}
+  body { background-color:#050505; color:#ffffff; overflow-x:hidden; }
 
-*, *::before, *::after { box-sizing: border-box; }
+  body::before {
+    content:''; position:fixed; top:0; left:0; right:0; bottom:0;
+    background:radial-gradient(ellipse 80% 60% at 50% 55%,rgba(26,115,232,0.18) 0%,rgba(17,85,180,0.08) 35%,transparent 65%);
+    pointer-events:none; z-index:0;
+  }
+  body::after {
+    content:''; position:fixed; bottom:0; left:0; right:0; height:50vh;
+    background:radial-gradient(ellipse 100% 100% at 50% 100%,rgba(26,115,232,0.22) 0%,rgba(26,115,232,0.08) 45%,transparent 70%);
+    pointer-events:none; z-index:0;
+  }
 
-body {
-  font-family: 'Inter', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  transition: background 0.3s, color 0.3s;
-  overflow-x: hidden;
-}
+  /* ── AVATAR RINGS ── */
+  .plan-chip-avatar { position:relative; width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .plan-chip-avatar img { width:32px; height:32px; object-fit:cover; border-radius:50%; position:relative; z-index:2; }
+  .plan-chip-avatar::after { content:''; position:absolute; inset:-2px; border-radius:50%; z-index:0; }
+  .plan-chip-avatar::before { content:''; position:absolute; inset:2px; border-radius:50%; z-index:1; background:#050505; }
+  .ring-free::after { background:conic-gradient(#9ca3af,#d1d5db,#9ca3af); }
+  .ring-plus::after { background:conic-gradient(#fff,#aaa,#fff,#aaa,#fff); animation:ringRotate 4s linear infinite; }
+  .ring-pro::after { background:conic-gradient(#22c55e,#4ade80,#16a34a,#86efac,#22c55e); animation:ringRotate 3s linear infinite; }
+  .ring-premium::after { background:conic-gradient(#f59e0b,#fcd34d,#d97706,#fef08a,#f59e0b); animation:ringRotate 2.5s linear infinite; }
+  .ring-premium-plus::after { background:conic-gradient(#ef4444,#f97316,#eab308,#f97316,#ef4444); animation:ringRotateFire 1.8s linear infinite; }
+  @keyframes ringRotate { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+  @keyframes ringRotateFire { 0%{transform:rotate(0deg);filter:brightness(1);} 50%{transform:rotate(180deg);filter:brightness(1.3);} 100%{transform:rotate(360deg);filter:brightness(1);} }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .plan-badge { font-size:9px; font-weight:800; text-transform:uppercase; padding:2px 6px; border-radius:20px; letter-spacing:.04em; }
+  .plan-free { background:#27272a; color:#a1a1aa; }
+  .plan-plus { background:#1e3a5f; color:#60a5fa; }
+  .plan-pro { background:#3b1f5e; color:#c084fc; }
+  .plan-premium { background:#44330f; color:#fbbf24; }
+  .plan-premium-plus { background:linear-gradient(135deg,#44110f,#44330f); color:#fb923c; }
 
-/* Header */
-header {
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
-  position: sticky; top: 0; z-index: 100;
-  backdrop-filter: blur(20px);
-}
+  /* ── GLASS ── */
+  .glass-panel { background:rgba(20,20,20,0.6); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.08); box-shadow:0 8px 32px 0 rgba(0,0,0,0.3); }
 
-/* Animations */
-@keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
-@keyframes slideIn { from { opacity:0; transform:translateX(-12px); } to { opacity:1; transform:translateX(0); } }
-@keyframes popIn { from { opacity:0; transform:scale(0.85); } to { opacity:1; transform:scale(1); } }
-@keyframes pulse-ring { 0%,100% { box-shadow: 0 0 0 2px var(--ring-color,var(--accent)); } 50% { box-shadow: 0 0 0 4px var(--ring-color,var(--accent)); } }
-@keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
-@keyframes barSlide { from { transform:translateY(100%); } to { transform:translateY(0); } }
+  /* ── VOIE CHIPS ── */
+  .voie-chip {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:8px 16px; border-radius:999px;
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08);
+    color:rgba(255,255,255,0.6); font-size:13px; font-weight:600;
+    cursor:pointer; transition:all 0.2s; white-space:nowrap;
+  }
+  .voie-chip:hover { background:rgba(255,255,255,0.08); color:#fff; border-color:rgba(255,255,255,0.15); }
+  .voie-chip.active { background:rgba(99,102,241,0.15); border-color:rgba(99,102,241,0.4); color:#818cf8; }
 
-.fade-up { animation: fadeUp 0.45s cubic-bezier(0.22,1,0.36,1) both; }
-.pop-in { animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both; }
+  .sub-chip {
+    display:inline-flex; align-items:center; gap:5px;
+    padding:6px 12px; border-radius:999px;
+    background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);
+    color:rgba(255,255,255,0.5); font-size:12px; font-weight:500;
+    cursor:pointer; transition:all 0.2s; white-space:nowrap;
+  }
+  .sub-chip:hover { background:rgba(255,255,255,0.07); color:#fff; }
+  .sub-chip.active { background:rgba(99,102,241,0.12); border-color:rgba(99,102,241,0.35); color:#818cf8; }
 
-/* Plan rings */
-.plan-ring {
-  --ring-color: var(--ring-1);
-  border-radius: 50%;
-  padding: 2px;
-  animation: pulse-ring 3s ease-in-out infinite;
-}
-.plan-ring-2 { --ring-color: var(--ring-2); }
-.plan-ring-3 { --ring-color: var(--ring-3); }
-.plan-ring-4 { --ring-color: var(--ring-4); }
-.plan-ring-5 { --ring-color: var(--ring-5); }
+  /* ── SUBJECT ROWS ── */
+  .subject-row {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 16px; border-radius:12px;
+    background:rgba(20,20,20,0.6); border:1px solid rgba(255,255,255,0.06);
+    transition:all 0.2s; gap:12px;
+  }
+  .subject-row:focus-within { border-color:rgba(99,102,241,0.3); background:rgba(30,30,38,0.7); }
+  .subject-row.has-grade { border-color:rgba(99,102,241,0.2); }
 
-/* Stream buttons */
-.stream-btn {
-  background: var(--card);
-  border: 1.5px solid var(--border);
-  color: var(--text);
-  border-radius: 14px;
-  padding: 18px 20px;
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.22,1,0.36,1);
-  position: relative;
-  overflow: hidden;
-}
-.stream-btn::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(135deg, var(--accent) 0%, transparent 60%);
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-.stream-btn:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(108,99,255,0.15); }
-.stream-btn:hover::before { opacity: 0.06; }
-.stream-btn.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: white;
-  box-shadow: 0 8px 24px rgba(108,99,255,0.35);
-}
-.stream-btn.active::before { opacity: 0; }
+  .grade-input {
+    width:72px; text-align:center; font-weight:700; font-size:1rem;
+    background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
+    border-radius:8px; color:#fff; padding:6px 10px; outline:none;
+    transition:all 0.2s; flex-shrink:0;
+  }
+  .grade-input:focus { border-color:#6366f1; background:rgba(99,102,241,0.08); box-shadow:0 0 0 2px rgba(99,102,241,0.15); }
+  .grade-input::placeholder { color:rgba(255,255,255,0.2); font-weight:400; font-size:0.85rem; }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
 
-/* Input groups */
-.input-group {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transition: all 0.2s;
-}
-.input-group:focus-within {
-  border-color: var(--accent);
-  background: var(--card-hover);
-  box-shadow: 0 0 0 3px rgba(108,99,255,0.1);
-}
-.grade-input {
-  width: 72px;
-  text-align: right;
-  font-weight: 800;
-  font-size: 1.2rem;
-  background: var(--input-bg);
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  color: var(--text);
-  padding: 6px 10px;
-  outline: none;
-  transition: border-color 0.2s;
-}
-.grade-input:focus { border-color: var(--accent); }
-.grade-input::placeholder { color: var(--text2); font-weight: 400; font-size: 0.9rem; }
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .cat-header {
+    padding:14px 0 6px;
+    font-size:0.65rem; font-weight:700; color:rgba(255,255,255,0.3);
+    text-transform:uppercase; letter-spacing:0.12em;
+    border-bottom:1px solid rgba(255,255,255,0.05);
+    margin-bottom:6px;
+  }
 
-/* Category separator */
-.cat-sep {
-  grid-column: 1 / -1;
-  margin-top: 24px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
-}
+  /* ── GRADE COLOR CODING ── */
+  .grade-input.grade-ok { border-color:rgba(16,185,129,0.35); color:#34d399; }
+  .grade-input.grade-mid { border-color:rgba(245,158,11,0.35); color:#fbbf24; }
+  .grade-input.grade-low { border-color:rgba(239,68,68,0.35); color:#f87171; }
 
-/* Result bar */
-#result-bar {
-  position: fixed; bottom: 0; left: 0; width: 100%;
-  background: var(--bg2);
-  border-top: 1px solid var(--border);
-  padding: 18px 24px;
-  z-index: 50;
-  transform: translateY(100%);
-  transition: transform 0.5s cubic-bezier(0.22,1,0.36,1);
-  backdrop-filter: blur(20px);
-}
-#result-bar.visible { transform: translateY(0); }
+  /* ── COEF BADGE ── */
+  .coef-badge {
+    font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px;
+    background:rgba(99,102,241,0.1); color:#818cf8; border:1px solid rgba(99,102,241,0.2);
+    flex-shrink:0;
+  }
 
-/* Mention badges */
-.mention-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  transition: all 0.3s;
-}
+  /* ── AI SECTION ── */
+  .ai-card {
+    background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.15);
+    border-radius:20px; padding:24px; margin-top:28px;
+  }
+  .ai-loader-bar {
+    height:3px; border-radius:2px;
+    background:linear-gradient(90deg,rgba(99,102,241,0.1) 0%,rgba(99,102,241,0.6) 50%,rgba(99,102,241,0.1) 100%);
+    background-size:200% 100%;
+    animation:shimmer 1.5s infinite;
+  }
+  @keyframes shimmer { from{background-position:-200% 0;} to{background-position:200% 0;} }
 
-/* Theme toggle */
-.theme-toggle {
-  width: 40px; height: 40px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--text);
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.2s;
-  font-size: 1rem;
-}
-.theme-toggle:hover { border-color: var(--accent); background: var(--card-hover); }
+  /* ── RESULT BAR ── */
+  #result-bar {
+    position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px);
+    width:min(680px,calc(100vw - 48px)); z-index:200;
+    opacity:0; transition:all 0.5s cubic-bezier(0.22,1,0.36,1);
+    pointer-events:none;
+  }
+  #result-bar.visible { transform:translateX(-50%) translateY(0); opacity:1; pointer-events:all; }
+  .result-pill {
+    display:flex; align-items:center; justify-content:space-between;
+    gap:16px; padding:14px 20px; border-radius:20px;
+    background:rgba(14,14,18,0.95); border:1px solid rgba(255,255,255,0.1);
+    backdrop-filter:blur(40px); -webkit-backdrop-filter:blur(40px);
+    box-shadow:0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(26,115,232,0.06);
+  }
 
-/* Avatar */
-.avatar-ring {
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 0.75rem; color: white;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-.avatar-ring:hover { transform: scale(1.08); }
+  /* ── MENTION BADGE ── */
+  .mention-badge {
+    display:inline-flex; align-items:center; padding:4px 12px;
+    border-radius:999px; font-size:11px; font-weight:700; letter-spacing:0.06em;
+    text-transform:uppercase; transition:all 0.3s;
+  }
 
-/* User dropdown */
-.user-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 220px;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.4);
-  overflow: hidden;
-  display: none;
-  z-index: 200;
-  animation: popIn 0.2s cubic-bezier(0.34,1.56,0.64,1);
-}
-.user-dropdown.open { display: block; }
-.dropdown-item {
-  padding: 10px 16px;
-  font-size: 0.82rem;
-  color: var(--text2);
-  cursor: pointer;
-  transition: all 0.15s;
-  display: flex; align-items: center; gap: 8px;
-}
-.dropdown-item:hover { background: var(--card); color: var(--text); }
+  /* ── MOBILE BOTTOM BAR ── */
+  #wm-ai-bar {
+    display:none; position:fixed; bottom:0; left:0; right:0; z-index:400;
+    padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+    background:linear-gradient(to top,rgba(5,5,5,0.98) 0%,rgba(5,5,5,0.85) 70%,transparent 100%);
+  }
+  @media (max-width:768px) {
+    #wm-ai-bar { display:block; }
+    body { padding-bottom:78px; }
+    #result-bar { bottom:86px; }
+  }
+  .wm-ai-pill {
+    display:flex; align-items:center; gap:10px;
+    background:rgba(255,255,255,0.055); border:1px solid rgba(255,255,255,0.09);
+    border-radius:100px; padding:12px 16px;
+    backdrop-filter:blur(30px); transition:border-color 0.2s;
+  }
+  .wm-ai-pill-placeholder { flex:1; color:rgba(255,255,255,0.35); font-size:14px; cursor:text; user-select:none; }
+  .wm-ai-pill-send {
+    width:34px; height:34px; border-radius:50%; border:none; cursor:pointer;
+    background:linear-gradient(135deg,#6366f1,#818cf8);
+    display:flex; align-items:center; justify-content:center;
+    color:white; font-size:13px; flex-shrink:0; transition:transform 0.15s,opacity 0.15s;
+    box-shadow:0 2px 10px rgba(99,102,241,0.4);
+  }
+  .wm-ai-pill-send:hover { transform:scale(1.05); }
+  .wm-ai-pill-send:disabled { opacity:0.4; cursor:default; transform:none; }
+  #wm-ai-input-real { flex:1; background:transparent; border:none; outline:none; color:#fff; font-size:14px; display:none; }
+  #wm-ai-input-real::placeholder { color:rgba(255,255,255,0.35); }
+  .wm-ai-pill.open #wm-ai-input-real { display:block; }
+  .wm-ai-pill.open .wm-ai-pill-placeholder { display:none; }
 
-/* AI panel */
-#ai-panel {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 20px;
-  margin-top: 24px;
-  display: none;
-}
-#ai-panel.visible { display: block; animation: fadeUp 0.3s both; }
-.ai-response {
-  background: var(--input-bg);
-  border-radius: 10px;
-  padding: 16px;
-  font-size: 0.88rem;
-  line-height: 1.65;
-  color: var(--text);
-  white-space: pre-wrap;
-  min-height: 60px;
-}
-.ai-loading {
-  background: linear-gradient(90deg, var(--border) 25%, var(--card-hover) 50%, var(--border) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  height: 16px; border-radius: 4px; margin-bottom: 8px;
-}
+  /* ── DESKTOP AI BAR ── */
+  #wm-desktop-ai-bar {
+    display:none; position:fixed; bottom:32px; left:50%; transform:translateX(-50%);
+    width:min(680px,calc(100vw - 48px)); z-index:400;
+  }
+  @media (min-width:769px) {
+    #wm-desktop-ai-bar { display:block; }
+    body { padding-bottom:100px; }
+  }
+  .wm-desktop-pill {
+    display:flex; align-items:center; gap:12px;
+    background:rgba(18,18,22,0.85); border:1px solid rgba(255,255,255,0.10);
+    border-radius:100px; padding:12px 16px 12px 20px;
+    backdrop-filter:blur(40px); -webkit-backdrop-filter:blur(40px);
+    transition:border-color 0.25s,box-shadow 0.25s;
+    box-shadow:0 8px 40px rgba(0,0,0,0.45),0 0 0 1px rgba(26,115,232,0.06);
+  }
+  .wm-desktop-pill:focus-within {
+    border-color:rgba(99,102,241,0.35);
+    box-shadow:0 8px 40px rgba(0,0,0,0.5),0 0 0 1px rgba(99,102,241,0.15),0 0 30px rgba(26,115,232,0.10);
+  }
+  #wm-desktop-input { flex:1; background:transparent; border:none; outline:none; color:#fff; font-size:15px; }
+  #wm-desktop-input::placeholder { color:rgba(255,255,255,0.30); }
+  .wm-desktop-send {
+    width:36px; height:36px; border-radius:50%; border:none; cursor:pointer;
+    background:linear-gradient(135deg,#6366f1,#818cf8);
+    display:flex; align-items:center; justify-content:center;
+    color:white; font-size:13px; flex-shrink:0; transition:transform 0.15s,opacity 0.15s;
+    box-shadow:0 2px 12px rgba(99,102,241,0.45);
+  }
+  .wm-desktop-send:hover { transform:scale(1.07); }
+  .wm-desktop-send:disabled { opacity:0.35; cursor:default; transform:none; }
 
-/* Wikimind button */
-.wm-btn {
-  background: var(--accent);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  padding: 10px 20px;
-  font-weight: 700;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex; align-items: center; gap: 6px;
-}
-.wm-btn:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 6px 18px rgba(108,99,255,0.35); }
-.wm-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-.wm-btn-outline {
-  background: transparent;
-  color: var(--text2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 20px;
-  font-weight: 600;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.wm-btn-outline:hover { border-color: var(--accent); color: var(--text); }
+  /* Overlay réponse desktop */
+  #wm-desktop-overlay { display:none; position:fixed; inset:0; z-index:395; pointer-events:none; }
+  #wm-desktop-overlay.active { display:block; pointer-events:all; }
+  #wm-desktop-overlay-bg { position:absolute; inset:0; background:rgba(0,0,0,0); transition:background 0.3s; }
+  #wm-desktop-overlay.active #wm-desktop-overlay-bg { background:rgba(0,0,0,0.45); }
+  #wm-desktop-response {
+    position:absolute; bottom:110px; left:50%; transform:translateX(-50%);
+    width:min(680px,calc(100vw - 48px));
+    background:rgba(14,14,18,0.97); border:1px solid rgba(255,255,255,0.09); border-radius:24px;
+    padding:24px 28px; backdrop-filter:blur(30px);
+    box-shadow:0 24px 80px rgba(0,0,0,0.6),0 0 0 1px rgba(99,102,241,0.08);
+    opacity:0; transform:translateX(-50%) translateY(12px);
+    transition:opacity 0.3s,transform 0.3s; max-height:55vh; overflow-y:auto;
+  }
+  #wm-desktop-overlay.active #wm-desktop-response { opacity:1; transform:translateX(-50%) translateY(0); }
 
-/* MT badge */
-.mt-badge {
-  background: linear-gradient(135deg, #f59e0b, #f97316);
-  color: white;
-  border-radius: 8px;
-  padding: 3px 8px;
-  font-size: 0.7rem;
-  font-weight: 800;
-}
+  /* ── TOAST ── */
+  #toast-container { position:fixed; bottom:100px; right:20px; z-index:9999; display:flex; flex-direction:column; gap:10px; }
 
-/* Section scrollable horizontale filières */
-.filieres-scroll {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-  scrollbar-width: none;
-}
-.filieres-scroll::-webkit-scrollbar { display: none; }
-.filiere-chip {
-  flex-shrink: 0;
-  padding: 6px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--text2);
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-.filiere-chip:hover { border-color: var(--accent); color: var(--text); }
-.filiere-chip.active { background: var(--accent); border-color: var(--accent); color: white; }
+  /* ── SPLASH ── */
+  #wm-splash {
+    position:fixed; inset:0; z-index:9999; background:#050505;
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+  }
+  #wm-splash.out { animation:splashOut 0.7s cubic-bezier(0.4,0,0.2,1) forwards; pointer-events:none; }
+  @keyframes splashOut { 0%{opacity:1;transform:scale(1);} 100%{opacity:0;transform:scale(1.05);} }
 
-/* Tooltip info */
-.info-tooltip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px; height: 16px;
-  border-radius: 50%;
-  background: var(--border);
-  color: var(--text2);
-  font-size: 0.6rem;
-  font-weight: 800;
-  cursor: help;
-  position: relative;
-}
-.info-tooltip:hover::after {
-  content: attr(data-tip);
-  position: absolute;
-  bottom: 120%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 6px 10px;
-  border-radius: 8px;
-  font-size: 0.72rem;
-  white-space: nowrap;
-  z-index: 999;
-  font-weight: 500;
-  pointer-events: none;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-}
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width:6px; }
+  ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:4px; }
+
+  /* ── BACHIBAC HIGHLIGHT ── */
+  .bachibac-badge {
+    display:inline-flex; align-items:center; gap:4px;
+    padding:3px 8px; border-radius:999px; font-size:10px; font-weight:700;
+    background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(250,204,21,0.15));
+    border:1px solid rgba(250,204,21,0.25); color:#fde047;
+  }
+
+  /* ── OPTION TOGGLE ── */
+  .option-section {
+    margin-top:24px; padding:16px;
+    background:rgba(250,204,21,0.04); border:1px solid rgba(250,204,21,0.1);
+    border-radius:16px;
+  }
+  .option-section summary {
+    cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px;
+    font-size:12px; font-weight:700; color:rgba(253,224,71,0.7);
+    text-transform:uppercase; letter-spacing:0.08em;
+  }
+  .option-section summary::-webkit-details-marker { display:none; }
+  .option-section[open] summary { color:#fde047; }
+
+  /* ── ANALYSE PAR MATIÈRE ── */
+  .subject-analysis-bar {
+    height:4px; border-radius:2px; background:rgba(255,255,255,0.06);
+    overflow:hidden; margin-top:6px;
+  }
+  .subject-analysis-fill { height:100%; border-radius:2px; transition:width 0.6s cubic-bezier(0.22,1,0.36,1); }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px);} to{opacity:1;transform:translateY(0);} }
+  .fade-up { animation:fadeUp 0.4s cubic-bezier(0.22,1,0.36,1) both; }
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<header>
-  <div style="max-width:1100px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between;">
-    <!-- Logo -->
-    <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="location.href='Wikimind_home.html'">
-      <div style="width:34px;height:34px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:0.85rem;letter-spacing:-1px;">W</div>
-      <span style="font-weight:900;font-size:1.1rem;letter-spacing:-0.5px;">WikiMind <span style="color:var(--text2);font-weight:400;">BAC</span></span>
+<!-- SPLASH -->
+<div id="wm-splash">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:16px;">
+    <div style="width:72px;height:72px;background:linear-gradient(135deg,#fff 0%,#c7c8ff 100%);border-radius:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 40px rgba(99,102,241,0.5);">
+      <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:32px;color:#050505;">W</span>
     </div>
+    <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;letter-spacing:-0.03em;color:#fff;">WikiMind BAC</div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.25);letter-spacing:0.2em;text-transform:uppercase;">2026</div>
+    <div style="width:120px;height:2px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;margin-top:8px;">
+      <div style="height:100%;width:0%;background:linear-gradient(90deg,#6366f1,#a78bfa);border-radius:2px;animation:splashBarFill 1.2s cubic-bezier(0.4,0,0.2,1) 0.2s forwards;"></div>
+    </div>
+  </div>
+</div>
+<style>@keyframes splashBarFill{0%{width:0%;}80%{width:100%;}100%{width:100%;opacity:0.5;}}</style>
 
-    <!-- Right side -->
-    <div style="display:flex;align-items:center;gap:10px;">
-      <!-- Theme toggle -->
-      <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn" title="Changer de thème">🌙</button>
+<!-- NAVBAR -->
+<nav class="glass-panel sticky top-0 z-50" style="border-radius:0;border-left:none;border-right:none;border-top:none;">
+  <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+    <!-- Logo -->
+    <a href="index.html" class="flex items-center gap-2 flex-shrink-0">
+      <div style="width:32px;height:32px;background:linear-gradient(135deg,#fff,#c7c8ff);border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(99,102,241,0.3);">
+        <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:#050505;">W</span>
+      </div>
+      <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;letter-spacing:-0.02em;">WikiMind <span style="color:#818cf8;">BAC</span></span>
+    </a>
 
-      <!-- User area -->
-      <div style="position:relative;" id="user-area">
-        <!-- Not logged in -->
-        <a href="Wikimind_user.html" id="btn-login" style="display:none;padding:8px 16px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text2);font-size:0.8rem;font-weight:600;text-decoration:none;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
-          Connexion
-        </a>
-        <!-- Logged in avatar -->
-        <div id="btn-user" style="display:none;position:relative;">
-          <div class="avatar-ring plan-ring" id="avatar-circle" onclick="toggleDropdown()">
-            <span id="avatar-initials">?</span>
-          </div>
-          <!-- Dropdown -->
-          <div class="user-dropdown" id="user-dropdown">
-            <div style="padding:14px 16px;border-bottom:1px solid var(--border);">
-              <div style="font-weight:700;font-size:0.9rem;" id="dd-name">Utilisateur</div>
-              <div style="font-size:0.75rem;color:var(--text2);" id="dd-plan">Plan Free</div>
-            </div>
-            <div class="dropdown-item" onclick="location.href='Wikimind_user.html'">
-              <span>👤</span> Mon espace
-            </div>
-            <div class="dropdown-item" id="dd-mt" style="display:none;">
-              <span>⚡</span> <span id="dd-mt-val">-- MT</span>
-            </div>
-            <div style="height:1px;background:var(--border);margin:4px 0;"></div>
-            <div class="dropdown-item" onclick="signOutUser()" style="color:var(--danger);">
-              <span>🚪</span> Déconnexion
-            </div>
-          </div>
+    <!-- Auth -->
+    <div id="auth-container" class="flex items-center gap-3">
+      <a href="Wikimind_user.html" id="login-btn"
+        class="px-4 py-1.5 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-gray-200 transition-colors">
+        Connexion
+      </a>
+      <div id="user-logged" class="hidden items-center gap-2">
+        <button id="sync-btn" onclick="window.syncUserData()" title="Synchroniser"
+          class="w-7 h-7 flex items-center justify-center rounded-full text-white/30 hover:text-white/60 hover:bg-white/5 transition-all">
+          <i id="sync-icon" class="fa-solid fa-rotate text-xs"></i>
+        </button>
+        <div class="text-right hidden sm:block">
+          <div id="user-name-display" class="text-xs font-bold text-white">Utilisateur</div>
+          <div id="nav-plan-badge" class="plan-badge plan-free mt-0.5">Free</div>
         </div>
+        <a href="Wikimind_user.html">
+          <div id="nav-avatar-ring" class="plan-chip-avatar ring-free">
+            <img id="nav-avatar" src="" class="bg-gray-800" alt="Avatar">
+          </div>
+        </a>
       </div>
     </div>
   </div>
-</header>
+</nav>
 
 <!-- MAIN -->
-<main style="flex:1;max-width:1100px;margin:0 auto;width:100%;padding:40px 24px 120px;">
+<main class="relative max-w-3xl mx-auto px-4 pt-8 pb-4" style="z-index:1;">
 
-  <!-- Hero -->
-  <div class="fade-up" style="text-align:center;margin-bottom:48px;">
-    <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;border:1px solid var(--border);background:var(--card);margin-bottom:20px;">
-      <span style="width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block;"></span>
-      <span style="font-size:0.75rem;color:var(--text2);font-weight:600;">Réforme BAC 2026 — Coefficients officiels</span>
-    </div>
-    <h1 style="font-size:clamp(2rem,5vw,3.5rem);font-weight:900;letter-spacing:-2px;margin:0 0 12px;">Simulateur BAC 2026</h1>
-    <p style="color:var(--text2);font-size:1rem;">Calcul précis • Toutes filières • Analyse IA Mistral</p>
-  </div>
-
-  <!-- Filière selector - Catégories -->
-  <div class="fade-up" style="animation-delay:0.1s;margin-bottom:16px;">
-    <div style="font-size:0.72rem;color:var(--text2);font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">Voie</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
-      <button class="filiere-chip active" onclick="selectVoie('generale',this)" id="voie-generale">🎓 Générale</button>
-      <button class="filiere-chip" onclick="selectVoie('technologique',this)" id="voie-technologique">⚙️ Technologique</button>
-      <button class="filiere-chip" onclick="selectVoie('pro',this)" id="voie-pro">🛠️ Professionnelle</button>
-      <button class="filiere-chip" onclick="selectVoie('internationale',this)" id="voie-internationale">🌍 Internationale</button>
-    </div>
-    <!-- Sous-filières -->
-    <div style="font-size:0.72rem;color:var(--text2);font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;" id="sous-filiere-label">Filière / Spécificité</div>
-    <div class="filieres-scroll" id="sous-filieres-container"></div>
-  </div>
-
-  <!-- Calculator -->
-  <div id="calculator-container" style="display:none;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border);">
-      <h3 style="font-weight:800;font-size:1rem;letter-spacing:0.05em;text-transform:uppercase;" id="mode-title">Matières</h3>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:0.72rem;color:var(--text2);font-family:monospace;background:var(--card);padding:4px 10px;border-radius:6px;border:1px solid var(--border);">note / 20</span>
+  <!-- Header -->
+  <div class="mb-8 fade-up">
+    <div class="flex items-center gap-3 mb-2">
+      <div style="width:40px;height:40px;background:linear-gradient(135deg,rgba(99,102,241,0.2),rgba(129,140,248,0.1));border:1px solid rgba(99,102,241,0.3);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+        <i class="fa-solid fa-graduation-cap text-brand-glow text-sm"></i>
+      </div>
+      <div>
+        <h1 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.5rem;letter-spacing:-0.03em;">Simulateur de Moyenne BAC</h1>
+        <p style="font-size:12px;color:rgba(255,255,255,0.35);">Toutes filières · BAC 2026 · Analyse IA Mistral</p>
       </div>
     </div>
-    <div id="inputs-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;"></div>
+  </div>
 
-    <!-- AI Panel -->
-    <div id="ai-panel">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-        <div>
-          <div style="font-weight:700;font-size:0.9rem;margin-bottom:2px;">✨ Analyse IA Mistral</div>
-          <div style="font-size:0.75rem;color:var(--text2);" id="ai-cost-info">Coût : <span class="mt-badge">3 MT</span></div>
+  <!-- VOIE SELECTOR -->
+  <div class="mb-5 fade-up" style="animation-delay:0.05s;">
+    <div class="text-xs font-bold uppercase tracking-widest text-white/30 mb-3">Voie</div>
+    <div class="flex flex-wrap gap-2" id="voie-btns">
+      <button class="voie-chip active" onclick="selectVoie('generale',this)" id="voie-generale">🎓 Générale</button>
+      <button class="voie-chip" onclick="selectVoie('technologique',this)" id="voie-technologique">⚙️ Technologique</button>
+      <button class="voie-chip" onclick="selectVoie('pro',this)" id="voie-pro">🛠️ Professionnelle</button>
+      <button class="voie-chip" onclick="selectVoie('internationale',this)" id="voie-internationale">🌍 Internationale</button>
+    </div>
+  </div>
+
+  <!-- SOUS-FILIÈRE -->
+  <div class="mb-6 fade-up" style="animation-delay:0.1s;">
+    <div class="text-xs font-bold uppercase tracking-widest text-white/30 mb-3" id="sous-label">Filière</div>
+    <div class="flex flex-wrap gap-2" id="sous-filieres-container"></div>
+  </div>
+
+  <!-- CALCULATOR -->
+  <div id="calculator-container" style="display:none;">
+
+    <!-- Mode title + stats -->
+    <div class="glass-panel rounded-2xl p-5 mb-4 fade-up">
+      <div class="flex items-center justify-between mb-1">
+        <div class="flex items-center gap-2">
+          <h2 id="mode-title" style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.1rem;"></h2>
+          <span id="bachibac-badge" class="bachibac-badge hidden"><i class="fa-solid fa-flag text-xs"></i> Section Internationale</span>
         </div>
-        <button class="wm-btn" onclick="launchAI()" id="ai-btn">
-          <span>Analyser mes résultats</span>
-          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5-5 5M6 12h12"/></svg>
+        <button onclick="resetCalculator()" class="text-xs text-white/30 hover:text-white/60 transition-colors flex items-center gap-1">
+          <i class="fa-solid fa-rotate-left text-xs"></i> Reset
         </button>
       </div>
-      <div class="ai-response" id="ai-response" style="display:none;"></div>
-      <div id="ai-loader" style="display:none;">
-        <div class="ai-loading" style="width:80%;"></div>
-        <div class="ai-loading" style="width:60%;"></div>
-        <div class="ai-loading" style="width:70%;"></div>
+      <div class="flex items-center gap-4 mt-3" id="quick-stats" style="display:none!important;">
+        <div class="text-center">
+          <div id="qs-filled" class="text-lg font-bold text-brand-glow">0</div>
+          <div class="text-xs text-white/30">notes</div>
+        </div>
+        <div style="width:1px;height:30px;background:rgba(255,255,255,0.07);"></div>
+        <div class="text-center">
+          <div id="qs-coef" class="text-lg font-bold text-white">0</div>
+          <div class="text-xs text-white/30">coefs renseignés</div>
+        </div>
+        <div style="width:1px;height:30px;background:rgba(255,255,255,0.07);"></div>
+        <div class="text-center">
+          <div id="qs-total" class="text-lg font-bold text-white/60">—</div>
+          <div class="text-xs text-white/30">coef total</div>
+        </div>
       </div>
     </div>
+
+    <!-- Options facultatives (affiché seulement si dispo) -->
+    <div id="options-container" class="hidden mb-4">
+      <details class="option-section">
+        <summary>
+          <i class="fa-solid fa-plus-circle text-xs"></i>
+          Options facultatives
+          <span style="margin-left:auto;opacity:0.5;font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;">coef bonificateur si &gt; 10</span>
+        </summary>
+        <div class="mt-4" id="options-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px;"></div>
+      </details>
+    </div>
+
+    <!-- Subjects grid -->
+    <div id="inputs-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px;"></div>
+
+    <!-- AI PANEL -->
+    <div class="ai-card mt-7 fade-up">
+      <div class="flex items-start justify-between gap-4 mb-4">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <i class="fa-solid fa-sparkles text-brand-glow text-sm"></i>
+            <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:0.95rem;">Analyse IA par matière</span>
+          </div>
+          <p class="text-xs text-white/30">Analyse détaillée, points forts, priorités et conseils personnalisés</p>
+        </div>
+        <button onclick="launchAI()" id="ai-btn"
+          class="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all"
+          style="background:linear-gradient(135deg,#6366f1,#818cf8);color:white;box-shadow:0 4px 16px rgba(99,102,241,0.35);">
+          <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
+          Analyser
+        </button>
+      </div>
+
+      <!-- Loader -->
+      <div id="ai-loader" style="display:none;">
+        <div class="ai-loader-bar rounded mb-2" style="width:80%;height:3px;"></div>
+        <div class="ai-loader-bar rounded mb-2" style="width:60%;height:3px;animation-delay:0.2s;"></div>
+        <div class="ai-loader-bar rounded" style="width:70%;height:3px;animation-delay:0.4s;"></div>
+      </div>
+
+      <!-- Response -->
+      <div id="ai-response" style="display:none;"></div>
+    </div>
+
   </div>
 
 </main>
 
 <!-- RESULT BAR -->
 <div id="result-bar">
-  <div style="max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:16px;">
+  <div class="result-pill">
     <div>
-      <div style="font-size:0.65rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Moyenne estimée</div>
-      <div style="display:flex;align-items:baseline;gap:12px;">
-        <span id="final-grade" style="font-size:3rem;font-weight:900;letter-spacing:-2px;line-height:1;">--/20</span>
+      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">Moyenne estimée</div>
+      <div class="flex items-baseline gap-3">
+        <span id="final-grade" style="font-size:2.2rem;font-weight:900;letter-spacing:-2px;font-family:'Space Grotesk',sans-serif;line-height:1;">--/20</span>
         <span id="final-mention" class="mention-badge" style="display:none;"></span>
       </div>
     </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <button class="wm-btn-outline" onclick="resetCalculator()">Réinitialiser</button>
-      <button class="wm-btn" onclick="showAIPanel()">
-        <span>Analyser avec l'IA</span>
-        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+    <div class="flex items-center gap-2">
+      <div id="progress-mini" class="text-xs text-white/30"></div>
+      <button onclick="showAIPanel()"
+        class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all"
+        style="background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);color:#818cf8;">
+        <i class="fa-solid fa-sparkles text-xs"></i>
+        <span class="hidden sm:inline">Analyse IA</span>
       </button>
     </div>
   </div>
 </div>
 
+<!-- DESKTOP AI BAR -->
+<div id="wm-desktop-overlay">
+  <div id="wm-desktop-overlay-bg" onclick="closeDesktopOverlay()"></div>
+  <div id="wm-desktop-response">
+    <div id="wm-desktop-response-content" class="text-sm text-white/85 leading-relaxed"></div>
+  </div>
+</div>
+<div id="wm-desktop-ai-bar">
+  <div class="wm-desktop-pill">
+    <i class="fa-solid fa-sparkles text-brand-glow text-sm shrink-0"></i>
+    <input id="wm-desktop-input" type="text" placeholder="Posez une question sur votre BAC…" autocomplete="off" maxlength="300">
+    <button class="wm-desktop-send" id="wm-desktop-send" disabled>
+      <i class="fa-solid fa-arrow-up"></i>
+    </button>
+  </div>
+</div>
+
+<!-- MOBILE AI BAR -->
+<div id="wm-ai-bar">
+  <div class="wm-ai-pill" id="wm-ai-pill">
+    <i class="fa-solid fa-sparkles text-brand-glow text-sm shrink-0"></i>
+    <span class="wm-ai-pill-placeholder" onclick="openMobileAI()">Posez une question…</span>
+    <input id="wm-ai-input-real" type="text" placeholder="Votre question…" autocomplete="off" maxlength="300">
+    <button class="wm-ai-pill-send" id="wm-ai-send" disabled>
+      <i class="fa-solid fa-arrow-up"></i>
+    </button>
+  </div>
+</div>
+
+<!-- MOBILE AI SHEET -->
+<div id="wm-ai-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:390;max-height:55vh;background:rgba(12,12,12,0.97);border-top:1px solid rgba(255,255,255,0.08);border-radius:20px 20px 0 0;padding:16px 20px 90px;overflow-y:auto;backdrop-filter:blur(20px);transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.175,0.885,0.32,1.275);">
+  <button onclick="closeMobileAI()" style="position:absolute;top:12px;right:16px;background:rgba(255,255,255,0.07);border:none;border-radius:50%;width:28px;height:28px;color:rgba(255,255,255,0.5);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;">
+    <i class="fa-solid fa-xmark"></i>
+  </button>
+  <div id="wm-ai-sheet-content" class="text-sm text-white/80 leading-relaxed"></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast-container"></div>
+
 <!-- FIREBASE -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAsV27OD4bARFOSDlZN1MAARSv9q2WBkdo",
-  authDomain: "wikimind-pro.firebaseapp.com",
-  databaseURL: "https://wikimind-pro-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "wikimind-pro",
-  storageBucket: "wikimind-pro.firebasestorage.app",
-  messagingSenderId: "154490257518",
-  appId: "1:154490257518:web:3276b1e64f2db9894be67f"
+const authApp = initializeApp({
+  apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+  authDomain: "wikimind-3-comments.firebaseapp.com",
+  projectId: "wikimind-3-comments",
+  appId: "1:137479541640:web:4ed2510a9908055052e03d",
+  databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app"
+});
+const auth = getAuth(authApp);
+const authDb = getDatabase(authApp);
+
+const CACHE_KEY = 'wm_user_cache_v1_';
+const CACHE_TTL = 12 * 60 * 60 * 1000;
+let currentUser = null;
+
+const PM = {
+  1: ['Free','plan-free','ring-free'],
+  2: ['AI Plus','plan-plus','ring-plus'],
+  3: ['AI Pro','plan-pro','ring-pro'],
+  4: ['AI Premium','plan-premium','ring-premium'],
+  5: ['AI Premium+','plan-premium-plus','ring-premium-plus']
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
+function updateNavPlanUI(plan) {
+  const ringEl = document.getElementById('nav-avatar-ring');
+  const badgeEl = document.getElementById('nav-plan-badge');
+  if (!ringEl || !badgeEl) return;
+  ringEl.className = 'plan-chip-avatar';
+  badgeEl.className = 'plan-badge';
+  const [label,badgeClass,ringClass] = PM[plan] || PM[1];
+  badgeEl.innerText = label;
+  badgeEl.classList.add(badgeClass);
+  ringEl.classList.add(ringClass);
+}
 
-const FORFAIT_LABELS = ['', 'Free', 'Basic', 'Standard', 'Premium', 'Premium+'];
-const FORFAIT_RING = ['', 'plan-ring', 'plan-ring-2', 'plan-ring-3', 'plan-ring-4', 'plan-ring-5'];
+function getCached(uid) {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY + uid);
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    if (Date.now() - p.ts > CACHE_TTL) return null;
+    return p.data;
+  } catch(e) { return null; }
+}
+function setCached(uid, data) {
+  try { localStorage.setItem(CACHE_KEY + uid, JSON.stringify({ts:Date.now(),data})); } catch(e) {}
+}
+function applyCached(user, data) {
+  const name = data.displayName || user.displayName || user.email.split('@')[0];
+  const photo = data.photoUrl || user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email)}&background=6366f1&color=fff&bold=true`;
+  document.getElementById('nav-avatar').src = photo;
+  document.getElementById('user-name-display').innerText = name;
+  updateNavPlanUI(data.plan || 1);
+}
+async function fetchAndCache(user) {
+  try {
+    const snap = await get(child(ref(authDb), `users/${user.uid}/FORFAIT`));
+    const plan = snap.exists() ? snap.val() : 1;
+    const name = user.displayName || user.email.split('@')[0];
+    const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email)}&background=6366f1&color=fff&bold=true`;
+    const data = {plan,displayName:name,photoUrl:photo};
+    setCached(user.uid, data);
+    applyCached(user, data);
+    return data;
+  } catch(e) { updateNavPlanUI(1); }
+}
 
-window._currentUser = null;
-window._currentForfait = 1;
-window._currentMT = 0;
+window.syncUserData = async () => {
+  if (!currentUser) return;
+  try { localStorage.removeItem(CACHE_KEY + currentUser.uid); } catch(e) {}
+  await fetchAndCache(currentUser);
+  window.showToast('Synchronisé ✓','success');
+};
 
-onAuthStateChanged(auth, async (user) => {
-  const loginBtn = document.getElementById('btn-login');
-  const userBtn = document.getElementById('btn-user');
-
+onAuthStateChanged(auth, user => {
+  const loginBtn = document.getElementById('login-btn');
+  const userLogged = document.getElementById('user-logged');
   if (user) {
-    loginBtn.style.display = 'none';
-    userBtn.style.display = 'block';
+    currentUser = user;
     window._currentUser = user;
-
-    // Fetch user data
-    try {
-      const snap = await get(ref(db, `users/${user.uid}`));
-      if (snap.exists()) {
-        const data = snap.val();
-        const forfait = data.FORFAIT || 1;
-        const mt = data.MT || 0;
-        window._currentForfait = forfait;
-        window._currentMT = mt;
-
-        // Avatar
-        const initials = (user.displayName || user.email || '?').substring(0,2).toUpperCase();
-        document.getElementById('avatar-initials').textContent = initials;
-
-        // Ring color par forfait
-        const circle = document.getElementById('avatar-circle');
-        circle.className = 'avatar-ring plan-ring ' + FORFAIT_RING[forfait];
-
-        // Dropdown
-        document.getElementById('dd-name').textContent = user.displayName || user.email;
-        document.getElementById('dd-plan').textContent = `Plan ${FORFAIT_LABELS[forfait]}`;
-        document.getElementById('dd-mt').style.display = 'flex';
-        document.getElementById('dd-mt-val').textContent = `${mt} MT`;
-      }
-    } catch(e) {
-      console.warn('Firebase read error', e);
-      document.getElementById('avatar-initials').textContent = (user.email||'?').substring(0,2).toUpperCase();
-    }
+    if (loginBtn) loginBtn.classList.add('hidden');
+    if (userLogged) { userLogged.classList.remove('hidden'); userLogged.classList.add('flex'); }
+    const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email)}&background=6366f1&color=fff&bold=true`;
+    document.getElementById('nav-avatar').src = photo;
+    document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
+    const cached = getCached(user.uid);
+    if (cached) applyCached(user, cached);
+    else fetchAndCache(user);
   } else {
-    loginBtn.style.display = 'flex';
-    userBtn.style.display = 'none';
+    currentUser = null;
     window._currentUser = null;
+    if (loginBtn) loginBtn.classList.remove('hidden');
+    if (userLogged) { userLogged.classList.add('hidden'); userLogged.classList.remove('flex'); }
   }
 });
-
-window.signOutUser = async () => {
-  await signOut(auth);
-  document.getElementById('user-dropdown').classList.remove('open');
-};
 </script>
 
 <script>
 // ============================================================
-// DATA — Toutes filières
+// DATA — FILIERES COMPLÈTES
 // ============================================================
 const FILIERES = {
   generale: {
@@ -592,7 +628,7 @@ const FILIERES = {
       'standard': {
         label: 'Général Standard',
         subjects: [
-          { cat: 'Épreuves Terminales (60%)' },
+          { cat: 'Épreuves Terminales — Contrôle Terminal (60%)' },
           { name: 'Français Écrit (1ère)', coef: 5 },
           { name: 'Français Oral (1ère)', coef: 5 },
           { name: 'Philosophie', coef: 8 },
@@ -601,12 +637,16 @@ const FILIERES = {
           { name: 'Spécialité 2 (Terminale)', coef: 16, info: 'Épreuve écrite 4h' },
           { cat: 'Contrôle Continu (40%)' },
           { name: 'Spécialité abandonnée (1ère)', coef: 8, info: 'Moyenne annuelle 1ère' },
-          { name: 'Histoire-Géographie', coef: 6, info: 'Moyenne 1ère + Term' },
+          { name: 'Histoire-Géographie', coef: 6 },
           { name: 'LVA', coef: 6 },
           { name: 'LVB', coef: 6 },
           { name: 'Enseignement Scientifique', coef: 6 },
           { name: 'EPS', coef: 6 },
           { name: 'EMC', coef: 2 },
+        ],
+        options: [
+          { name: 'Option Facultative (1ère)', coef: 2, info: 'Bonification si > 10' },
+          { name: 'Option Facultative (Terminale)', coef: 2, info: 'Bonification si > 10' },
         ]
       },
       'maths-expertes': {
@@ -619,8 +659,7 @@ const FILIERES = {
           { name: 'Grand Oral', coef: 10 },
           { name: 'Spécialité 1 (Terminale)', coef: 16 },
           { name: 'Spécialité 2 (Terminale)', coef: 16 },
-          { cat: 'Option Maths Expertes' },
-          { name: 'Maths Expertes', coef: 6, info: 'Option de Terminale (+3 coef si > 10)' },
+          { name: 'Maths Expertes', coef: 6, info: 'Option Terminale — +3 coef si > 10' },
           { cat: 'Contrôle Continu (40%)' },
           { name: 'Spécialité abandonnée (1ère)', coef: 8 },
           { name: 'Histoire-Géographie', coef: 6 },
@@ -641,7 +680,6 @@ const FILIERES = {
           { name: 'Grand Oral', coef: 10 },
           { name: 'Spécialité 1 (Terminale)', coef: 16 },
           { name: 'Spécialité 2 (Terminale)', coef: 16 },
-          { cat: 'Option Maths Complémentaires' },
           { name: 'Maths Complémentaires', coef: 4, info: 'Option Terminale' },
           { cat: 'Contrôle Continu (40%)' },
           { name: 'Spécialité abandonnée (1ère)', coef: 8 },
@@ -663,7 +701,6 @@ const FILIERES = {
           { name: 'Grand Oral', coef: 10 },
           { name: 'Spécialité 1 (Terminale)', coef: 16 },
           { name: 'Spécialité 2 (Terminale)', coef: 16 },
-          { cat: 'Option Droit & Éco' },
           { name: 'Droit & Grands Enjeux Contemporains', coef: 4 },
           { cat: 'Contrôle Continu (40%)' },
           { name: 'Spécialité abandonnée (1ère)', coef: 8 },
@@ -689,28 +726,9 @@ const FILIERES = {
           { name: 'Philosophie', coef: 4 },
           { name: 'Maths (Terminale)', coef: 6 },
           { name: 'Innovation Techno & Éco-conception', coef: 6, info: 'Écrit 4h' },
-          { name: 'Ingénierie & Développement Durable', coef: 8, info: 'Écrit + TP' },
+          { name: 'Ingénierie & Développement Durable', coef: 8 },
           { name: 'Spécialité STI2D (Écrit)', coef: 8 },
-          { name: 'Spécialité STI2D (TP)', coef: 6, info: 'Évaluation pratique' },
-          { cat: 'Contrôle Continu' },
-          { name: 'Histoire-Géographie', coef: 4 },
-          { name: 'LVA', coef: 4 },
-          { name: 'LVB', coef: 2 },
-          { name: 'EPS', coef: 6 },
-          { name: 'EMC', coef: 2 },
-        ]
-      },
-      'stl': {
-        label: 'STL',
-        subjects: [
-          { cat: 'Épreuves Terminales' },
-          { name: 'Français Écrit (1ère)', coef: 5 },
-          { name: 'Français Oral (1ère)', coef: 5 },
-          { name: 'Philosophie', coef: 4 },
-          { name: 'Maths (Terminale)', coef: 6 },
-          { name: 'Chimie-Biochimie-Sciences du Vivant', coef: 8, info: 'Écrit' },
-          { name: 'Sciences Physiques et Chimiques (Écrit)', coef: 6 },
-          { name: 'Sciences Physiques et Chimiques (TP)', coef: 8, info: 'CCF en cours d\'année' },
+          { name: 'Spécialité STI2D (TP)', coef: 6 },
           { cat: 'Contrôle Continu' },
           { name: 'Histoire-Géographie', coef: 4 },
           { name: 'LVA', coef: 4 },
@@ -727,8 +745,8 @@ const FILIERES = {
           { name: 'Français Oral (1ère)', coef: 5 },
           { name: 'Philosophie', coef: 4 },
           { name: 'Sciences de Management (Écrit)', coef: 7 },
-          { name: 'Sciences de Gestion (Oral)', coef: 7, info: 'Épreuve orale' },
-          { name: 'Éco-Droit', coef: 6, info: 'Écrit 4h' },
+          { name: 'Sciences de Gestion (Oral)', coef: 7 },
+          { name: 'Éco-Droit', coef: 6 },
           { name: 'Spécialité STMG (Écrit)', coef: 6 },
           { cat: 'Contrôle Continu' },
           { name: 'Maths', coef: 4 },
@@ -746,9 +764,9 @@ const FILIERES = {
           { name: 'Français Écrit (1ère)', coef: 5 },
           { name: 'Français Oral (1ère)', coef: 5 },
           { name: 'Philosophie', coef: 4 },
-          { name: 'Sciences et Techniques Sanitaires (Écrit)', coef: 9 },
-          { name: 'Sciences et Techniques Sanitaires (Oral)', coef: 5 },
-          { name: 'Biologie et Physiopathologie', coef: 8, info: 'Écrit' },
+          { name: 'Sciences & Techniques Sanitaires (Écrit)', coef: 9 },
+          { name: 'Sciences & Techniques Sanitaires (Oral)', coef: 5 },
+          { name: 'Biologie & Physiopathologie', coef: 8 },
           { name: 'Sciences Physiques (TP)', coef: 3 },
           { cat: 'Contrôle Continu' },
           { name: 'Maths', coef: 4 },
@@ -759,20 +777,21 @@ const FILIERES = {
           { name: 'EMC', coef: 2 },
         ]
       },
-      'stav': {
-        label: 'STAV',
+      'stl': {
+        label: 'STL',
         subjects: [
           { cat: 'Épreuves Terminales' },
           { name: 'Français Écrit (1ère)', coef: 5 },
           { name: 'Français Oral (1ère)', coef: 5 },
           { name: 'Philosophie', coef: 4 },
-          { name: 'Sciences et Technologies (Écrit)', coef: 8 },
-          { name: 'Agronomie-Territoire-Citoyenneté', coef: 6 },
-          { name: 'Épreuve de Spécialité', coef: 8 },
+          { name: 'Maths (Terminale)', coef: 6 },
+          { name: 'Chimie-Biochimie-Sciences du Vivant', coef: 8 },
+          { name: 'Sciences Physiques (Écrit)', coef: 6 },
+          { name: 'Sciences Physiques (TP)', coef: 8 },
           { cat: 'Contrôle Continu' },
-          { name: 'Maths', coef: 4 },
           { name: 'Histoire-Géographie', coef: 4 },
           { name: 'LVA', coef: 4 },
+          { name: 'LVB', coef: 2 },
           { name: 'EPS', coef: 6 },
           { name: 'EMC', coef: 2 },
         ]
@@ -813,6 +832,24 @@ const FILIERES = {
           { name: 'EPS', coef: 4 },
           { name: 'EMC', coef: 2 },
         ]
+      },
+      'stav': {
+        label: 'STAV',
+        subjects: [
+          { cat: 'Épreuves Terminales' },
+          { name: 'Français Écrit (1ère)', coef: 5 },
+          { name: 'Français Oral (1ère)', coef: 5 },
+          { name: 'Philosophie', coef: 4 },
+          { name: 'Sciences et Technologies (Écrit)', coef: 8 },
+          { name: 'Agronomie-Territoire-Citoyenneté', coef: 6 },
+          { name: 'Épreuve de Spécialité', coef: 8 },
+          { cat: 'Contrôle Continu' },
+          { name: 'Maths', coef: 4 },
+          { name: 'Histoire-Géographie', coef: 4 },
+          { name: 'LVA', coef: 4 },
+          { name: 'EPS', coef: 6 },
+          { name: 'EMC', coef: 2 },
+        ]
       }
     }
   },
@@ -843,41 +880,52 @@ const FILIERES = {
     subs: {
       'bachibac': {
         label: 'BachiBac 🇪🇸',
+        isBachibac: true,
+        coefTotal: 118,
+        info: 'Les enseignements spécifiques Bachibac représentent 25% de la note finale. Contrôle terminal 51% / Contrôle continu 49%.',
         subjects: [
-          { cat: 'Épreuves Spécifiques BachiBac' },
-          { name: 'Langue & Littérature Espagnole (Écrit)', coef: 10, info: 'Remplace LVA' },
-          { name: 'Langue & Littérature Espagnole (Oral)', coef: 10 },
-          { name: 'Histoire-Géo en Espagnol', coef: 15, info: 'Écrit + Oral — remplace Hist-Géo TC' },
-          { cat: 'Épreuves Communes' },
+          { cat: '🇪🇸 Épreuves Spécifiques BachiBac — Contrôle Terminal' },
+          { name: 'Langue & Littérature Espagnole (Écrit)', coef: 10, info: 'Remplace LVA — épreuve écrite 3h' },
+          { name: 'Langue & Littérature Espagnole (Oral)', coef: 5, info: 'Épreuve orale 20min' },
+          { name: 'Histoire-Géo en Espagnol (Écrit)', coef: 10, info: 'Remplace Hist-Géo du tronc commun — écrit 3h' },
+          { name: 'Histoire-Géo en Espagnol (Oral)', coef: 5, info: 'Épreuve orale 20min' },
+          { cat: '📚 Épreuves du Baccalauréat — Contrôle Terminal' },
           { name: 'Français Écrit (1ère)', coef: 5 },
           { name: 'Français Oral (1ère)', coef: 5 },
           { name: 'Philosophie', coef: 8 },
           { name: 'Grand Oral', coef: 10 },
-          { name: 'Spécialité 1 (Terminale)', coef: 16 },
-          { name: 'Spécialité 2 (Terminale)', coef: 16 },
-          { cat: 'Contrôle Continu' },
-          { name: 'Spécialité abandonnée (1ère)', coef: 8 },
+          { name: 'Spécialité 1 (Terminale)', coef: 16, info: 'Épreuve écrite 4h' },
+          { name: 'Spécialité 2 (Terminale)', coef: 16, info: 'Épreuve écrite 4h' },
+          { cat: '📊 Contrôle Continu (49%)' },
+          { name: 'Spécialité abandonnée (1ère)', coef: 8, info: 'Suivi uniquement en 1ère — coef 8' },
           { name: 'LVB', coef: 6 },
           { name: 'Enseignement Scientifique', coef: 6 },
           { name: 'EPS', coef: 6 },
           { name: 'EMC', coef: 2 },
+        ],
+        options: [
+          { name: 'Option facultative (1ère)', coef: 2, info: 'Bonification si > 10 — coef 2 en 1ère' },
+          { name: 'Option facultative (Terminale)', coef: 2, info: 'Bonification si > 10 — coef 2 en Terminale (coef 4 si suivie 2 ans)' },
         ]
       },
       'abibac': {
         label: 'AbiBac 🇩🇪',
+        isBachibac: true,
+        info: 'Double diplôme franco-allemand.',
         subjects: [
-          { cat: 'Épreuves Spécifiques AbiBac' },
+          { cat: '🇩🇪 Épreuves Spécifiques AbiBac' },
           { name: 'Langue & Littérature Allemande (Écrit)', coef: 10 },
-          { name: 'Langue & Littérature Allemande (Oral)', coef: 10 },
-          { name: 'Histoire en Allemand', coef: 10, info: 'Écrit + Oral' },
-          { cat: 'Épreuves Communes' },
+          { name: 'Langue & Littérature Allemande (Oral)', coef: 5 },
+          { name: 'Histoire en Allemand (Écrit)', coef: 7, info: 'Écrit' },
+          { name: 'Histoire en Allemand (Oral)', coef: 3 },
+          { cat: '📚 Épreuves du Baccalauréat' },
           { name: 'Français Écrit (1ère)', coef: 5 },
           { name: 'Français Oral (1ère)', coef: 5 },
           { name: 'Philosophie', coef: 8 },
           { name: 'Grand Oral', coef: 10 },
           { name: 'Spécialité 1 (Terminale)', coef: 16 },
           { name: 'Spécialité 2 (Terminale)', coef: 16 },
-          { cat: 'Contrôle Continu' },
+          { cat: '📊 Contrôle Continu' },
           { name: 'Spécialité abandonnée (1ère)', coef: 8 },
           { name: 'Histoire-Géographie', coef: 6 },
           { name: 'LVB', coef: 6 },
@@ -888,19 +936,22 @@ const FILIERES = {
       },
       'esabac': {
         label: 'EsaBac 🇮🇹',
+        isBachibac: true,
+        info: 'Double diplôme franco-italien.',
         subjects: [
-          { cat: 'Épreuves Spécifiques EsaBac' },
+          { cat: '🇮🇹 Épreuves Spécifiques EsaBac' },
           { name: 'Langue & Littérature Italienne (Écrit)', coef: 10 },
-          { name: 'Langue & Littérature Italienne (Oral)', coef: 10 },
-          { name: 'Histoire en Italien', coef: 10 },
-          { cat: 'Épreuves Communes' },
+          { name: 'Langue & Littérature Italienne (Oral)', coef: 5 },
+          { name: 'Histoire en Italien (Écrit)', coef: 7 },
+          { name: 'Histoire en Italien (Oral)', coef: 3 },
+          { cat: '📚 Épreuves du Baccalauréat' },
           { name: 'Français Écrit (1ère)', coef: 5 },
           { name: 'Français Oral (1ère)', coef: 5 },
           { name: 'Philosophie', coef: 8 },
           { name: 'Grand Oral', coef: 10 },
           { name: 'Spécialité 1 (Terminale)', coef: 16 },
           { name: 'Spécialité 2 (Terminale)', coef: 16 },
-          { cat: 'Contrôle Continu' },
+          { cat: '📊 Contrôle Continu' },
           { name: 'Spécialité abandonnée (1ère)', coef: 8 },
           { name: 'Histoire-Géographie', coef: 6 },
           { name: 'LVB', coef: 6 },
@@ -910,7 +961,7 @@ const FILIERES = {
         ]
       },
       'option-italiano': {
-        label: 'Option Italien',
+        label: 'Option Italien 🇮🇹',
         subjects: [
           { cat: 'Épreuves Terminales' },
           { name: 'Français Écrit (1ère)', coef: 5 },
@@ -920,7 +971,7 @@ const FILIERES = {
           { name: 'Spécialité 1 (Terminale)', coef: 16 },
           { name: 'Spécialité 2 (Terminale)', coef: 16 },
           { cat: 'Option Langue Vivante' },
-          { name: 'Italien (LVB ou option)', coef: 6, info: 'Note sur 20 — coef bonificateur si > 10' },
+          { name: 'Italien (LVB ou option)', coef: 6, info: 'Bonificateur si > 10' },
           { cat: 'Contrôle Continu' },
           { name: 'Spécialité abandonnée (1ère)', coef: 8 },
           { name: 'Histoire-Géographie', coef: 6 },
@@ -935,43 +986,33 @@ const FILIERES = {
 };
 
 // ============================================================
+// MISTRAL API
+// ============================================================
+const MISTRAL_KEY = 'SIf4f6UfrvZYKRTBcgcwvLq1Xi8888k9';
+
+async function callMistral(messages, maxTokens=700) {
+  const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${MISTRAL_KEY}`},
+    body:JSON.stringify({model:'mistral-small-latest',messages,max_tokens:maxTokens,temperature:0.7})
+  });
+  if (!res.ok) throw new Error(`Erreur ${res.status}`);
+  const d = await res.json();
+  return d.choices?.[0]?.message?.content || '';
+}
+
+// ============================================================
 // STATE
 // ============================================================
 let currentVoie = 'generale';
 let currentFiliere = 'standard';
-let isDark = true;
 
 // ============================================================
-// THEME
-// ============================================================
-function toggleTheme() {
-  isDark = !isDark;
-  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-  document.getElementById('theme-btn').textContent = isDark ? '🌙' : '☀️';
-  try { localStorage.setItem('wikimind_bac_theme', isDark ? 'dark' : 'light'); } catch(e) {}
-}
-window.toggleTheme = toggleTheme;
-
-// ============================================================
-// DROPDOWN
-// ============================================================
-window.toggleDropdown = () => {
-  document.getElementById('user-dropdown').classList.toggle('open');
-};
-document.addEventListener('click', (e) => {
-  const area = document.getElementById('user-area');
-  if (area && !area.contains(e.target)) {
-    const dd = document.getElementById('user-dropdown');
-    if (dd) dd.classList.remove('open');
-  }
-});
-
-// ============================================================
-// VOIE / FILIÈRE SELECTORS
+// SELECTORS
 // ============================================================
 function selectVoie(voie, el) {
   currentVoie = voie;
-  document.querySelectorAll('[id^="voie-"]').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.voie-chip').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
   renderSousFilieres(voie);
 }
@@ -984,17 +1025,16 @@ function renderSousFilieres(voie) {
   const keys = Object.keys(subs);
   keys.forEach((key, i) => {
     const btn = document.createElement('button');
-    btn.className = 'filiere-chip' + (i === 0 ? ' active' : '');
+    btn.className = 'sub-chip' + (i===0?' active':'');
     btn.textContent = subs[key].label;
     btn.onclick = () => {
-      document.querySelectorAll('#sous-filieres-container .filiere-chip').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.sub-chip').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       currentFiliere = key;
       renderCalculator(voie, key);
     };
     container.appendChild(btn);
   });
-  // Auto-select first
   currentFiliere = keys[0];
   renderCalculator(voie, keys[0]);
 }
@@ -1003,82 +1043,143 @@ function renderSousFilieres(voie) {
 // RENDER CALCULATOR
 // ============================================================
 function renderCalculator(voie, filiere) {
-  const data = FILIERES[voie].subs[filiere];
+  const data = FILIERES[voie]?.subs[filiere];
   if (!data) return;
 
   document.getElementById('calculator-container').style.display = 'block';
   document.getElementById('mode-title').textContent = data.label;
 
+  // Bachibac badge
+  const badge = document.getElementById('bachibac-badge');
+  if (data.isBachibac) badge.classList.remove('hidden');
+  else badge.classList.add('hidden');
+
+  // Bachibac info banner
+  let infoEl = document.getElementById('bachibac-info');
+  if (infoEl) infoEl.remove();
+  if (data.info) {
+    infoEl = document.createElement('div');
+    infoEl.id = 'bachibac-info';
+    infoEl.style.cssText = 'background:rgba(250,204,21,0.06);border:1px solid rgba(250,204,21,0.15);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:rgba(253,224,71,0.7);display:flex;gap:8px;align-items:flex-start;';
+    infoEl.innerHTML = `<i class="fa-solid fa-circle-info" style="margin-top:1px;flex-shrink:0;"></i><span>${data.info}</span>`;
+    document.getElementById('inputs-grid').before(infoEl);
+  }
+
+  // Options facultatives
+  const optionsContainer = document.getElementById('options-container');
+  const optionsGrid = document.getElementById('options-grid');
+  optionsGrid.innerHTML = '';
+  if (data.options && data.options.length > 0) {
+    optionsContainer.classList.remove('hidden');
+    data.options.forEach((opt, idx) => {
+      const div = document.createElement('div');
+      div.className = 'subject-row fade-up';
+      div.style.animationDelay = `${idx*0.04}s`;
+      div.innerHTML = buildSubjectRow(opt, 'opt_' + idx);
+      optionsGrid.appendChild(div);
+    });
+  } else {
+    optionsContainer.classList.add('hidden');
+  }
+
+  // Main subjects
   const grid = document.getElementById('inputs-grid');
   grid.innerHTML = '';
-
+  const subjects = data.subjects.filter(s=>!s.cat);
+  let subIdx = 0;
   data.subjects.forEach((item, idx) => {
     if (item.cat) {
       const sep = document.createElement('div');
-      sep.className = 'cat-sep';
-      sep.style.animationDelay = `${idx * 0.02}s`;
-      sep.innerHTML = `<div style="font-size:0.68rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.1em;">${item.cat}</div>`;
+      sep.className = 'cat-header fade-up';
+      sep.style.gridColumn = '1/-1';
+      sep.style.animationDelay = `${idx*0.02}s`;
+      sep.textContent = item.cat;
       grid.appendChild(sep);
     } else {
       const div = document.createElement('div');
-      div.className = 'input-group fade-up';
-      div.style.animationDelay = `${idx * 0.03}s`;
-      div.innerHTML = `
-        <div style="display:flex;flex-direction:column;gap:3px;flex:1;padding-right:12px;">
-          <div style="display:flex;align-items:center;gap:6px;">
-            <span style="font-weight:600;font-size:0.87rem;">${item.name}</span>
-            ${item.info ? `<span class="info-tooltip" data-tip="${item.info}">i</span>` : ''}
-          </div>
-          <span style="font-size:0.72rem;color:var(--text2);font-family:monospace;">Coef. ${item.coef}</span>
-        </div>
-        <input type="number" min="0" max="20" step="0.5"
-          placeholder="—"
-          inputmode="decimal"
-          class="grade-input"
-          data-coef="${item.coef}"
-          oninput="updateAndSave()">
-      `;
+      div.className = 'subject-row fade-up';
+      div.style.animationDelay = `${idx*0.03}s`;
+      div.innerHTML = buildSubjectRow(item, 'sub_' + subIdx);
       grid.appendChild(div);
+      subIdx++;
     }
   });
 
   loadFromLS();
   updateCalculation();
 
-  // Reset AI
-  document.getElementById('ai-panel').classList.remove('visible');
+  // Reset AI panel
   document.getElementById('ai-response').style.display = 'none';
   document.getElementById('ai-loader').style.display = 'none';
+  document.getElementById('ai-btn').disabled = false;
 
-  // Show result bar
   document.getElementById('result-bar').classList.add('visible');
+  try { localStorage.setItem('wm_bac_mode', voie+'_'+filiere); } catch(e) {}
 }
+
+function buildSubjectRow(item, id) {
+  return `
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span style="font-weight:600;font-size:13px;line-height:1.3;">${item.name}</span>
+        ${item.info ? `<span style="font-size:10px;color:rgba(255,255,255,0.3);cursor:help;" title="${item.info}"><i class="fa-solid fa-circle-info"></i></span>` : ''}
+      </div>
+      <span class="coef-badge mt-1">Coef. ${item.coef}</span>
+    </div>
+    <input type="number" min="0" max="20" step="0.5"
+      placeholder="—" inputmode="decimal"
+      class="grade-input"
+      data-coef="${item.coef}"
+      id="inp-${id}"
+      oninput="onGradeInput(this)">
+  `;
+}
+
+function onGradeInput(inp) {
+  const v = parseFloat(inp.value.replace(',','.'));
+  inp.classList.remove('grade-ok','grade-mid','grade-low');
+  if (!isNaN(v)) {
+    inp.closest('.subject-row').classList.add('has-grade');
+    if (v >= 14) inp.classList.add('grade-ok');
+    else if (v >= 10) inp.classList.add('grade-mid');
+    else inp.classList.add('grade-low');
+  } else {
+    inp.closest('.subject-row').classList.remove('has-grade');
+  }
+  updateAndSave();
+}
+window.onGradeInput = onGradeInput;
 
 // ============================================================
 // LOCALSTORAGE
 // ============================================================
-const LS_MODE = 'wm_bac_mode';
-const LS_DATA_PFX = 'wm_bac_data_';
+const LS_PFX = 'wm_bac_data_';
 
 function saveToLS() {
   const key = currentVoie + '_' + currentFiliere;
   const inputs = document.querySelectorAll('.grade-input');
   const d = {};
-  inputs.forEach((inp, i) => { d[i] = inp.value; });
-  try {
-    localStorage.setItem(LS_DATA_PFX + key, JSON.stringify(d));
-    localStorage.setItem(LS_MODE, key);
-  } catch(e) {}
+  inputs.forEach((inp,i) => { d[i] = inp.value; });
+  try { localStorage.setItem(LS_PFX+key, JSON.stringify(d)); } catch(e) {}
 }
 
 function loadFromLS() {
   const key = currentVoie + '_' + currentFiliere;
   try {
-    const raw = localStorage.getItem(LS_DATA_PFX + key);
+    const raw = localStorage.getItem(LS_PFX+key);
     if (!raw) return;
     const d = JSON.parse(raw);
-    document.querySelectorAll('.grade-input').forEach((inp, i) => {
-      if (d[i] !== undefined) inp.value = d[i];
+    document.querySelectorAll('.grade-input').forEach((inp,i) => {
+      if (d[i]) {
+        inp.value = d[i];
+        const v = parseFloat(d[i]);
+        if (!isNaN(v)) {
+          inp.closest('.subject-row').classList.add('has-grade');
+          if (v>=14) inp.classList.add('grade-ok');
+          else if (v>=10) inp.classList.add('grade-mid');
+          else inp.classList.add('grade-low');
+        }
+      }
     });
   } catch(e) {}
 }
@@ -1088,64 +1189,71 @@ function loadFromLS() {
 // ============================================================
 function updateCalculation() {
   const inputs = document.querySelectorAll('.grade-input');
-  let pts = 0, coefTotal = 0;
+  let pts=0, coefFilled=0, coefTotal=0;
+  let filled=0;
   inputs.forEach(inp => {
-    let v = parseFloat(inp.value.replace(',', '.'));
     const c = parseFloat(inp.dataset.coef);
+    coefTotal += c;
+    const v = parseFloat(inp.value.replace(',','.'));
     if (!isNaN(v)) {
-      v = Math.max(0, Math.min(20, v));
-      pts += v * c;
-      coefTotal += c;
+      const clamped = Math.max(0,Math.min(20,v));
+      pts += clamped*c;
+      coefFilled += c;
+      filled++;
     }
   });
 
-  const display = document.getElementById('final-grade');
-  const mention = document.getElementById('final-mention');
+  const gradeEl = document.getElementById('final-grade');
+  const mentionEl = document.getElementById('final-mention');
+  const progressEl = document.getElementById('progress-mini');
 
-  if (coefTotal === 0) {
-    display.textContent = '--/20';
-    mention.style.display = 'none';
+  if (progressEl) progressEl.textContent = `${filled} note${filled>1?'s':''} · coef ${coefFilled}/${Math.round(coefTotal)}`;
+
+  if (coefFilled === 0) {
+    gradeEl.textContent = '--/20';
+    mentionEl.style.display = 'none';
     return;
   }
 
-  const avg = pts / coefTotal;
-  display.textContent = avg.toFixed(2) + '/20';
-  mention.style.display = 'inline-flex';
+  const avg = pts/coefFilled;
+  gradeEl.textContent = avg.toFixed(2)+'/20';
+  mentionEl.style.display = 'inline-flex';
 
   const mentions = [
-    { min: 18, label: 'Félicitations', bg: '#7c3aed', text: 'white' },
-    { min: 16, label: 'Mention TB', bg: '#6c63ff', text: 'white' },
-    { min: 14, label: 'Mention B', bg: '#10b981', text: 'white' },
-    { min: 12, label: 'Mention AB', bg: '#3b82f6', text: 'white' },
-    { min: 10, label: 'Admis', bg: '#f59e0b', text: 'white' },
-    { min: 8,  label: 'Rattrapage', bg: '#f97316', text: 'white' },
-    { min: 0,  label: 'Refusé', bg: '#ef4444', text: 'white' },
+    {min:18,label:'Félicitations',bg:'#7c3aed'},
+    {min:16,label:'Mention TB',bg:'#6366f1'},
+    {min:14,label:'Mention B',bg:'#10b981'},
+    {min:12,label:'Mention AB',bg:'#3b82f6'},
+    {min:10,label:'Admis',bg:'#f59e0b'},
+    {min:8, label:'Rattrapage',bg:'#f97316'},
+    {min:0, label:'Refusé',bg:'#ef4444'},
   ];
-  const m = mentions.find(x => avg >= x.min) || mentions[mentions.length - 1];
-  mention.textContent = m.label;
-  mention.style.background = m.bg;
-  mention.style.color = m.text;
+  const m = mentions.find(x=>avg>=x.min)||mentions[mentions.length-1];
+  mentionEl.textContent = m.label;
+  mentionEl.style.background = m.bg+'22';
+  mentionEl.style.color = m.bg;
+  mentionEl.style.border = `1px solid ${m.bg}44`;
 }
 
 window.updateAndSave = () => { updateCalculation(); saveToLS(); };
 
 window.resetCalculator = () => {
   if (!confirm('Réinitialiser toutes les notes ?')) return;
-  document.querySelectorAll('.grade-input').forEach(i => { i.value = ''; });
+  document.querySelectorAll('.grade-input').forEach(i=>{
+    i.value='';
+    i.classList.remove('grade-ok','grade-mid','grade-low');
+    i.closest('.subject-row')?.classList.remove('has-grade');
+  });
   updateCalculation();
-  const key = currentVoie + '_' + currentFiliere;
-  try { localStorage.removeItem(LS_DATA_PFX + key); } catch(e) {}
+  try { localStorage.removeItem(LS_PFX+currentVoie+'_'+currentFiliere); } catch(e) {}
 };
 
 // ============================================================
-// AI ANALYSIS — Mistral
+// AI ANALYSIS
 // ============================================================
-const MISTRAL_API_KEY = 'AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA';
-
 window.showAIPanel = () => {
-  const panel = document.getElementById('ai-panel');
-  panel.classList.add('visible');
-  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  const panel = document.getElementById('ai-btn');
+  panel?.scrollIntoView({behavior:'smooth',block:'center'});
 };
 
 window.launchAI = async () => {
@@ -1153,124 +1261,215 @@ window.launchAI = async () => {
   const loader = document.getElementById('ai-loader');
   const responseEl = document.getElementById('ai-response');
 
-  // Build context
-  const inputs = document.querySelectorAll('.grade-input');
+  const inputs = document.querySelectorAll('#inputs-grid .grade-input, #options-grid .grade-input');
   const filiere = FILIERES[currentVoie]?.subs[currentFiliere];
-  const subjects = filiere?.subjects.filter(s => !s.cat) || [];
-  let totalPts = 0, totalCoef = 0;
-  const lines = [];
+  const subjects = filiere?.subjects.filter(s=>!s.cat) || [];
+  let totalPts=0, totalCoef=0;
+  const graded = [];
+  const missing = [];
 
   inputs.forEach((inp, i) => {
     const v = parseFloat(inp.value);
     const s = subjects[i];
-    if (!isNaN(v) && s) {
-      totalPts += v * s.coef;
-      totalCoef += s.coef;
-      lines.push(`- ${s.name} (coef ${s.coef}) : ${v}/20`);
+    if (!s) return;
+    if (!isNaN(v)) {
+      totalPts += v*s.coef; totalCoef += s.coef;
+      graded.push({name:s.name,coef:s.coef,note:v});
+    } else {
+      missing.push(s.name);
     }
   });
 
-  if (lines.length === 0) {
-    responseEl.textContent = '⚠️ Entre au moins quelques notes avant de lancer l\'analyse.';
+  if (graded.length === 0) {
+    responseEl.innerHTML = '<div style="color:rgba(255,255,255,0.4);font-size:13px;">⚠️ Saisis au moins quelques notes avant l\'analyse.</div>';
     responseEl.style.display = 'block';
-    loader.style.display = 'none';
     return;
   }
 
-  const avg = totalCoef > 0 ? (totalPts / totalCoef).toFixed(2) : '?';
-  const prompt = `Tu es un conseiller d'orientation scolaire expert du système éducatif français.
+  const avg = totalCoef>0 ? (totalPts/totalCoef).toFixed(2) : '?';
+  const isBachibac = filiere?.isBachibac;
 
-Un lycéen prépare le BAC 2026 — filière : ${filiere?.label || currentFiliere}
-Moyenne actuelle estimée : ${avg}/20
+  const prompt = `Tu es un conseiller pédagogique expert du baccalauréat français${isBachibac?' et des sections internationales':''}.
 
-Voici ses notes actuelles :
-${lines.join('\n')}
+Filière : ${filiere?.label || currentFiliere}
+Moyenne estimée (notes saisies) : ${avg}/20
 
-Analyse ses résultats et donne-lui :
-1. Une évaluation honnête de sa situation actuelle
-2. Les matières à fort impact où il doit progresser en priorité
-3. Des conseils concrets et motivants pour améliorer sa moyenne
-4. Sa mention probable si les tendances continuent
+Notes saisies (${graded.length}) :
+${graded.map(g=>`- ${g.name} (coef ${g.coef}) : ${g.note}/20`).join('\n')}
+${missing.length>0?`\nMatières sans note : ${missing.join(', ')}`:'' }
 
-Réponds en français, de façon claire et bienveillante, sans utiliser de markdown ni de symboles spéciaux. Sois direct et utile.`;
+${isBachibac?`IMPORTANT : C'est une section internationale. Les épreuves spécifiques comptent pour 25% de la note finale. Tiens-en compte dans l'analyse.\n`:''}
+
+Donne une analyse structurée avec :
+1. Bilan rapide de la situation (1-2 phrases directes)
+2. Points forts (matières avec bonnes notes + impact coef)
+3. Matières prioritaires à améliorer (par ordre d'impact coef × écart à 10)
+4. Mention probable si les tendances continuent
+5. 2-3 conseils concrets et motivants
+
+Réponds en français, de façon concise et bienveillante. Utilise des emojis pour structurer. Sois direct et utile, max 350 mots.`;
 
   btn.disabled = true;
   loader.style.display = 'block';
   responseEl.style.display = 'none';
 
   try {
-    const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${MISTRAL_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'mistral-small-latest',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 600,
-        temperature: 0.7
-      })
-    });
-
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.message || `Erreur ${response.status}`);
-    }
-
-    const data = await response.json();
-    const text = data.choices?.[0]?.message?.content || 'Aucune réponse reçue.';
-
+    const text = await callMistral([{role:'user',content:prompt}], 600);
     loader.style.display = 'none';
-    responseEl.textContent = text;
+    responseEl.innerHTML = formatAIResponse(text);
     responseEl.style.display = 'block';
     responseEl.style.animation = 'fadeUp 0.4s both';
-
   } catch(e) {
     loader.style.display = 'none';
-    responseEl.textContent = `Erreur lors de l'analyse : ${e.message}`;
+    responseEl.innerHTML = `<div style="color:rgba(255,255,255,0.4);font-size:13px;">Erreur : ${e.message}</div>`;
     responseEl.style.display = 'block';
-    console.error('Mistral error', e);
   } finally {
     btn.disabled = false;
   }
 };
 
+function formatAIResponse(text) {
+  return `<div style="font-size:13px;line-height:1.75;color:rgba(255,255,255,0.8);">${
+    text.replace(/\n\n/g,'</p><p style="margin-top:10px;">')
+        .replace(/\n/g,'<br>')
+  }</div>`;
+}
+
+// ============================================================
+// DESKTOP AI BAR
+// ============================================================
+(function(){
+  const input = document.getElementById('wm-desktop-input');
+  const sendBtn = document.getElementById('wm-desktop-send');
+  const overlay = document.getElementById('wm-desktop-overlay');
+  const responseContent = document.getElementById('wm-desktop-response-content');
+
+  if (!input || !sendBtn) return;
+
+  input.addEventListener('input', ()=>{ sendBtn.disabled = input.value.trim().length===0; });
+  input.addEventListener('keydown', e=>{
+    if (e.key==='Enter' && !sendBtn.disabled) sendDesktopQuery();
+    if (e.key==='Escape') closeDesktopOverlay();
+  });
+  sendBtn.addEventListener('click', sendDesktopQuery);
+
+  async function sendDesktopQuery() {
+    const q = input.value.trim();
+    if (!q) return;
+    input.value = ''; sendBtn.disabled = true;
+    showDesktopOverlay(`<div class="flex items-center gap-2 text-white/40"><span style="width:6px;height:6px;border-radius:50%;background:#818cf8;" class="animate-pulse"></span><span class="text-sm">WikiMind BAC réfléchit…</span></div>`);
+
+    const filiere = FILIERES[currentVoie]?.subs[currentFiliere];
+    const system = `Tu es l'assistant de WikiMind BAC, simulateur de moyenne du baccalauréat français. Filière active : ${filiere?.label||''}. Réponds en français, de façon concise (max 3 phrases directes).`;
+
+    try {
+      const reply = await callMistral([{role:'system',content:system},{role:'user',content:q}], 250);
+      showDesktopOverlay(`<div style="display:flex;gap:10px;align-items:flex-start;"><i class="fa-solid fa-sparkles text-brand-glow shrink-0 mt-0.5 text-xs"></i><div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.6;">${reply}</div></div>`);
+    } catch(e) {
+      showDesktopOverlay(`<div style="color:rgba(255,255,255,0.3);font-size:12px;">Erreur de connexion.</div>`);
+    }
+  }
+
+  function showDesktopOverlay(html) {
+    responseContent.innerHTML = html;
+    overlay.classList.add('active');
+  }
+
+  window.closeDesktopOverlay = () => overlay.classList.remove('active');
+
+  document.addEventListener('click', e=>{
+    const bar = document.getElementById('wm-desktop-ai-bar');
+    if (overlay.classList.contains('active') && !overlay.contains(e.target) && bar && !bar.contains(e.target)) {
+      window.closeDesktopOverlay();
+    }
+  });
+})();
+
+// ============================================================
+// MOBILE AI BAR
+// ============================================================
+function openMobileAI() {
+  const pill = document.getElementById('wm-ai-pill');
+  pill.classList.add('open');
+  document.getElementById('wm-ai-input-real').focus();
+}
+window.openMobileAI = openMobileAI;
+
+function closeMobileAI() {
+  const sheet = document.getElementById('wm-ai-sheet');
+  sheet.style.transform = 'translateY(100%)';
+  setTimeout(()=>{ sheet.style.display='none'; },300);
+}
+window.closeMobileAI = closeMobileAI;
+
+(function(){
+  const inp = document.getElementById('wm-ai-input-real');
+  const send = document.getElementById('wm-ai-send');
+  if (!inp||!send) return;
+  inp.addEventListener('input',()=>{ send.disabled = inp.value.trim().length===0; });
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!send.disabled) sendMobile(); });
+  send.addEventListener('click',sendMobile);
+
+  async function sendMobile() {
+    const q = inp.value.trim(); if(!q) return;
+    inp.value=''; send.disabled=true;
+    const sheet = document.getElementById('wm-ai-sheet');
+    const content = document.getElementById('wm-ai-sheet-content');
+    sheet.style.display='block';
+    setTimeout(()=>{ sheet.style.transform='translateY(0)'; },10);
+    content.innerHTML = '<div style="color:rgba(255,255,255,0.4);font-size:13px;">WikiMind réfléchit…</div>';
+    const filiere = FILIERES[currentVoie]?.subs[currentFiliere];
+    const sys = `Tu es l'assistant WikiMind BAC. Filière active : ${filiere?.label||''}. Réponds en français, concis (max 3 phrases).`;
+    try {
+      const reply = await callMistral([{role:'system',content:sys},{role:'user',content:q}],200);
+      content.innerHTML = `<div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.6;">${reply}</div>`;
+    } catch(e) {
+      content.innerHTML = `<div style="color:rgba(255,255,255,0.35);font-size:12px;">Erreur de connexion.</div>`;
+    }
+    document.getElementById('wm-ai-pill').classList.remove('open');
+    send.disabled=false;
+  }
+})();
+
+// ============================================================
+// TOAST
+// ============================================================
+window.showToast = (msg, type='info') => {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  const colors = {success:'rgba(16,185,129,0.15)',error:'rgba(239,68,68,0.15)',info:'rgba(99,102,241,0.15)'};
+  const borders = {success:'rgba(16,185,129,0.3)',error:'rgba(239,68,68,0.3)',info:'rgba(99,102,241,0.3)'};
+  t.style.cssText=`padding:10px 16px;border-radius:12px;background:${colors[type]||colors.info};border:1px solid ${borders[type]||borders.info};color:#fff;font-size:13px;font-weight:500;backdrop-filter:blur(20px);animation:fadeInUp 0.3s both;`;
+  t.textContent=msg;
+  c.appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+};
+
 // ============================================================
 // INIT
 // ============================================================
-window.addEventListener('DOMContentLoaded', () => {
-  // Theme
-  try {
-    const saved = localStorage.getItem('wikimind_bac_theme');
-    if (saved === 'light') {
-      isDark = false;
-      document.documentElement.setAttribute('data-theme', 'light');
-      document.getElementById('theme-btn').textContent = '☀️';
-    }
-  } catch(e) {}
-
-  // Default: Générale standard
+window.addEventListener('DOMContentLoaded',()=>{
   renderSousFilieres('generale');
 
-  // Restore last mode
   try {
-    const lastMode = localStorage.getItem(LS_MODE);
-    if (lastMode) {
-      const [voie, filiere] = lastMode.split('_').reduce((acc, p, i, arr) => {
-        // key format: voie_filiere where filiere might contain _
-        if (i === 0) return [p, ''];
-        return [acc[0], (acc[1] ? acc[1] + '_' : '') + p];
-      }, ['', '']);
+    const last = localStorage.getItem('wm_bac_mode');
+    if (last) {
+      const parts = last.split('_');
+      const voie = parts[0];
+      const filiere = parts.slice(1).join('_');
       if (voie && FILIERES[voie]?.subs[filiere]) {
-        currentVoie = voie;
-        currentFiliere = filiere;
-        // Click voie btn
-        const voieBtn = document.getElementById('voie-' + voie);
-        if (voieBtn) selectVoie(voie, voieBtn);
+        currentVoie = voie; currentFiliere = filiere;
+        const btn = document.getElementById('voie-'+voie);
+        if (btn) selectVoie(voie,btn);
       }
     }
   } catch(e) {}
+
+  // Splash
+  setTimeout(()=>{
+    const s = document.getElementById('wm-splash');
+    if(s){ s.classList.add('out'); setTimeout(()=>s.remove(),800); }
+  },1400);
 });
 </script>
 </body>
