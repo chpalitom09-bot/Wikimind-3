@@ -371,11 +371,22 @@
         /* Community tabs */
         .community-tab-btn { cursor: pointer; white-space: nowrap; }
 
-        #hero-greeting { animation: greetingIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        #hero-greeting { animation: greetingIn 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.1s both; }
         #hero-quote { animation: fadeInUp 0.8s ease-out 0.4s forwards; opacity: 0; }
 
+        /* Animation typing pour le prénom */
+        .greeting-name-char {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(12px);
+            animation: charIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes charIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         /* ========================================== */
-        /* SPLASH SCREEN                              */
+        /* SPLASH SCREEN — PRO VERSION               */
         /* ========================================== */
         #wm-splash {
             position: fixed;
@@ -386,15 +397,15 @@
             align-items: center;
             justify-content: center;
             pointer-events: all;
+            overflow: hidden;
         }
         #wm-splash.wm-splash-out {
-            animation: splashOut 0.6s cubic-bezier(0.7, 0, 1, 1) forwards;
+            animation: splashOut 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
             pointer-events: none;
         }
         @keyframes splashOut {
-            0%   { opacity: 1; transform: scale(1); }
-            60%  { opacity: 1; transform: scale(1.04); }
-            100% { opacity: 0; transform: scale(1.08); }
+            0%   { opacity: 1; transform: scale(1) translateY(0); }
+            100% { opacity: 0; transform: scale(1.06) translateY(-8px); }
         }
         #splash-canvas {
             position: absolute;
@@ -402,6 +413,33 @@
             width: 100%;
             height: 100%;
         }
+        /* Ring animé autour du logo */
+        #splash-ring {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 1.5px solid transparent;
+            background: conic-gradient(from 0deg, rgba(99,102,241,0) 0%, rgba(99,102,241,0.8) 40%, rgba(129,140,248,1) 50%, rgba(99,102,241,0.8) 60%, rgba(99,102,241,0) 100%) border-box;
+            -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: destination-out;
+            mask-composite: exclude;
+            animation: ringRotate 2s linear infinite;
+            opacity: 0;
+        }
+        #splash-ring.visible { opacity: 1; transition: opacity 0.4s; }
+        @keyframes ringRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* Points orbitaux */
+        .splash-orbit-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #818cf8;
+            opacity: 0;
+        }
+
         #splash-content {
             position: relative;
             z-index: 2;
@@ -410,49 +448,76 @@
             align-items: center;
             gap: 0;
         }
+        #splash-logo-wrap {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
         #splash-logo {
             opacity: 0;
-            transform: scale(0.5) translateY(10px);
-            animation: splashLogoIn 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.1s forwards;
+            transform: scale(0.4) translateY(10px);
+            animation: splashLogoIn 0.65s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.15s forwards;
         }
         @keyframes splashLogoIn {
             to { opacity: 1; transform: scale(1) translateY(0); }
         }
         #splash-logo-icon {
-            width: 72px;
-            height: 72px;
+            width: 80px;
+            height: 80px;
             background: linear-gradient(135deg, #ffffff 0%, #c7c8ff 100%);
-            border-radius: 22px;
+            border-radius: 26px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 60px rgba(99,102,241,0.4), 0 0 120px rgba(99,102,241,0.15);
-            margin-bottom: 20px;
+            box-shadow: 0 0 40px rgba(99,102,241,0.5), 0 0 100px rgba(99,102,241,0.2), 0 4px 24px rgba(0,0,0,0.4);
         }
         #splash-logo-icon span {
             font-family: 'Space Grotesk', sans-serif;
             font-weight: 700;
-            font-size: 32px;
+            font-size: 36px;
             color: #050505;
         }
         #splash-wordmark {
             font-family: 'Space Grotesk', sans-serif;
             font-weight: 700;
-            font-size: 28px;
-            letter-spacing: -0.03em;
+            font-size: 30px;
+            letter-spacing: -0.04em;
             color: #fff;
             opacity: 0;
-            animation: splashWordIn 0.5s ease-out 0.35s forwards;
+            animation: splashWordIn 0.5s ease-out 0.4s forwards;
         }
         #splash-version {
             font-family: 'Space Grotesk', sans-serif;
-            font-weight: 300;
-            font-size: 13px;
-            color: rgba(255,255,255,0.3);
-            letter-spacing: 0.15em;
-            margin-top: 4px;
+            font-weight: 400;
+            font-size: 11px;
+            color: rgba(255,255,255,0.25);
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            margin-top: 6px;
             opacity: 0;
-            animation: splashWordIn 0.5s ease-out 0.5s forwards;
+            animation: splashWordIn 0.5s ease-out 0.55s forwards;
+        }
+        /* Texte de bienvenue personnalisé (prénom) */
+        #splash-welcome {
+            font-family: 'Inter', sans-serif;
+            font-weight: 300;
+            font-size: 14px;
+            color: rgba(129,140,248,0.7);
+            letter-spacing: 0.08em;
+            margin-top: 20px;
+            opacity: 0;
+            min-height: 22px;
+        }
+        #splash-welcome.visible {
+            animation: splashWelcomeIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes splashWelcomeIn {
+            0% { opacity: 0; transform: translateY(6px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
         @keyframes splashWordIn {
             from { opacity: 0; transform: translateY(6px); }
@@ -572,13 +637,18 @@
     <div id="wm-splash" aria-hidden="true">
         <canvas id="splash-canvas"></canvas>
         <div id="splash-content">
-            <div id="splash-logo">
-                <div id="splash-logo-icon">
-                    <span>W</span>
+            <div id="splash-logo-wrap">
+                <!-- Ring orbital -->
+                <div id="splash-ring"></div>
+                <div id="splash-logo">
+                    <div id="splash-logo-icon">
+                        <span>W</span>
+                    </div>
                 </div>
             </div>
             <div id="splash-wordmark">WikiMind</div>
-            <div id="splash-version">3.0</div>
+            <div id="splash-version">Suite · 3.5</div>
+            <div id="splash-welcome"></div>
             <div id="splash-bar-wrap"><div id="splash-bar"></div></div>
         </div>
     </div>
@@ -912,36 +982,7 @@
                 </a>
             </div>
 
-            <!-- ========================================== -->
-            <!-- SECTION AVIS COMMUNAUTÉ (accueil)         -->
-            <!-- ========================================== -->
-            <div class="max-w-5xl mx-auto mt-20 mb-4" id="reviews-home-section" style="display:none!important">
-                <div class="text-center mb-10">
-                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-brand-500/30 bg-brand-500/10 text-brand-glow text-[10px] uppercase font-bold tracking-[0.2em] mb-4">
-                        <i class="fa-solid fa-star text-yellow-400"></i>
-                        Ce que dit la communauté
-                    </div>
-                    <h2 class="text-3xl md:text-4xl font-display font-bold text-white mb-2">Ils utilisent WikiMind</h2>
-                    <p class="text-white/40 text-sm" id="reviews-home-count"></p>
-                </div>
-
-                <!-- Carousel d'avis -->
-                <div class="relative overflow-hidden" id="reviews-carousel-wrap">
-                    <div id="reviews-carousel-track" class="flex gap-4 transition-transform duration-500 ease-in-out"></div>
-                    <!-- Gradients de bords -->
-                    <div class="pointer-events-none absolute left-0 top-0 h-full w-16 bg-gradient-to-r from-[#050505] to-transparent z-10"></div>
-                    <div class="pointer-events-none absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-[#050505] to-transparent z-10"></div>
-                    <!-- Boutons nav -->
-                    <button id="reviews-prev" onclick="window.reviewsCarousel(-1)" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full glass-panel border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all shadow-lg">
-                        <i class="fa-solid fa-chevron-left text-xs"></i>
-                    </button>
-                    <button id="reviews-next" onclick="window.reviewsCarousel(1)" class="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full glass-panel border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all shadow-lg">
-                        <i class="fa-solid fa-chevron-right text-xs"></i>
-                    </button>
-                </div>
-                <!-- Dots -->
-                <div id="reviews-dots" class="flex justify-center gap-2 mt-6"></div>
-            </div>
+            <!-- Avis déplacés dans l'onglet Communauté uniquement -->
 
             <!-- SECTION CACHÉE (ancienne échelle) — remplacée ci-dessus -->
             <div class="hidden" id="evolution-scale-hidden">
@@ -1322,7 +1363,7 @@
             </div>
             
             <!-- Grid de Cartes -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-fr" id="modules-container">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="modules-container">
                 
                 <!-- WikiMind Core -->
                 <a href="Wikimind_AI.html" class="module-card opt-card md:col-span-2 p-8" data-name="wikimind core chat ai gpt llama">
@@ -1452,9 +1493,8 @@
                             </svg>
                         </div>
                         <h3 class="text-lg font-display font-bold mb-1">Cloud</h3>
-                        <p class="text-white/55 text-xs">Stockage sécurisé, connexion Google Drive.</p>
-                    </div>
-                </a>
+                        <p class="text-white/55 text-xs leading-relaxed mb-4 flex-grow">Stockage sécurisé de vos fichiers avec connexion Google Drive et accès depuis n'importe quel appareil.</p>
+                        <div class="text-[10px] text-sky-400 font-bold uppercase tracking-wider flex items-center gap-1">Accéder <span>→</span></div>
 
                 <a href="tools/Wikimind_CV.html" class="module-card opt-card p-6" data-name="cv travail emploi">
                     <div class="opt-card-content">
@@ -1464,9 +1504,8 @@
                             </svg>
                         </div>
                         <h3 class="text-lg font-display font-bold mb-1">Wikimind CV</h3>
-                        <p class="text-white/55 text-xs">Créateur de CV avec IA et modèles gratuits.</p>
-                    </div>
-                </a>
+                        <p class="text-white/55 text-xs leading-relaxed mb-4 flex-grow">Créez votre CV professionnel avec l'IA — templates gratuits, lettre de motivation intégrée, export PDF.</p>
+                        <div class="text-[10px] text-orange-400 font-bold uppercase tracking-wider flex items-center gap-1">Créer <span>→</span></div>
 
                 <a href="AI/Wikimind_call.html" class="module-card opt-card p-6" data-name="Wikimind Call">
                     <div class="opt-card-content">
@@ -1476,9 +1515,8 @@
                             </svg>
                         </div>
                         <h3 class="text-lg font-display font-bold mb-1">Wikimind Call</h3>
-                        <p class="text-white/55 text-xs">Appelez et parlez directement avec l'IA.</p>
-                    </div>
-                </a>
+                        <p class="text-white/55 text-xs leading-relaxed mb-4 flex-grow">Conversation vocale en temps réel avec l'IA — parlez naturellement, l'assistant vous répond à voix haute.</p>
+                        <div class="text-[10px] text-cyan-400 font-bold uppercase tracking-wider flex items-center gap-1">Appeler <span>→</span></div>
 
                 <!-- ✅ NOUVELLES APPS -->
                 <a href="tools/Wikimind_data.html" class="module-card opt-card p-6" data-name="data graphiques charts diagrammes statistiques">
@@ -2210,13 +2248,25 @@
         function getGreeting(firstName = null) {
             const hour = new Date().getHours();
             let base = (hour >= 5 && hour < 18) ? "Bonjour" : "Bonsoir";
-            if (firstName) return `${base},<br><span class="text-gradient">${firstName} !</span>`;
+            if (firstName) {
+                // Rend chaque lettre du prénom avec une animation décalée
+                const chars = (firstName + ' !').split('').map((c, i) =>
+                    `<span class="greeting-name-char" style="animation-delay:${0.05 * i + 0.15}s">${c === ' ' ? '&nbsp;' : c}</span>`
+                ).join('');
+                return `${base},<br><span class="text-gradient" style="display:inline-block">${chars}</span>`;
+            }
             return `${base},<br><span class="text-gradient">WikiMind.</span>`;
         }
 
         function renderGreeting(firstName = null) {
             const el = document.getElementById('greeting-line');
-            if (el) el.innerHTML = getGreeting(firstName);
+            if (el) {
+                // Re-déclenche l'animation en supprimant/réajoutant la classe
+                el.style.animation = 'none';
+                el.offsetHeight; // reflow
+                el.style.animation = '';
+                el.innerHTML = getGreeting(firstName);
+            }
 
             const quoteEl = document.getElementById('hero-quote');
             if (quoteEl && !firstName) {
@@ -2959,18 +3009,42 @@
     <!-- ✅ SPLASH SCREEN + PWA INSTALL LOGIC -->
     <script>
         // ============================================================
-        // SPLASH SCREEN
+        // SPLASH SCREEN — VERSION PRO
         // ============================================================
         (function() {
             const splash = document.getElementById('wm-splash');
             if (!splash) return;
 
             const canvas = document.getElementById('splash-canvas');
-            // Fallback global : fermeture forcée après 3s quoi qu'il arrive
+            const ring = document.getElementById('splash-ring');
+            const welcomeEl = document.getElementById('splash-welcome');
+
+            // Récupère le prénom depuis le cache localStorage (défini par Firebase après connexion)
+            function getSplashName() {
+                try {
+                    // Parcourir le localStorage pour trouver un cache WikiMind user
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        if (key && key.startsWith('wm_user_cache_v1_')) {
+                            const raw = localStorage.getItem(key);
+                            if (raw) {
+                                const parsed = JSON.parse(raw);
+                                // TTL: 12h
+                                if (Date.now() - parsed.ts < 12 * 60 * 60 * 1000 && parsed.data?.displayName) {
+                                    return parsed.data.displayName.split(' ')[0]; // Prénom seulement
+                                }
+                            }
+                        }
+                    }
+                } catch(e) {}
+                return null;
+            }
+
+            // Fallback global : fermeture forcée après 3.5s quoi qu'il arrive
             const globalFallback = setTimeout(() => {
                 splash.style.display = 'none';
                 document.body.style.overflow = '';
-            }, 3200);
+            }, 3500);
 
             if (canvas) {
                 const ctx = canvas.getContext('2d');
@@ -2978,11 +3052,15 @@
                 const resize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
                 resize();
                 window.addEventListener('resize', resize);
+
+                // Orbes aurora — plus doux et accordés au thème indigo/bleu
                 const orbs = [
-                    { x: 0.3, y: 0.4, r: 0.55, color: [79, 70, 229], vx: 0.0004, vy: 0.0003 },
-                    { x: 0.7, y: 0.6, r: 0.45, color: [168, 85, 247], vx: -0.0005, vy: 0.0004 },
-                    { x: 0.5, y: 0.2, r: 0.3,  color: [99, 102, 241], vx: 0.0003, vy: -0.0003 }
+                    { x: 0.25, y: 0.45, r: 0.50, color: [79, 70, 229], vx: 0.00035, vy: 0.00028 },
+                    { x: 0.75, y: 0.55, r: 0.42, color: [99, 102, 241], vx: -0.00045, vy: 0.00035 },
+                    { x: 0.50, y: 0.20, r: 0.28, color: [26, 115, 232], vx: 0.00025, vy: -0.00025 },
+                    { x: 0.50, y: 0.80, r: 0.32, color: [168, 85, 247], vx: -0.0003, vy: 0.0002 }
                 ];
+
                 let animId;
                 const draw = () => {
                     tick++;
@@ -2991,9 +3069,10 @@
                         orb.x += orb.vx; orb.y += orb.vy;
                         if (orb.x < -0.3 || orb.x > 1.3) orb.vx *= -1;
                         if (orb.y < -0.3 || orb.y > 1.3) orb.vy *= -1;
-                        const pulse = 1 + 0.04 * Math.sin(tick * 0.02);
-                        const g = ctx.createRadialGradient(orb.x * w, orb.y * h, 0, orb.x * w, orb.y * h, orb.r * w * pulse);
-                        g.addColorStop(0, `rgba(${orb.color.join(',')},0.18)`);
+                        const pulse = 1 + 0.05 * Math.sin(tick * 0.018 + orb.x * 5);
+                        const g = ctx.createRadialGradient(orb.x * w, orb.y * h, 0, orb.x * w, orb.y * h, orb.r * Math.min(w, h) * pulse);
+                        g.addColorStop(0, `rgba(${orb.color.join(',')},0.20)`);
+                        g.addColorStop(0.5, `rgba(${orb.color.join(',')},0.07)`);
                         g.addColorStop(1, 'rgba(0,0,0,0)');
                         ctx.fillStyle = g;
                         ctx.fillRect(0, 0, w, h);
@@ -3002,22 +3081,38 @@
                 };
                 draw();
 
+                // Afficher le ring après l'apparition du logo
+                setTimeout(() => { if (ring) ring.classList.add('visible'); }, 500);
+
+                // Afficher le message de bienvenue personnalisé
+                const firstName = getSplashName();
+                if (welcomeEl) {
+                    setTimeout(() => {
+                        if (firstName) {
+                            welcomeEl.textContent = `Bienvenue, ${firstName} ✦`;
+                        } else {
+                            welcomeEl.textContent = '✦ Prêt à créer ✦';
+                        }
+                        welcomeEl.classList.add('visible');
+                    }, 900);
+                }
+
+                const SPLASH_DURATION = 2200;
                 setTimeout(() => {
                     cancelAnimationFrame(animId);
                     splash.classList.add('wm-splash-out');
-                    // Fallback : force la fermeture après 800ms même si animationend ne se déclenche pas
                     const forceClose = setTimeout(() => {
                         clearTimeout(globalFallback);
                         splash.style.display = 'none';
                         document.body.style.overflow = '';
-                    }, 800);
+                    }, 750);
                     splash.addEventListener('animationend', () => {
                         clearTimeout(forceClose);
                         clearTimeout(globalFallback);
                         splash.style.display = 'none';
                         document.body.style.overflow = '';
                     }, { once: true });
-                }, 1900);
+                }, SPLASH_DURATION);
             }
 
             document.body.style.overflow = 'hidden';
@@ -3173,10 +3268,31 @@
 
             // Check if this is an "open X" command first (local, no API needed)
             const lower = q.toLowerCase();
-            const openMatch = lower.match(/^(?:ouvre?|lance|va sur?|accède à?|affiche|démarre?)\s+(.+)$/);
-            if (openMatch) {
-                const target = openMatch[1].trim();
-                const app = APPS.find(a => a.names.some(n => target.includes(n)));
+            
+            // Détection améliorée — supporte plus de formulations
+            const openPatterns = [
+                /^(?:ouvre?|lance?|démarre?|va sur?|accède à?|affiche?|ouvrir|lancer|démarrer)\s+(.+)$/,
+                /^(?:je veux|je voudrais|peux-tu ouvrir|ouvre-moi)\s+(.+)$/,
+                /^(?:aller sur|aller à|naviguer vers)\s+(.+)$/,
+            ];
+            
+            let openTarget = null;
+            for (const pat of openPatterns) {
+                const m = lower.match(pat);
+                if (m) { openTarget = m[1].trim(); break; }
+            }
+            
+            // Aussi vérifier si le message contient juste un nom d'app
+            if (!openTarget) {
+                const directApp = APPS.find(a => a.names.some(n => n.length > 3 && lower.includes(n)));
+                if (directApp && lower.length < 50) {
+                    // Message court avec nom d'app = intention d'ouvrir
+                    openTarget = lower;
+                }
+            }
+
+            if (openTarget) {
+                const app = APPS.find(a => a.names.some(n => openTarget.includes(n)));
                 if (app) {
                     showSheet(`<div class="flex items-center gap-2 mb-3"><i class="fa-solid fa-arrow-up-right-from-square text-brand-glow"></i><span class="font-bold text-white">Ouverture de ${app.label}…</span></div>`);
                     setTimeout(() => { window.location.href = app.url; }, 700);
@@ -3303,12 +3419,26 @@ Sinon réponds normalement à la question.`;
             const q = input.value.trim();
             if (!q) return;
 
-            // Open app command
+            // Open app command — détection améliorée
             const lower = q.toLowerCase();
-            const openMatch = lower.match(/^(?:ouvre?|lance|va sur?|accède à?|affiche|démarre?)\s+(.+)$/);
-            if (openMatch) {
-                const target = openMatch[1].trim();
-                const app = APPS.find(a => a.names.some(n => target.includes(n)));
+            const openPatterns = [
+                /^(?:ouvre?|lance?|démarre?|va sur?|accède à?|affiche?|ouvrir|lancer|démarrer)\s+(.+)$/,
+                /^(?:je veux|je voudrais|peux-tu ouvrir|ouvre-moi)\s+(.+)$/,
+                /^(?:aller sur|aller à)\s+(.+)$/,
+            ];
+            
+            let openTarget = null;
+            for (const pat of openPatterns) {
+                const m = lower.match(pat);
+                if (m) { openTarget = m[1].trim(); break; }
+            }
+            if (!openTarget) {
+                const directApp = APPS.find(a => a.names.some(n => n.length > 3 && lower.includes(n)));
+                if (directApp && lower.length < 50) openTarget = lower;
+            }
+            
+            if (openTarget) {
+                const app = APPS.find(a => a.names.some(n => openTarget.includes(n)));
                 if (app) {
                     input.value = ''; sendBtn.disabled = true;
                     showDesktopOverlay(`<div class="flex items-center gap-3"><i class="fa-solid fa-arrow-up-right-from-square text-brand-glow"></i><span class="font-semibold text-white">Ouverture de ${app.label}…</span></div>`);
