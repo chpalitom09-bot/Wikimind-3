@@ -87,11 +87,60 @@
 
         /* ===== FILE CARDS ===== */
         .file-card {
-            background:rgba(255,255,255,0.025);
-            border:1px solid rgba(255,255,255,0.06);
-            transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
+            background: rgba(255,255,255,0.022);
+            border: 1px solid rgba(255,255,255,0.055);
+            transition: all 0.28s cubic-bezier(0.4,0,0.2,1);
+            position: relative;
+            overflow: hidden;
         }
-        .file-card:hover { background:rgba(255,255,255,0.06); border-color:rgba(255,255,255,0.14); transform:translateY(-2px); box-shadow:0 12px 30px -8px rgba(0,0,0,0.5); }
+        .file-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 60%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .file-card:hover { background:rgba(255,255,255,0.05); border-color:rgba(255,255,255,0.12); transform:translateY(-3px) scale(1.005); box-shadow:0 20px 40px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04); }
+        .file-card:hover::before { opacity: 1; }
+
+        /* Accent bar couleur en haut de la carte */
+        .file-card-accent {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1.5px;
+            border-radius: 4px 4px 0 0;
+            opacity: 0.7;
+        }
+
+        /* Action buttons inside card */
+        .card-action-btn {
+            display: flex; align-items: center; justify-content: center; gap: 5px;
+            padding: 7px 0; border-radius: 10px;
+            font-size: 11px; font-weight: 700;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+        .card-action-open {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.65);
+        }
+        .card-action-open:hover { background: rgba(255,255,255,0.11); border-color: rgba(255,255,255,0.15); color: #fff; }
+        .card-action-drive {
+            background: rgba(66,133,244,0.12);
+            border-color: rgba(66,133,244,0.2);
+            color: #60a5fa;
+        }
+        .card-action-drive:hover { background: rgba(66,133,244,0.22); border-color: rgba(66,133,244,0.35); }
+        .card-action-delete {
+            background: transparent;
+            border-color: rgba(255,255,255,0.07);
+            color: rgba(255,255,255,0.25);
+            padding: 7px 10px;
+        }
+        .card-action-delete:hover { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.3); color: #f87171; }
 
         /* ===== FOLDER CARD ===== */
         .folder-card {
@@ -776,48 +825,82 @@
         const icon = window.getAppIcon(file.type);
         const color = window.getAppColor(file.type);
         const page = window.getAppPage(file.type);
-        const preview = file.content ? file.content.replace(/<[^>]*>/g,'').substring(0,60)+'...' : 'Document vide';
+
+        // Nettoyer le contenu : strip HTML + markdown
+        const rawText = (file.content||'').replace(/<[^>]*>/g,'').replace(/\*\*([^*]+)\*\*/g,'$1').replace(/\*([^*]+)\*/g,'$1').replace(/`([^`]+)`/g,'$1').replace(/#{1,6}\s/g,'').trim();
+        const preview = rawText.substring(0,80) || 'Document vide';
+
+        // Labels lisibles
+        const typeLabels = { writer:'Writer', calc:'Calc', impress:'Impress', draw:'Draw' };
+        const typeLabel = typeLabels[file.type] || file.type;
+
+        // Date courte
+        function shortDate(ts) {
+            if (!ts) return '';
+            const d = new Date(ts);
+            const now = new Date();
+            const diff = now - d;
+            if (diff < 86400000) return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+            if (diff < 604800000) {
+                const days = ['dim','lun','mar','mer','jeu','ven','sam'];
+                return days[d.getDay()];
+            }
+            return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
+        }
 
         const div = document.createElement('div');
-        div.className = 'file-card rounded-2xl p-5 relative group';
+        div.className = 'file-card rounded-2xl p-0 group';
         div.setAttribute('data-id', file.id);
         div.setAttribute('data-name', (file.name||'').toLowerCase());
         div.setAttribute('data-type', file.type||'');
         div.setAttribute('data-folder', file.folderId||'root');
 
         div.innerHTML = `
-            <div class="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl" style="background:${color};opacity:0.6;"></div>
-            <div class="flex items-start justify-between mb-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style="background:${color}18;border:1px solid ${color}30;">
-                        <i class="${icon}" style="color:${color}"></i>
+            <!-- Accent top bar -->
+            <div class="file-card-accent" style="background:linear-gradient(90deg,${color},${color}88);"></div>
+
+            <!-- Body -->
+            <div class="p-4 pt-5">
+                <!-- Header -->
+                <div class="flex items-start gap-3 mb-3">
+                    <!-- App icon -->
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5" style="background:${color}15; border:1px solid ${color}25;">
+                        <i class="${icon} text-sm" style="color:${color}"></i>
                     </div>
-                    <div>
-                        <h4 class="font-display font-bold text-sm text-white leading-tight">${file.name||'Sans titre'}</h4>
-                        <p class="text-[10px] text-white/30 uppercase tracking-wide mt-0.5">${file.type} • ${formatDate(file.updatedAt)}</p>
+                    <!-- Title + meta -->
+                    <div class="flex-1 min-w-0">
+                        <h4 class="font-display font-bold text-[13px] text-white leading-snug truncate">${file.name||'Sans titre'}</h4>
+                        <div class="flex items-center gap-1.5 mt-0.5">
+                            <span class="text-[10px] font-bold uppercase tracking-wider" style="color:${color}99">${typeLabel}</span>
+                            <span class="text-white/15 text-[9px]">•</span>
+                            <span class="text-[10px] text-white/30">${shortDate(file.updatedAt)}</span>
+                        </div>
                     </div>
+                    <!-- More -->
+                    <button onclick="showFileContextMenu(event,'${file.id}','${(file.name||'').replace(/'/g,"\\'")}')"
+                            class="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/30 hover:text-white/80 transition-all shrink-0">
+                        <i class="fa-solid fa-ellipsis-vertical" style="font-size:11px"></i>
+                    </button>
                 </div>
-                <!-- Menu contextuel bouton -->
-                <button onclick="showFileContextMenu(event,'${file.id}','${(file.name||'').replace(/'/g,'')}')" class="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white transition-all">
-                    <i class="fa-solid fa-ellipsis-vertical text-xs"></i>
-                </button>
-            </div>
-            <p class="text-xs text-white/30 mb-5 line-clamp-2 min-h-[2.5rem]">${preview}</p>
-            <div class="flex items-center gap-2">
-                <a href="${page}?id=${file.id}&source=firebase"
-                   class="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold transition-all">
-                    <i class="fa-solid fa-pen-to-square text-white/60"></i>
-                    <span class="text-white/70">Ouvrir</span>
-                </a>
-                <button onclick="window.saveToDrive('${file.id}','${(file.name||'').replace(/'/g,'')}','${file.type}',this)"
-                        class="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/35 border border-blue-500/30 text-xs font-bold text-blue-300 transition-all">
-                    <i class="fa-brands fa-google-drive text-blue-400"></i>
-                    <span>Envoyer</span>
-                </button>
-                <button onclick="window.deleteOfficeFile('${file.id}')"
-                        class="w-9 h-9 flex items-center justify-center rounded-lg bg-white/5 hover:bg-red-500/15 border border-white/10 hover:border-red-500/30 text-white/30 hover:text-red-400 transition-all">
-                    <i class="fa-solid fa-trash text-xs"></i>
-                </button>
+
+                <!-- Preview text -->
+                <p class="text-[12px] text-white/35 leading-relaxed line-clamp-2 mb-4 pl-0" style="min-height:2.4rem">${preview}</p>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-2">
+                    <a href="${page}?id=${file.id}&source=firebase" class="card-action-btn card-action-open flex-1">
+                        <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:10px"></i>
+                        Ouvrir
+                    </a>
+                    <button onclick="window.saveToDrive('${file.id}','${(file.name||'').replace(/'/g,"\\'")}','${file.type}',this)"
+                            class="card-action-btn card-action-drive flex-1">
+                        <i class="fa-brands fa-google-drive" style="font-size:11px"></i>
+                        Drive
+                    </button>
+                    <button onclick="window.deleteOfficeFile('${file.id}')" class="card-action-btn card-action-delete">
+                        <i class="fa-solid fa-trash" style="font-size:10px"></i>
+                    </button>
+                </div>
             </div>
         `;
         return div;
