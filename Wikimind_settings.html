@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Paramètres - WikiMind AI</title>
+    
+    <!-- PWA: Manifest -->
+    <link rel="manifest" href="App/manifest.json">
+    <meta name="theme-color" content="#050505">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="WikiMind">
+    <link rel="apple-touch-icon" href="App/icon-192.png">
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RRFWS36RWJ"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-RRFWS36RWJ');
+    </script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif']
+                    },
+                    colors: {
+                        glass: {
+                            panel: 'rgba(20, 20, 20, 0.6)',
+                            border: 'rgba(255, 255, 255, 0.08)'
+                        },
+                        brand: {
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            glow: '#818cf8'
+                        }
+                    },
+                    animation: {
+                        'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+                        'fade-in': 'fadeIn 0.3s ease-out forwards'
+                    },
+                    keyframes: {
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' }
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Custom styles for WikiMind */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
+        
+        .nav-link {
+            padding: 8px 16px;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.6);
+            transition: all 0.2s;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .setting-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.2s;
+        }
+        
+        .setting-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 9999px;
+            transition: .4s;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            transition: .4s;
+        }
+        
+        input:checked + .toggle-slider {
+            background: #6366f1;
+            border-color: #4f46e5;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+            background: white;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        /* Memory Popup Styles (same as index.html) */
+        #memory-popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            background: rgba(14, 14, 18, 0.98);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 28px;
+            max-width: 420px;
+            width: 90%;
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        #memory-popup.active {
+            display: block;
+        }
+        
+        #memory-popup-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 999;
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.2s ease-out;
+        }
+        
+        #memory-popup-overlay.active {
+            display: block;
+        }
+        
+        #memory-popup h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 8px;
+        }
+        
+        #memory-popup p {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        #memory-popup .btn {
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        #memory-popup #confirm-memory-btn {
+            background: #6366f1;
+            color: white;
+            border: none;
+        }
+        
+        #memory-popup #confirm-memory-btn:hover {
+            background: #5558e3;
+        }
+        
+        #memory-popup #cancel-memory-btn {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        #memory-popup #cancel-memory-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        /* Notification Toast */
+        .notification-toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 1001;
+            background: rgba(14, 14, 18, 0.96);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            animation: slideIn 0.3s ease-out;
+            max-width: 360px;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .notification-toast .icon {
+            font-size: 1.2rem;
+            color: #6366f1;
+        }
+        
+        .notification-toast .message {
+            flex: 1;
+            font-size: 0.9rem;
+            color: white;
+        }
+        
+        .notification-toast .close-btn {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 4px;
+        }
+        
+        .notification-toast .close-btn:hover {
+            color: rgba(255, 255, 255, 0.9);
+        }
+    </style>
+</head>
+
+<body class="bg-[#0a0a0f] text-white selection:bg-brand-500 selection:text-white">
+    
+    <!-- Memory Popup Overlay -->
+    <div id="memory-popup-overlay" onclick="closeMemoryPopup()"></div>
+    
+    <!-- Memory Popup -->
+    <div id="memory-popup">
+        <h3><i class="fa-solid fa-brain mr-2"></i>Mémoire WikiMind</h3>
+        <p>
+            Activez la mémoire pour que WikiMind AI se souvienne de vos conversations et préférences.
+            Vos données seront sauvegardées de manière sécurisée dans votre compte.
+        </p>
+        <div class="flex gap-3 justify-end">
+            <button id="cancel-memory-btn" class="btn" onclick="closeMemoryPopup()">Annuler</button>
+            <button id="confirm-memory-btn" class="btn" onclick="enableMemory()">Activer</button>
+        </div>
+    </div>
+    
+    <!-- Notification Toast -->
+    <div id="notification-toast" class="notification-toast" style="display: none;">
+        <div class="icon">
+            <i class="fa-solid fa-bell"></i>
+        </div>
+        <div class="message" id="toast-message">Notifications activées !</div>
+        <button class="close-btn" onclick="closeToast()">×</button>
+    </div>
+    
+    <!-- ========================================== -->
+    <!-- NAVBAR -->
+    <!-- ========================================== -->
+    <nav class="fixed top-0 w-full z-50 px-4 md:px-6 py-4 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto flex justify-between items-center glass-panel rounded-full px-5 py-2">
+            <!-- Logo -->
+            <a href="index.html" class="flex items-center gap-3 group">
+                <div class="w-8 h-8 bg-gradient-to-tr from-white to-gray-400 rounded-lg flex items-center justify-center">
+                    <span class="font-bold text-black text-xs">W</span>
+                </div>
+                <span class="font-display font-bold text-lg tracking-tight hidden sm:block">WikiMind <span class="text-white/40 font-normal">AI</span></span>
+            </a>
+            
+            <!-- Only Settings Link -->
+            <div class="hidden md:flex items-center gap-2">
+                <a href="#" class="nav-link active">Paramètres</a>
+            </div>
+            
+            <!-- Auth / User State -->
+            <div id="auth-container" class="flex items-center gap-4">
+                <a href="Wikimind_user.html" id="login-btn" class="px-5 py-2 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-gray-100 transition-colors">
+                    Connexion
+                </a>
+                <div id="user-logged" class="hidden flex items-center gap-3">
+                    <div class="user-avatar" id="user-avatar">W</div>
+                    <div class="text-right hidden sm:block">
+                        <div id="user-name-display" class="text-xs font-bold text-white">Utilisateur</div>
+                        <div id="user-email-display" class="text-xs text-white/50 truncate max-w-[120px]">email@example.com</div>
+                    </div>
+                    <button id="user-dropdown-btn" class="w-7 h-7 flex items-center justify-center rounded-full text-white/30 hover:text-white/70 hover:bg-white/5 transition-all duration-200">
+                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- ========================================== -->
+    <!-- MAIN CONTENT -->
+    <!-- ========================================== -->
+    <main class="pt-24 pb-32 min-h-screen">
+        <div class="max-w-4xl mx-auto px-4 md:px-6">
+            
+            <!-- Header -->
+            <div class="mb-8 animate-fade-in-up">
+                <h1 class="text-4xl md:text-5xl font-display font-bold mb-2">Paramètres</h1>
+                <p class="text-white/50 text-sm">Personnalisez votre expérience WikiMind AI</p>
+            </div>
+            
+            <!-- ========================================== -->
+            <!-- SECTION: COMPTE -->
+            <!-- ========================================== -->
+            <section class="mb-10 animate-fade-in-up" style="animation-delay: 0.1s">
+                <h2 class="text-2xl font-display font-bold mb-6 flex items-center gap-3">
+                    <i class="fa-solid fa-user text-brand-500"></i>
+                    Compte
+                </h2>
+                
+                <div class="setting-card">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="user-avatar text-2xl w-16 h-16" id="settings-user-avatar">W</div>
+                        <div>
+                            <h3 class="text-xl font-bold" id="settings-user-name">Utilisateur</h3>
+                            <p class="text-white/50 text-sm" id="settings-user-email">email@example.com</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-white/70 mb-2">Nom d'affichage</label>
+                            <input type="text" id="display-name-input" class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-brand-500 transition" placeholder="Votre nom">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-white/70 mb-2">Email</label>
+                            <input type="email" id="email-input" class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-brand-500 transition" placeholder="Votre email" disabled>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 flex flex-wrap gap-3">
+                        <button id="save-profile-btn" class="px-6 py-2 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-lg transition shadow-lg shadow-brand-500/20">
+                            <i class="fa-solid fa-check mr-2"></i>Sauvegarder
+                        </button>
+                        <button id="logout-btn" class="px-6 py-2 bg-white/5 hover:bg-white/10 text-white/70 font-bold rounded-lg transition border border-white/10">
+                            <i class="fa-solid fa-sign-out-alt mr-2"></i>Déconnexion
+                        </button>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- ========================================== -->
+            <!-- SECTION: WIKIMIND AI -->
+            <!-- ========================================== -->
+            <section class="mb-10 animate-fade-in-up" style="animation-delay: 0.2s">
+                <h2 class="text-2xl font-display font-bold mb-6 flex items-center gap-3">
+                    <i class="fa-solid fa-robot text-brand-500"></i>
+                    Wikimind AI
+                </h2>
+                
+                <div class="space-y-4">
+                    <!-- AI Tone -->
+                    <div class="setting-card">
+                        <div class="flex justify-between items-center mb-2">
+                            <div>
+                                <h3 class="font-bold">Ton de l'IA</h3>
+                                <p class="text-white/50 text-sm">Choisissez le style de réponse de l'IA</p>
+                            </div>
+                            <select id="ai-tone-select" class="bg-white/5 border border-white/10 rounded-lg px-3 py-1 text-sm focus:outline-none focus:border-brand-500">
+                                <option value="neutral">Neutre</option>
+                                <option value="friendly">Amical</option>
+                                <option value="professional">Professionnel</option>
+                                <option value="creative">Créatif</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- AI Creativity -->
+                    <div class="setting-card">
+                        <div class="flex justify-between items-center mb-2">
+                            <div>
+                                <h3 class="font-bold">Créativité</h3>
+                                <p class="text-white/50 text-sm">Niveau de créativité des réponses</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-white/50">Faible</span>
+                                <input type="range" id="ai-creativity-slider" min="1" max="10" value="5" class="w-32 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer">
+                                <span class="text-xs text-white/50">Élevée</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Memory -->
+                    <div class="setting-card cursor-pointer" onclick="openMemoryPopup()">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="font-bold">Mémoire activée</h3>
+                                <p class="text-white/50 text-sm">L'IA se souvient de vos conversations</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="memory-toggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Auto-Save -->
+                    <div class="setting-card">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="font-bold">Sauvegarde automatique</h3>
+                                <p class="text-white/50 text-sm">Sauvegarder automatiquement vos paramètres</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="auto-save-toggle" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- ========================================== -->
+            <!-- SECTION: NOTIFICATIONS -->
+            <!-- ========================================== -->
+            <section class="mb-10 animate-fade-in-up" style="animation-delay: 0.3s">
+                <h2 class="text-2xl font-display font-bold mb-6 flex items-center gap-3">
+                    <i class="fa-solid fa-bell text-brand-500"></i>
+                    Notifications
+                </h2>
+                
+                <div class="space-y-4">
+                    <!-- Push Notifications -->
+                    <div class="setting-card">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="font-bold">Notifications Push</h3>
+                                <p class="text-white/50 text-sm">Recevoir des notifications même hors de l'app</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="push-notifications-toggle" onclick="requestNotificationPermission()">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Email Notifications -->
+                    <div class="setting-card">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="font-bold">Notifications par Email</h3>
+                                <p class="text-white/50 text-sm">Recevoir des notifications par email</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="email-notifications-toggle" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Sound Notifications -->
+                    <div class="setting-card">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="font-bold">Sons de notification</h3>
+                                <p class="text-white/50 text-sm">Activer les sons pour les notifications</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="sound-notifications-toggle" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- ========================================== -->
+            <!-- SECTION: PRÉFÉRENCES -->
+            <!-- ========================================== -->
+            <section class="mb-10 animate-fade-in-up" style="animation-delay: 0.4s">
+                <h2 class="text-2xl font-display font-bold mb-6 flex items-center gap-3">
+                    <i class="fa-solid fa-sliders text-brand-500"></i>
+                    Préférences
+                </h2>
+                
+                <div class="space-y-4">
+                    <!-- Theme -->
+                    <div class="setting-card">
+                        <div class="flex justify-between items-center mb-2">
+                            <div>
+                                <h3 class="font-bold">Thème</h3>
+                                <p class="text-white/50 text-sm">Choisissez l'apparence de l'application</p>
+                            </div>
+                            <select id="theme-select" class="bg-white/5 border border-white/10 rounded-lg px-3 py-1 text-sm focus:outline-none focus:border-brand-500">
+                                <option value="system">Système</option>
+                                <option value="light">Clair</option>
+                                <option value="dark">Sombre</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Language -->
+                    <div class="setting-card">
+                        <div class="flex justify-between items-center mb-2">
+                            <div>
+                                <h3 class="font-bold">Langue</h3>
+                                <p class="text-white/50 text-sm">Langue de l'interface</p>
+                            </div>
+                            <select id="language-select" class="bg-white/5 border border-white/10 rounded-lg px-3 py-1 text-sm focus:outline-none focus:border-brand-500">
+                                <option value="fr">Français</option>
+                                <option value="en">Anglais</option>
+                                <option value="es">Espagnol</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Font Size -->
+                    <div class="setting-card">
+                        <div class="flex justify-between items-center mb-2">
+                            <div>
+                                <h3 class="font-bold">Taille de la police</h3>
+                                <p class="text-white/50 text-sm">Ajustez la taille du texte</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-white/50">Petite</span>
+                                <input type="range" id="font-size-slider" min="12" max="20" value="16" class="w-32 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer">
+                                <span class="text-xs text-white/50">Grande</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- ========================================== -->
+            <!-- SECTION: SUPPRESSION DE COMPTE -->
+            <!-- ========================================== -->
+            <section class="mb-10 animate-fade-in-up" style="animation-delay: 0.5s">
+                <h2 class="text-2xl font-display font-bold mb-6 flex items-center gap-3">
+                    <i class="fa-solid fa-trash text-red-500"></i>
+                    Suppression de compte
+                </h2>
+                
+                <div class="setting-card border-red-500/20 bg-red-500/5">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="font-bold text-red-400">Supprimer mon compte</h3>
+                            <p class="text-red-300/70 text-sm">Cette action est irréversible. Toutes vos données seront supprimées.</p>
+                        </div>
+                        <button id="delete-account-btn" class="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-bold rounded-lg transition border border-red-500/30">
+                            <i class="fa-solid fa-trash mr-2"></i>Supprimer
+                        </button>
+                    </div>
+                </div>
+            </section>
+            
+        </div>
+    </main>
+    
+    <!-- ========================================== -->
+    <!-- FIREBASE INITIALIZATION -->
+    <!-- ========================================== -->
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, set, get, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+            authDomain: "wikimind-3-comments.firebaseapp.com",
+            projectId: "wikimind-3-comments",
+            appId: "1:137479541640:web:4ed2510a9908055052e03d",
+            databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app"
+        };
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        
+        // Global variable for current user
+        let currentUser = null;
+        
+        // ==========================================
+        // MEMORY POPUP FUNCTIONS
+        // ==========================================
+        function openMemoryPopup() {
+            document.getElementById('memory-popup-overlay').classList.add('active');
+            document.getElementById('memory-popup').classList.add('active');
+        }
+        
+        function closeMemoryPopup() {
+            document.getElementById('memory-popup-overlay').classList.remove('active');
+            document.getElementById('memory-popup').classList.remove('active');
+        }
+        
+        function enableMemory() {
+            document.getElementById('memory-toggle').checked = true;
+            closeMemoryPopup();
+            showToast("Mémoire activée avec succès !");
+            saveUserSettings();
+        }
+        
+        // ==========================================
+        // NOTIFICATION TOAST FUNCTIONS
+        // ==========================================
+        function showToast(message) {
+            const toast = document.getElementById('notification-toast');
+            const toastMessage = document.getElementById('toast-message');
+            toastMessage.textContent = message;
+            toast.style.display = 'flex';
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                closeToast();
+            }, 3000);
+        }
+        
+        function closeToast() {
+            document.getElementById('notification-toast').style.display = 'none';
+        }
+        
+        // ==========================================
+        // NOTIFICATION PERMISSION
+        // ==========================================
+        function requestNotificationPermission() {
+            if (!('Notification' in window)) {
+                showToast("Les notifications ne sont pas supportées par votre navigateur.");
+                return;
+            }
+            
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    showToast("Notifications activées !");
+                    document.getElementById('push-notifications-toggle').checked = true;
+                    saveUserSettings();
+                } else {
+                    showToast("Les notifications ont été refusées.");
+                    document.getElementById('push-notifications-toggle').checked = false;
+                }
+            });
+        }
+        
+        // ==========================================
+        // AUTH STATE LISTENER
+        // ==========================================
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            updateAuthUI(user);
+            if (user) {
+                loadUserSettings(user.uid);
+            }
+        });
+        
+        // ==========================================
+        // UPDATE AUTH UI
+        // ==========================================
+        function updateAuthUI(user) {
+            const loginBtn = document.getElementById('login-btn');
+            const userLogged = document.getElementById('user-logged');
+            
+            if (user) {
+                if (loginBtn) loginBtn.classList.add('hidden');
+                if (userLogged) {
+                    userLogged.classList.remove('hidden');
+                    userLogged.classList.add('flex');
+                }
+                
+                // Update user info
+                const userName = user.displayName || user.email.split('@')[0] || 'Utilisateur';
+                const userEmail = user.email || 'email@example.com';
+                const userAvatar = user.photoURL || userName.charAt(0).toUpperCase();
+                
+                document.getElementById('user-name-display').textContent = userName;
+                document.getElementById('user-email-display').textContent = userEmail;
+                document.getElementById('user-avatar').textContent = userAvatar;
+                
+                // Update settings page
+                document.getElementById('settings-user-name').textContent = userName;
+                document.getElementById('settings-user-email').textContent = userEmail;
+                document.getElementById('settings-user-avatar').textContent = userAvatar;
+                document.getElementById('display-name-input').value = userName;
+                document.getElementById('email-input').value = userEmail;
+            } else {
+                if (loginBtn) loginBtn.classList.remove('hidden');
+                if (userLogged) {
+                    userLogged.classList.add('hidden');
+                    userLogged.classList.remove('flex');
+                }
+            }
+        }
+        
+        // ==========================================
+        // LOAD USER SETTINGS
+        // ==========================================
+        function loadUserSettings(uid) {
+            const settingsRef = ref(db, `users/${uid}/settings`);
+            
+            get(settingsRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const settings = snapshot.val();
+                    
+                    // Update UI with saved settings
+                    if (settings.aiTone) {
+                        document.getElementById('ai-tone-select').value = settings.aiTone;
+                    }
+                    if (settings.aiCreativity) {
+                        document.getElementById('ai-creativity-slider').value = settings.aiCreativity;
+                    }
+                    if (settings.memoryEnabled !== undefined) {
+                        document.getElementById('memory-toggle').checked = settings.memoryEnabled;
+                    }
+                    if (settings.autoSave !== undefined) {
+                        document.getElementById('auto-save-toggle').checked = settings.autoSave;
+                    }
+                    if (settings.pushNotifications !== undefined) {
+                        document.getElementById('push-notifications-toggle').checked = settings.pushNotifications;
+                    }
+                    if (settings.emailNotifications !== undefined) {
+                        document.getElementById('email-notifications-toggle').checked = settings.emailNotifications;
+                    }
+                    if (settings.soundNotifications !== undefined) {
+                        document.getElementById('sound-notifications-toggle').checked = settings.soundNotifications;
+                    }
+                    if (settings.theme) {
+                        document.getElementById('theme-select').value = settings.theme;
+                        applyTheme(settings.theme);
+                    }
+                    if (settings.language) {
+                        document.getElementById('language-select').value = settings.language;
+                    }
+                    if (settings.fontSize) {
+                        document.getElementById('font-size-slider').value = settings.fontSize;
+                        document.documentElement.style.fontSize = `${settings.fontSize}px`;
+                    }
+                }
+            }).catch((error) => {
+                console.error("Error loading user settings:", error);
+            });
+        }
+        
+        // ==========================================
+        // APPLY THEME
+        // ==========================================
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else if (theme === 'light') {
+                document.documentElement.classList.remove('dark');
+            } else {
+                // System theme
+                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            }
+        }
+        
+        // ==========================================
+        // SAVE USER SETTINGS
+        // ==========================================
+        function saveUserSettings() {
+            if (!currentUser) {
+                showToast("Vous devez être connecté pour sauvegarder vos paramètres.");
+                return;
+            }
+            
+            const uid = currentUser.uid;
+            const settingsRef = ref(db, `users/${uid}/settings`);
+            
+            const settings = {
+                aiTone: document.getElementById('ai-tone-select').value,
+                aiCreativity: parseInt(document.getElementById('ai-creativity-slider').value),
+                memoryEnabled: document.getElementById('memory-toggle').checked,
+                autoSave: document.getElementById('auto-save-toggle').checked,
+                pushNotifications: document.getElementById('push-notifications-toggle').checked,
+                emailNotifications: document.getElementById('email-notifications-toggle').checked,
+                soundNotifications: document.getElementById('sound-notifications-toggle').checked,
+                theme: document.getElementById('theme-select').value,
+                language: document.getElementById('language-select').value,
+                fontSize: parseInt(document.getElementById('font-size-slider').value),
+                lastUpdated: Date.now()
+            };
+            
+            set(settingsRef, settings).then(() => {
+                console.log("Settings saved successfully!");
+                showToast("Paramètres sauvegardés !");
+            }).catch((error) => {
+                console.error("Error saving settings:", error);
+                showToast("Erreur lors de la sauvegarde.");
+            });
+        }
+        
+        // ==========================================
+        // SAVE PROFILE
+        // ==========================================
+        document.getElementById('save-profile-btn').addEventListener('click', () => {
+            if (!currentUser) {
+                showToast("Vous devez être connecté pour modifier votre profil.");
+                return;
+            }
+            
+            const displayName = document.getElementById('display-name-input').value;
+            
+            // Update Firebase Auth profile
+            updateProfile(currentUser, {
+                displayName: displayName
+            }).then(() => {
+                // Update Realtime Database
+                const userRef = ref(db, `users/${currentUser.uid}/info`);
+                set(userRef, {
+                    name: displayName,
+                    email: currentUser.email,
+                    lastUpdated: Date.now()
+                }).then(() => {
+                    showToast("Profil mis à jour !");
+                    // Update UI
+                    document.getElementById('user-name-display').textContent = displayName;
+                    document.getElementById('settings-user-name').textContent = displayName;
+                }).catch((error) => {
+                    console.error("Error updating database:", error);
+                });
+            }).catch((error) => {
+                console.error("Error updating profile:", error);
+                showToast("Erreur lors de la mise à jour du profil.");
+            });
+        });
+        
+        // ==========================================
+        // LOGOUT
+        // ==========================================
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            signOut(auth).then(() => {
+                showToast("Déconnexion réussie !");
+                setTimeout(() => {
+                    window.location.href = "index.html";
+                }, 1000);
+            }).catch((error) => {
+                console.error("Error signing out:", error);
+                showToast("Erreur lors de la déconnexion.");
+            });
+        });
+        
+        // ==========================================
+        // AUTO-SAVE SETTINGS
+        // ==========================================
+        let autoSaveTimeout;
+        
+        // Listen for changes on all setting inputs
+        const settingInputs = [
+            'ai-tone-select', 'ai-creativity-slider', 'memory-toggle', 
+            'auto-save-toggle', 'push-notifications-toggle', 
+            'email-notifications-toggle', 'sound-notifications-toggle',
+            'theme-select', 'language-select', 'font-size-slider'
+        ];
+        
+        settingInputs.forEach(inputId => {
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.addEventListener('change', () => {
+                    if (document.getElementById('auto-save-toggle').checked) {
+                        clearTimeout(autoSaveTimeout);
+                        autoSaveTimeout = setTimeout(saveUserSettings, 2000);
+                    }
+                });
+            }
+        });
+        
+        // ==========================================
+        // DELETE ACCOUNT
+        // ==========================================
+        document.getElementById('delete-account-btn').addEventListener('click', () => {
+            if (!currentUser) {
+                showToast("Vous devez être connecté pour supprimer votre compte.");
+                return;
+            }
+            
+            if (confirm("Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.")) {
+                // Delete user data from Realtime Database
+                const userRef = ref(db, `users/${currentUser.uid}`);
+                remove(userRef).then(() => {
+                    // Delete user from Auth
+                    currentUser.delete().then(() => {
+                        showToast("Compte supprimé avec succès.");
+                        setTimeout(() => {
+                            window.location.href = "index.html";
+                        }, 1000);
+                    }).catch((error) => {
+                        console.error("Error deleting user:", error);
+                        showToast("Erreur lors de la suppression du compte.");
+                    });
+                }).catch((error) => {
+                    console.error("Error deleting user data:", error);
+                    showToast("Erreur lors de la suppression des données.");
+                });
+            }
+        });
+        
+        // ==========================================
+        // THEME CHANGE
+        // ==========================================
+        document.getElementById('theme-select').addEventListener('change', (e) => {
+            applyTheme(e.target.value);
+            if (document.getElementById('auto-save-toggle').checked) {
+                saveUserSettings();
+            }
+        });
+        
+        // ==========================================
+        // FONT SIZE CHANGE
+        // ==========================================
+        document.getElementById('font-size-slider').addEventListener('input', (e) => {
+            const fontSize = e.target.value;
+            document.documentElement.style.fontSize = `${fontSize}px`;
+        });
+        
+        // ==========================================
+        // MEMORY TOGGLE CHANGE
+        // ==========================================
+        document.getElementById('memory-toggle').addEventListener('change', (e) => {
+            if (e.target.checked) {
+                showToast("Mémoire activée !");
+            } else {
+                showToast("Mémoire désactivée.");
+            }
+            if (document.getElementById('auto-save-toggle').checked) {
+                saveUserSettings();
+            }
+        });
+    </script>
+</body>
+</html>
