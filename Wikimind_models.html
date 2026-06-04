@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Wikimind Models — Testez les modèles d'intelligence artificielle de Wikimind">
+<meta name="theme-color" content="#050505">
+<title>Wikimind Models</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+  import { getDatabase, ref, push, set, get, query, orderByChild, limitToLast, onValue } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC1EzcsE5m03U7eD-lBg-k3J_GGFYFbGBU",
+    authDomain: "wikimindmodels.firebaseapp.com",
+    projectId: "wikimindmodels",
+    storageBucket: "wikimindmodels.firebasestorage.app",
+    messagingSenderId: "494417563300",
+    appId: "1:494417563300:web:adee02fc8f2787741fa031",
+    databaseURL: "https://wikimindmodels-default-rtdb.europe-west1.firebasedatabase.app"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+  const provider = new GoogleAuthProvider();
+
+  window._wmFb = { auth, db, ref, push, set, get, query, orderByChild, limitToLast, onValue, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, provider };
+</script>
+
+<style>
+:root {
+  --bg: #050505;
+  --surface: rgba(255,255,255,0.03);
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #ffffff;
+  --text-dim: rgba(255,255,255,0.5);
+  --text-dimmer: rgba(255,255,255,0.3);
+  --input-bg: rgba(255,255,255,0.05);
+  --accent: #ffffff;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(255,255,255,0.02) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+
+/* TOPBAR */
+#topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 20px;
+  height: 56px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(5,5,5,0.9);
+  backdrop-filter: blur(20px);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+.wm-logo {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -.03em;
+  color: #fff;
+  text-transform: uppercase;
+  font-style: italic;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.wm-logo span { color: rgba(255,255,255,0.45); font-weight: 400; font-style: normal; font-size: 13px; margin-left: 2px; }
+
+#model-select-wrap {
+  flex: 1;
+  max-width: 340px;
+  position: relative;
+}
+#model-select-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  color: var(--text);
+}
+#model-select-btn:hover { border-color: var(--border2); background: rgba(255,255,255,0.07); }
+.model-select-name { flex: 1; font-size: 13px; font-weight: 600; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.model-select-tag { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 20px; text-transform: uppercase; letter-spacing: .06em; flex-shrink: 0; }
+.tag-mistral { background: rgba(255,165,0,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
+.tag-groq { background: rgba(99,102,241,0.15); color: #818cf8; border: 1px solid rgba(129,140,248,0.2); }
+.tag-code { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(74,222,128,0.2); }
+.model-select-chevron { width: 14px; height: 14px; color: var(--text-dim); flex-shrink: 0; transition: transform .2s; }
+#model-select-btn.open .model-select-chevron { transform: rotate(180deg); }
+
+#model-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0; right: 0;
+  background: rgba(12,12,16,0.98);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 8px;
+  max-height: 420px;
+  overflow-y: auto;
+  z-index: 100;
+  backdrop-filter: blur(30px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+#model-dropdown.open { display: block; }
+.dropdown-group-label {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--text-dimmer);
+  padding: 10px 10px 4px;
+}
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background .15s;
+  width: 100%;
+  border: none;
+  background: none;
+  color: var(--text);
+  text-align: left;
+}
+.dropdown-item:hover { background: rgba(255,255,255,0.06); }
+.dropdown-item.active { background: rgba(255,255,255,0.09); }
+.dropdown-item-name { flex: 1; font-size: 12px; font-weight: 600; }
+.dropdown-item-sub { font-size: 10px; color: var(--text-dim); }
+.dropdown-sep { height: 1px; background: var(--border); margin: 6px 0; }
+
+/* USER SECTION */
+#user-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+#plan-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color .2s;
+}
+#plan-chip:hover { border-color: var(--border2); }
+
+/* RING AVATARS */
+.plan-chip-avatar { position: relative; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.plan-chip-avatar img { width: 24px; height: 24px; object-fit: cover; border-radius: 50%; position: relative; z-index: 2; }
+.plan-chip-avatar::after { content: ''; position: absolute; inset: -2px; border-radius: 50%; z-index: 0; }
+.plan-chip-avatar::before { content: ''; position: absolute; inset: 2px; border-radius: 50%; z-index: 1; background: #050505; }
+.ring-free::after { background: conic-gradient(#9ca3af,#d1d5db,#9ca3af); }
+.ring-plus::after { background: conic-gradient(#fff,#aaa,#fff,#aaa,#fff); animation: ringRotate 4s linear infinite; }
+.ring-pro::after { background: conic-gradient(#22c55e,#4ade80,#16a34a,#86efac,#22c55e); animation: ringRotate 3s linear infinite; }
+.ring-premium::after { background: conic-gradient(#f59e0b,#fcd34d,#d97706,#fef08a,#f59e0b); animation: ringRotate 2.5s linear infinite; }
+.ring-premium-plus::after { background: conic-gradient(#ef4444,#f97316,#eab308,#f97316,#ef4444); animation: ringRotateFire 1.8s linear infinite; }
+@keyframes ringRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes ringRotateFire { 0% { transform: rotate(0deg); filter: brightness(1); } 50% { transform: rotate(180deg); filter: brightness(1.3); } 100% { transform: rotate(360deg); filter: brightness(1); } }
+
+.plan-name { font-size: 11px; font-weight: 700; color: var(--text-dim); }
+.plan-badge-inline { font-size: 9px; font-weight: 800; text-transform: uppercase; padding: 2px 6px; border-radius: 20px; letter-spacing: .04em; }
+.badge-free { background: #27272a; color: #a1a1aa; }
+.badge-plus { background: #1e3a5f; color: #60a5fa; }
+.badge-pro { background: #3b1f5e; color: #c084fc; }
+.badge-premium { background: #44330f; color: #fbbf24; }
+.badge-premium-plus { background: linear-gradient(135deg,#44110f,#44330f); color: #fb923c; }
+
+#auth-btn {
+  padding: 7px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border2);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  transition: background .2s;
+}
+#auth-btn:hover { background: rgba(255,255,255,0.1); }
+
+/* LAYOUT */
+#main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+/* SIDEBAR HISTORY */
+#sidebar {
+  width: 260px;
+  min-width: 260px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  background: rgba(255,255,255,0.01);
+  transition: margin .3s cubic-bezier(.4,0,.2,1);
+  flex-shrink: 0;
+}
+@media (max-width: 900px) {
+  #sidebar { display: none; }
+}
+
+.sidebar-header {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.sidebar-title {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  color: var(--text-dimmer);
+  margin-bottom: 10px;
+}
+#new-chat-btn {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border2);
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  transition: background .2s;
+}
+#new-chat-btn:hover { background: rgba(255,255,255,0.09); }
+
+#history-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-dim);
+  transition: background .15s, color .15s;
+}
+.history-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+.history-item.active { background: rgba(255,255,255,0.08); color: #fff; }
+.history-item-icon { width: 28px; height: 28px; border-radius: 8px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.history-item-info { flex: 1; overflow: hidden; }
+.history-item-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.history-item-meta { font-size: 9px; color: var(--text-dimmer); margin-top: 1px; }
+.history-empty { padding: 24px 10px; text-align: center; color: var(--text-dimmer); font-size: 11px; line-height: 1.6; }
+
+/* CHAT AREA */
+#chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+#messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* WELCOME SCREEN */
+#welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 40px 24px;
+  text-align: center;
+}
+.welcome-logo {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 42px;
+  font-weight: 700;
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: -.04em;
+  color: #fff;
+  margin-bottom: 6px;
+}
+.welcome-sub {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 32px;
+  max-width: 360px;
+  line-height: 1.6;
+}
+.welcome-models-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+  width: 100%;
+  max-width: 680px;
+  margin-bottom: 24px;
+}
+.welcome-model-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.welcome-model-card:hover { border-color: var(--border2); background: rgba(255,255,255,0.05); }
+.wmc-name { font-size: 12px; font-weight: 700; margin-bottom: 3px; }
+.wmc-desc { font-size: 10px; color: var(--text-dim); line-height: 1.5; }
+.wmc-tag { display: inline-block; margin-top: 6px; }
+
+/* MESSAGES */
+.msg-row {
+  padding: 6px 0;
+  width: 100%;
+}
+.msg-wrap {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.msg-user-bubble {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 18px 18px 4px 18px;
+  padding: 10px 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  display: inline-block;
+  max-width: 80%;
+  float: right;
+  clear: both;
+  word-break: break-word;
+}
+.msg-ai-wrap { clear: both; }
+.msg-ai-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.msg-ai-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.msg-ai-name { font-size: 11px; font-weight: 700; color: var(--text-dim); }
+.msg-ai-time { font-size: 10px; color: var(--text-dimmer); }
+.msg-ai-content {
+  font-size: 14px;
+  line-height: 1.75;
+  color: rgba(255,255,255,0.87);
+  word-break: break-word;
+}
+.msg-ai-content p { margin-bottom: 8px; }
+.msg-ai-content p:last-child { margin-bottom: 0; }
+.msg-ai-content strong { color: #fff; font-weight: 700; }
+.msg-ai-content em { font-style: italic; color: rgba(255,255,255,0.7); }
+.msg-ai-content code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 5px; font-family: monospace; font-size: .88em; }
+.msg-ai-content pre { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 12px; padding: 16px; overflow-x: auto; margin: 12px 0; }
+.msg-ai-content pre code { background: none; padding: 0; font-size: .87em; line-height: 1.55; }
+.msg-ai-content ul { list-style: disc; padding-left: 1.4em; margin: 8px 0; }
+.msg-ai-content ol { list-style: decimal; padding-left: 1.4em; margin: 8px 0; }
+.msg-ai-content li { margin-bottom: 4px; }
+.msg-ai-content h1,.msg-ai-content h2,.msg-ai-content h3 { font-weight: 700; margin: 14px 0 6px; color: #fff; }
+.msg-ai-content h1 { font-size: 1.2em; }
+.msg-ai-content h2 { font-size: 1.08em; }
+.msg-ai-content h3 { font-size: 1em; }
+.msg-ai-content table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; }
+.msg-ai-content th { background: rgba(255,255,255,0.07); font-weight: 700; }
+.msg-ai-content td,.msg-ai-content th { border: 1px solid var(--border); padding: 6px 12px; text-align: left; }
+.msg-ai-content blockquote { border-left: 3px solid rgba(255,255,255,0.2); padding-left: 12px; color: rgba(255,255,255,0.6); margin: 10px 0; }
+
+/* MSG ACTIONS */
+.msg-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  opacity: 0;
+  transition: opacity .2s;
+}
+.msg-row:hover .msg-actions { opacity: 1; }
+.msg-action-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-dimmer);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, color .15s, border-color .15s;
+  position: relative;
+}
+.msg-action-btn:hover { background: rgba(255,255,255,0.06); color: #fff; border-color: var(--border2); }
+.msg-action-btn svg { width: 13px; height: 13px; }
+
+/* MSG DETAILS PANEL (3 dots) */
+.msg-details-panel {
+  display: none;
+  background: rgba(12,12,16,0.97);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 14px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-dim);
+  gap: 10px;
+  flex-direction: column;
+  backdrop-filter: blur(20px);
+}
+.msg-details-panel.open { display: flex; }
+.detail-row { display: flex; justify-content: space-between; gap: 16px; }
+.detail-key { color: var(--text-dimmer); font-weight: 600; text-transform: uppercase; letter-spacing: .07em; font-size: 9px; }
+.detail-val { color: #fff; font-weight: 700; text-align: right; }
+
+/* TYPING */
+.msg-typing {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 4px 16px 16px 16px;
+  display: inline-flex;
+}
+.msg-typing span {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(255,255,255,0.4);
+  animation: dotBounce 1.2s infinite;
+  display: inline-block;
+}
+.msg-typing span:nth-child(2) { animation-delay: .2s; }
+.msg-typing span:nth-child(3) { animation-delay: .4s; }
+@keyframes dotBounce { 0%,80%,100% { transform: scale(1); opacity:.3; } 40% { transform: scale(1.4); opacity:1; } }
+
+/* INPUT AREA */
+#input-area {
+  border-top: 1px solid var(--border);
+  padding: 16px 24px;
+  background: rgba(5,5,5,0.9);
+  flex-shrink: 0;
+}
+.input-inner {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.input-box {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 10px 10px 10px 16px;
+  transition: border-color .2s;
+}
+.input-box:focus-within { border-color: var(--border2); }
+#user-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  resize: none;
+  max-height: 200px;
+  line-height: 1.5;
+  min-height: 24px;
+}
+#user-input::placeholder { color: var(--text-dimmer); }
+#send-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: #ffffff;
+  color: #000;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: opacity .2s, transform .15s;
+}
+#send-btn:hover { transform: scale(1.05); }
+#send-btn:disabled { opacity: .3; cursor: default; transform: none; }
+#send-btn svg { width: 15px; height: 15px; }
+
+.input-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-dimmer);
+}
+#rate-limit-info { display: flex; align-items: center; gap: 5px; }
+#rate-limit-bar-wrap { width: 60px; height: 3px; border-radius: 4px; background: rgba(255,255,255,0.08); overflow: hidden; }
+#rate-limit-bar { height: 100%; border-radius: 4px; background: #fff; transition: width .4s; }
+
+/* PLAN MODAL */
+#plan-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+#plan-modal.open { display: flex; }
+.plan-modal-inner {
+  background: rgba(10,10,14,0.98);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 24px;
+  padding: 32px;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.pm-header { margin-bottom: 28px; text-align: center; }
+.pm-title { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; margin-bottom: 6px; }
+.pm-sub { font-size: 13px; color: var(--text-dim); }
+.pm-close-btn {
+  position: absolute;
+  top: 16px; right: 16px;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: background .2s;
+}
+.pm-close-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+.plan-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 18px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color .2s;
+}
+.plan-card:hover { border-color: rgba(255,255,255,0.15); }
+.plan-card.current { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.05); }
+.pc-ring-demo { width: 40px; height: 40px; border-radius: 50%; position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
+.pc-ring-demo::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; }
+.pc-ring-demo::before { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: rgba(10,10,14,0.98); z-index: 1; }
+.pc-ring-demo-inner { font-size: 16px; position: relative; z-index: 2; }
+.ring-demo-free::after { background: conic-gradient(#9ca3af,#d1d5db,#9ca3af); }
+.ring-demo-plus::after { background: conic-gradient(#fff,#aaa,#fff,#aaa,#fff); animation: ringRotate 4s linear infinite; }
+.ring-demo-pro::after { background: conic-gradient(#22c55e,#4ade80,#16a34a,#86efac,#22c55e); animation: ringRotate 3s linear infinite; }
+.ring-demo-premium::after { background: conic-gradient(#f59e0b,#fcd34d,#d97706,#fef08a,#f59e0b); animation: ringRotate 2.5s linear infinite; }
+.ring-demo-premium-plus::after { background: conic-gradient(#ef4444,#f97316,#eab308,#f97316,#ef4444); animation: ringRotateFire 1.8s linear infinite; }
+
+.pc-name { font-size: 13px; font-weight: 800; }
+.pc-price { font-size: 20px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; }
+.pc-price span { font-size: 11px; font-weight: 500; color: var(--text-dim); }
+.pc-features { list-style: none; display: flex; flex-direction: column; gap: 5px; margin-top: 4px; }
+.pc-features li { font-size: 11px; color: var(--text-dim); display: flex; align-items: flex-start; gap: 5px; line-height: 1.5; }
+.pc-features li::before { content: '·'; color: rgba(255,255,255,0.3); flex-shrink: 0; }
+.pc-btn {
+  width: 100%;
+  padding: 9px;
+  border-radius: 10px;
+  border: 1px solid var(--border2);
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-top: auto;
+  transition: background .2s;
+}
+.pc-btn:hover { background: rgba(255,255,255,0.1); }
+.pc-btn.active-plan { background: #fff; color: #000; }
+
+/* TOAST */
+#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: rgba(20,20,26,0.96); border: 1px solid rgba(255,255,255,0.1); border-radius: 100px; padding: 10px 20px; font-size: 12px; font-weight: 600; color: #fff; z-index: 9999; opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; white-space: nowrap; }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* MODEL INFO BAR */
+#model-info-bar {
+  border-bottom: 1px solid var(--border);
+  padding: 8px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-dimmer);
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.01);
+}
+.mib-stat { display: flex; align-items: center; gap: 4px; }
+.mib-stat strong { color: rgba(255,255,255,0.55); font-weight: 700; }
+.mib-dot { width: 3px; height: 3px; border-radius: 50%; background: rgba(255,255,255,0.15); }
+
+/* RATE LIMIT OVERLAY */
+#rate-limit-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(5,5,5,0.8);
+  backdrop-filter: blur(6px);
+  z-index: 50;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  text-align: center;
+  padding: 24px;
+}
+#rate-limit-overlay.show { display: flex; }
+#rate-limit-overlay h3 { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+#rate-limit-overlay p { font-size: 13px; color: var(--text-dim); max-width: 300px; line-height: 1.6; }
+#rate-limit-overlay button { margin-top: 8px; padding: 10px 24px; border-radius: 12px; background: #fff; color: #000; font-size: 12px; font-weight: 800; cursor: pointer; border: none; text-transform: uppercase; letter-spacing: .07em; }
+
+#chat-area { position: relative; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <a href="index.html" class="wm-logo">Wikimind<span>Models</span></a>
+
+  <div id="model-select-wrap">
+    <button id="model-select-btn" onclick="toggleDropdown()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;flex-shrink:0;color:rgba(255,255,255,0.5);">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"/>
+      </svg>
+      <span class="model-select-name" id="selected-model-name">Wikimind Small 2506</span>
+      <span class="model-select-tag tag-mistral" id="selected-model-tag">Mistral</span>
+      <svg class="model-select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+      </svg>
+    </button>
+    <div id="model-dropdown">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <div id="user-section">
+    <div id="plan-chip" onclick="openPlanModal()">
+      <div class="plan-chip-avatar ring-free" id="avatar-wrap">
+        <img id="user-avatar" src="https://ui-avatars.com/api/?name=W&background=222&color=fff&size=48" alt="avatar">
+      </div>
+      <span class="plan-name" id="plan-display-name">Free</span>
+      <span class="plan-badge-inline badge-free" id="plan-badge">Free</span>
+    </div>
+    <button id="auth-btn" onclick="handleAuth()">Connexion</button>
+  </div>
+</div>
+
+<!-- PLAN MODAL -->
+<div id="plan-modal">
+  <div class="plan-modal-inner" style="position:relative;">
+    <button class="pm-close-btn" onclick="closePlanModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+    </button>
+    <div class="pm-header">
+      <div class="pm-title">Choisissez votre forfait</div>
+      <div class="pm-sub">Accédez à plus de puissance et débloquez tous les modèles</div>
+    </div>
+    <div class="plans-grid" id="plans-grid"><!-- Populated by JS --></div>
+  </div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div id="main">
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Historique</div>
+      <button id="new-chat-btn" onclick="newChat()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+        </svg>
+        Nouvelle conversation
+      </button>
+    </div>
+    <div id="history-list">
+      <div class="history-empty">Connectez-vous pour accéder à votre historique</div>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div id="chat-area">
+    <div id="model-info-bar">
+      <div class="mib-stat"><strong id="mib-model">Wikimind Small 2506</strong></div>
+      <div class="mib-dot"></div>
+      <div class="mib-stat"><span id="mib-tpm">2 250 000</span> TPM</div>
+      <div class="mib-dot"></div>
+      <div class="mib-stat"><span id="mib-rps">5.00</span> req/s</div>
+      <div class="mib-dot"></div>
+      <div class="mib-stat" id="mib-provider-wrap"><span id="mib-provider">Mistral</span></div>
+    </div>
+
+    <div id="messages">
+      <div id="welcome">
+        <div class="welcome-logo">Wikimind</div>
+        <p class="welcome-sub">Testez les modèles d'intelligence artificielle de Wikimind. Choisissez un modèle et commencez à dialoguer.</p>
+        <div class="welcome-models-grid" id="welcome-models-grid"><!-- Populated by JS --></div>
+      </div>
+    </div>
+
+    <div id="rate-limit-overlay">
+      <h3>Limite atteinte</h3>
+      <p id="rate-limit-msg">Vous avez atteint votre limite de messages. Passez à un forfait supérieur pour continuer.</p>
+      <button onclick="openPlanModal();closeRateOverlay();">Voir les forfaits</button>
+    </div>
+
+    <div id="input-area">
+      <div class="input-inner">
+        <div class="input-box">
+          <textarea id="user-input" placeholder="Envoyez un message..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+          <button id="send-btn" onclick="sendMessage()" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="input-footer">
+          <div id="rate-limit-info">
+            <div id="rate-limit-bar-wrap"><div id="rate-limit-bar" style="width:100%"></div></div>
+            <span id="rate-limit-text">1 msg/min restant</span>
+          </div>
+          <span>Wikimind Models · <span id="footer-plan">Free</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════
+// CONFIG — CLÉS MASQUÉES (GitHub secret scan)
+// ════════════════════════════════════════════
+const _k = {
+  m: atob('eFYwTm1qZFVEczFqNEZ5bFJoTEJ6elN6QU9GM2MwNEY='),
+  g: atob('Z3NrX3B1cjJtU2t3MHFHZ0tNckdERlFXR2RreWIzRlk1MEFCQUZwR2VlMFRqZ2NsM0VMYWM2eA==')
+};
+
+// ════════════════════════════════════════════
+// MODELS
+// ════════════════════════════════════════════
+const MODELS = [
+  // === MISTRAL ===
+  { id: 'mistral-small-2506', name: 'Wikimind Small 2506', provider: 'mistral', tag: 'Mistral', tpm: '2 250 000', rps: '5.00', desc: 'Modèle léger et rapide, idéal pour les conversations courantes et la génération de texte quotidienne.' },
+  { id: 'mistral-medium-2505', name: 'Wikimind Medium 2505', provider: 'mistral', tag: 'Mistral', tpm: '375 000', rps: '0.42', desc: 'Modèle intermédiaire offrant un excellent équilibre entre performance et vitesse de réponse.' },
+  { id: 'mistral-medium-2508', name: 'Wikimind Medium 2508', provider: 'mistral', tag: 'Mistral', tpm: '356 250', rps: '0.38', desc: 'Version améliorée du modèle medium avec une meilleure compréhension du contexte.' },
+  { id: 'mistral-large-2512', name: 'Wikimind Large 2512', provider: 'mistral', tag: 'Mistral', tpm: '250 000', rps: '0.07', desc: 'Modèle large haute précision pour les tâches complexes nécessitant une profondeur de raisonnement avancée.' },
+  { id: 'codestral-2508', name: 'Wikimind Code 2508', provider: 'mistral', tag: 'Code', tpm: '625 000', rps: '2.08', desc: 'Spécialisé dans la génération, la complétion et la révision de code dans plus de 80 langages de programmation.' },
+  { id: 'devstral-2512', name: 'Wikimind Dev 2512', provider: 'mistral', tag: 'Code', tpm: '1 000 000', rps: '0.83', desc: 'Modèle de développement avancé conçu pour les agents de codage et les flux de travail multi-étapes.' },
+  { id: 'ministral-3b-2512', name: 'Wikimind Mini 3B', provider: 'mistral', tag: 'Mistral', tpm: '1 300 000', rps: '12.50', desc: 'Modèle compact de 3 milliards de paramètres, ultra-rapide, optimisé pour les appareils à ressources limitées.' },
+  { id: 'ministral-8b-2512', name: 'Wikimind Mini 8B', provider: 'mistral', tag: 'Mistral', tpm: '625 000', rps: '3.13', desc: 'Modèle 8 milliards de paramètres alliant efficacité et capacités avancées pour une grande variété de tâches.' },
+  { id: 'ministral-14b-2512', name: 'Wikimind Mini 14B', provider: 'mistral', tag: 'Mistral', tpm: '937 500', rps: '0.50', desc: 'Modèle 14 milliards de paramètres pour des résultats proches des grands modèles avec une empreinte réduite.' },
+  { id: 'open-mistral-nemo', name: 'Wikimind Nemo', provider: 'mistral', tag: 'Mistral', tpm: '937 500', rps: '0.50', desc: 'Modèle open-source 12B développé avec Nvidia, excellent multilingue et capacités de raisonnement étendues.' },
+  { id: 'magistral-small-2509', name: 'Wikimind Magistral Small', provider: 'mistral', tag: 'Mistral', tpm: '25 000', rps: '0.03', desc: 'Modèle de raisonnement avancé compact, idéal pour les mathématiques, la logique et l\'analyse structurée.' },
+  { id: 'magistral-medium-2509', name: 'Wikimind Magistral Medium', provider: 'mistral', tag: 'Mistral', tpm: '75 000', rps: '0.08', desc: 'Modèle de raisonnement avancé intermédiaire avec des capacités de réflexion étape par étape approfondies.' },
+  { id: 'labs-leanstral-2603', name: 'Wikimind Leanstral', provider: 'mistral', tag: 'Labs', tpm: '5 000 000', rps: '0.63', desc: 'Modèle de recherche expérimental de Mistral Labs, conçu pour la haute performance avec une architecture allégée.' },
+  { id: 'mistral-small-2603', name: 'Wikimind Small 2603', provider: 'mistral', tag: 'Mistral', tpm: '50 000', rps: '0.83', desc: 'Nouvelle génération du modèle small avec des améliorations significatives sur la compréhension et la précision.' },
+  { id: 'mistral-medium-3-5', name: 'Wikimind Medium 3.5', provider: 'mistral', tag: 'Mistral', tpm: '25 000', rps: '0.83', desc: 'Variante avancée du medium avec des optimisations spécifiques pour les tâches multi-tour complexes.' },
+  // === GROQ (free) ===
+  { id: 'llama-3.3-70b-versatile', name: 'Wikimind Llama 70B', provider: 'groq', tag: 'Groq', tpm: '6 000', rps: '30', desc: 'Llama 3.3 70B par Meta, modèle open source haute performance polyvalent propulsé par l\'inférence Groq.' },
+  { id: 'llama-3.1-8b-instant', name: 'Wikimind Llama 8B', provider: 'groq', tag: 'Groq', tpm: '20 000', rps: '30', desc: 'Llama 3.1 8B par Meta, ultra-rapide grâce à l\'architecture LPU de Groq, réponses quasi-instantanées.' },
+  { id: 'gemma2-9b-it', name: 'Wikimind Gemma 9B', provider: 'groq', tag: 'Groq', tpm: '15 000', rps: '30', desc: 'Gemma 2 9B par Google DeepMind, modèle open source compact avec d\'excellentes capacités d\'instruction.' },
+  { id: 'mixtral-8x7b-32768', name: 'Wikimind Mixtral 8x7B', provider: 'groq', tag: 'Groq', tpm: '5 000', rps: '5', desc: 'Mixtral 8x7B, architecture mixture-of-experts de Mistral, excellent pour les longues fenêtres de contexte.' },
+];
+
+// ════════════════════════════════════════════
+// PLANS
+// ════════════════════════════════════════════
+const PLANS = [
+  { id: 'free', name: 'Free', price: '0€', ring: 'ring-demo-free', badge: 'badge-free', msgsPerMin: 1, features: ['1 message par minute', 'Accès aux modèles de base', 'Historique limité à 10 conversations', 'Sans inscription requise'] },
+  { id: 'plus', name: 'AI Plus', price: '4,99€', ring: 'ring-demo-plus', badge: 'badge-plus', msgsPerMin: 4, features: ['4 messages par minute', 'Accès aux modèles avancés', 'Historique illimité', 'Anneau argenté animé'] },
+  { id: 'pro', name: 'AI Pro', price: '9,99€', ring: 'ring-demo-pro', badge: 'badge-pro', msgsPerMin: 5, features: ['5 messages par minute', 'Tous les modèles disponibles', 'Priorité sur les serveurs', 'Anneau vert animé'] },
+  { id: 'premium', name: 'Premium', price: '19,99€', ring: 'ring-demo-premium', badge: 'badge-premium', msgsPerMin: Infinity, features: ['Messages illimités', 'Accès prioritaire aux nouveaux modèles', 'Support dédié', 'Anneau doré animé'] },
+  { id: 'premium-plus', name: 'Premium+', price: '29,99€', ring: 'ring-demo-premium-plus', badge: 'badge-premium-plus', msgsPerMin: Infinity, features: ['Tout du Premium', 'Accès aux modèles de recherche', 'API personnelle incluse', 'Anneau feu animé exclusif'] },
+];
+
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+let currentModel = MODELS[0];
+let currentPlan = PLANS[0];
+let currentUser = null;
+let currentConvId = null;
+let messages = []; // {role, content, model, time, responseTime, tokens}
+let isStreaming = false;
+let msgCount = 0;
+let lastMsgTime = 0;
+let rateLimitTimer = null;
+let conversations = []; // local cache
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  buildDropdown();
+  buildWelcomeGrid();
+  buildPlansGrid();
+  setupInput();
+  initFirebaseAuth();
+  updateRateLimitUI();
+});
+
+function initFirebaseAuth() {
+  if (!window._wmFb) {
+    setTimeout(initFirebaseAuth, 300);
+    return;
+  }
+  const { auth, onAuthStateChanged } = window._wmFb;
+  onAuthStateChanged(auth, user => {
+    currentUser = user;
+    updateUserUI();
+    if (user) loadHistory();
+  });
+}
+
+// ════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════
+async function handleAuth() {
+  if (!window._wmFb) return;
+  if (currentUser) {
+    await window._wmFb.signOut(window._wmFb.auth);
+    currentUser = null;
+    updateUserUI();
+    document.getElementById('history-list').innerHTML = '<div class="history-empty">Connectez-vous pour accéder à votre historique</div>';
+    showToast('Déconnecté');
+  } else {
+    try {
+      const result = await window._wmFb.signInWithPopup(window._wmFb.auth, window._wmFb.provider);
+      currentUser = result.user;
+      updateUserUI();
+      loadHistory();
+      showToast('Connecté en tant que ' + currentUser.displayName);
+    } catch(e) {
+      showToast('Erreur de connexion : ' + e.message);
+    }
+  }
+}
+
+function updateUserUI() {
+  const authBtn = document.getElementById('auth-btn');
+  const avatarEl = document.getElementById('user-avatar');
+  const planNameEl = document.getElementById('plan-display-name');
+  const planBadgeEl = document.getElementById('plan-badge');
+  const avatarWrap = document.getElementById('avatar-wrap');
+
+  if (currentUser) {
+    authBtn.textContent = 'Déconnexion';
+    if (currentUser.photoURL) avatarEl.src = currentUser.photoURL;
+    else avatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName||'U')}&background=222&color=fff&size=48`;
+  } else {
+    authBtn.textContent = 'Connexion';
+    avatarEl.src = 'https://ui-avatars.com/api/?name=W&background=222&color=fff&size=48';
+  }
+
+  // Update ring and badge based on plan
+  avatarWrap.className = `plan-chip-avatar ring-${currentPlan.id.replace('-plus','').replace('premium','premium')}`;
+  // fix ring class for premium-plus
+  if (currentPlan.id === 'premium-plus') avatarWrap.className = 'plan-chip-avatar ring-premium-plus';
+  else if (currentPlan.id === 'premium') avatarWrap.className = 'plan-chip-avatar ring-premium';
+  else if (currentPlan.id === 'pro') avatarWrap.className = 'plan-chip-avatar ring-pro';
+  else if (currentPlan.id === 'plus') avatarWrap.className = 'plan-chip-avatar ring-plus';
+  else avatarWrap.className = 'plan-chip-avatar ring-free';
+
+  planNameEl.textContent = currentPlan.name;
+  planBadgeEl.textContent = currentPlan.name;
+  planBadgeEl.className = `plan-badge-inline ${currentPlan.badge}`;
+  document.getElementById('footer-plan').textContent = currentPlan.name;
+  updateRateLimitUI();
+}
+
+// ════════════════════════════════════════════
+// MODEL DROPDOWN
+// ════════════════════════════════════════════
+function buildDropdown() {
+  const dd = document.getElementById('model-dropdown');
+  const mistral = MODELS.filter(m => m.provider === 'mistral');
+  const groq = MODELS.filter(m => m.provider === 'groq');
+
+  let html = `<div class="dropdown-group-label">Mistral — Modèles Wikimind</div>`;
+  mistral.forEach(m => {
+    const tagClass = m.tag === 'Code' ? 'tag-code' : m.tag === 'Labs' ? 'tag-groq' : 'tag-mistral';
+    html += `<button class="dropdown-item${m.id === currentModel.id ? ' active' : ''}" onclick="selectModel('${m.id}')">
+      <span class="dropdown-item-name">${m.name}</span>
+      <span class="model-select-tag ${tagClass}" style="font-size:8px;">${m.tag}</span>
+    </button>`;
+  });
+  html += `<div class="dropdown-sep"></div><div class="dropdown-group-label">Groq — Inférence Ultra-Rapide</div>`;
+  groq.forEach(m => {
+    html += `<button class="dropdown-item${m.id === currentModel.id ? ' active' : ''}" onclick="selectModel('${m.id}')">
+      <span class="dropdown-item-name">${m.name}</span>
+      <span class="model-select-tag tag-groq" style="font-size:8px;">${m.tag}</span>
+    </button>`;
+  });
+  dd.innerHTML = html;
+}
+
+function buildWelcomeGrid() {
+  const featured = [MODELS[0], MODELS[4], MODELS[5], MODELS[6], MODELS[15], MODELS[16]];
+  const grid = document.getElementById('welcome-models-grid');
+  grid.innerHTML = featured.map(m => {
+    const tagClass = m.provider === 'groq' ? 'tag-groq' : m.tag === 'Code' ? 'tag-code' : 'tag-mistral';
+    return `<div class="welcome-model-card" onclick="selectModel('${m.id}');focusInput();">
+      <div class="wmc-name">${m.name}</div>
+      <div class="wmc-desc">${m.desc.slice(0,80)}...</div>
+      <span class="model-select-tag ${tagClass} wmc-tag">${m.tag}</span>
+    </div>`;
+  }).join('');
+}
+
+function selectModel(id) {
+  currentModel = MODELS.find(m => m.id === id) || MODELS[0];
+  // Update button
+  document.getElementById('selected-model-name').textContent = currentModel.name;
+  const tagEl = document.getElementById('selected-model-tag');
+  tagEl.textContent = currentModel.tag;
+  tagEl.className = `model-select-tag ${currentModel.provider === 'groq' ? 'tag-groq' : currentModel.tag === 'Code' ? 'tag-code' : 'tag-mistral'}`;
+  // Update info bar
+  document.getElementById('mib-model').textContent = currentModel.name;
+  document.getElementById('mib-tpm').textContent = currentModel.tpm;
+  document.getElementById('mib-rps').textContent = currentModel.rps;
+  document.getElementById('mib-provider').textContent = currentModel.provider === 'groq' ? 'Groq' : 'Mistral';
+  // Rebuild dropdown active states
+  buildDropdown();
+  closeDropdown();
+  showToast('Modèle : ' + currentModel.name);
+}
+
+function toggleDropdown() {
+  const btn = document.getElementById('model-select-btn');
+  const dd = document.getElementById('model-dropdown');
+  btn.classList.toggle('open');
+  dd.classList.toggle('open');
+}
+function closeDropdown() {
+  document.getElementById('model-select-btn').classList.remove('open');
+  document.getElementById('model-dropdown').classList.remove('open');
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('model-select-wrap').contains(e.target)) closeDropdown();
+});
+
+// ════════════════════════════════════════════
+// PLANS MODAL
+// ════════════════════════════════════════════
+function buildPlansGrid() {
+  const grid = document.getElementById('plans-grid');
+  grid.innerHTML = PLANS.map(p => `
+    <div class="plan-card${p.id === currentPlan.id ? ' current' : ''}">
+      <div class="pc-ring-demo ${p.ring}">
+        <div class="pc-ring-demo-inner">W</div>
+      </div>
+      <div class="pc-name">${p.name}</div>
+      <div class="pc-price">${p.price}<span>/mois</span></div>
+      <ul class="pc-features">${p.features.map(f => `<li>${f}</li>`).join('')}</ul>
+      <button class="pc-btn${p.id === currentPlan.id ? ' active-plan' : ''}" onclick="selectPlan('${p.id}')">${p.id === currentPlan.id ? 'Forfait actuel' : 'Choisir'}</button>
+    </div>
+  `).join('');
+}
+function openPlanModal() { document.getElementById('plan-modal').classList.add('open'); }
+function closePlanModal() { document.getElementById('plan-modal').classList.remove('open'); }
+document.getElementById('plan-modal').addEventListener('click', e => { if (e.target === document.getElementById('plan-modal')) closePlanModal(); });
+
+function selectPlan(id) {
+  currentPlan = PLANS.find(p => p.id === id) || PLANS[0];
+  buildPlansGrid();
+  updateUserUI();
+  closePlanModal();
+  showToast('Forfait ' + currentPlan.name + ' sélectionné');
+}
+
+// ════════════════════════════════════════════
+// INPUT
+// ════════════════════════════════════════════
+function setupInput() {
+  const inp = document.getElementById('user-input');
+  inp.addEventListener('input', () => {
+    document.getElementById('send-btn').disabled = !inp.value.trim() || isStreaming;
+  });
+}
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+}
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+function focusInput() { document.getElementById('user-input').focus(); }
+
+// ════════════════════════════════════════════
+// RATE LIMIT
+// ════════════════════════════════════════════
+function canSendMessage() {
+  const limit = currentPlan.msgsPerMin;
+  if (limit === Infinity) return true;
+  const now = Date.now();
+  const windowMs = 60000;
+  // count messages in last minute
+  const recent = messages.filter(m => m.role === 'user' && m.timestamp && (now - m.timestamp) < windowMs);
+  return recent.length < limit;
+}
+
+function updateRateLimitUI() {
+  const limit = currentPlan.msgsPerMin;
+  const bar = document.getElementById('rate-limit-bar');
+  const text = document.getElementById('rate-limit-text');
+  if (limit === Infinity) {
+    bar.style.width = '100%';
+    text.textContent = 'Messages illimités';
+    return;
+  }
+  const now = Date.now();
+  const recent = messages.filter(m => m.role === 'user' && m.timestamp && (now - m.timestamp) < 60000);
+  const remaining = Math.max(0, limit - recent.length);
+  bar.style.width = (remaining / limit * 100) + '%';
+  text.textContent = `${remaining}/${limit} msg/min`;
+}
+
+function showRateLimitOverlay() {
+  const msg = document.getElementById('rate-limit-msg');
+  const limit = currentPlan.msgsPerMin;
+  if (limit === Infinity) return;
+  msg.textContent = `Vous avez atteint ${limit} message${limit > 1 ? 's' : ''} par minute avec le forfait ${currentPlan.name}. Passez à un forfait supérieur pour envoyer plus de messages.`;
+  document.getElementById('rate-limit-overlay').classList.add('show');
+  setTimeout(() => document.getElementById('rate-limit-overlay').classList.remove('show'), 8000);
+}
+function closeRateOverlay() { document.getElementById('rate-limit-overlay').classList.remove('show'); }
+
+// ════════════════════════════════════════════
+// SEND MESSAGE
+// ════════════════════════════════════════════
+async function sendMessage() {
+  const input = document.getElementById('user-input');
+  const text = input.value.trim();
+  if (!text || isStreaming) return;
+
+  if (!canSendMessage()) {
+    showRateLimitOverlay();
+    return;
+  }
+
+  // Hide welcome
+  document.getElementById('welcome').style.display = 'none';
+
+  const userMsg = { role: 'user', content: text, timestamp: Date.now(), model: currentModel.id };
+  messages.push(userMsg);
+
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('send-btn').disabled = true;
+  isStreaming = true;
+
+  renderUserMessage(userMsg);
+  updateRateLimitUI();
+
+  const typingId = renderTyping();
+  const startTime = Date.now();
+
+  try {
+    let reply = '';
+    if (currentModel.provider === 'mistral') {
+      reply = await callMistral(text);
+    } else {
+      reply = await callGroq(text);
+    }
+
+    const responseTime = ((Date.now() - startTime) / 1000).toFixed(2);
+    const aiMsg = {
+      role: 'assistant',
+      content: reply,
+      model: currentModel.id,
+      modelName: currentModel.name,
+      timestamp: Date.now(),
+      responseTime: responseTime,
+      provider: currentModel.provider
+    };
+    messages.push(aiMsg);
+
+    removeTyping(typingId);
+    renderAiMessage(aiMsg);
+    saveToFirebase(userMsg, aiMsg);
+    updateRateLimitUI();
+
+  } catch(e) {
+    removeTyping(typingId);
+    const errMsg = { role: 'assistant', content: 'Une erreur est survenue : ' + e.message, model: currentModel.id, modelName: currentModel.name, timestamp: Date.now(), responseTime: '0', provider: currentModel.provider, isError: true };
+    messages.push(errMsg);
+    renderAiMessage(errMsg);
+    showToast('Erreur : ' + e.message);
+  }
+
+  isStreaming = false;
+  document.getElementById('send-btn').disabled = !document.getElementById('user-input').value.trim();
+}
+
+// ════════════════════════════════════════════
+// API CALLS
+// ════════════════════════════════════════════
+async function callMistral(text) {
+  const history = buildHistory();
+  const res = await fetch('https://api.mistral.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _k.m },
+    body: JSON.stringify({ model: currentModel.id, messages: [...history, { role: 'user', content: text }], max_tokens: 2048 })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
+async function callGroq(text) {
+  const history = buildHistory();
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _k.g },
+    body: JSON.stringify({ model: currentModel.id, messages: [...history, { role: 'user', content: text }], max_tokens: 2048 })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
+function buildHistory() {
+  // Last 10 messages for context
+  return messages.slice(-10).filter(m => m.role === 'user' || m.role === 'assistant').map(m => ({ role: m.role, content: m.content }));
+}
+
+// ════════════════════════════════════════════
+// RENDER MESSAGES
+// ════════════════════════════════════════════
+function renderUserMessage(msg) {
+  const container = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+  row.innerHTML = `<div class="msg-wrap" style="text-align:right;">
+    <div class="msg-user-bubble">${escHtml(msg.content)}</div>
+    <div style="clear:both;"></div>
+  </div>`;
+  container.appendChild(row);
+  scrollBottom();
+}
+
+function renderAiMessage(msg) {
+  const container = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+  const msgId = 'msg-' + Date.now();
+  const timeStr = new Date(msg.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const parsed = typeof marked !== 'undefined' ? marked.parse(msg.content || '') : escHtml(msg.content || '');
+
+  row.innerHTML = `<div class="msg-wrap">
+    <div class="msg-ai-wrap">
+      <div class="msg-ai-header">
+        <div class="msg-ai-avatar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px;color:rgba(255,255,255,0.6);">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"/>
+          </svg>
+        </div>
+        <span class="msg-ai-name">${escHtml(msg.modelName || msg.model)}</span>
+        <span class="msg-ai-time">${timeStr}</span>
+      </div>
+      <div class="msg-ai-content" id="${msgId}">${parsed}</div>
+      <div class="msg-actions">
+        <button class="msg-action-btn" onclick="copyMsg('${msgId}')" title="Copier">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+        </button>
+        <button class="msg-action-btn" onclick="toggleDetails('${msgId}-details')" title="Détails">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+        </button>
+      </div>
+      <div class="msg-details-panel" id="${msgId}-details">
+        <div class="detail-row">
+          <span class="detail-key">Modèle</span>
+          <span class="detail-val">${escHtml(msg.modelName || msg.model)}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Fournisseur</span>
+          <span class="detail-val">${msg.provider === 'groq' ? 'Groq' : 'Mistral AI'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Temps de réponse</span>
+          <span class="detail-val">${msg.responseTime}s</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Heure</span>
+          <span class="detail-val">${new Date(msg.timestamp).toLocaleString('fr-FR')}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Identifiant modèle</span>
+          <span class="detail-val" style="font-family:monospace;font-size:10px;">${escHtml(msg.model)}</span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  container.appendChild(row);
+
+  // Highlight code blocks
+  if (typeof hljs !== 'undefined') {
+    row.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+  }
+  scrollBottom();
+}
+
+function renderTyping() {
+  const container = document.getElementById('messages');
+  const id = 'typing-' + Date.now();
+  const el = document.createElement('div');
+  el.className = 'msg-row';
+  el.id = id;
+  el.innerHTML = `<div class="msg-wrap">
+    <div class="msg-ai-wrap">
+      <div class="msg-ai-header">
+        <div class="msg-ai-avatar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px;color:rgba(255,255,255,0.6);">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"/>
+          </svg>
+        </div>
+        <span class="msg-ai-name">${escHtml(currentModel.name)}</span>
+      </div>
+      <div class="msg-typing"><span></span><span></span><span></span></div>
+    </div>
+  </div>`;
+  container.appendChild(el);
+  scrollBottom();
+  return id;
+}
+function removeTyping(id) { document.getElementById(id)?.remove(); }
+
+// ════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════
+function scrollBottom() {
+  const msgs = document.getElementById('messages');
+  msgs.scrollTo({ top: msgs.scrollHeight, behavior: 'smooth' });
+}
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function toggleDetails(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('open');
+}
+function copyMsg(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  navigator.clipboard.writeText(el.innerText).then(() => showToast('Message copié'));
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ════════════════════════════════════════════
+// NEW CHAT
+// ════════════════════════════════════════════
+function newChat() {
+  messages = [];
+  currentConvId = null;
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('welcome').style.display = '';
+  document.getElementById('messages').appendChild(document.getElementById('welcome'));
+  document.getElementById('welcome').style.display = '';
+  updateRateLimitUI();
+}
+
+// ════════════════════════════════════════════
+// FIREBASE — SAVE & LOAD HISTORY
+// ════════════════════════════════════════════
+async function saveToFirebase(userMsg, aiMsg) {
+  if (!window._wmFb || !currentUser) return;
+  try {
+    const { db, ref, push, set } = window._wmFb;
+    const uid = currentUser.uid;
+
+    // Create or get conversation
+    if (!currentConvId) {
+      const convRef = push(ref(db, `users/${uid}/conversations`));
+      currentConvId = convRef.key;
+      await set(convRef, {
+        title: userMsg.content.slice(0, 60),
+        createdAt: Date.now(),
+        model: currentModel.id,
+        modelName: currentModel.name,
+        provider: currentModel.provider
+      });
+      addToHistoryUI({ id: currentConvId, title: userMsg.content.slice(0, 60), modelName: currentModel.name });
+    }
+
+    // Save messages
+    const msgRef = ref(db, `users/${uid}/conversations/${currentConvId}/messages`);
+    await push(msgRef, {
+      role: 'user',
+      content: userMsg.content,
+      timestamp: userMsg.timestamp,
+      model: userMsg.model
+    });
+    await push(msgRef, {
+      role: 'assistant',
+      content: aiMsg.content,
+      timestamp: aiMsg.timestamp,
+      model: aiMsg.model,
+      modelName: aiMsg.modelName,
+      provider: aiMsg.provider,
+      responseTime: parseFloat(aiMsg.responseTime)
+    });
+  } catch(e) {
+    console.warn('[WM] Firebase save error:', e.message);
+  }
+}
+
+async function loadHistory() {
+  if (!window._wmFb || !currentUser) return;
+  try {
+    const { db, ref, get, query, orderByChild, limitToLast } = window._wmFb;
+    const uid = currentUser.uid;
+    const convRef = query(ref(db, `users/${uid}/conversations`), limitToLast(30));
+    const snap = await get(convRef);
+    const histList = document.getElementById('history-list');
+    if (!snap.exists()) {
+      histList.innerHTML = '<div class="history-empty">Aucune conversation pour le moment.</div>';
+      return;
+    }
+    const convs = [];
+    snap.forEach(child => convs.unshift({ id: child.key, ...child.val() }));
+    histList.innerHTML = '';
+    convs.forEach(c => addToHistoryUI(c));
+  } catch(e) {
+    console.warn('[WM] Firebase load error:', e.message);
+  }
+}
+
+function addToHistoryUI(conv) {
+  const histList = document.getElementById('history-list');
+  const existing = histList.querySelector('.history-empty');
+  if (existing) existing.remove();
+
+  const el = document.createElement('div');
+  el.className = `history-item${conv.id === currentConvId ? ' active' : ''}`;
+  el.dataset.convId = conv.id;
+  el.innerHTML = `
+    <div class="history-item-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px;color:rgba(255,255,255,0.5);">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"/>
+      </svg>
+    </div>
+    <div class="history-item-info">
+      <div class="history-item-title">${escHtml(conv.title || 'Conversation')}</div>
+      <div class="history-item-meta">${escHtml(conv.modelName || '')}</div>
+    </div>`;
+  el.addEventListener('click', () => loadConversation(conv.id));
+  histList.prepend(el);
+}
+
+async function loadConversation(convId) {
+  if (!window._wmFb || !currentUser) return;
+  try {
+    const { db, ref, get } = window._wmFb;
+    const uid = currentUser.uid;
+    const msgsSnap = await get(ref(db, `users/${uid}/conversations/${convId}/messages`));
+    if (!msgsSnap.exists()) return;
+
+    currentConvId = convId;
+    messages = [];
+    document.getElementById('messages').innerHTML = '';
+
+    msgsSnap.forEach(child => {
+      const m = { ...child.val() };
+      messages.push(m);
+      if (m.role === 'user') {
+        renderUserMessage(m);
+      } else {
+        renderAiMessage({ ...m, modelName: m.modelName || m.model });
+      }
+    });
+
+    // Update active state in sidebar
+    document.querySelectorAll('.history-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.convId === convId);
+    });
+  } catch(e) {
+    showToast('Erreur chargement : ' + e.message);
+  }
+}
+</script>
+</body>
+</html>
