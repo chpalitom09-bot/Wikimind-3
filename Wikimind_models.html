@@ -124,13 +124,26 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);heigh
 </head>
 <body class="dark-mode">
 
-<!-- FIREBASE MODULE -->
+<!-- MULTI-FIREBASE MODULE -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { getDatabase, ref, set, get, push, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
   
-  const firebaseConfig = {
+  // 1. BASE D'AUTHENTIFICATION & COMPTES (wikimind-3-comments)
+  const authConfig = {
+    apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+    authDomain: "wikimind-3-comments.firebaseapp.com",
+    databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "wikimind-3-comments",
+    storageBucket: "wikimind-3-comments.firebasestorage.app",
+    messagingSenderId: "137479541640",
+    appId: "1:137479541640:web:4ed2510a9908055052e03d"
+  };
+  const appAuth = initializeApp(authConfig, "AuthApp");
+
+  // 2. BASE D'HISTORIQUE & MODÈLES (wikimindmodels)
+  const histConfig = {
     apiKey: "AIzaSyC1EzcsE5m03U7eD-lBg-k3J_GGFYFbGBU",
     authDomain: "wikimindmodels.firebaseapp.com",
     projectId: "wikimindmodels",
@@ -138,8 +151,15 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);heigh
     messagingSenderId: "494417563300",
     appId: "1:494417563300:web:adee02fc8f2787741fa031"
   };
-  const app = initializeApp(firebaseConfig);
-  window._fb = { auth: getAuth(app), db: getDatabase(app), ref, set, get, push, remove, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut };
+  const appHist = initializeApp(histConfig, "HistApp");
+
+  window._fb = { 
+    auth: getAuth(appAuth), 
+    authDb: getDatabase(appAuth), // Pour récupérer le FORFAIT
+    histDb: getDatabase(appHist), // Pour sauvegarder les chats
+    ref, set, get, push, remove, 
+    signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut 
+  };
 
   onAuthStateChanged(window._fb.auth, async user => {
     if(user){
@@ -183,7 +203,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);heigh
 <!-- MAIN CHAT -->
 <div id="main-area">
   <div id="top-bar" style="position:absolute;top:20px;right:20px;z-index:10;">
-    <button onclick="upgradePlan()" style="font-size:11px;padding:6px 12px;border-radius:12px;background:var(--select-bg);color:var(--text);border:1px solid var(--border2);cursor:pointer;font-weight:bold;">Changer de Forfait</button>
+    <button onclick="upgradePlanMock()" style="font-size:11px;padding:6px 12px;border-radius:12px;background:var(--select-bg);color:var(--text);border:1px solid var(--border2);cursor:pointer;font-weight:bold;">Test : Changer Forfait</button>
   </div>
 
   <div id="chat-container">
@@ -270,7 +290,8 @@ async function doRegister() {
   const p = document.getElementById('auth-password').value;
   try { 
     const cred = await window._fb.createUserWithEmailAndPassword(window._fb.auth, e, p); 
-    await window._fb.set(window._fb.ref(window._fb.db, `users/${cred.user.uid}/plan`), 1);
+    // Enregistrement du FORFAIT dans la base auth (wikimind-3-comments)
+    await window._fb.set(window._fb.ref(window._fb.authDb, `users/${cred.user.uid}/FORFAIT`), 1);
   } catch (err) { alert(err.message); }
 }
 
@@ -284,9 +305,9 @@ async function bootUser(user) {
   document.getElementById('u-name').textContent = user.email.split('@')[0];
   document.getElementById('u-initial').textContent = user.email.charAt(0).toUpperCase();
   
-  // Fetch Plan
-  const snap = await window._fb.get(window._fb.ref(window._fb.db, `users/${user.uid}/plan`));
-  S.plan = snap.exists() ? snap.val() : 1;
+  // Fetch Plan depuis l'authDb (wikimind-3-comments)
+  const snapPlan = await window._fb.get(window._fb.ref(window._fb.authDb, `users/${user.uid}/FORFAIT`));
+  S.plan = snapPlan.exists() ? parseInt(snapPlan.val()) : 1;
   updatePlanUI();
   
   loadHistory();
@@ -294,18 +315,19 @@ async function bootUser(user) {
 
 function updatePlanUI() {
   const plans = {1:['Free','plan-free','ring-free'], 2:['AI Plus','plan-plus','ring-plus'], 3:['AI Pro','plan-pro','ring-pro'], 4:['AI Premium','plan-premium','ring-premium'], 5:['Premium+','plan-premium-plus','ring-premium-plus']};
-  const [lbl, badge, ring] = plans[S.plan];
+  const [lbl, badge, ring] = plans[S.plan] || plans[1];
   const pEl = document.getElementById('u-plan');
   pEl.textContent = lbl;
   pEl.className = 'plan-badge ' + badge;
   document.getElementById('u-ring').className = 'plan-chip-avatar ' + ring;
 }
 
-function upgradePlan() {
+// Fonction purement pour tester sur cette page
+function upgradePlanMock() {
   S.plan = S.plan < 5 ? S.plan + 1 : 1;
-  window._fb.set(window._fb.ref(window._fb.db, `users/${S.user.uid}/plan`), S.plan);
+  window._fb.set(window._fb.ref(window._fb.authDb, `users/${S.user.uid}/FORFAIT`), S.plan);
   updatePlanUI();
-  toast("Plan changé vers " + document.getElementById('u-plan').textContent);
+  toast("Plan simulé vers " + document.getElementById('u-plan').textContent);
 }
 
 function toast(msg) {
@@ -315,9 +337,9 @@ function toast(msg) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-// --- HISTORY LOGIC ---
+// --- HISTORY LOGIC (Utilise histDb - wikimindmodels) ---
 async function loadHistory() {
-  const snap = await window._fb.get(window._fb.ref(window._fb.db, `users/${S.user.uid}/conversations`));
+  const snap = await window._fb.get(window._fb.ref(window._fb.histDb, `users/${S.user.uid}/conversations`));
   if (snap.exists()) S.history = snap.val();
   renderHistory();
 }
@@ -350,7 +372,7 @@ function openChat(id) {
 
 function deleteChat(id) {
   delete S.history[id];
-  window._fb.remove(window._fb.ref(window._fb.db, `users/${S.user.uid}/conversations/${id}`));
+  window._fb.remove(window._fb.ref(window._fb.histDb, `users/${S.user.uid}/conversations/${id}`));
   if(S.chatId === id) newChat();
   renderHistory();
 }
@@ -358,14 +380,14 @@ function deleteChat(id) {
 // --- CHAT LOGIC ---
 function checkRateLimit() {
   const limits = {1: 1, 2: 4, 3: 5, 4: Infinity, 5: Infinity};
-  const max = limits[S.plan];
+  const max = limits[S.plan] || 1;
   if (max === Infinity) return true;
   
   const now = Date.now();
   S.rateHistory = S.rateHistory.filter(t => now - t < 60000); // Garde les messages de la dernière minute
   
   if (S.rateHistory.length >= max) {
-    toast(`Limite atteinte (${max} msg/min). Attendez ou changez de forfait.`);
+    toast(`Limite atteinte (${max} msg/min). Attendez ou passez au forfait supérieur.`);
     return false;
   }
   S.rateHistory.push(now);
@@ -441,10 +463,10 @@ async function sendMsg() {
   S.msgs.push(aiMsg);
   renderMsgToDOM(aiMsg);
 
-  // Sauvegarde Firebase
+  // Sauvegarde Firebase sur HistDb (wikimindmodels)
   S.history[S.chatId].messages = S.msgs;
   S.history[S.chatId].updatedAt = Date.now();
-  window._fb.set(window._fb.ref(window._fb.db, `users/${S.user.uid}/conversations/${S.chatId}`), S.history[S.chatId]);
+  window._fb.set(window._fb.ref(window._fb.histDb, `users/${S.user.uid}/conversations/${S.chatId}`), S.history[S.chatId]);
   renderHistory();
 }
 
