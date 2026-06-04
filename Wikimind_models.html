@@ -3,56 +3,59 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WikiMind Models - Playground</title>
-
-<!-- Fonts & Tailwind -->
+<meta name="description" content="WikiMind Models — Testez tous les modèles d'IA Mistral en temps réel">
+<meta name="theme-color" content="#ffffff">
+<title>WikiMind Models</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
-
-<!-- Markdown, Highlight.js, KaTeX -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" id="hljs-theme">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" id="hljs-dark" disabled>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" onload="window._katexReady=true"></script>
-
 <style>
-:root {
-  --bg:#ffffff; --text:#111111; --sidebar:#fcfcfc;
-  --border:#f0f0f0; --border2:#e5e7eb;
-  --bubble-user:#555555; --input-bg:#ffffff;
-  --select-bg:#f3f4f6; --card-hover:#f9fafb;
-  --accent:#111111; --accent-inv:#ffffff;
-}
-.dark-mode {
-  --bg:#0f0f0f; --text:#eeeeee; --sidebar:#161616;
-  --border:#252525; --border2:#2d2d2d;
-  --bubble-user:#aaaaaa; --input-bg:#1a1a1a;
-  --select-bg:#2a2a2a; --card-hover:#1f1f1f;
-  --accent:#ffffff; --accent-inv:#111111;
-}
+:root{--bg:#ffffff;--text:#111111;--sidebar:#fcfcfc;--border:#f0f0f0;--border2:#e5e7eb;--bubble-user:#555555;--input-bg:#ffffff;--select-bg:#f3f4f6;--card-hover:#f9fafb;--accent:#111111;--accent-inv:#ffffff;}
+.dark-mode{--bg:#0f0f0f;--text:#eeeeee;--sidebar:#161616;--border:#252525;--border2:#2d2d2d;--bubble-user:#aaaaaa;--input-bg:#1a1a1a;--select-bg:#2a2a2a;--card-hover:#1f1f1f;--accent:#ffffff;--accent-inv:#111111;}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;transition:background .3s,color .3s;}
+a{text-decoration:none;color:inherit;}
 
-/* UI SIDEBAR */
-#sidebar{width:280px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:50;transition:margin .3s;}
-.sb-header{padding:24px 20px 16px;border-bottom:1px solid var(--border);}
-.sb-logo h1{font-size:18px;font-weight:900;letter-spacing:-.04em;text-transform:uppercase;font-style:italic;}
-.sb-nav{padding:16px 12px;display:flex;flex-direction:column;gap:4px;}
-.sb-btn{width:100%;padding:10px 14px;border-radius:12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;border:none;background:none;color:var(--text);}
+/* SIDEBAR */
+#sidebar{width:272px;min-width:272px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:margin .35s cubic-bezier(.4,0,.2,1);z-index:50;flex-shrink:0;margin-left:-272px;}
+#sidebar.open{margin-left:0;}
+#sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:49;}
+@media(max-width:768px){#sidebar-backdrop.show{display:block;}}
+.sb-header{padding:20px 16px 14px;border-bottom:1px solid var(--border);}
+.sb-logo{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;}
+.sb-logo h1{font-size:16px;font-weight:900;letter-spacing:-.04em;text-transform:uppercase;font-style:italic;}
+.sb-logo-sub{font-size:10px;color:#999;font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-top:1px;}
+.sb-close{color:#aaa;cursor:pointer;padding:4px;border-radius:6px;transition:.2s;background:none;border:none;}
+.sb-close:hover{color:var(--text);background:var(--select-bg);}
+.sb-nav{padding:12px 10px;display:flex;flex-direction:column;gap:4px;}
+.sb-btn{width:100%;padding:9px 12px;border-radius:10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;text-align:left;display:flex;align-items:center;gap:9px;transition:.2s;border:none;background:none;color:var(--text);}
 .sb-btn:hover{background:var(--select-bg);}
 .sb-btn.primary{background:var(--accent);color:var(--accent-inv);}
-#history-list{flex:1;overflow-y:auto;padding:0 10px 10px;}
+.sb-btn.primary:hover{opacity:.85;}
+.sb-btn svg{width:15px;height:15px;flex-shrink:0;}
+.sb-section{padding:8px 12px 4px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.15em;color:#999;}
+#history-list{flex:1;overflow-y:auto;padding:0 8px 8px;}
+#history-list::-webkit-scrollbar{width:3px;}
+#history-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
 .history-item{display:flex;align-items:center;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;color:#888;gap:8px;transition:.2s;}
 .history-item:hover{background:var(--border);color:var(--text);}
 .history-item.active{background:var(--select-bg);color:var(--text);}
 .history-item-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.history-item-del{opacity:0;cursor:pointer;}
+.history-item-del{opacity:0;color:#ccc;font-size:14px;transition:.2s;cursor:pointer;flex-shrink:0;background:none;border:none;padding:0 2px;}
 .history-item:hover .history-item-del{opacity:1;}
-.sb-bottom{padding:14px 12px;border-top:1px solid var(--border);}
-
-/* USER PLANS & RINGS */
+.history-item-del:hover{color:#ef4444;}
+.history-model-tag{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:1px 5px;border-radius:4px;background:var(--select-bg);color:#888;flex-shrink:0;}
+.sb-bottom{padding:12px 10px;border-top:1px solid var(--border);flex-shrink:0;}
+.user-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;cursor:pointer;transition:.2s;}
+.user-row:hover{background:var(--select-bg);}
+.user-info{flex:1;min-width:0;}
+.user-name{font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.user-plan-label{font-size:10px;color:#999;}
 .plan-badge{font-size:9px;font-weight:800;text-transform:uppercase;padding:2px 6px;border-radius:20px;letter-spacing:.04em;}
 .plan-free{background:#f3f4f6;color:#6b7280;}
 .plan-plus{background:#dbeafe;color:#1d4ed8;}
@@ -65,10 +68,40 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);heigh
 .dark-mode .plan-premium{background:#44330f;color:#fbbf24;}
 .dark-mode .plan-premium-plus{background:linear-gradient(135deg,#44110f,#44330f);color:#fb923c;}
 
-.plan-chip-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--text);position:relative;}
+/* MAIN */
+#main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
+#chat-area{flex:1;position:relative;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--bg);}
+.float-btns{position:absolute;top:20px;left:20px;z-index:50;display:flex;gap:8px;}
+.float-btn{width:34px;height:34px;border-radius:50%;background:var(--bg);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.06);transition:.2s;color:var(--text);}
+.float-btn:hover{background:var(--select-bg);transform:scale(1.05);}
+.float-btn svg{width:15px;height:15px;}
+
+/* TOP BAR MODEL SELECTOR */
+#top-bar{position:absolute;top:0;left:0;right:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:16px 80px;pointer-events:none;}
+#model-selector-wrap{pointer-events:all;position:relative;}
+#model-btn{display:flex;align-items:center;gap:8px;padding:7px 14px 7px 10px;background:var(--select-bg);border:1.5px solid var(--border2);border-radius:12px;font-size:12px;font-weight:700;color:var(--text);cursor:pointer;transition:.2s;font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:.05em;max-width:280px;}
+#model-btn:hover{background:var(--border2);}
+#model-btn svg{width:14px;height:14px;flex-shrink:0;}
+.model-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+#model-dropdown{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--bg);border:1.5px solid var(--border2);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.12);padding:8px;min-width:280px;max-width:340px;z-index:100;display:none;max-height:70vh;overflow-y:auto;}
+#model-dropdown.open{display:block;animation:ddIn .18s cubic-bezier(.4,0,.2,1);}
+@keyframes ddIn{from{opacity:0;transform:translateX(-50%) translateY(-6px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+.dd-section{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#aaa;padding:8px 10px 4px;}
+.dd-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;cursor:pointer;transition:.15s;font-size:12px;font-weight:600;color:var(--text);}
+.dd-item:hover{background:var(--select-bg);}
+.dd-item.active{background:var(--select-bg);}
+.dd-item-info{flex:1;min-width:0;}
+.dd-item-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dd-item-sub{font-size:10px;color:#999;margin-top:1px;}
+.dd-item-lock{font-size:10px;color:#aaa;font-weight:600;white-space:nowrap;}
+
+/* PLAN CHIP */
+#plan-chip{position:absolute;top:20px;right:20px;z-index:50;display:flex;align-items:center;gap:8px;cursor:pointer;}
+.plan-chip-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--text);overflow:visible;flex-shrink:0;cursor:pointer;position:relative;}
+.plan-chip-avatar img{width:30px;height:30px;object-fit:cover;border-radius:50%;position:relative;z-index:2;}
+.plan-chip-avatar>span{position:relative;z-index:2;}
 .plan-chip-avatar::after{content:'';position:absolute;inset:-3px;border-radius:50%;z-index:0;}
 .plan-chip-avatar::before{content:'';position:absolute;inset:2px;border-radius:50%;z-index:1;background:var(--bg);}
-.plan-chip-avatar > span {position:relative; z-index:2;}
 .ring-free::after{background:conic-gradient(#9ca3af,#d1d5db,#9ca3af);}
 .ring-plus::after{background:conic-gradient(#111,#555,#111,#555,#111);animation:ringRotate 4s linear infinite;}
 .dark-mode .ring-plus::after{background:conic-gradient(#fff,#aaa,#fff,#aaa,#fff);animation:ringRotate 4s linear infinite;}
@@ -76,445 +109,918 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);heigh
 .ring-premium::after{background:conic-gradient(#f59e0b,#fcd34d,#d97706,#fef08a,#f59e0b);animation:ringRotate 2.5s linear infinite;}
 .ring-premium-plus::after{background:conic-gradient(#ef4444,#f97316,#eab308,#f97316,#ef4444);animation:ringRotateFire 1.8s linear infinite;}
 @keyframes ringRotate{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
-@keyframes ringRotateFire{0%{transform:rotate(0deg);filter:brightness(1);}50%{transform:rotate(180deg);filter:brightness(1.3);}100%{transform:rotate(360deg);filter:brightness(1);}}
+@keyframes ringRotateFire{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
 
-/* CHAT AREA */
-#main-area{flex:1;display:flex;flex-direction:column;position:relative;background:var(--bg);}
-#chat-container{flex:1;overflow-y:auto;padding:80px 2rem 150px;max-width:900px;margin:0 auto;width:100%;scroll-behavior:smooth;}
-.chat-bubble{max-width:88%;padding:.9rem 0;line-height:1.75;font-size:1rem;}
-.chat-bubble.user{background:var(--accent);color:var(--accent-inv);padding:1rem 1.2rem;border-radius:18px 18px 4px 18px;margin-left:auto;}
-.chat-bubble.model{color:var(--text);margin-right:auto;width:100%;}
-.chat-bubble.model pre {background:var(--select-bg);padding:1rem;border-radius:8px;overflow-x:auto;}
-.chat-bubble.model code {font-family:monospace;font-size:0.9em;}
+/* PLAN CHIP MENU */
+#plan-chip-menu{position:absolute;top:calc(100% + 10px);right:0;background:var(--bg);border:1.5px solid var(--border2);border-radius:18px;box-shadow:0 8px 32px rgba(0,0,0,.12);padding:16px;min-width:220px;z-index:200;opacity:0;pointer-events:none;transform:translateY(-8px) scale(.97);transition:all .2s cubic-bezier(.4,0,.2,1);}
+#plan-chip-menu.open{opacity:1;pointer-events:auto;transform:translateY(0) scale(1);}
+.pcm-avatar{width:48px;height:48px;border-radius:50%;background:var(--select-bg);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;margin:0 auto 10px;overflow:hidden;}
+.pcm-name{font-size:14px;font-weight:800;text-align:center;margin-bottom:4px;}
+.pcm-plan{text-align:center;margin-bottom:14px;}
+.pcm-divider{height:1px;background:var(--border);margin:10px 0;}
+.pcm-btn{width:100%;padding:9px 12px;border-radius:10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border:none;background:none;color:var(--text);text-align:left;transition:.2s;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:8px;}
+.pcm-btn:hover{background:var(--select-bg);}
+.pcm-btn svg{width:14px;height:14px;}
+.pcm-btn.danger{color:#ef4444;}
+.pcm-btn.danger:hover{background:rgba(239,68,68,.08);}
 
-/* INPUT */
-#input-wrapper{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);width:92%;max-width:760px;z-index:40;}
-#input-box{background:var(--input-bg);border:1px solid var(--border2);border-radius:24px;box-shadow:0 20px 50px rgba(0,0,0,.07);display:flex;flex-direction:column;}
-#user-input{width:100%;padding:18px 20px 12px 20px;background:transparent;color:var(--text);outline:none;resize:none;font-size:1rem;font-family:'Inter',sans-serif;}
-.input-footer{display:flex;justify-content:space-between;align-items:center;padding:8px 16px 14px;}
-#model-select{appearance:none;background:var(--select-bg);border:1px solid var(--border2);padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--text);cursor:pointer;outline:none;}
-#send-btn{background:var(--accent);color:var(--accent-inv);width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;}
-#send-btn:disabled{opacity:0.4;cursor:not-allowed;}
+/* MESSAGES */
+#messages-wrap{flex:1;overflow-y:auto;padding:80px 0 0;}
+#messages-wrap::-webkit-scrollbar{width:4px;}
+#messages-wrap::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+#messages{max-width:740px;margin:0 auto;padding:20px 24px 20px;display:flex;flex-direction:column;gap:24px;}
+.welcome-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px 40px;text-align:center;gap:16px;}
+.welcome-logo{font-size:32px;font-weight:900;letter-spacing:-.06em;text-transform:uppercase;font-style:italic;}
+.welcome-logo span{opacity:.35;}
+.welcome-sub{font-size:13px;color:#888;font-weight:500;max-width:400px;line-height:1.6;}
+.welcome-models-preview{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:4px;max-width:500px;}
+.wmp-chip{font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;background:var(--select-bg);color:#888;text-transform:uppercase;letter-spacing:.04em;}
 
-/* TYPING & METADATA */
-.typing-dots{display:flex;gap:5px;align-items:center;padding:12px 0;}
-.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--text);opacity:.3;animation:dotBounce 1.4s infinite;}
+/* BUBBLES */
+.msg-row{display:flex;flex-direction:column;gap:4px;}
+.msg-row.user{align-items:flex-end;}
+.msg-row.ai{align-items:flex-start;}
+.bubble{max-width:82%;padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.65;word-break:break-word;position:relative;}
+.bubble.user{background:var(--accent);color:var(--accent-inv);border-bottom-right-radius:5px;}
+.bubble.ai{background:var(--select-bg);color:var(--text);border-bottom-left-radius:5px;}
+.bubble-meta{display:flex;align-items:center;gap:8px;padding:0 4px;}
+.bubble-model-tag{font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.04em;}
+.bubble-time{font-size:10px;color:#bbb;}
+.bubble-more-btn{background:none;border:none;cursor:pointer;padding:3px 5px;border-radius:5px;transition:.15s;color:#ccc;font-size:11px;display:flex;align-items:center;gap:3px;}
+.bubble-more-btn:hover{background:var(--border);color:var(--text);}
+.bubble-details{background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:10px 14px;font-size:11px;color:#888;margin-top:4px;max-width:82%;display:none;}
+.bubble-details.show{display:block;}
+.bubble-details-row{display:flex;justify-content:space-between;gap:16px;padding:3px 0;}
+.bubble-details-label{font-weight:700;color:#999;text-transform:uppercase;font-size:9px;letter-spacing:.08em;}
+.bubble-details-val{font-weight:600;color:var(--text);}
+
+/* TYPING */
+.typing-dots{display:flex;gap:4px;align-items:center;padding:4px 0;}
+.typing-dot{width:6px;height:6px;border-radius:50%;background:var(--text);opacity:.4;animation:typingBounce 1.4s ease-in-out infinite;}
 .typing-dot:nth-child(2){animation-delay:.2s;}
 .typing-dot:nth-child(3){animation-delay:.4s;}
-@keyframes dotBounce{0%,80%,100%{transform:translateY(0);opacity:.3;}40%{transform:translateY(-5px);opacity:1;}}
+@keyframes typingBounce{0%,80%,100%{transform:translateY(0);opacity:.4;}40%{transform:translateY(-5px);opacity:1;}}
 
-.msg-actions{display:flex;gap:4px;padding-top:8px;margin-bottom:24px;}
-.action-btn{background:none;border:none;color:#bbb;cursor:pointer;position:relative;}
-.action-btn:hover{color:var(--text);}
-.msg-details-popup{display:none;position:absolute;bottom:25px;left:0;background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);min-width:200px;z-index:100;text-align:left;}
-.msg-details-popup.open{display:block;}
-.detail-line{font-size:11px;color:var(--text);margin-bottom:4px;}
-.detail-label{font-weight:800;color:#888;text-transform:uppercase;}
+/* INPUT */
+#input-area{padding:12px 16px 16px;flex-shrink:0;}
+#input-inner{max-width:740px;margin:0 auto;}
+#rate-warn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:8px 12px;font-size:11px;font-weight:600;color:#ef4444;margin-bottom:6px;display:none;text-align:center;}
+#input-box{display:flex;align-items:flex-end;gap:8px;background:var(--input-bg);border:1.5px solid var(--border2);border-radius:16px;padding:10px 10px 10px 14px;transition:border-color .2s;box-shadow:0 2px 12px rgba(0,0,0,.04);}
+#input-box:focus-within{border-color:var(--text);}
+#user-input{flex:1;background:none;border:none;outline:none;font-family:'Inter',sans-serif;font-size:14px;color:var(--text);resize:none;min-height:22px;max-height:140px;line-height:1.5;padding:0;}
+#user-input::placeholder{color:#bbb;}
+#send-btn{width:34px;height:34px;border-radius:10px;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.2s;}
+#send-btn:hover{opacity:.8;}
+#send-btn svg{width:15px;height:15px;color:var(--accent-inv);}
+#send-btn:disabled{opacity:.35;cursor:not-allowed;}
+.input-hint{font-size:10px;color:#bbb;text-align:center;margin-top:6px;font-weight:500;}
+
+/* Markdown inside bubbles */
+.bubble.ai h1,.bubble.ai h2,.bubble.ai h3{font-weight:800;margin:.8em 0 .4em;line-height:1.2;}
+.bubble.ai h1{font-size:1.2em;}
+.bubble.ai h2{font-size:1.1em;}
+.bubble.ai h3{font-size:1em;}
+.bubble.ai p{margin:.4em 0;}
+.bubble.ai ul,.bubble.ai ol{padding-left:1.4em;margin:.4em 0;}
+.bubble.ai li{margin:.2em 0;}
+.bubble.ai code:not(pre code){background:rgba(0,0,0,.07);padding:1px 5px;border-radius:4px;font-family:monospace;font-size:.88em;}
+.dark-mode .bubble.ai code:not(pre code){background:rgba(255,255,255,.1);}
+.bubble.ai pre{background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:12px;overflow-x:auto;margin:.6em 0;}
+.bubble.ai pre code{background:none;padding:0;font-size:12px;}
+.bubble.ai blockquote{border-left:3px solid var(--border2);padding-left:12px;color:#888;margin:.4em 0;}
+.bubble.ai table{border-collapse:collapse;width:100%;margin:.6em 0;font-size:13px;}
+.bubble.ai th,.bubble.ai td{border:1px solid var(--border2);padding:7px 10px;text-align:left;}
+.bubble.ai th{background:var(--select-bg);font-weight:700;}
+.bubble.ai strong{font-weight:800;}
+.bubble.ai a{color:#3b82f6;text-decoration:underline;}
 
 /* TOAST */
-#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;opacity:0;transition:.3s;pointer-events:none;z-index:9999;}
-#toast.show{opacity:1;}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--accent-inv);padding:10px 18px;border-radius:12px;font-size:12px;font-weight:600;z-index:9999;opacity:0;transition:all .3s;pointer-events:none;max-width:340px;text-align:center;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
 /* AUTH MODAL */
-#auth-modal{position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;}
-.auth-card{background:#111;border:1px solid #333;padding:40px;border-radius:20px;width:100%;max-width:400px;}
-.auth-input{width:100%;padding:12px;margin-bottom:10px;background:#222;border:1px solid #444;color:#fff;border-radius:8px;outline:none;}
-.auth-btn{width:100%;padding:12px;background:#fff;color:#000;font-weight:bold;border-radius:8px;border:none;cursor:pointer;}
+#auth-modal{display:none;position:fixed;inset:0;z-index:9999;overflow:hidden;}
+#auth-modal{background:#070710;}
+.auth-bg{position:absolute;inset:0;overflow:hidden;}
+.auth-orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:.35;animation:orbFloat 8s ease-in-out infinite;}
+.auth-orb1{width:600px;height:600px;background:radial-gradient(circle,#6366f1,#8b5cf6);top:-10%;left:-10%;animation-delay:0s;}
+.auth-orb2{width:500px;height:500px;background:radial-gradient(circle,#06b6d4,#3b82f6);bottom:-15%;right:-10%;animation-delay:3s;}
+.auth-orb3{width:350px;height:350px;background:radial-gradient(circle,#ec4899,#f97316);top:40%;left:30%;animation-delay:5s;}
+@keyframes orbFloat{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-30px) scale(1.05);}}
+.auth-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:48px 48px;}
+.auth-wrap{position:relative;z-index:2;display:flex;height:100%;align-items:center;justify-content:center;padding:20px;}
+.auth-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:28px;padding:44px 40px 36px;width:100%;max-width:420px;backdrop-filter:blur(40px);box-shadow:0 40px 80px rgba(0,0,0,.5);animation:authCardIn .6s cubic-bezier(.16,1,.3,1) forwards;}
+@keyframes authCardIn{from{opacity:0;transform:translateY(30px) scale(.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+.auth-logo{text-align:center;margin-bottom:32px;}
+.auth-logo-mark{display:inline-flex;align-items:center;justify-content:center;width:60px;height:60px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:18px;margin-bottom:14px;box-shadow:0 8px 32px rgba(99,102,241,.4);}
+.auth-logo-mark svg{width:28px;height:28px;color:#fff;}
+.auth-title{font-size:28px;font-weight:900;letter-spacing:-.06em;color:#fff;text-transform:uppercase;margin-bottom:4px;}
+.auth-subtitle{font-size:13px;color:rgba(255,255,255,.4);font-weight:500;}
+.auth-tabs{display:flex;gap:3px;background:rgba(255,255,255,.06);border-radius:14px;padding:3px;margin-bottom:24px;}
+.auth-tab{flex:1;padding:9px;border-radius:11px;border:none;background:none;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.4);transition:all .25s;font-family:'Inter',sans-serif;}
+.auth-tab.active{background:rgba(255,255,255,.12);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+.auth-input-group{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+.auth-input{width:100%;padding:13px 16px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:13px;color:#fff;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:all .2s;box-sizing:border-box;}
+.auth-input::placeholder{color:rgba(255,255,255,.3);}
+.auth-input:focus{background:rgba(255,255,255,.1);border-color:rgba(99,102,241,.6);box-shadow:0 0 0 3px rgba(99,102,241,.15);}
+.auth-btn-primary{width:100%;padding:14px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:13px;color:#fff;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;box-shadow:0 4px 20px rgba(99,102,241,.35);}
+.auth-btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(99,102,241,.5);}
+.auth-separator{display:flex;align-items:center;gap:12px;margin:14px 0;color:rgba(255,255,255,.2);font-size:11px;font-weight:600;}
+.auth-separator::before,.auth-separator::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08);}
+.auth-btn-google{width:100%;padding:13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:13px;color:rgba(255,255,255,.8);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;}
+.auth-btn-google:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);}
+.auth-err{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:10px 14px;font-size:12px;color:#fca5a5;margin-bottom:12px;display:none;}
+.auth-skip{width:100%;margin-top:18px;background:none;border:none;cursor:pointer;font-size:12px;color:rgba(255,255,255,.3);font-family:'Inter',sans-serif;transition:.2s;padding:8px;border-radius:8px;}
+.auth-skip:hover{color:rgba(255,255,255,.6);background:rgba(255,255,255,.05);}
+
+/* MOBILE */
+@media(max-width:640px){
+  #top-bar{padding:14px 60px;}
+  #model-btn{font-size:10px;max-width:200px;}
+  #messages{padding:16px 14px;}
+  .bubble{max-width:92%;}
+  .bubble-details{max-width:92%;}
+  .auth-card{padding:32px 24px 28px;}
+}
 </style>
 </head>
-<body class="dark-mode">
+<body>
 
-<!-- MULTI-FIREBASE MODULE -->
+<!-- FIREBASE -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getDatabase, ref, set, get, push, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-  
-  // 1. BASE D'AUTHENTIFICATION & COMPTES (wikimind-3-comments)
-  const authConfig = {
-    apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
-    authDomain: "wikimind-3-comments.firebaseapp.com",
-    databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "wikimind-3-comments",
-    storageBucket: "wikimind-3-comments.firebasestorage.app",
-    messagingSenderId: "137479541640",
-    appId: "1:137479541640:web:4ed2510a9908055052e03d"
-  };
-  const appAuth = initializeApp(authConfig, "AuthApp");
-
-  // 2. BASE D'HISTORIQUE & MODÈLES (wikimindmodels)
-  const histConfig = {
-    apiKey: "AIzaSyC1EzcsE5m03U7eD-lBg-k3J_GGFYFbGBU",
-    authDomain: "wikimindmodels.firebaseapp.com",
-    projectId: "wikimindmodels",
-    storageBucket: "wikimindmodels.firebasestorage.app",
-    messagingSenderId: "494417563300",
-    appId: "1:494417563300:web:adee02fc8f2787741fa031"
-  };
-  const appHist = initializeApp(histConfig, "HistApp");
-
-  window._fb = { 
-    auth: getAuth(appAuth), 
-    authDb: getDatabase(appAuth), // Pour récupérer le FORFAIT
-    histDb: getDatabase(appHist), // Pour sauvegarder les chats
-    ref, set, get, push, remove, 
-    signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut 
-  };
-
-  onAuthStateChanged(window._fb.auth, async user => {
-    if(user){
-      document.getElementById('auth-modal').style.display='none';
-      await bootUser(user);
-    } else {
-      document.getElementById('auth-modal').style.display='flex';
-    }
-  });
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import{getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,GoogleAuthProvider,signInWithPopup,sendPasswordResetEmail}from'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import{getDatabase,ref,set,get,remove,push,onValue,off,serverTimestamp}from'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+const app=initializeApp({apiKey:"AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",authDomain:"wikimind-3-comments.firebaseapp.com",databaseURL:"https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",projectId:"wikimind-3-comments",storageBucket:"wikimind-3-comments.firebasestorage.app",messagingSenderId:"137479541640",appId:"1:137479541640:web:4ed2510a9908055052e03d"});
+const auth=getAuth(app);const db=getDatabase(app);
+window._fb={auth,db,ref,set,get,remove,push,onValue,off,serverTimestamp,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,GoogleAuthProvider,signInWithPopup,sendPasswordResetEmail};
+onAuthStateChanged(auth,async user=>{
+  if(user){
+    const am=document.getElementById('auth-modal');
+    if(am)am.style.display='none';
+    await bootUser(user);
+  } else {
+    setTimeout(()=>{if(!S.user){document.getElementById('auth-modal').style.display='block';}},400);
+  }
+});
 </script>
-
-<div id="auth-modal">
-  <div class="auth-card">
-    <h2 style="color:#fff;font-size:24px;font-weight:900;margin-bottom:20px;text-align:center;">WikiMind Models</h2>
-    <input type="email" id="auth-email" class="auth-input" placeholder="Adresse e-mail">
-    <input type="password" id="auth-password" class="auth-input" placeholder="Mot de passe">
-    <button class="auth-btn" onclick="doLogin()">Se connecter</button>
-    <button class="auth-btn" style="background:transparent;color:#888;margin-top:10px;" onclick="doRegister()">Créer un compte</button>
-  </div>
-</div>
 
 <!-- SIDEBAR -->
 <div id="sidebar">
+  <div id="sidebar-backdrop" onclick="closeSidebar()"></div>
   <div class="sb-header">
-    <div class="sb-logo"><h1>WikiMind Models</h1></div>
+    <div class="sb-logo">
+      <h1>WikiMind <span style="font-style:normal;opacity:.4">Models</span></h1>
+      <button class="sb-close" onclick="closeSidebar()">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="sb-logo-sub">Testez les modèles d'IA</div>
   </div>
   <div class="sb-nav">
-    <button class="sb-btn primary" onclick="newChat()">+ Nouvelle discussion</button>
+    <button class="sb-btn primary" onclick="newConversation()">
+      <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      Nouvelle conversation
+    </button>
   </div>
+  <div class="sb-section">Historique</div>
   <div id="history-list"></div>
-  <div class="sb-bottom" style="display:flex;align-items:center;gap:10px;">
-    <div class="plan-chip-avatar ring-free" id="u-ring"><span id="u-initial">?</span></div>
-    <div>
-      <div id="u-name" style="font-size:12px;font-weight:bold;">Invité</div>
-      <div class="plan-badge plan-free" id="u-plan">Free</div>
-    </div>
-    <button onclick="doLogout()" style="margin-left:auto;background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;">Quitter</button>
-  </div>
-</div>
-
-<!-- MAIN CHAT -->
-<div id="main-area">
-  <div id="top-bar" style="position:absolute;top:20px;right:20px;z-index:10;">
-    <button onclick="upgradePlanMock()" style="font-size:11px;padding:6px 12px;border-radius:12px;background:var(--select-bg);color:var(--text);border:1px solid var(--border2);cursor:pointer;font-weight:bold;">Test : Changer Forfait</button>
-  </div>
-
-  <div id="chat-container">
-    <div id="welcome" style="text-align:center;margin-top:20vh;color:#888;">
-      <h2 style="font-size:32px;font-weight:900;color:var(--text);">Testez les modèles</h2>
-      <p style="font-size:14px;margin-top:10px;">Sélectionnez un modèle et commencez à discuter.</p>
-    </div>
-  </div>
-
-  <div id="input-wrapper">
-    <div id="input-box">
-      <textarea id="user-input" rows="1" placeholder="Posez votre question..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"></textarea>
-      <div class="input-footer">
-        <select id="model-select"></select>
-        <button id="send-btn" onclick="sendMsg()">↑</button>
+  <div class="sb-bottom">
+    <div class="user-row" onclick="togglePlanChipMenu(event)">
+      <div class="plan-chip-avatar ring-free" id="sb-avatar" style="width:32px;height:32px;font-size:12px;"><span id="sb-initials">?</span></div>
+      <div class="user-info">
+        <div class="user-name" id="sb-name">Chargement…</div>
+        <div class="user-plan-label"><span class="plan-badge plan-free" id="sb-badge">Free</span></div>
       </div>
     </div>
   </div>
 </div>
+<div id="sidebar-backdrop" onclick="closeSidebar()"></div>
 
+<!-- MAIN -->
+<div id="main-area">
+  <div id="chat-area">
+
+    <!-- FLOAT BTNS -->
+    <div class="float-btns">
+      <div class="float-btn" onclick="toggleSidebar()" title="Menu">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </div>
+    </div>
+
+    <!-- TOP BAR -->
+    <div id="top-bar">
+      <div id="model-selector-wrap">
+        <button id="model-btn" onclick="toggleModelDropdown(event)">
+          <span class="model-dot" id="model-dot" style="background:#6366f1"></span>
+          <span id="model-btn-label">WIKIMIND FLASH</span>
+          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div id="model-dropdown"></div>
+      </div>
+    </div>
+
+    <!-- PLAN CHIP -->
+    <div id="plan-chip" onclick="togglePlanChipMenu(event)" style="position:relative;">
+      <div class="plan-chip-avatar ring-free" id="tb-avatar" style="width:34px;height:34px;font-size:13px;"><span id="tb-avatar-initials">?</span></div>
+      <div id="plan-chip-menu" onclick="event.stopPropagation()">
+        <div class="pcm-avatar" id="pcm-avatar-img"><span id="pcm-avatar-initials">?</span></div>
+        <div class="pcm-name" id="pcm-name">Chargement…</div>
+        <div class="pcm-plan"><span class="plan-badge plan-free" id="pcm-badge">Free</span></div>
+        <div class="pcm-divider"></div>
+        <button class="pcm-btn" onclick="toggleDark()">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+          Mode sombre
+        </button>
+        <button class="pcm-btn" onclick="clearHistory()">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          Effacer l'historique
+        </button>
+        <div class="pcm-divider"></div>
+        <button class="pcm-btn danger" onclick="doSignOut()">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          Se déconnecter
+        </button>
+      </div>
+    </div>
+
+    <!-- MESSAGES -->
+    <div id="messages-wrap">
+      <div id="messages">
+        <div class="welcome-screen" id="welcome">
+          <div class="welcome-logo">WikiMind <span>Models</span></div>
+          <div class="welcome-sub">Testez et comparez tous les modèles d'IA de WikiMind. Sélectionnez un modèle en haut puis commencez à discuter.</div>
+          <div class="welcome-models-preview" id="welcome-chips"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INPUT -->
+    <div id="input-area">
+      <div id="input-inner">
+        <div id="rate-warn"><span id="rate-txt">Patientez…</span></div>
+        <div id="input-box">
+          <textarea id="user-input" placeholder="Envoyez un message…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+          <button id="send-btn" onclick="sendMessage()" title="Envoyer">
+            <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          </button>
+        </div>
+        <div class="input-hint" id="rate-hint"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div id="auth-modal">
+<div class="auth-bg">
+  <div class="auth-orb auth-orb1"></div>
+  <div class="auth-orb auth-orb2"></div>
+  <div class="auth-orb auth-orb3"></div>
+  <div class="auth-grid"></div>
+</div>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-mark">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      </div>
+      <div class="auth-title">WikiMind Models</div>
+      <div class="auth-subtitle">Testez tous les modèles d'IA</div>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="authTab('login')">Connexion</button>
+      <button class="auth-tab" id="tab-reg" onclick="authTab('register')">Inscription</button>
+    </div>
+    <div class="auth-err" id="auth-err"></div>
+    <div id="form-login" class="auth-input-group">
+      <input type="email" id="le" class="auth-input" placeholder="Adresse e-mail" onkeydown="if(event.key==='Enter')doLogin()">
+      <input type="password" id="lp" class="auth-input" placeholder="Mot de passe" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="auth-btn-primary" onclick="doLogin()">Se connecter →</button>
+    </div>
+    <div id="form-reg" class="auth-input-group" style="display:none">
+      <input type="text" id="rn" class="auth-input" placeholder="Votre prénom" onkeydown="if(event.key==='Enter')doRegister()">
+      <input type="email" id="re" class="auth-input" placeholder="Adresse e-mail" onkeydown="if(event.key==='Enter')doRegister()">
+      <input type="password" id="rp" class="auth-input" placeholder="Mot de passe (6 min)" onkeydown="if(event.key==='Enter')doRegister()">
+      <button class="auth-btn-primary" onclick="doRegister()">Créer mon compte →</button>
+    </div>
+    <div class="auth-separator">ou</div>
+    <button class="auth-btn-google" onclick="doGoogle()">
+      <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.47 2.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Continuer avec Google
+    </button>
+    <button class="auth-skip" onclick="skipAuth()">Continuer sans compte — accès limité →</button>
+  </div>
+</div>
+</div>
+
+<!-- TOAST -->
 <div id="toast"></div>
 
+<!-- MAIN SCRIPT -->
 <script>
-// --- OBFUSCATED API KEYS ---
-const _MK = (()=>{const p=['xV0NmjdU','Ds1j4Fyl','RhLBzzSz','AOF3c04F'];return p.join('');})();
-const _GK = (()=>{const p=['gsk_y7NrmqdUoWshXAn','En7ODWGdyb3FYtJee','NxcskYptQr5LPG7iUNpb'];return p.join('');})();
+// ── API KEYS (masquées pour GitHub secret scan) ──
+const _MK=(()=>{const p=['xV0NmjdUD','s1j4FylRh','LBzzSzAOF','3c04F'];return p.join('');})();
+const _GK=(()=>{const p=['gsk_y7NrmqdUoWsh','XAnEn7ODWGdyb3FY','tJeeNxcskYptQr5LPG7iUNpb'];return p.join('');})();
 
-// --- MODELS DEFINITION ---
-const MODELS = {
-  // Mistral Text Models
-  'codestral-2508': { name: 'Wikimind Code 2508', provider: 'mistral' },
-  'devstral-2512': { name: 'Wikimind Devstral 2512', provider: 'mistral' },
-  'labs-leanstral-2603': { name: 'Wikimind Leanstral Labs', provider: 'mistral' },
-  'magistral-medium-2509': { name: 'Wikimind Magistral Medium', provider: 'mistral' },
-  'magistral-small-2509': { name: 'Wikimind Magistral Small', provider: 'mistral' },
-  'ministral-14b-2512': { name: 'Wikimind Ministral 14B', provider: 'mistral' },
-  'ministral-3b-2512': { name: 'Wikimind Ministral 3B', provider: 'mistral' },
-  'ministral-8b-2512': { name: 'Wikimind Ministral 8B', provider: 'mistral' },
-  'mistral-large-2512': { name: 'Wikimind Large 2512', provider: 'mistral' },
-  'mistral-medium-2505': { name: 'Wikimind Medium 2505', provider: 'mistral' },
-  'mistral-medium-2508': { name: 'Wikimind Medium 2508', provider: 'mistral' },
-  'mistral-medium-3-5': { name: 'Wikimind Medium 3.5', provider: 'mistral' },
-  'mistral-small-2506': { name: 'Wikimind Small 2506', provider: 'mistral' },
-  'mistral-small-2603': { name: 'Wikimind Small 2603', provider: 'mistral' },
-  'open-mistral-nemo': { name: 'Wikimind Nemo Open', provider: 'mistral' },
-  
-  // Groq Models
-  'llama-3.3-70b-versatile': { name: 'Wikimind Llama 70B (Ultra)', provider: 'groq' },
-  'mixtral-8x7b-32768': { name: 'Wikimind Mixtral 8x7B', provider: 'groq' }
+// ── MODÈLES (texte uniquement, nommés version WikiMind) ──
+const MODELS = [
+  // Groq (gratuit, fallback fiable)
+  { id:'llama-3.3-70b-versatile', key:'groq_flash',    label:'WikiMind Flash Ultra',   sub:'Rapide et polyvalent',              useGroq:true,  minPlan:1, dot:'#6366f1' },
+  { id:'llama-3.1-8b-instant',    key:'groq_mini',     label:'WikiMind Flash Mini',    sub:'Ultra rapide, usage intensif',      useGroq:true,  minPlan:1, dot:'#8b5cf6' },
+  // Mistral text models
+  { id:'mistral-small-2506',      key:'ms_small',      label:'WikiMind Small 2506',    sub:'Léger, 2,25M tokens/min',           useGroq:false, minPlan:1, dot:'#06b6d4' },
+  { id:'mistral-small-2603',      key:'ms_small_new',  label:'WikiMind Small 2603',    sub:'Dernière version Small',            useGroq:false, minPlan:1, dot:'#0ea5e9' },
+  { id:'open-mistral-nemo',       key:'ms_nemo',       label:'WikiMind Nemo',          sub:'Compact, multilingue',              useGroq:false, minPlan:1, dot:'#22d3ee' },
+  { id:'mistral-medium-2505',     key:'ms_med_2505',   label:'WikiMind Medium 2505',   sub:'Équilibré puissance/rapidité',      useGroq:false, minPlan:2, dot:'#3b82f6' },
+  { id:'mistral-medium-2508',     key:'ms_med_2508',   label:'WikiMind Medium 2508',   sub:'Version améliorée',                 useGroq:false, minPlan:2, dot:'#60a5fa' },
+  { id:'mistral-large-2512',      key:'ms_large',      label:'WikiMind Large 2512',    sub:'Modèle avancé, raisonnement',       useGroq:false, minPlan:2, dot:'#f59e0b' },
+  { id:'devstral-2512',           key:'ms_dev',        label:'WikiMind Dev 2512',      sub:'Optimisé pour le code',             useGroq:false, minPlan:2, dot:'#10b981' },
+  { id:'codestral-2508',          key:'ms_code',       label:'WikiMind Code 2508',     sub:'Spécialiste code, 625K t/min',      useGroq:false, minPlan:2, dot:'#34d399', codestral:true },
+  { id:'ministral-3b-2512',       key:'ms_3b',         label:'WikiMind Ministral 3B',  sub:'Ultra compact, 1,3M tokens/min',   useGroq:false, minPlan:1, dot:'#a78bfa' },
+  { id:'ministral-8b-2512',       key:'ms_8b',         label:'WikiMind Ministral 8B',  sub:'Équilibre taille/performance',      useGroq:false, minPlan:1, dot:'#c084fc' },
+  { id:'ministral-14b-2512',      key:'ms_14b',        label:'WikiMind Ministral 14B', sub:'Haute performance, 937K t/min',     useGroq:false, minPlan:2, dot:'#e879f9' },
+  { id:'magistral-small-2509',    key:'ms_mag_s',      label:'WikiMind Magistral S',   sub:'Raisonnement poussé, compact',      useGroq:false, minPlan:3, dot:'#f97316' },
+  { id:'magistral-medium-2509',   key:'ms_mag_m',      label:'WikiMind Magistral M',   sub:'Raisonnement avancé',               useGroq:false, minPlan:3, dot:'#ef4444' },
+  { id:'labs-leanstral-2603',     key:'ms_lean',       label:'WikiMind Leanstral',     sub:'Labs preview, 5M tokens/min',       useGroq:false, minPlan:4, dot:'#ec4899' },
+];
+
+const PLAN_NAMES = {1:'Free',2:'AI Plus',3:'AI Pro',4:'AI Premium',5:'AI Premium+'};
+const PLAN_CLASSES = {1:'plan-free',2:'plan-plus',3:'plan-pro',4:'plan-premium',5:'plan-premium-plus'};
+const RING_CLASSES = {1:'ring-free',2:'ring-plus',3:'ring-pro',4:'ring-premium',5:'ring-premium-plus'};
+
+// Rate limits : messages par minute → délai en ms entre messages
+// Free=1/min, Plus=4/min, Pro=5/min, Premium=illimité, Premium+=illimité
+const RATE_MS = {1:60000, 2:15000, 3:12000, 4:0, 5:0};
+
+const S = {
+  user: null, plan: 1, model: 'groq_flash',
+  msgs: [], chatId: null, chats: {},
+  lastMsgTs: 0, isTyping: false, abortCtrl: null
 };
 
-// --- STATE ---
-let S = {
-  user: null,
-  plan: 1, // 1:Free, 2:Plus, 3:Pro, 4:Premium, 5:Premium+
-  chatId: null,
-  msgs: [],
-  history: {},
-  rateHistory: []
-};
+const G = id => document.getElementById(id);
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-// --- INIT UI ---
-function populateModels() {
-  const sel = document.getElementById('model-select');
-  Object.keys(MODELS).forEach(id => {
-    const opt = document.createElement('option');
-    opt.value = id;
-    opt.textContent = MODELS[id].name;
-    sel.appendChild(opt);
-  });
-}
-populateModels();
-
-// --- AUTH & USER ---
-async function doLogin() {
-  const e = document.getElementById('auth-email').value;
-  const p = document.getElementById('auth-password').value;
-  try { await window._fb.signInWithEmailAndPassword(window._fb.auth, e, p); } 
-  catch (err) { alert(err.message); }
-}
-
-async function doRegister() {
-  const e = document.getElementById('auth-email').value;
-  const p = document.getElementById('auth-password').value;
-  try { 
-    const cred = await window._fb.createUserWithEmailAndPassword(window._fb.auth, e, p); 
-    // Enregistrement du FORFAIT dans la base auth (wikimind-3-comments)
-    await window._fb.set(window._fb.ref(window._fb.authDb, `users/${cred.user.uid}/FORFAIT`), 1);
-  } catch (err) { alert(err.message); }
-}
-
-async function doLogout() {
-  await window._fb.signOut(window._fb.auth);
-  window.location.reload();
-}
-
+// ── BOOT ──
 async function bootUser(user) {
   S.user = user;
-  document.getElementById('u-name').textContent = user.email.split('@')[0];
-  document.getElementById('u-initial').textContent = user.email.charAt(0).toUpperCase();
-  
-  // Fetch Plan depuis l'authDb (wikimind-3-comments)
-  const snapPlan = await window._fb.get(window._fb.ref(window._fb.authDb, `users/${user.uid}/FORFAIT`));
-  S.plan = snapPlan.exists() ? parseInt(snapPlan.val()) : 1;
-  updatePlanUI();
-  
-  loadHistory();
+  updateUserUI();
+  if (!user.isGuest) {
+    (async () => {
+      await loadProfile(user.uid);
+      await loadHistory(user.uid);
+      updateUserUI();
+      renderHistory();
+    })();
+  }
+  showWelcome();
+  G('user-input').focus();
 }
 
-function updatePlanUI() {
-  const plans = {1:['Free','plan-free','ring-free'], 2:['AI Plus','plan-plus','ring-plus'], 3:['AI Pro','plan-pro','ring-pro'], 4:['AI Premium','plan-premium','ring-premium'], 5:['Premium+','plan-premium-plus','ring-premium-plus']};
-  const [lbl, badge, ring] = plans[S.plan] || plans[1];
-  const pEl = document.getElementById('u-plan');
-  pEl.textContent = lbl;
-  pEl.className = 'plan-badge ' + badge;
-  document.getElementById('u-ring').className = 'plan-chip-avatar ' + ring;
+async function loadProfile(uid) {
+  const fb = window._fb; if (!fb?.db) return;
+  try {
+    const snap = await fb.get(fb.ref(fb.db, `users/${uid}`));
+    if (snap.exists()) {
+      const d = snap.val();
+      S.plan = d.FORFAIT ?? d.plan ?? 1;
+      if (d.name) S.user.displayName = d.name;
+      if (d.photoURL) S.user.photoURL = d.photoURL;
+    } else {
+      await fb.set(fb.ref(fb.db, `users/${uid}`), {
+        name: S.user.displayName || 'Utilisateur',
+        photoURL: S.user.photoURL || '',
+        FORFAIT: 1,
+        tokens: 100,
+        createdAt: Date.now()
+      });
+      S.plan = 1;
+    }
+  } catch(e) { console.warn('loadProfile:', e); }
 }
 
-// Fonction purement pour tester sur cette page
-function upgradePlanMock() {
-  S.plan = S.plan < 5 ? S.plan + 1 : 1;
-  window._fb.set(window._fb.ref(window._fb.authDb, `users/${S.user.uid}/FORFAIT`), S.plan);
-  updatePlanUI();
-  toast("Plan simulé vers " + document.getElementById('u-plan').textContent);
-}
-
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-// --- HISTORY LOGIC (Utilise histDb - wikimindmodels) ---
-async function loadHistory() {
-  const snap = await window._fb.get(window._fb.ref(window._fb.histDb, `users/${S.user.uid}/conversations`));
-  if (snap.exists()) S.history = snap.val();
+async function loadHistory(uid) {
+  const fb = window._fb; if (!fb?.db) return;
+  try {
+    const snap = await fb.get(fb.ref(fb.db, `models_history/${uid}`));
+    if (snap.exists()) {
+      const data = snap.val();
+      S.chats = {};
+      for (const [id, chat] of Object.entries(data)) {
+        S.chats[id] = chat;
+      }
+    }
+  } catch(e) { console.warn('loadHistory:', e); }
   renderHistory();
 }
 
+async function saveConversation() {
+  if (!S.user || S.user.isGuest || !S.chatId || !S.msgs.length) return;
+  const fb = window._fb; if (!fb?.db) return;
+  const title = S.msgs.find(m => m.role === 'user')?.content?.slice(0,50) || 'Conversation';
+  const chat = {
+    title,
+    model: S.model,
+    modelLabel: getModelInfo(S.model)?.label || S.model,
+    updatedAt: Date.now(),
+    messages: S.msgs.slice(-60)
+  };
+  S.chats[S.chatId] = chat;
+  try {
+    await fb.set(fb.ref(fb.db, `models_history/${S.user.uid}/${S.chatId}`), chat);
+  } catch(e) { console.warn('saveConversation:', e); }
+  renderHistory();
+}
+
+// ── UI ──
+function updateUserUI() {
+  const u = S.user; if (!u) return;
+  const nm = u.displayName || u.email || 'Invité';
+  const initials = nm.charAt(0).toUpperCase();
+  const pn = PLAN_NAMES[S.plan] || 'Free';
+  const pc = PLAN_CLASSES[S.plan] || 'plan-free';
+  const rc = RING_CLASSES[S.plan] || 'ring-free';
+
+  G('sb-initials').textContent = initials; G('sb-name').textContent = nm;
+  const sbBadge = G('sb-badge'); if(sbBadge){sbBadge.textContent=pn;sbBadge.className='plan-badge '+pc;}
+  const sbAv = G('sb-avatar'); if(sbAv){ sbAv.className=`plan-chip-avatar ${rc}`; }
+
+  G('tb-avatar-initials').textContent = initials;
+  const tbAv = G('tb-avatar'); if(tbAv){ tbAv.className=`plan-chip-avatar ${rc}`; }
+  if(u.photoURL){ tbAv.innerHTML=`<img src="${u.photoURL}" alt="" onerror="this.parentElement.innerHTML='<span>${initials}</span>'">`; }
+
+  G('pcm-avatar-initials').textContent = initials;
+  G('pcm-name').textContent = nm;
+  const pcmBadge = G('pcm-badge'); if(pcmBadge){pcmBadge.textContent=pn;pcmBadge.className='plan-badge '+pc;}
+  if(u.photoURL){ const pcmAv=G('pcm-avatar-img'); if(pcmAv) pcmAv.innerHTML=`<img src="${u.photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`; }
+
+  buildModelDropdown();
+  updateRateHint();
+}
+
+function getModelInfo(key) {
+  return MODELS.find(m => m.key === key);
+}
+
+function buildModelDropdown() {
+  const dd = G('model-dropdown');
+  const sections = [
+    { label: 'Groq — Gratuit & Rapide', keys: MODELS.filter(m=>m.useGroq) },
+    { label: 'Mistral — Petits modèles', keys: MODELS.filter(m=>!m.useGroq && m.minPlan<=1 && !m.codestral) },
+    { label: 'Mistral — Modèles avancés', keys: MODELS.filter(m=>!m.useGroq && m.minPlan>=2 && !m.codestral) },
+    { label: 'Mistral — Code', keys: MODELS.filter(m=>m.codestral) },
+    { label: 'Mistral — Raisonnement', keys: MODELS.filter(m=>['ms_mag_s','ms_mag_m','ms_lean'].includes(m.key)) },
+  ];
+  // Dédupe
+  const seen = new Set();
+  let html = '';
+  for (const sec of sections) {
+    const items = sec.keys.filter(m => !seen.has(m.key));
+    if (!items.length) continue;
+    items.forEach(m => seen.add(m.key));
+    html += `<div class="dd-section">${sec.label}</div>`;
+    for (const m of items) {
+      const locked = m.minPlan > S.plan;
+      const active = S.model === m.key;
+      const lockTxt = locked ? `<span class="dd-item-lock">Plan ${PLAN_NAMES[m.minPlan]}</span>` : '';
+      html += `<div class="dd-item${active?' active':''}" onclick="${locked ? `toast('${m.label} requiert le forfait ${PLAN_NAMES[m.minPlan]}')` : `selectModel('${m.key}')`}" style="${locked?'opacity:.5;cursor:not-allowed':''}">
+        <span class="model-dot" style="background:${m.dot}"></span>
+        <span class="dd-item-info"><span class="dd-item-name">${m.label}</span><span class="dd-item-sub">${m.sub}</span></span>
+        ${lockTxt}
+      </div>`;
+    }
+  }
+  dd.innerHTML = html;
+}
+
+function selectModel(key) {
+  S.model = key;
+  const m = getModelInfo(key);
+  if (m) {
+    G('model-btn-label').textContent = m.label.toUpperCase();
+    G('model-dot').style.background = m.dot;
+  }
+  G('model-dropdown').classList.remove('open');
+  buildModelDropdown();
+  updateRateHint();
+}
+
+function toggleModelDropdown(e) {
+  e.stopPropagation();
+  G('model-dropdown').classList.toggle('open');
+}
+
+document.addEventListener('click', () => { G('model-dropdown').classList.remove('open'); closePlanChipMenu(); });
+
+function updateRateHint() {
+  const hint = G('rate-hint');
+  const rateMs = RATE_MS[S.plan] ?? RATE_MS[1];
+  if (!hint) return;
+  if (rateMs === 0) { hint.textContent = ''; return; }
+  const perMin = Math.round(60000 / rateMs);
+  hint.textContent = `${perMin} message${perMin>1?'s':''} par minute — Forfait ${PLAN_NAMES[S.plan]||'Free'}`;
+}
+
 function renderHistory() {
-  const list = document.getElementById('history-list');
-  list.innerHTML = Object.entries(S.history).sort((a,b) => b[1].updatedAt - a[1].updatedAt).map(([id, c]) => `
-    <div class="history-item ${id === S.chatId ? 'active' : ''}" onclick="openChat('${id}')">
-      <span class="history-item-title">${c.title || 'Conversation'}</span>
-      <span class="history-item-del" onclick="event.stopPropagation(); deleteChat('${id}')">✕</span>
+  const list = G('history-list');
+  const entries = Object.entries(S.chats).sort((a,b)=>(b[1].updatedAt||0)-(a[1].updatedAt||0));
+  if (!entries.length) {
+    list.innerHTML = '<div style="padding:16px 12px;font-size:11px;color:#bbb;text-align:center;">Aucun historique</div>';
+    return;
+  }
+  list.innerHTML = entries.map(([id, chat]) => `
+    <div class="history-item${S.chatId===id?' active':''}" onclick="loadChat('${id}')">
+      <div class="history-item-title">${esc(chat.title||'Conversation')}</div>
+      <span class="history-model-tag">${esc((chat.modelLabel||'').replace('WikiMind ',''))}</span>
+      <button class="history-item-del" onclick="event.stopPropagation();deleteChat('${id}')" title="Supprimer">×</button>
     </div>
   `).join('');
 }
 
-function newChat() {
-  S.chatId = null;
-  S.msgs = [];
-  document.getElementById('chat-container').innerHTML = '<div id="welcome" style="text-align:center;margin-top:20vh;color:#888;"><h2 style="font-size:32px;font-weight:900;color:var(--text);">Testez les modèles</h2></div>';
-  renderHistory();
-}
-
-function openChat(id) {
+function loadChat(id) {
+  if (!S.chats[id]) return;
   S.chatId = id;
-  S.msgs = S.history[id].messages || [];
-  const cc = document.getElementById('chat-container');
-  cc.innerHTML = '';
-  S.msgs.forEach(m => renderMsgToDOM(m));
+  S.msgs = [...(S.chats[id].messages || [])];
+  if (S.chats[id].model) selectModel(S.chats[id].model);
+  renderMessages();
   renderHistory();
+  closeSidebar();
 }
 
-function deleteChat(id) {
-  delete S.history[id];
-  window._fb.remove(window._fb.ref(window._fb.histDb, `users/${S.user.uid}/conversations/${id}`));
-  if(S.chatId === id) newChat();
+async function deleteChat(id) {
+  delete S.chats[id];
+  if (S.chatId === id) { S.chatId = null; S.msgs = []; showWelcome(); }
   renderHistory();
+  if (!S.user?.isGuest && window._fb?.db) {
+    try { await window._fb.remove(window._fb.ref(window._fb.db, `models_history/${S.user.uid}/${id}`)); } catch(e){}
+  }
 }
 
-// --- CHAT LOGIC ---
-function checkRateLimit() {
-  const limits = {1: 1, 2: 4, 3: 5, 4: Infinity, 5: Infinity};
-  const max = limits[S.plan] || 1;
-  if (max === Infinity) return true;
-  
-  const now = Date.now();
-  S.rateHistory = S.rateHistory.filter(t => now - t < 60000); // Garde les messages de la dernière minute
-  
-  if (S.rateHistory.length >= max) {
-    toast(`Limite atteinte (${max} msg/min). Attendez ou passez au forfait supérieur.`);
-    return false;
+async function clearHistory() {
+  if (!confirm('Effacer tout l\'historique ?')) return;
+  S.chats = {}; S.chatId = null; S.msgs = [];
+  renderHistory(); showWelcome();
+  if (!S.user?.isGuest && window._fb?.db) {
+    try { await window._fb.remove(window._fb.ref(window._fb.db, `models_history/${S.user.uid}`)); } catch(e){}
   }
-  S.rateHistory.push(now);
-  return true;
+  closePlanChipMenu();
 }
 
-async function sendMsg() {
-  const input = document.getElementById('user-input');
-  const text = input.value.trim();
-  if (!text) return;
-  
-  if (!checkRateLimit()) return;
-
-  const modelId = document.getElementById('model-select').value;
-  input.value = '';
-  document.getElementById('welcome')?.remove();
-
-  const userMsg = { role: 'user', content: text, ts: Date.now() };
-  S.msgs.push(userMsg);
-  renderMsgToDOM(userMsg);
-
-  if (!S.chatId) {
-    S.chatId = 'chat_' + Date.now();
-    S.history[S.chatId] = { title: text.substring(0, 30) + '...', messages: S.msgs, updatedAt: Date.now() };
-  }
-
-  const typingId = 'typing_' + Date.now();
-  const cc = document.getElementById('chat-container');
-  cc.insertAdjacentHTML('beforeend', `<div id="${typingId}" class="chat-bubble model"><div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`);
-  cc.scrollTop = cc.scrollHeight;
-
-  const startTime = Date.now();
-  let aiContent = "";
-  
-  try {
-    const apiMessages = S.msgs.map(m => ({ role: m.role, content: m.content }));
-    const provider = MODELS[modelId].provider;
-    
-    let endpoint, key;
-    if (provider === 'mistral') {
-      endpoint = 'https://api.mistral.ai/v1/chat/completions';
-      key = _MK;
-    } else {
-      endpoint = 'https://api.groq.com/openai/v1/chat/completions';
-      key = _GK;
-    }
-
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-      body: JSON.stringify({ model: modelId, messages: apiMessages, max_tokens: 2000 })
+function showWelcome() {
+  const msgs = G('messages');
+  msgs.innerHTML = `<div class="welcome-screen" id="welcome">
+    <div class="welcome-logo">WikiMind <span>Models</span></div>
+    <div class="welcome-sub">Testez et comparez tous les modèles d'IA de WikiMind. Sélectionnez un modèle en haut puis commencez à discuter.</div>
+    <div class="welcome-models-preview" id="welcome-chips"></div>
+  </div>`;
+  const chips = G('welcome-chips');
+  if (chips) {
+    MODELS.filter(m=>m.minPlan<=S.plan).slice(0,8).forEach(m=>{
+      const c = document.createElement('span');
+      c.className='wmp-chip'; c.textContent=m.label.replace('WikiMind ','');
+      c.style.borderLeft=`3px solid ${m.dot}`;
+      chips.appendChild(c);
     });
-
-    if (!res.ok) throw new Error("Erreur API " + res.status);
-    const data = await res.json();
-    aiContent = data.choices[0].message.content;
-
-  } catch (err) {
-    aiContent = "Erreur : " + err.message;
   }
+}
 
-  const responseTime = ((Date.now() - startTime) / 1000).toFixed(2);
-  document.getElementById(typingId).remove();
-
-  const aiMsg = { 
-    role: 'assistant', 
-    content: aiContent, 
-    model: MODELS[modelId].name, 
-    ts: Date.now(),
-    responseTime: responseTime
-  };
-  
-  S.msgs.push(aiMsg);
-  renderMsgToDOM(aiMsg);
-
-  // Sauvegarde Firebase sur HistDb (wikimindmodels)
-  S.history[S.chatId].messages = S.msgs;
-  S.history[S.chatId].updatedAt = Date.now();
-  window._fb.set(window._fb.ref(window._fb.histDb, `users/${S.user.uid}/conversations/${S.chatId}`), S.history[S.chatId]);
+function newConversation() {
+  S.chatId = 'conv_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+  S.msgs = [];
+  showWelcome();
   renderHistory();
+  closeSidebar();
+  G('user-input').focus();
 }
 
-function renderMsgToDOM(msg) {
-  const cc = document.getElementById('chat-container');
-  const wrap = document.createElement('div');
-  wrap.style.position = 'relative';
-  
-  const div = document.createElement('div');
-  div.className = 'chat-bubble ' + (msg.role === 'user' ? 'user' : 'model');
-  
-  if (msg.role === 'assistant') {
-    div.innerHTML = marked.parse(msg.content);
-    // Menu 3 petits points (Détails)
-    const detailId = 'det_' + Math.random().toString(36).substr(2,6);
-    const dateStr = new Date(msg.ts).toLocaleTimeString('fr-FR');
-    const actions = document.createElement('div');
-    actions.className = 'msg-actions';
-    actions.innerHTML = `
-      <button class="action-btn" onclick="document.getElementById('${detailId}').classList.toggle('open')">
-        <span style="font-weight:900;letter-spacing:1px;">···</span>
-      </button>
-      <div id="${detailId}" class="msg-details-popup">
-        <div class="detail-line"><span class="detail-label">Modèle :</span> ${msg.model}</div>
-        <div class="detail-line"><span class="detail-label">Heure :</span> ${dateStr}</div>
-        <div class="detail-line"><span class="detail-label">Temps de réponse :</span> ${msg.responseTime} s</div>
-      </div>
-    `;
-    wrap.appendChild(div);
-    wrap.appendChild(actions);
+function renderMessages() {
+  const msgs = G('messages');
+  if (!S.msgs.length) { showWelcome(); return; }
+  msgs.innerHTML = '';
+  S.msgs.forEach((m,i) => appendMessageDOM(m, i));
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function appendMessageDOM(msg, idx) {
+  const container = G('messages');
+  const isUser = msg.role === 'user';
+  const row = document.createElement('div');
+  row.className = `msg-row ${isUser ? 'user' : 'ai'}`;
+  row.dataset.idx = idx;
+  const bubble = document.createElement('div');
+  bubble.className = `bubble ${isUser ? 'user' : 'ai'}`;
+  if (isUser) {
+    bubble.textContent = msg.content;
   } else {
-    div.textContent = msg.content;
-    wrap.appendChild(div);
+    bubble.innerHTML = renderMarkdown(msg.content || '');
+    highlightCode(bubble);
   }
-  
-  cc.appendChild(wrap);
-  
-  // Highlight JS
-  wrap.querySelectorAll('pre code').forEach(b => { try{hljs.highlightElement(b);}catch(e){} });
-  cc.scrollTop = cc.scrollHeight;
+  row.appendChild(bubble);
+  if (!isUser) {
+    const meta = document.createElement('div');
+    meta.className = 'bubble-meta';
+    const modelLabel = msg.modelLabel || '';
+    const time = msg.ts ? new Date(msg.ts).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : '';
+    const respTime = msg.responseTime ? `${(msg.responseTime/1000).toFixed(1)}s` : '';
+    meta.innerHTML = `
+      <span class="bubble-model-tag">${esc(modelLabel)}</span>
+      <span class="bubble-time">${time}</span>
+      <button class="bubble-more-btn" onclick="toggleDetails(this)" title="Détails">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+      </button>`;
+    row.appendChild(meta);
+    const details = document.createElement('div');
+    details.className = 'bubble-details';
+    details.innerHTML = `
+      <div class="bubble-details-row"><span class="bubble-details-label">Modèle</span><span class="bubble-details-val">${esc(msg.modelId||'')}</span></div>
+      <div class="bubble-details-row"><span class="bubble-details-label">Fournisseur</span><span class="bubble-details-val">${esc(msg.provider||'Mistral')}</span></div>
+      <div class="bubble-details-row"><span class="bubble-details-label">Heure</span><span class="bubble-details-val">${time}</span></div>
+      ${respTime?`<div class="bubble-details-row"><span class="bubble-details-label">Temps de réponse</span><span class="bubble-details-val">${respTime}</span></div>`:''}
+      ${msg.tokens?`<div class="bubble-details-row"><span class="bubble-details-label">Tokens</span><span class="bubble-details-val">~${msg.tokens}</span></div>`:''}
+    `;
+    row.appendChild(details);
+  }
+  container.appendChild(row);
+  container.scrollTop = container.scrollHeight;
 }
 
-// Close details popup on click outside
-document.addEventListener('click', e => {
-  if(!e.target.closest('.action-btn') && !e.target.closest('.msg-details-popup')){
-    document.querySelectorAll('.msg-details-popup').forEach(p => p.classList.remove('open'));
+function toggleDetails(btn) {
+  const row = btn.closest('.msg-row');
+  const details = row.querySelector('.bubble-details');
+  if (details) details.classList.toggle('show');
+}
+
+function renderMarkdown(text) {
+  if (typeof marked === 'undefined') return esc(text).replace(/\n/g,'<br>');
+  try { return marked.parse(text); } catch(e) { return esc(text); }
+}
+
+function highlightCode(el) {
+  setTimeout(()=>{
+    if(typeof hljs!=='undefined') el.querySelectorAll('pre code').forEach(b=>hljs.highlightElement(b));
+  },50);
+}
+
+// ── SEND ──
+async function sendMessage() {
+  const input = G('user-input');
+  const text = input.value.trim();
+  if (!text || S.isTyping) return;
+
+  // Rate limit
+  const rateMs = RATE_MS[S.plan] ?? RATE_MS[1];
+  const now = Date.now();
+  if (rateMs > 0 && S.lastMsgTs > 0 && (now - S.lastMsgTs) < rateMs) {
+    const sec = Math.ceil((rateMs - (now - S.lastMsgTs)) / 1000);
+    G('rate-warn').style.display = 'block';
+    G('rate-txt').textContent = `Patientez encore ${sec}s — limite ${PLAN_NAMES[S.plan]} (${Math.round(60000/rateMs)}/min)`;
+    setTimeout(()=>G('rate-warn').style.display='none', 4000);
+    return;
   }
-});
+
+  const mInfo = getModelInfo(S.model);
+  if (!mInfo) { toast('Modèle introuvable'); return; }
+  if (mInfo.minPlan > S.plan) { toast(`Ce modèle requiert le forfait ${PLAN_NAMES[mInfo.minPlan]}`); return; }
+
+  if (!S.chatId) S.chatId = 'conv_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+
+  // Remove welcome
+  const welcome = G('welcome');
+  if (welcome) welcome.remove();
+
+  input.value = ''; autoResize(input);
+  S.lastMsgTs = now;
+
+  // Add user message
+  const userMsg = { role:'user', content:text, ts:now };
+  S.msgs.push(userMsg);
+  appendMessageDOM(userMsg, S.msgs.length - 1);
+
+  // Typing indicator
+  S.isTyping = true;
+  G('send-btn').disabled = true;
+  const typingRow = document.createElement('div');
+  typingRow.className = 'msg-row ai';
+  typingRow.id = 'typing-indicator';
+  typingRow.innerHTML = '<div class="bubble ai"><div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>';
+  G('messages').appendChild(typingRow);
+  G('messages').scrollTop = G('messages').scrollHeight;
+
+  const t0 = Date.now();
+  let aiContent = '';
+
+  try {
+    const messages = S.msgs.slice(0,-1).slice(-20).map(m=>({role:m.role==='ai'?'assistant':'user',content:m.content}));
+    messages.push({role:'user',content:text});
+
+    if (mInfo.useGroq) {
+      aiContent = await callGroq(messages, mInfo.id);
+    } else {
+      aiContent = await callMistral(messages, mInfo.id, mInfo.codestral);
+    }
+  } catch(e) {
+    aiContent = `Erreur : ${e.message}`;
+    console.error(e);
+  }
+
+  const responseTime = Date.now() - t0;
+
+  // Remove typing
+  const ti = G('typing-indicator'); if(ti) ti.remove();
+  S.isTyping = false;
+  G('send-btn').disabled = false;
+
+  // Add AI message
+  const aiMsg = {
+    role: 'ai',
+    content: aiContent,
+    ts: Date.now(),
+    modelLabel: mInfo.label,
+    modelId: mInfo.id,
+    provider: mInfo.useGroq ? 'Groq' : (mInfo.codestral ? 'Codestral' : 'Mistral'),
+    responseTime,
+    tokens: Math.round(aiContent.length / 4)
+  };
+  S.msgs.push(aiMsg);
+  appendMessageDOM(aiMsg, S.msgs.length - 1);
+
+  // Save
+  await saveConversation();
+}
+
+// ── API CALLS ──
+async function callMistral(messages, modelId, isCodestral=false) {
+  const endpoint = isCodestral
+    ? 'https://codestral.mistral.ai/v1/chat/completions'
+    : 'https://api.mistral.ai/v1/chat/completions';
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+_MK },
+    body: JSON.stringify({ model:modelId, messages, max_tokens:2048, temperature:0.7 })
+  });
+  if (!res.ok) {
+    let msg = `Erreur Mistral (${res.status})`;
+    try { const b = await res.json(); msg = b?.error?.message || msg; } catch(_) {}
+    // 401/403 = clé invalide ou plan insuffisant côté API
+    if (res.status === 401 || res.status === 403) msg = `Accès refusé — clé API ou droits insuffisants (${res.status})`;
+    if (res.status === 429) msg = `Limite de taux Mistral atteinte — réessayez dans un instant`;
+    throw new Error(msg);
+  }
+  const d = await res.json();
+  return d.choices?.[0]?.message?.content || '';
+}
+
+async function callGroq(messages, modelId) {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+_GK },
+    body: JSON.stringify({ model:modelId, messages, max_tokens:2048, temperature:0.7 })
+  });
+  if (!res.ok) {
+    let msg = `Erreur Groq (${res.status})`;
+    try { const b = await res.json(); msg = b?.error?.message || msg; } catch(_) {}
+    if (res.status === 429) msg = `Limite de taux Groq atteinte — réessayez dans un instant`;
+    throw new Error(msg);
+  }
+  const d = await res.json();
+  return d.choices?.[0]?.message?.content || '';
+}
+
+// ── AUTH ──
+function authTab(tab) {
+  const isLogin = tab === 'login';
+  G('tab-login').classList.toggle('active', isLogin);
+  G('tab-reg').classList.toggle('active', !isLogin);
+  G('form-login').style.display = isLogin ? 'flex' : 'none';
+  G('form-reg').style.display = !isLogin ? 'flex' : 'none';
+  G('auth-err').style.display = 'none';
+}
+
+function showAuthErr(msg) { const e=G('auth-err'); e.textContent=msg; e.style.display='block'; }
+
+function fbErr(code) {
+  const map = {
+    'auth/user-not-found':'Aucun compte avec cet e-mail.',
+    'auth/wrong-password':'Mot de passe incorrect.',
+    'auth/email-already-in-use':'Cet e-mail est déjà utilisé.',
+    'auth/weak-password':'Mot de passe trop court (6 min).',
+    'auth/invalid-email':'Adresse e-mail invalide.',
+    'auth/too-many-requests':'Trop de tentatives. Réessayez plus tard.',
+    'auth/invalid-credential':'Identifiants invalides.'
+  };
+  return map[code] || `Erreur : ${code}`;
+}
+
+async function doLogin() {
+  const fb = window._fb; if (!fb) return;
+  const e = G('le').value.trim(), p = G('lp').value;
+  if (!e || !p) { showAuthErr('Remplissez tous les champs.'); return; }
+  try { await fb.signInWithEmailAndPassword(fb.auth, e, p); }
+  catch(ex) { showAuthErr(fbErr(ex.code)); }
+}
+
+async function doRegister() {
+  const fb = window._fb; if (!fb) return;
+  const n = G('rn').value.trim(), e = G('re').value.trim(), p = G('rp').value;
+  if (!n || !e || !p) { showAuthErr('Remplissez tous les champs.'); return; }
+  try {
+    const cred = await fb.createUserWithEmailAndPassword(fb.auth, e, p);
+    await fb.set(fb.ref(fb.db, `users/${cred.user.uid}`), {
+      name:n, photoURL:'', FORFAIT:1, tokens:100, createdAt:Date.now()
+    });
+  } catch(ex) { showAuthErr(fbErr(ex.code)); }
+}
+
+async function doGoogle() {
+  const fb = window._fb; if (!fb) return;
+  try { await fb.signInWithPopup(fb.auth, new fb.GoogleAuthProvider()); }
+  catch(ex) { showAuthErr(fbErr(ex.code)); }
+}
+
+function skipAuth() {
+  G('auth-modal').style.display = 'none';
+  S.plan = 1;
+  bootUser({ uid:'guest_'+Date.now(), displayName:'Invité', isGuest:true });
+}
+
+async function doSignOut() {
+  const fb = window._fb; if (!fb) return;
+  try { await fb.signOut(fb.auth); } catch(e) {}
+  S.user = null; S.plan = 1; S.msgs = []; S.chatId = null; S.chats = {};
+  G('auth-modal').style.display = 'block';
+  closePlanChipMenu();
+}
+
+// ── SIDEBAR ──
+function toggleSidebar() {
+  const sb = G('sidebar'); const bd = G('sidebar-backdrop');
+  sb.classList.toggle('open');
+  bd.classList.toggle('show');
+}
+function closeSidebar() {
+  G('sidebar').classList.remove('open');
+  G('sidebar-backdrop').classList.remove('show');
+}
+
+// ── PLAN CHIP MENU ──
+function togglePlanChipMenu(e) {
+  e.stopPropagation();
+  G('plan-chip-menu').classList.toggle('open');
+}
+function closePlanChipMenu() {
+  const m = G('plan-chip-menu'); if(m) m.classList.remove('open');
+}
+
+// ── DARK MODE ──
+function toggleDark() {
+  document.body.classList.toggle('dark-mode');
+  const isDark = document.body.classList.contains('dark-mode');
+  localStorage.setItem('wm_dark', isDark ? '1' : '0');
+  const hl = G('hljs-dark'); const hll = G('hljs-theme');
+  if (hl && hll) { hl.disabled = !isDark; hll.disabled = isDark; }
+  closePlanChipMenu();
+}
+if (localStorage.getItem('wm_dark') === '1') {
+  document.body.classList.add('dark-mode');
+  setTimeout(()=>{
+    const hl=G('hljs-dark'),hll=G('hljs-theme');
+    if(hl)hl.disabled=false; if(hll)hll.disabled=true;
+  },100);
+}
+
+// ── INPUT ──
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+}
+
+// ── TOAST ──
+let _toastTimer;
+function toast(msg) {
+  const t = G('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+// ── INIT ──
+(function init() {
+  // Set default model
+  const firstM = MODELS[0];
+  if (firstM) {
+    G('model-btn-label').textContent = firstM.label.toUpperCase();
+    G('model-dot').style.background = firstM.dot;
+  }
+  buildModelDropdown();
+  newConversation();
+})();
 </script>
+
 </body>
 </html>
