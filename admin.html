@@ -1,0 +1,3183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Panneau d'Administration WikiMind - Gestion des utilisateurs, tokens, organisations et plus">
+    <title>WikiMind Admin v3.5</title>
+
+    <!-- Firebase SDK v12 (Modulaire) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+        import { getDatabase, ref, onValue, once, set, update, remove, push, query, orderByChild, equalTo, startAt } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-database.js";
+
+        // VOTRE CONFIGURATION FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+            authDomain: "wikimind-3-comments.firebaseapp.com",
+            databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "wikimind-3-comments",
+            storageBucket: "wikimind-3-comments.firebasestorage.app",
+            messagingSenderId: "137479541640",
+            appId: "1:137479541640:web:4ed2510a9908055052e03d"
+        };
+
+        // Initialiser Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+
+        // Variables globales
+        let currentAdmin = null;
+        let currentSection = 'dashboard';
+        let usersData = [];
+        let activityChart = null;
+        let reportsData = [];
+        let logsData = [];
+        let organizationsData = [];
+        let transactionsData = [];
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            auth.onAuthStateChanged(function(user) {
+                if (user) {
+                    checkAdminStatus(user);
+                } else {
+                    window.location.href = 'https://chpalitom09-bot.github.io/Wikimind-3/Wikimind_AI.html';
+                }
+            });
+
+            initEvents();
+        });
+
+        // Vérifier le statut admin
+        async function checkAdminStatus(user) {
+            const adminUIDs = ['vbpNViPUq8e8zhmyKYNMDSx4HEF3', 'ynYjIJbIoJZIsleuzsWZRFXrGxs1'];
+
+            if (adminUIDs.includes(user.uid)) {
+                currentAdmin = user;
+                updateAdminUI();
+                loadDashboardData();
+                return;
+            }
+
+            // Vérifier le rôle dans la base de données
+            try {
+                const snapshot = await once(ref(database, `users/${user.uid}/role`));
+                const role = snapshot.val();
+                if (role === 'admin' || role === 'moderator') {
+                    currentAdmin = user;
+                    updateAdminUI();
+                    loadDashboardData();
+                    return;
+                }
+            } catch (error) {
+                console.error("Erreur lors de la vérification du rôle:", error);
+            }
+
+            showToast('Accès refusé. Vous devez être administrateur.', 'error');
+            setTimeout(() => {
+                window.location.href = 'https://chpalitom09-bot.github.io/Wikimind-3/Wikimind_AI.html';
+            }, 2000);
+        }
+
+        // Mettre à jour l'interface admin
+        function updateAdminUI() {
+            if (currentAdmin) {
+                const avatar = document.getElementById('admin-avatar');
+                const name = document.getElementById('admin-name');
+                const email = document.getElementById('admin-email');
+
+                avatar.textContent = currentAdmin.email ? currentAdmin.email.charAt(0).toUpperCase() : 'A';
+                name.textContent = currentAdmin.displayName || currentAdmin.email || 'Admin';
+                email.textContent = currentAdmin.email || 'admin@wikimind.ai';
+
+                loadUsersData();
+            }
+        }
+
+        // Initialiser les événements
+        function initEvents() {
+            // Navigation sidebar
+            document.querySelectorAll('.admin-nav-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const section = this.dataset.section;
+                    switchSection(section);
+                });
+            });
+
+            // Bouton de déconnexion
+            document.getElementById('admin-logout-btn').addEventListener('click', function() {
+                signOut(auth).then(() => {
+                    window.location.href = 'https://chpalitom09-bot.github.io/Wikimind-3/Wikimind_AI.html';
+                }).catch(error => {
+                    showToast('Erreur de déconnexion: ' + error.message, 'error');
+                });
+            });
+
+            // Bouton de rafraîchissement
+            document.getElementById('admin-refresh-btn').addEventListener('click', function() {
+                loadSectionData(currentSection);
+            });
+
+            // Bouton dark mode
+            document.getElementById('admin-dark-toggle').addEventListener('click', function() {
+                document.body.classList.toggle('dark-mode');
+                localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+            });
+
+            // Charger le dark mode depuis le localStorage
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.body.classList.add('dark-mode');
+            }
+
+            // Boutons des sections
+            document.getElementById('add-user-btn')?.addEventListener('click', () => openUserModal());
+            document.getElementById('add-tokens-btn')?.addEventListener('click', () => openTokensModal());
+            document.getElementById('add-org-btn')?.addEventListener('click', () => openOrgModal());
+            document.getElementById('export-users-btn')?.addEventListener('click', exportUsers);
+            document.getElementById('export-logs-btn')?.addEventListener('click', exportLogs);
+            document.getElementById('clear-logs-btn')?.addEventListener('click', () => {
+                openConfirmModal('Vider les logs', 'Êtes-vous sûr de vouloir vider tous les logs ? Cette action est irréversible.', clearLogs);
+            });
+            document.getElementById('clear-reports-btn')?.addEventListener('click', () => {
+                openConfirmModal('Supprimer les signalements', 'Êtes-vous sûr de vouloir supprimer tous les signalements ?', clearReports);
+            });
+            document.getElementById('create-backup-btn')?.addEventListener('click', () => {
+                openConfirmModal('Créer une sauvegarde', 'Êtes-vous sûr de vouloir créer une sauvegarde complète de la base de données ?', createBackup);
+            });
+            document.getElementById('save-settings-btn')?.addEventListener('click', saveSettings);
+
+            // Filtres
+            document.getElementById('user-filter')?.addEventListener('change', filterUsers);
+            document.getElementById('user-search')?.addEventListener('input', filterUsers);
+            document.getElementById('report-filter')?.addEventListener('change', filterReports);
+
+            // Modals
+            document.getElementById('user-modal-close')?.addEventListener('click', closeUserModal);
+            document.getElementById('user-modal-cancel')?.addEventListener('click', closeUserModal);
+            document.getElementById('tokens-modal-close')?.addEventListener('click', closeTokensModal);
+            document.getElementById('tokens-modal-cancel')?.addEventListener('click', closeTokensModal);
+            document.getElementById('org-modal-close')?.addEventListener('click', closeOrgModal);
+            document.getElementById('org-modal-cancel')?.addEventListener('click', closeOrgModal);
+            document.getElementById('confirm-modal-close')?.addEventListener('click', closeConfirmModal);
+            document.getElementById('confirm-modal-cancel')?.addEventListener('click', closeConfirmModal);
+
+            // Formulaires
+            document.getElementById('user-form')?.addEventListener('submit', saveUser);
+            document.getElementById('tokens-form')?.addEventListener('submit', saveTokens);
+            document.getElementById('org-form')?.addEventListener('submit', saveOrg);
+
+            // Fermer les modales en cliquant à l'extérieur
+            document.querySelectorAll('.admin-modal').forEach(modal => {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        closeAllModals();
+                    }
+                });
+            });
+        }
+
+        // Fermer toutes les modales
+        function closeAllModals() {
+            document.querySelectorAll('.admin-modal').forEach(modal => {
+                modal.classList.remove('show');
+            });
+        }
+
+        // Changer de section
+        function switchSection(section) {
+            document.querySelectorAll('.admin-nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-section="${section}"]`)?.classList.add('active');
+
+            document.querySelectorAll('.admin-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`admin-${section}`)?.classList.add('active');
+
+            const title = document.getElementById('admin-page-title');
+            const btnText = document.querySelector(`[data-section="${section}"]`)?.textContent.trim();
+            if (title && btnText) title.textContent = btnText;
+
+            currentSection = section;
+            loadSectionData(section);
+        }
+
+        // Charger les données du tableau de bord
+        function loadDashboardData() {
+            loadStats();
+            loadActivityChart();
+            loadRecentActions();
+        }
+
+        // Charger les statistiques
+        async function loadStats() {
+            try {
+                // Utilisateurs totaux
+                const usersSnapshot = await once(ref(database, 'users'));
+                const users = usersSnapshot.val();
+                const totalUsers = users ? Object.keys(users).length : 0;
+                document.getElementById('total-users').textContent = totalUsers.toLocaleString();
+
+                // Nouveaux utilisateurs aujourd'hui
+                const today = new Date().toISOString().split('T')[0];
+                const newUsersSnapshot = await once(query(ref(database, 'users'), orderByChild('createdAt'), startAt(today)));
+                const newUsers = newUsersSnapshot.val();
+                document.getElementById('new-users-today').textContent = newUsers ? Object.keys(newUsers).length : 0;
+
+                // Tokens totaux
+                const transactionsSnapshot = await once(ref(database, 'transactions'));
+                const transactions = transactionsSnapshot.val();
+                let totalTokens = 0;
+                if (transactions) {
+                    Object.values(transactions).forEach(tx => {
+                        if (tx.amount) totalTokens += parseInt(tx.amount);
+                    });
+                }
+                document.getElementById('total-tokens').textContent = totalTokens.toLocaleString();
+
+                // Signalements actifs
+                const reportsSnapshot = await once(query(ref(database, 'reports'), orderByChild('status'), equalTo('pending')));
+                const reports = reportsSnapshot.val();
+                document.getElementById('active-reports').textContent = reports ? Object.keys(reports).length : 0;
+            } catch (error) {
+                console.error("Erreur lors du chargement des stats:", error);
+                showToast('Erreur de chargement des statistiques', 'error');
+            }
+        }
+
+        // Charger le graphique d'activité
+        async function loadActivityChart() {
+            try {
+                const today = new Date();
+                const labels = [];
+                const data = [];
+
+                for (let i = 6; i >= 0; i--) {
+                    const date = new Date(today);
+                    date.setDate(today.getDate() - i);
+                    const dateStr = date.toISOString().split('T')[0];
+                    labels.push(date.toLocaleDateString('fr-FR', { weekday: 'short' }));
+
+                    // Compter les activités pour cette date
+                    const activitiesSnapshot = await once(query(ref(database, 'admin_activities'), orderByChild('ts'), startAt(date.getTime())));
+                    const activities = activitiesSnapshot.val();
+                    data.push(activities ? Object.keys(activities).length : 0);
+                }
+
+                const ctx = document.getElementById('activity-chart');
+                if (!ctx) return;
+
+                if (activityChart) {
+                    activityChart.destroy();
+                }
+
+                activityChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Activité',
+                            data: data,
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'var(--border2)'
+                                },
+                                ticks: {
+                                    color: 'var(--text)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    color: 'var(--text)'
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Erreur lors du chargement du graphique:", error);
+            }
+        }
+
+        // Charger les actions récentes
+        async function loadRecentActions() {
+            try {
+                const activitiesSnapshot = await once(query(ref(database, 'admin_activities'), orderByChild('ts'), startAt(Date.now() - 7 * 24 * 60 * 60 * 1000)));
+                const activities = activitiesSnapshot.val();
+                const tbody = document.getElementById('recent-actions');
+
+                if (!tbody) return;
+
+                tbody.innerHTML = '';
+
+                if (!activities || Object.keys(activities).length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #888;">Aucune activité récente</td></tr>';
+                    return;
+                }
+
+                const activityList = Object.entries(activities)
+                    .sort((a, b) => b[1].ts - a[1].ts)
+                    .slice(0, 10);
+
+                activityList.forEach(([id, activity]) => {
+                    const row = document.createElement('tr');
+                    const userName = usersData.find(u => u.id === activity.uid)?.name || activity.uid || 'Inconnu';
+
+                    row.innerHTML = `
+                        <td>${userName}</td>
+                        <td>${activity.message || 'Action non spécifiée'}</td>
+                        <td><span class="admin-badge info">${activity.module || 'Général'}</span></td>
+                        <td>${new Date(activity.ts).toLocaleString('fr-FR')}</td>
+                        <td><span class="admin-badge success">${activity.level || 'info'}</span></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error("Erreur lors du chargement des actions récentes:", error);
+                showToast('Erreur de chargement des actions récentes', 'error');
+            }
+        }
+
+        // Charger les données des utilisateurs
+        async function loadUsersData() {
+            try {
+                const snapshot = await once(ref(database, 'users'));
+                usersData = [];
+                const users = snapshot.val();
+
+                if (users) {
+                    for (const [uid, userData] of Object.entries(users)) {
+                        usersData.push({
+                            id: uid,
+                            name: userData.name || userData.email || uid,
+                            email: userData.email || '',
+                            plan: userData.FORFAIT || { plan: 1 },
+                            tokens: userData.tokens || { amount: 0 },
+                            lastAccess: userData.lastAccess || 'Jamais',
+                            status: userData.status || 'active',
+                            createdAt: userData.createdAt || new Date().toISOString(),
+                            role: userData.role || 'user'
+                        });
+                    }
+                }
+
+                updateTokensUserSelect();
+                updateOrgAdminSelect();
+
+                if (currentSection === 'users') {
+                    renderUsersTable(usersData);
+                }
+            } catch (error) {
+                console.error("Erreur lors du chargement des utilisateurs:", error);
+                showToast('Erreur de chargement des utilisateurs', 'error');
+            }
+        }
+
+        // Filtrer les utilisateurs
+        function filterUsers() {
+            const search = document.getElementById('user-search')?.value.toLowerCase() || '';
+            const filter = document.getElementById('user-filter')?.value || 'all';
+
+            const filtered = usersData.filter(user => {
+                const matchesSearch = user.name.toLowerCase().includes(search) ||
+                                     user.email.toLowerCase().includes(search) ||
+                                     user.id.includes(search);
+
+                const userPlan = user.plan && user.plan.plan ? getPlanName(user.plan.plan) : 'Free';
+                const matchesFilter = filter === 'all' || userPlan === filter;
+
+                return matchesSearch && matchesFilter;
+            });
+
+            renderUsersTable(filtered);
+        }
+
+        // Rendre le tableau des utilisateurs
+        function renderUsersTable(users) {
+            const tbody = document.getElementById('users-table-body');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #888;">Aucun utilisateur trouvé</td></tr>';
+                return;
+            }
+
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                const planName = getPlanName(user.plan && user.plan.plan ? user.plan.plan : 1);
+                const tokenAmount = user.tokens && user.tokens.amount ? user.tokens.amount : 0;
+                const statusBadge = getStatusBadge(user.status);
+
+                row.innerHTML = `
+                    <td title="${user.id}">${user.id.substring(0, 8)}...</td>
+                    <td>${user.name}</td>
+                    <td>${user.email || '-'}</td>
+                    <td><span class="admin-badge ${getPlanColor(planName)}">${planName}</span></td>
+                    <td>${tokenAmount.toLocaleString()}</td>
+                    <td>${formatDate(user.lastAccess)}</td>
+                    <td><span class="admin-badge ${statusBadge.color}">${statusBadge.text}</span></td>
+                    <td>
+                        <div class="admin-table-actions">
+                            <button class="admin-table-btn view" onclick="viewUser('${user.id}')" title="Voir">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="admin-table-btn edit" onclick="editUser('${user.id}')" title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="admin-table-btn delete" onclick="deleteUser('${user.id}')" title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Charger les données d'une section
+        function loadSectionData(section) {
+            switch(section) {
+                case 'dashboard': loadDashboardData(); break;
+                case 'users': loadUsersData(); break;
+                case 'tokens': loadTokensData(); break;
+                case 'subscriptions': loadSubscriptionsData(); break;
+                case 'organizations': loadOrganizationsData(); break;
+                case 'moderation': loadModerationData(); break;
+                case 'reports': loadReportsData(); break;
+                case 'logs': loadLogsData(); break;
+                case 'backups': loadBackupsData(); break;
+            }
+        }
+
+        // Charger les données des tokens
+        async function loadTokensData() {
+            try {
+                const snapshot = await once(ref(database, 'transactions'));
+                const transactions = snapshot.val();
+                const tbody = document.getElementById('tokens-table-body');
+
+                if (!tbody) return;
+
+                tbody.innerHTML = '';
+
+                if (!transactions || Object.keys(transactions).length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: #888;">Aucune transaction trouvée</td></tr>';
+                    return;
+                }
+
+                const transactionList = Object.entries(transactions)
+                    .sort((a, b) => b[1].createdAt - a[1].createdAt);
+
+                transactionList.forEach(([txId, tx]) => {
+                    const row = document.createElement('tr');
+                    const userName = usersData.find(u => u.id === tx.uid)?.name || tx.uid || 'Inconnu';
+
+                    row.innerHTML = `
+                        <td>${userName}</td>
+                        <td>${tx.type || 'Ajout'}</td>
+                        <td>${tx.amount || '0'}</td>
+                        <td>${tx.method || 'Manuel'}</td>
+                        <td>${formatDate(tx.createdAt)}</td>
+                        <td><span class="admin-badge ${tx.status === 'completed' ? 'success' : 'warning'}">${tx.status || 'En attente'}</span></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error("Erreur lors du chargement des tokens:", error);
+                showToast('Erreur de chargement des transactions', 'error');
+            }
+        }
+
+        // Charger les données des abonnements
+        async function loadSubscriptionsData() {
+            try {
+                // Pour l'instant, on simule des données car la structure n'est pas dans vos règles
+                const subscriptions = [
+                    { user: 'user1', plan: 'AI Premium', startDate: '2024-01-01', endDate: '2024-12-31', price: '19.99€/mois', status: 'active' },
+                    { user: 'user2', plan: 'AI Pro', startDate: '2024-02-01', endDate: '2024-11-30', price: '14.99€/mois', status: 'active' },
+                    { user: 'user3', plan: 'AI Plus', startDate: '2024-03-01', endDate: '2024-03-31', price: '9.99€/mois', status: 'expired' },
+                    { user: 'user4', plan: 'AI Premium+', startDate: '2024-04-01', endDate: '2024-10-31', price: '29.99€/mois', status: 'cancelled' }
+                ];
+
+                const tbody = document.getElementById('subscriptions-table-body');
+                if (!tbody) return;
+
+                tbody.innerHTML = '';
+
+                subscriptions.forEach(sub => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${sub.user}</td>
+                        <td><span class="admin-badge primary">${sub.plan}</span></td>
+                        <td>${sub.startDate}</td>
+                        <td>${sub.endDate}</td>
+                        <td>${sub.price}</td>
+                        <td><span class="admin-badge ${sub.status === 'active' ? 'success' : sub.status === 'expired' ? 'warning' : 'danger'}">${sub.status}</span></td>
+                        <td>
+                            <div class="admin-table-actions">
+                                <button class="admin-table-btn view" title="Voir">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="admin-table-btn edit" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                document.getElementById('total-revenue').textContent = '2 450€';
+                document.getElementById('active-subscriptions').textContent = subscriptions.filter(s => s.status === 'active').length;
+                document.getElementById('expiring-soon').textContent = subscriptions.filter(s => s.status === 'expired').length;
+                document.getElementById('cancelled-subscriptions').textContent = subscriptions.filter(s => s.status === 'cancelled').length;
+            } catch (error) {
+                console.error("Erreur lors du chargement des abonnements:", error);
+                showToast('Erreur de chargement des abonnements', 'error');
+            }
+        }
+
+        // Charger les données des organisations
+        async function loadOrganizationsData() {
+            try {
+                const snapshot = await once(ref(database, 'organisations'));
+                const orgs = snapshot.val();
+                const tbody = document.getElementById('organizations-table-body');
+
+                if (!tbody) return;
+
+                tbody.innerHTML = '';
+
+                if (!orgs || Object.keys(orgs).length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #888;">Aucune organisation trouvée</td></tr>';
+                    return;
+                }
+
+                for (const [orgId, org] of Object.entries(orgs)) {
+                    const row = document.createElement('tr');
+                    const memberCount = org.members ? Object.keys(org.members).length : 0;
+                    const adminName = usersData.find(u => u.id === org.adminUid)?.name || org.adminUid || 'Inconnu';
+
+                    row.innerHTML = `
+                        <td title="${orgId}">${orgId.substring(0, 8)}...</td>
+                        <td>${org.name || 'Non nommé'}</td>
+                        <td>${adminName}</td>
+                        <td>${memberCount}</td>
+                        <td><span class="admin-badge ${org.visibility === 'public' ? 'success' : 'info'}">${org.visibility || 'Privée'}</span></td>
+                        <td>${formatDate(org.createdAt)}</td>
+                        <td>
+                            <div class="admin-table-actions">
+                                <button class="admin-table-btn view" onclick="viewOrg('${orgId}')" title="Voir">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="admin-table-btn edit" onclick="editOrg('${orgId}')" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="admin-table-btn delete" onclick="deleteOrg('${orgId}')" title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                }
+            } catch (error) {
+                console.error("Erreur lors du chargement des organisations:", error);
+                showToast('Erreur de chargement des organisations', 'error');
+            }
+        }
+
+        // Charger les données de modération
+        async function loadModerationData() {
+            try {
+                // Simuler des données de modération
+                const contents = [
+                    { id: 'content1', user: 'user1', type: 'Conversation', content: 'Contenu suspect détecté...', date: new Date().toLocaleString(), status: 'pending' },
+                    { id: 'content2', user: 'user2', type: 'Canvas', content: 'Image inappropriée', date: new Date().toLocaleString(), status: 'pending' },
+                    { id: 'content3', user: 'user3', type: 'Avis', content: 'Avis spam', date: new Date().toLocaleString(), status: 'resolved' }
+                ];
+
+                const tbody = document.getElementById('moderation-table-body');
+                if (!tbody) return;
+
+                tbody.innerHTML = '';
+
+                contents.forEach(content => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${content.id}</td>
+                        <td>${content.user}</td>
+                        <td><span class="admin-badge info">${content.type}</span></td>
+                        <td>${content.content.substring(0, 30)}...</td>
+                        <td>${content.date}</td>
+                        <td>
+                            <div class="admin-table-actions">
+                                <button class="admin-table-btn view" title="Voir">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="admin-table-btn edit" title="Approuver">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button class="admin-table-btn delete" title="Rejeter">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error("Erreur lors du chargement de la modération:", error);
+                showToast('Erreur de chargement de la modération', 'error');
+            }
+        }
+
+        // Charger les données des signalements
+        async function loadReportsData() {
+            try {
+                const snapshot = await once(ref(database, 'reports'));
+                const reports = snapshot.val();
+                reportsData = reports ? Object.entries(reports).map(([id, data]) => ({ id, ...data })) : [];
+
+                const tbody = document.getElementById('reports-table-body');
+                if (!tbody) return;
+
+                tbody.innerHTML = '';
+
+                if (!reportsData || reportsData.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #888;">Aucun signalement trouvé</td></tr>';
+                    return;
+                }
+
+                const filter = document.getElementById('report-filter')?.value || 'pending';
+                const filteredReports = reportsData.filter(r => filter === 'all' || r.status === filter);
+
+                filteredReports.forEach(report => {
+                    const row = document.createElement('tr');
+                    const userName = usersData.find(u => u.id === report.uid)?.name || report.uid || 'Anonyme';
+                    const statusBadge = report.status === 'resolved' ? 'success' : 'warning';
+
+                    row.innerHTML = `
+                        <td title="${report.id}">${report.id.substring(0, 8)}...</td>
+                        <td><span class="admin-badge info">${report.type || 'Contenu'}</span></td>
+                        <td>${userName}</td>
+                        <td>${report.content || 'Non spécifié'}</td>
+                        <td>${report.reason || 'Non spécifié'}</td>
+                        <td>${formatDate(report.createdAt)}</td>
+                        <td><span class="admin-badge ${statusBadge}">${report.status || 'En attente'}</span></td>
+                        <td>
+                            <div class="admin-table-actions">
+                                <button class="admin-table-btn view" title="Voir">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="admin-table-btn edit" onclick="resolveReport('${report.id}')" title="Résoudre">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button class="admin-table-btn delete" onclick="deleteReport('${report.id}')" title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error("Erreur lors du chargement des signalements:", error);
+                showToast('Erreur de chargement des signalements', 'error');
+            }
+        }
+
+        // Filtrer les signalements
+        function filterReports() {
+            const filter = document.getElementById('report-filter')?.value || 'pending';
+            const tbody = document.getElementById('reports-table-body');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+
+            if (!reportsData || reportsData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #888;">Aucun signalement trouvé</td></tr>';
+                return;
+            }
+
+            const filteredReports = reportsData.filter(r => filter === 'all' || r.status === filter);
+
+            filteredReports.forEach(report => {
+                const row = document.createElement('tr');
+                const userName = usersData.find(u => u.id === report.uid)?.name || report.uid || 'Anonyme';
+                const statusBadge = report.status === 'resolved' ? 'success' : 'warning';
+
+                row.innerHTML = `
+                    <td title="${report.id}">${report.id.substring(0, 8)}...</td>
+                    <td><span class="admin-badge info">${report.type || 'Contenu'}</span></td>
+                    <td>${userName}</td>
+                    <td>${report.content || 'Non spécifié'}</td>
+                    <td>${report.reason || 'Non spécifié'}</td>
+                    <td>${formatDate(report.createdAt)}</td>
+                    <td><span class="admin-badge ${statusBadge}">${report.status || 'En attente'}</span></td>
+                    <td>
+                        <div class="admin-table-actions">
+                            <button class="admin-table-btn view" title="Voir">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="admin-table-btn edit" onclick="resolveReport('${report.id}')" title="Résoudre">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="admin-table-btn delete" onclick="deleteReport('${report.id}')" title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Charger les données des logs
+        async function loadLogsData() {
+            try {
+                const snapshot = await once(ref(database, 'logs'));
+                const logs = snapshot.val();
+                logsData = logs ? Object.entries(logs).map(([id, data]) => ({ id, ...data })) : [];
+
+                const tbody = document.getElementById('logs-table-body');
+                if (!tbody) return;
+
+                tbody.innerHTML = '';
+
+                if (!logsData || logsData.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #888;">Aucun log trouvé</td></tr>';
+                    return;
+                }
+
+                const filter = document.querySelector('.admin-table-header select')?.value || 'all';
+                const filteredLogs = logsData.filter(log => filter === 'all' || log.level === filter);
+
+                filteredLogs.slice(0, 50).forEach(log => {
+                    const row = document.createElement('tr');
+                    const levelBadge = log.level === 'error' ? 'danger' : log.level === 'warning' ? 'warning' : 'info';
+                    const userName = usersData.find(u => u.id === log.uid)?.name || log.uid || 'Système';
+
+                    row.innerHTML = `
+                        <td>${formatDate(log.ts)}</td>
+                        <td><span class="admin-badge ${levelBadge}">${log.level || 'info'}</span></td>
+                        <td>${log.module || 'Général'}</td>
+                        <td>${log.message || 'Message non spécifié'}</td>
+                        <td>${userName}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error("Erreur lors du chargement des logs:", error);
+                showToast('Erreur de chargement des logs', 'error');
+            }
+        }
+
+        // Charger les données des sauvegardes
+        async function loadBackupsData() {
+            try {
+                const snapshot = await once(ref(database, 'backups'));
+                const backups = snapshot.val();
+
+                const tbody = document.getElementById('backups-table-body');
+                if (!tbody) return;
+
+                tbody.innerHTML = '';
+
+                if (!backups || Object.keys(backups).length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #888;">Aucune sauvegarde trouvée</td></tr>';
+                    return;
+                }
+
+                for (const [backupId, backup] of Object.entries(backups)) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td title="${backupId}">${backupId.substring(0, 8)}...</td>
+                        <td><span class="admin-badge info">${backup.type || 'Complete'}</span></td>
+                        <td>${backup.size || 'N/A'}</td>
+                        <td>${formatDate(backup.createdAt)}</td>
+                        <td>
+                            <div class="admin-table-actions">
+                                <button class="admin-table-btn view" title="Télécharger">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                                <button class="admin-table-btn delete" title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                }
+            } catch (error) {
+                console.error("Erreur lors du chargement des sauvegardes:", error);
+                showToast('Erreur de chargement des sauvegardes', 'error');
+            }
+        }
+
+        // Mettre à jour le select des utilisateurs pour les tokens
+        function updateTokensUserSelect() {
+            const select = document.getElementById('tokens-user');
+            if (!select) return;
+
+            select.innerHTML = '<option value="">Sélectionnez un utilisateur</option>';
+            usersData.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = `${user.name} (${user.email})`;
+                select.appendChild(option);
+            });
+        }
+
+        // Mettre à jour le select des admins pour les organisations
+        function updateOrgAdminSelect() {
+            const select = document.getElementById('org-admin');
+            if (!select) return;
+
+            select.innerHTML = '<option value="">Sélectionnez un administrateur</option>';
+            usersData.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = `${user.name} (${user.email})`;
+                select.appendChild(option);
+            });
+        }
+
+        // Modals Functions
+        function openUserModal(userId = null) {
+            const modal = document.getElementById('user-modal');
+            const title = document.getElementById('user-modal-title');
+
+            if (userId) {
+                title.textContent = 'Modifier l\\'Utilisateur';
+                const user = usersData.find(u => u.id === userId);
+                if (user) {
+                    document.getElementById('user-id').value = user.id;
+                    document.getElementById('user-name').value = user.name || '';
+                    document.getElementById('user-email').value = user.email || '';
+                    document.getElementById('user-password').value = '';
+                    document.getElementById('user-plan').value = user.plan && user.plan.plan ? user.plan.plan : 1;
+                    document.getElementById('user-tokens').value = user.tokens && user.tokens.amount ? user.tokens.amount : 0;
+                    document.getElementById('user-role').value = user.role || 'user';
+                    document.getElementById('user-status').value = user.status || 'active';
+                }
+            } else {
+                title.textContent = 'Ajouter un Utilisateur';
+                document.getElementById('user-id').value = '';
+                document.getElementById('user-name').value = '';
+                document.getElementById('user-email').value = '';
+                document.getElementById('user-password').value = '';
+                document.getElementById('user-plan').value = 1;
+                document.getElementById('user-tokens').value = 0;
+                document.getElementById('user-role').value = 'user';
+                document.getElementById('user-status').value = 'active';
+            }
+
+            modal.classList.add('show');
+        }
+
+        function closeUserModal() {
+            document.getElementById('user-modal').classList.remove('show');
+        }
+
+        function openTokensModal() {
+            document.getElementById('tokens-modal').classList.add('show');
+        }
+
+        function closeTokensModal() {
+            document.getElementById('tokens-modal').classList.remove('show');
+        }
+
+        function openOrgModal(orgId = null) {
+            const modal = document.getElementById('org-modal');
+            const title = document.getElementById('org-modal-title');
+
+            if (orgId) {
+                title.textContent = 'Modifier l\\'Organisation';
+                once(ref(database, `organisations/${orgId}`)).then(snapshot => {
+                    const org = snapshot.val();
+                    if (org) {
+                        document.getElementById('org-id').value = orgId;
+                        document.getElementById('org-name').value = org.name || '';
+                        document.getElementById('org-description').value = org.description || '';
+                        document.getElementById('org-sector').value = org.sector || 'education';
+                        document.getElementById('org-visibility').value = org.visibility || 'public';
+                        document.getElementById('org-admin').value = org.adminUid || '';
+                        document.getElementById('org-joinable').value = org.joinable ? 'true' : 'false';
+                    }
+                });
+            } else {
+                title.textContent = 'Ajouter une Organisation';
+                document.getElementById('org-id').value = '';
+                document.getElementById('org-name').value = '';
+                document.getElementById('org-description').value = '';
+                document.getElementById('org-sector').value = 'education';
+                document.getElementById('org-visibility').value = 'public';
+                document.getElementById('org-admin').value = '';
+                document.getElementById('org-joinable').value = 'true';
+            }
+
+            modal.classList.add('show');
+        }
+
+        function closeOrgModal() {
+            document.getElementById('org-modal').classList.remove('show');
+        }
+
+        function openConfirmModal(title, message, onConfirm) {
+            document.getElementById('confirm-modal-title').textContent = title;
+            document.getElementById('confirm-modal-message').textContent = message;
+
+            const confirmBtn = document.getElementById('confirm-modal-confirm');
+            confirmBtn.onclick = function() {
+                onConfirm();
+                closeConfirmModal();
+            };
+
+            document.getElementById('confirm-modal').classList.add('show');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.remove('show');
+        }
+
+        function closeAllModals() {
+            document.querySelectorAll('.admin-modal').forEach(modal => {
+                modal.classList.remove('show');
+            });
+        }
+
+        // Sauvegarder un utilisateur
+        async function saveUser(e) {
+            e.preventDefault();
+
+            const userId = document.getElementById('user-id').value;
+            const name = document.getElementById('user-name').value;
+            const email = document.getElementById('user-email').value;
+            const password = document.getElementById('user-password').value;
+            const plan = document.getElementById('user-plan').value;
+            const tokens = document.getElementById('user-tokens').value;
+            const role = document.getElementById('user-role').value;
+            const status = document.getElementById('user-status').value;
+
+            if (userId) {
+                // Mettre à jour l'utilisateur
+                try {
+                    const updates = {
+                        name: name,
+                        email: email,
+                        FORFAIT: { plan: parseInt(plan) },
+                        tokens: { amount: parseInt(tokens) },
+                        status: status,
+                        role: role,
+                        lastUpdated: new Date().toISOString()
+                    };
+
+                    await update(ref(database, `users/${userId}`), updates);
+                    await set(ref(database, `admin_activities/${Date.now()}`), {
+                        uid: currentAdmin.uid,
+                        message: `Utilisateur ${userId} mis à jour`,
+                        module: 'Users',
+                        level: 'info',
+                        ts: Date.now()
+                    });
+
+                    showToast('Utilisateur mis à jour avec succès', 'success');
+                    closeUserModal();
+                    loadUsersData();
+                } catch (error) {
+                    showToast('Erreur: ' + error.message, 'error');
+                }
+            } else {
+                // Créer un nouvel utilisateur
+                if (!email || !password) {
+                    showToast('Email et mot de passe sont requis', 'error');
+                    return;
+                }
+
+                try {
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    const newUserId = userCredential.user.uid;
+
+                    const userData = {
+                        name: name,
+                        email: email,
+                        FORFAIT: { plan: parseInt(plan) },
+                        tokens: { amount: parseInt(tokens) },
+                        status: status,
+                        role: role,
+                        createdAt: new Date().toISOString(),
+                        lastAccess: new Date().toISOString()
+                    };
+
+                    await set(ref(database, `users/${newUserId}`), userData);
+                    await set(ref(database, `admin_activities/${Date.now()}`), {
+                        uid: currentAdmin.uid,
+                        message: `Utilisateur ${newUserId} créé`,
+                        module: 'Users',
+                        level: 'info',
+                        ts: Date.now()
+                    });
+
+                    showToast('Utilisateur créé avec succès', 'success');
+                    closeUserModal();
+                    loadUsersData();
+                } catch (error) {
+                    showToast('Erreur: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // Sauvegarder des tokens
+        async function saveTokens(e) {
+            e.preventDefault();
+
+            const userId = document.getElementById('tokens-user').value;
+            const amount = parseInt(document.getElementById('tokens-amount').value);
+            const reason = document.getElementById('tokens-reason').value;
+            const notes = document.getElementById('tokens-notes').value;
+
+            if (!userId || !amount) {
+                showToast('Veuillez sélectionner un utilisateur et un montant', 'error');
+                return;
+            }
+
+            try {
+                // Mettre à jour les tokens de l'utilisateur
+                await update(ref(database, `users/${userId}/tokens/amount`), {
+                    amount: amount
+                });
+
+                // Créer une transaction
+                const transaction = {
+                    uid: userId,
+                    type: 'add',
+                    amount: amount,
+                    method: 'admin',
+                    reason: reason,
+                    notes: notes,
+                    createdAt: new Date().toISOString(),
+                    status: 'completed'
+                };
+
+                await push(ref(database, 'transactions'), transaction);
+                await set(ref(database, `admin_activities/${Date.now()}`), {
+                    uid: currentAdmin.uid,
+                    message: `Ajout de ${amount} tokens à ${userId}`,
+                    module: 'Tokens',
+                    level: 'info',
+                    ts: Date.now()
+                });
+
+                showToast('Tokens ajoutés avec succès', 'success');
+                closeTokensModal();
+                loadTokensData();
+                loadUsersData();
+            } catch (error) {
+                showToast('Erreur: ' + error.message, 'error');
+            }
+        }
+
+        // Sauvegarder une organisation
+        async function saveOrg(e) {
+            e.preventDefault();
+
+            const orgId = document.getElementById('org-id').value;
+            const name = document.getElementById('org-name').value;
+            const description = document.getElementById('org-description').value;
+            const sector = document.getElementById('org-sector').value;
+            const visibility = document.getElementById('org-visibility').value;
+            const adminUid = document.getElementById('org-admin').value;
+            const joinable = document.getElementById('org-joinable').value === 'true';
+
+            if (orgId) {
+                // Mettre à jour l'organisation
+                try {
+                    const updates = {
+                        name: name,
+                        description: description,
+                        sector: sector,
+                        visibility: visibility,
+                        adminUid: adminUid,
+                        joinable: joinable,
+                        updatedAt: new Date().toISOString()
+                    };
+
+                    await update(ref(database, `organisations/${orgId}`), updates);
+                    await set(ref(database, `admin_activities/${Date.now()}`), {
+                        uid: currentAdmin.uid,
+                        message: `Organisation ${orgId} mise à jour`,
+                        module: 'Organizations',
+                        level: 'info',
+                        ts: Date.now()
+                    });
+
+                    showToast('Organisation mise à jour avec succès', 'success');
+                    closeOrgModal();
+                    loadOrganizationsData();
+                } catch (error) {
+                    showToast('Erreur: ' + error.message, 'error');
+                }
+            } else {
+                // Créer une nouvelle organisation
+                if (!name || !adminUid) {
+                    showToast('Nom et administrateur sont requis', 'error');
+                    return;
+                }
+
+                try {
+                    const orgData = {
+                        name: name,
+                        description: description,
+                        sector: sector,
+                        visibility: visibility,
+                        adminUid: adminUid,
+                        joinable: joinable,
+                        plan: 6,
+                        createdAt: new Date().toISOString(),
+                        members: { [adminUid]: { uid: adminUid, name: usersData.find(u => u.id === adminUid)?.name || 'Admin', email: usersData.find(u => u.id === adminUid)?.email || '', role: 'admin', joinedAt: new Date().toISOString() } }
+                    };
+
+                    const newOrgRef = push(ref(database, 'organisations'));
+                    await set(newOrgRef, orgData);
+                    await set(ref(database, `admin_activities/${Date.now()}`), {
+                        uid: currentAdmin.uid,
+                        message: `Organisation ${newOrgRef.key} créée`,
+                        module: 'Organizations',
+                        level: 'info',
+                        ts: Date.now()
+                    });
+
+                    showToast('Organisation créée avec succès', 'success');
+                    closeOrgModal();
+                    loadOrganizationsData();
+                } catch (error) {
+                    showToast('Erreur: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // Sauvegarder les paramètres
+        async function saveSettings() {
+            const siteName = document.getElementById('site-name').value;
+            const siteDescription = document.getElementById('site-description').value;
+            const maintenanceMode = document.getElementById('maintenance-mode').value;
+            const maintenanceMessage = document.getElementById('maintenance-message').value;
+
+            try {
+                const settings = {
+                    siteName: siteName,
+                    siteDescription: siteDescription,
+                    maintenance: {
+                        enabled: maintenanceMode === 'true',
+                        message: maintenanceMessage
+                    },
+                    updatedAt: new Date().toISOString()
+                };
+
+                await set(ref(database, 'settings'), settings);
+                await set(ref(database, `admin_activities/${Date.now()}`), {
+                    uid: currentAdmin.uid,
+                    message: 'Paramètres système mis à jour',
+                    module: 'Settings',
+                    level: 'info',
+                    ts: Date.now()
+                });
+
+                showToast('Paramètres sauvegardés avec succès', 'success');
+            } catch (error) {
+                showToast('Erreur: ' + error.message, 'error');
+            }
+        }
+
+        // Exporter les utilisateurs
+        function exportUsers() {
+            if (usersData.length === 0) {
+                showToast('Aucun utilisateur à exporter', 'error');
+                return;
+            }
+
+            let csv = 'ID,Nom,Email,Forfait,Tokens,Dernier Accès,Statut,Rôle,Date Création\n';
+            usersData.forEach(user => {
+                const planName = getPlanName(user.plan && user.plan.plan ? user.plan.plan : 1);
+                const tokenAmount = user.tokens && user.tokens.amount ? user.tokens.amount : 0;
+                csv += `"${user.id}","${user.name}","${user.email || ''}","${planName}",${tokenAmount},"${user.lastAccess || 'Jamais'}","${user.status || 'active'}","${user.role || 'user'}","${user.createdAt || ''}"\n`;
+            });
+
+            downloadCSV(csv, `wikimind_users_${new Date().toISOString().split('T')[0]}.csv`);
+            showToast('Utilisateurs exportés avec succès', 'success');
+        }
+
+        // Exporter les logs
+        async function exportLogs() {
+            try {
+                if (!logsData || logsData.length === 0) {
+                    showToast('Aucun log à exporter', 'error');
+                    return;
+                }
+
+                let csv = 'Date,Niveau,Module,Message,Utilisateur\n';
+                logsData.forEach(log => {
+                    const userName = usersData.find(u => u.id === log.uid)?.name || log.uid || 'Système';
+                    csv += `"${formatDate(log.ts)}","${log.level || 'info'}","${log.module || 'Général'}","${log.message || ''}","${userName}"\n`;
+                });
+
+                downloadCSV(csv, `wikimind_logs_${new Date().toISOString().split('T')[0]}.csv`);
+                showToast('Logs exportés avec succès', 'success');
+            } catch (error) {
+                showToast('Erreur lors de l\'export des logs', 'error');
+            }
+        }
+
+        // Vider les logs
+        async function clearLogs() {
+            try {
+                await remove(ref(database, 'logs'));
+                await set(ref(database, `admin_activities/${Date.now()}`), {
+                    uid: currentAdmin.uid,
+                    message: 'Tous les logs ont été vidés',
+                    module: 'Logs',
+                    level: 'warning',
+                    ts: Date.now()
+                });
+
+                showToast('Logs vidés avec succès', 'success');
+                loadLogsData();
+            } catch (error) {
+                showToast('Erreur: ' + error.message, 'error');
+            }
+        }
+
+        // Supprimer tous les signalements
+        async function clearReports() {
+            try {
+                await remove(ref(database, 'reports'));
+                await set(ref(database, `admin_activities/${Date.now()}`), {
+                    uid: currentAdmin.uid,
+                    message: 'Tous les signalements ont été supprimés',
+                    module: 'Reports',
+                    level: 'warning',
+                    ts: Date.now()
+                });
+
+                showToast('Signalements supprimés avec succès', 'success');
+                loadReportsData();
+            } catch (error) {
+                showToast('Erreur: ' + error.message, 'error');
+            }
+        }
+
+        // Créer une sauvegarde
+        async function createBackup() {
+            try {
+                const backupData = {
+                    type: 'Complete',
+                    size: 'N/A',
+                    createdAt: new Date().toISOString(),
+                    url: '#'
+                };
+
+                const newBackupRef = push(ref(database, 'backups'));
+                await set(newBackupRef, backupData);
+                await set(ref(database, `admin_activities/${Date.now()}`), {
+                    uid: currentAdmin.uid,
+                    message: `Sauvegarde ${newBackupRef.key} créée`,
+                    module: 'Backups',
+                    level: 'info',
+                    ts: Date.now()
+                });
+
+                showToast('Sauvegarde créée avec succès', 'success');
+                loadBackupsData();
+            } catch (error) {
+                showToast('Erreur: ' + error.message, 'error');
+            }
+        }
+
+        // Résoudre un signalement
+        async function resolveReport(reportId) {
+            try {
+                await update(ref(database, `reports/${reportId}`), {
+                    status: 'resolved',
+                    resolvedAt: new Date().toISOString(),
+                    resolvedBy: currentAdmin.uid
+                });
+                await set(ref(database, `admin_activities/${Date.now()}`), {
+                    uid: currentAdmin.uid,
+                    message: `Signalement ${reportId} résolu`,
+                    module: 'Reports',
+                    level: 'info',
+                    ts: Date.now()
+                });
+
+                showToast('Signalement résolu', 'success');
+                loadReportsData();
+            } catch (error) {
+                showToast('Erreur: ' + error.message, 'error');
+            }
+        }
+
+        // Supprimer un signalement
+        async function deleteReport(reportId) {
+            try {
+                await remove(ref(database, `reports/${reportId}`));
+                await set(ref(database, `admin_activities/${Date.now()}`), {
+                    uid: currentAdmin.uid,
+                    message: `Signalement ${reportId} supprimé`,
+                    module: 'Reports',
+                    level: 'warning',
+                    ts: Date.now()
+                });
+
+                showToast('Signalement supprimé', 'success');
+                loadReportsData();
+            } catch (error) {
+                showToast('Erreur: ' + error.message, 'error');
+            }
+        }
+
+        // Voir un utilisateur
+        function viewUser(userId) {
+            openUserModal(userId);
+        }
+
+        // Modifier un utilisateur
+        function editUser(userId) {
+            openUserModal(userId);
+        }
+
+        // Supprimer un utilisateur
+        function deleteUser(userId) {
+            openConfirmModal('Supprimer l\\'utilisateur', `Êtes-vous sûr de vouloir supprimer l'utilisateur ${userId} ? Cette action est irréversible.`, async function() {
+                try {
+                    await remove(ref(database, `users/${userId}`));
+                    await set(ref(database, `admin_activities/${Date.now()}`), {
+                        uid: currentAdmin.uid,
+                        message: `Utilisateur ${userId} supprimé`,
+                        module: 'Users',
+                        level: 'warning',
+                        ts: Date.now()
+                    });
+
+                    showToast('Utilisateur supprimé avec succès', 'success');
+                    loadUsersData();
+                } catch (error) {
+                    showToast('Erreur: ' + error.message, 'error');
+                }
+            });
+        }
+
+        // Voir une organisation
+        function viewOrg(orgId) {
+            openOrgModal(orgId);
+        }
+
+        // Modifier une organisation
+        function editOrg(orgId) {
+            openOrgModal(orgId);
+        }
+
+        // Supprimer une organisation
+        function deleteOrg(orgId) {
+            openConfirmModal('Supprimer l\\'organisation', `Êtes-vous sûr de vouloir supprimer l'organisation ${orgId} ?`, async function() {
+                try {
+                    await remove(ref(database, `organisations/${orgId}`));
+                    await set(ref(database, `admin_activities/${Date.now()}`), {
+                        uid: currentAdmin.uid,
+                        message: `Organisation ${orgId} supprimée`,
+                        module: 'Organizations',
+                        level: 'warning',
+                        ts: Date.now()
+                    });
+
+                    showToast('Organisation supprimée avec succès', 'success');
+                    loadOrganizationsData();
+                } catch (error) {
+                    showToast('Erreur: ' + error.message, 'error');
+                }
+            });
+        }
+
+        // Obtenir le nom du forfait
+        function getPlanName(planId) {
+            const plans = {
+                1: 'Free',
+                2: 'AI Plus',
+                3: 'AI Pro',
+                4: 'AI Premium',
+                5: 'AI Premium+',
+                6: 'WikiMind Organisation'
+            };
+            return plans[planId] || 'Inconnu';
+        }
+
+        // Obtenir la couleur du forfait
+        function getPlanColor(planName) {
+            const colors = {
+                'Free': 'info',
+                'AI Plus': 'primary',
+                'AI Pro': 'info',
+                'AI Premium': 'warning',
+                'AI Premium+': 'success',
+                'WikiMind Organisation': 'primary'
+            };
+            return colors[planName] || 'info';
+        }
+
+        // Obtenir le badge de statut
+        function getStatusBadge(status) {
+            const badges = {
+                'active': { text: 'Actif', color: 'success' },
+                'suspended': { text: 'Suspendu', color: 'warning' },
+                'banned': { text: 'Banni', color: 'danger' },
+                'pending': { text: 'En attente', color: 'warning' }
+            };
+            return badges[status] || { text: status, color: 'info' };
+        }
+
+        // Formater la date
+        function formatDate(dateString) {
+            if (!dateString || dateString === 'Jamais') return dateString;
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString;
+            return date.toLocaleDateString('fr-FR', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Afficher un toast
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('admin-toast');
+            const toastMessage = toast.querySelector('.admin-toast-message');
+            const toastIcon = toast.querySelector('.admin-toast-icon');
+
+            toast.className = 'admin-toast ' + type;
+            toastMessage.textContent = message;
+
+            const iconClass = type === 'success' ? 'fa-check-circle' :
+                             type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
+            toastIcon.className = `fas ${iconClass} admin-toast-icon`;
+
+            toast.style.display = 'flex';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        // Télécharger un fichier CSV
+        function downloadCSV(csv, filename) {
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Rendre les fonctions globales pour les onclick
+        window.viewUser = viewUser;
+        window.editUser = editUser;
+        window.deleteUser = deleteUser;
+        window.viewOrg = viewOrg;
+        window.editOrg = editOrg;
+        window.deleteOrg = deleteOrg;
+        window.resolveReport = resolveReport;
+        window.deleteReport = deleteReport;
+    </script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg:#ffffff; --text:#111111; --sidebar:#fcfcfc;
+            --border:#f0f0f0; --border2:#e5e7eb;
+            --bubble-user:#555555; --input-bg:#ffffff;
+            --select-bg:#f3f4f6; --card-hover:#f9fafb;
+            --accent:#111111; --accent-inv:#ffffff;
+            --admin-primary:#2563eb;
+            --admin-secondary:#64748b;
+            --success:#22c55e;
+            --warning:#f59e0b;
+            --danger:#ef4444;
+        }
+
+        .dark-mode {
+            --bg:#0f0f0f; --text:#eeeeee; --sidebar:#161616;
+            --border:#252525; --border2:#2d2d2d;
+            --bubble-user:#aaaaaa; --input-bg:#1a1a1a;
+            --select-bg:#2a2a2a; --card-hover:#1f1f1f;
+            --accent:#ffffff; --accent-inv:#111111;
+            --admin-primary:#3b82f6;
+            --admin-secondary:#94a3b8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            transition: background .3s, color .3s;
+        }
+
+        a { text-decoration: none; color: inherit; }
+
+        /* SIDEBAR */
+        #admin-sidebar {
+            width: 280px;
+            min-width: 280px;
+            background: var(--sidebar);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 50;
+            flex-shrink: 0;
+        }
+
+        #admin-sidebar-header {
+            padding: 24px 20px 16px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, var(--admin-primary), #1d4ed8);
+            color: white;
+        }
+
+        .admin-logo {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .admin-logo h1 {
+            font-size: 20px;
+            font-weight: 900;
+            letter-spacing: -.04em;
+            text-transform: uppercase;
+            font-style: italic;
+        }
+
+        .admin-logo svg {
+            width: 32px;
+            height: 32px;
+        }
+
+        .admin-tagline {
+            font-size: 11px;
+            opacity: .9;
+            font-weight: 500;
+        }
+
+        #admin-nav {
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .admin-nav-section {
+            padding: 8px 12px 4px;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .15em;
+            color: #999;
+        }
+
+        .admin-nav-btn {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: .2s;
+            border: none;
+            background: none;
+            color: var(--text);
+        }
+
+        .admin-nav-btn:hover {
+            background: var(--select-bg);
+        }
+
+        .admin-nav-btn.active {
+            background: var(--admin-primary);
+            color: white;
+        }
+
+        .admin-nav-btn i {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        #admin-sidebar-bottom {
+            padding: 14px 12px;
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .admin-user-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            background: var(--select-bg);
+        }
+
+        .admin-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--admin-primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+
+        .admin-user-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .admin-user-name {
+            font-size: 12px;
+            font-weight: 700;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .admin-user-email {
+            font-size: 10px;
+            color: #888;
+        }
+
+        .admin-logout-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #ccc;
+            transition: .2s;
+            background: none;
+            border: none;
+        }
+
+        .admin-logout-btn:hover {
+            color: var(--danger);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* MAIN AREA */
+        #admin-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--bg);
+        }
+
+        #admin-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .admin-header-title {
+            font-size: 18px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+
+        .admin-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .admin-header-btn {
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            cursor: pointer;
+            transition: .2s;
+            border: 1px solid var(--border2);
+            background: var(--input-bg);
+            color: var(--text);
+        }
+
+        .admin-header-btn:hover {
+            border-color: var(--admin-primary);
+            background: var(--select-bg);
+        }
+
+        .admin-header-btn.primary {
+            background: var(--admin-primary);
+            color: white;
+            border-color: var(--admin-primary);
+        }
+
+        .admin-header-btn.primary:hover {
+            opacity: .9;
+        }
+
+        /* DASHBOARD CONTENT */
+        #admin-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: none;
+        }
+
+        #admin-content.active {
+            display: block;
+        }
+
+        .admin-section {
+            margin-bottom: 24px;
+        }
+
+        .admin-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .admin-section-title {
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .admin-section-title i {
+            color: var(--admin-primary);
+        }
+
+        .admin-section-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .admin-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            cursor: pointer;
+            transition: .2s;
+            border: 1px solid var(--border2);
+            background: var(--input-bg);
+            color: var(--text);
+        }
+
+        .admin-btn:hover {
+            border-color: var(--admin-primary);
+            background: var(--select-bg);
+        }
+
+        .admin-btn.primary {
+            background: var(--admin-primary);
+            color: white;
+            border-color: var(--admin-primary);
+        }
+
+        .admin-btn.danger {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+        }
+
+        .admin-btn.secondary {
+            background: var(--select-bg);
+            color: var(--text);
+        }
+
+        /* STATS CARDS */
+        .admin-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .admin-stat-card {
+            background: var(--input-bg);
+            border: 1px solid var(--border2);
+            border-radius: 16px;
+            padding: 20px;
+            transition: .2s;
+        }
+
+        .admin-stat-card:hover {
+            border-color: var(--admin-primary);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+        }
+
+        .admin-stat-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .admin-stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .admin-stat-icon.blue { background: rgba(37, 99, 235, 0.1); color: var(--admin-primary); }
+        .admin-stat-icon.green { background: rgba(34, 197, 94, 0.1); color: var(--success); }
+        .admin-stat-icon.orange { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+        .admin-stat-icon.red { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+
+        .admin-stat-value {
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: -.02em;
+        }
+
+        .admin-stat-label {
+            font-size: 10px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+        }
+
+        /* TABLES */
+        .admin-table-container {
+            background: var(--input-bg);
+            border: 1px solid var(--border2);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .admin-table-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border2);
+            background: var(--select-bg);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .admin-table-search {
+            flex: 1;
+            min-width: 200px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border2);
+            background: var(--bg);
+            font-size: 12px;
+            outline: none;
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .admin-table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: #888;
+            border-bottom: 1px solid var(--border2);
+            background: var(--select-bg);
+            white-space: nowrap;
+        }
+
+        .admin-table td {
+            padding: 12px 16px;
+            font-size: 12px;
+            border-bottom: 1px solid var(--border2);
+        }
+
+        .admin-table tr:hover td {
+            background: var(--card-hover);
+        }
+
+        .admin-table-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .admin-table-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #aaa;
+            transition: .2s;
+            background: none;
+            border: none;
+        }
+
+        .admin-table-btn:hover {
+            color: var(--text);
+            background: var(--select-bg);
+        }
+
+        .admin-table-btn.edit:hover { color: var(--admin-primary); background: rgba(37, 99, 235, 0.1); }
+        .admin-table-btn.delete:hover { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
+        .admin-table-btn.view:hover { color: var(--success); background: rgba(34, 197, 94, 0.1); }
+
+        /* FORMS */
+        .admin-form {
+            background: var(--input-bg);
+            border: 1px solid var(--border2);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 500px;
+        }
+
+        .admin-form-group {
+            margin-bottom: 16px;
+        }
+
+        .admin-form-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: #888;
+            margin-bottom: 6px;
+        }
+
+        .admin-form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border2);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 13px;
+            outline: none;
+            transition: .2s;
+        }
+
+        .admin-form-input:focus {
+            border-color: var(--admin-primary);
+        }
+
+        .admin-form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border2);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 13px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .admin-form-select:focus {
+            border-color: var(--admin-primary);
+        }
+
+        .admin-form-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .admin-form-row .admin-form-group {
+            flex: 1;
+        }
+
+        .admin-form-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        /* MODALS */
+        .admin-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+        }
+
+        .admin-modal.show {
+            display: flex;
+        }
+
+        .admin-modal-content {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 24px;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+            max-height: 88vh;
+            overflow-y: auto;
+        }
+
+        .admin-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .admin-modal-title {
+            font-size: 18px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+
+        .admin-modal-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #aaa;
+            transition: .2s;
+            background: none;
+            border: none;
+        }
+
+        .admin-modal-close:hover {
+            color: var(--text);
+            background: var(--select-bg);
+        }
+
+        /* CHART */
+        .admin-chart-container {
+            background: var(--input-bg);
+            border: 1px solid var(--border2);
+            border-radius: 16px;
+            padding: 20px;
+            height: 300px;
+        }
+
+        /* BADGES */
+        .admin-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .admin-badge.primary { background: rgba(37, 99, 235, 0.1); color: var(--admin-primary); }
+        .admin-badge.success { background: rgba(34, 197, 94, 0.1); color: var(--success); }
+        .admin-badge.warning { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+        .admin-badge.danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        .admin-badge.info { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+
+        /* LOADING */
+        .admin-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .admin-spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border2);
+            border-top-color: var(--admin-primary);
+            border-radius: 50%;
+            animation: adminSpin 1s linear infinite;
+        }
+
+        @keyframes adminSpin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* TOAST */
+        .admin-toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 14px 20px;
+            border-radius: 12px;
+            background: var(--bg);
+            border: 1px solid var(--border2);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 1001;
+            animation: adminToastIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes adminToastIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .admin-toast.success { border-color: var(--success); }
+        .admin-toast.error { border-color: var(--danger); }
+        .admin-toast.info { border-color: var(--admin-primary); }
+
+        .admin-toast-icon {
+            font-size: 16px;
+        }
+
+        .admin-toast.success .admin-toast-icon { color: var(--success); }
+        .admin-toast.error .admin-toast-icon { color: var(--danger); }
+        .admin-toast.info .admin-toast-icon { color: var(--admin-primary); }
+
+        .admin-toast-message {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* DARK MODE TOGGLE */
+        .admin-dark-toggle {
+            width: 40px;
+            height: 20px;
+            border-radius: 20px;
+            background: var(--border2);
+            position: relative;
+            cursor: pointer;
+            transition: .2s;
+        }
+
+        .admin-dark-toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--bg);
+            transition: .2s;
+        }
+
+        .dark-mode .admin-dark-toggle::after {
+            transform: translateX(20px);
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            #admin-sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                margin-left: -280px;
+                transition: margin .35s cubic-bezier(.4,0,.2,1);
+            }
+
+            #admin-sidebar.open {
+                margin-left: 0;
+            }
+
+            #admin-sidebar-backdrop {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.45);
+                z-index: 49;
+            }
+
+            #admin-sidebar-backdrop.show {
+                display: block;
+            }
+
+            #admin-header {
+                padding: 16px;
+            }
+
+            #admin-content {
+                padding: 16px;
+            }
+
+            .admin-stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .admin-table-container {
+                overflow-x: auto;
+            }
+
+            .admin-table {
+                min-width: 600px;
+            }
+
+            .admin-form {
+                padding: 16px;
+            }
+        }
+
+        /* UTILITY CLASSES */
+        .text-ellipsis {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .mt-4 { margin-top: 16px; }
+        .mb-4 { margin-bottom: 16px; }
+        .gap-4 { gap: 16px; }
+        .text-sm { font-size: 12px; }
+        .text-xs { font-size: 10px; }
+        .font-bold { font-weight: 700; }
+        .uppercase { text-transform: uppercase; }
+        .letter-spacing-wide { letter-spacing: .06em; }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Backdrop -->
+    <div id="admin-sidebar-backdrop" class="admin-sidebar-backdrop"></div>
+
+    <!-- Sidebar -->
+    <aside id="admin-sidebar" class="admin-sidebar">
+        <div id="admin-sidebar-header" class="admin-sidebar-header">
+            <div class="admin-logo">
+                <h1>WIKIMIND ADMIN</h1>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+            </div>
+            <div class="admin-tagline">Panneau de Contrôle v3.5</div>
+        </div>
+
+        <nav id="admin-nav" class="admin-nav">
+            <div class="admin-nav-section">Général</div>
+            <button class="admin-nav-btn active" data-section="dashboard">
+                <i class="fas fa-chart-line"></i>
+                Tableau de Bord
+            </button>
+            <button class="admin-nav-btn" data-section="stats">
+                <i class="fas fa-chart-bar"></i>
+                Statistiques
+            </button>
+
+            <div class="admin-nav-section">Utilisateurs</div>
+            <button class="admin-nav-btn" data-section="users">
+                <i class="fas fa-users"></i>
+                Gestion Utilisateurs
+            </button>
+            <button class="admin-nav-btn" data-section="tokens">
+                <i class="fas fa-coins"></i>
+                Gestion Tokens
+            </button>
+            <button class="admin-nav-btn" data-section="subscriptions">
+                <i class="fas fa-credit-card"></i>
+                Abonnements
+            </button>
+
+            <div class="admin-nav-section">Contenu</div>
+            <button class="admin-nav-btn" data-section="organizations">
+                <i class="fas fa-building"></i>
+                Organisations
+            </button>
+            <button class="admin-nav-btn" data-section="moderation">
+                <i class="fas fa-shield-alt"></i>
+                Modération
+            </button>
+            <button class="admin-nav-btn" data-section="reports">
+                <i class="fas fa-flag"></i>
+                Signalements
+            </button>
+
+            <div class="admin-nav-section">Système</div>
+            <button class="admin-nav-btn" data-section="settings">
+                <i class="fas fa-cog"></i>
+                Paramètres
+            </button>
+            <button class="admin-nav-btn" data-section="logs">
+                <i class="fas fa-file-alt"></i>
+                Logs
+            </button>
+            <button class="admin-nav-btn" data-section="backups">
+                <i class="fas fa-database"></i>
+                Sauvegardes
+            </button>
+        </nav>
+
+        <div id="admin-sidebar-bottom" class="admin-sidebar-bottom">
+            <div class="admin-user-row">
+                <div class="admin-avatar" id="admin-avatar">A</div>
+                <div class="admin-user-info">
+                    <div class="admin-user-name" id="admin-name">Admin</div>
+                    <div class="admin-user-email" id="admin-email">admin@wikimind.ai</div>
+                </div>
+                <button class="admin-logout-btn" id="admin-logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="admin-main" class="admin-main">
+        <header id="admin-header" class="admin-header">
+            <h2 class="admin-header-title" id="admin-page-title">Tableau de Bord</h2>
+            <div class="admin-header-actions">
+                <button class="admin-header-btn" id="admin-refresh-btn">
+                    <i class="fas fa-sync-alt"></i> Rafraîchir
+                </button>
+                <button class="admin-header-btn primary" id="admin-new-btn">
+                    <i class="fas fa-plus"></i> Nouveau
+                </button>
+                <button class="admin-dark-toggle" id="admin-dark-toggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Dashboard Section -->
+        <div id="admin-dashboard" class="admin-content active">
+            <div class="admin-stats-grid">
+                <div class="admin-stat-card">
+                    <div class="admin-stat-header">
+                        <div class="admin-stat-icon blue">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                    <div class="admin-stat-value" id="total-users">-</div>
+                    <div class="admin-stat-label">Utilisateurs Totaux</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-header">
+                        <div class="admin-stat-icon green">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                    </div>
+                    <div class="admin-stat-value" id="new-users-today">-</div>
+                    <div class="admin-stat-label">Nouveaux Aujourd'hui</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-header">
+                        <div class="admin-stat-icon orange">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                    </div>
+                    <div class="admin-stat-value" id="total-tokens">-</div>
+                    <div class="admin-stat-label">Tokens Distribués</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-header">
+                        <div class="admin-stat-icon red">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                    <div class="admin-stat-value" id="active-reports">-</div>
+                    <div class="admin-stat-label">Signalements Actifs</div>
+                </div>
+            </div>
+
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title">
+                        <i class="fas fa-chart-line"></i>
+                        Activité Récente
+                    </h3>
+                </div>
+                <div class="admin-chart-container">
+                    <canvas id="activity-chart"></canvas>
+                </div>
+            </div>
+
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title">
+                        <i class="fas fa-bell"></i>
+                        Dernières Actions
+                    </h3>
+                </div>
+                <div class="admin-table-container">
+                    <div class="admin-table-header">
+                        <input type="text" class="admin-table-search" placeholder="Rechercher...">
+                    </div>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Utilisateur</th>
+                                <th>Action</th>
+                                <th>Module</th>
+                                <th>Date</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-actions">
+                            <tr>
+                                <td colspan="5" class="admin-loading">
+                                    <div class="admin-spinner"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Section -->
+        <div id="admin-users" class="admin-content">
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title">
+                        <i class="fas fa-users"></i>
+                        Gestion des Utilisateurs
+                    </h3>
+                    <div class="admin-section-actions">
+                        <button class="admin-btn primary" id="add-user-btn">
+                            <i class="fas fa-plus"></i> Ajouter
+                        </button>
+                        <button class="admin-btn" id="export-users-btn">
+                            <i class="fas fa-download"></i> Exporter
+                        </button>
+                    </div>
+                </div>
+                <div class="admin-table-container">
+                    <div class="admin-table-header">
+                        <input type="text" class="admin-table-search" placeholder="Rechercher un utilisateur..." id="user-search">
+                        <div>
+                            <select class="admin-btn" id="user-filter">
+                                <option value="all">Tous les forfaits</option>
+                                <option value="Free">Free</option>
+                                <option value="AI Plus">AI Plus</option>
+                                <option value="AI Pro">AI Pro</option>
+                                <option value="AI Premium">AI Premium</option>
+                                <option value="AI Premium+">AI Premium+</option>
+                            </select>
+                        </div>
+                    </div>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nom</th>
+                                <th>Email</th>
+                                <th>Forfait</th>
+                                <th>Tokens</th>
+                                <th>Dernier Accès</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <tr>
+                                <td colspan="8" class="admin-loading">
+                                    <div class="admin-spinner"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tokens Section -->
+        <div id="admin-tokens" class="admin-content">
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title">
+                        <i class="fas fa-coins"></i>
+                        Gestion des Tokens
+                    </h3>
+                    <div class="admin-section-actions">
+                        <button class="admin-btn primary" id="add-tokens-btn">
+                            <i class="fas fa-plus"></i> Ajouter des Tokens
+                        </button>
+                    </div>
+                </div>
+                <div class="admin-table-container">
+                    <div class="admin-table-header">
+                        <input type="text" class="admin-table-search" placeholder="Rechercher une transaction...">
+                    </div>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Utilisateur</th>
+                                <th>Type</th>
+                                <th>Montant</th>
+                                <th>Méthode</th>
+                                <th>Date</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tokens-table-body">
+                            <tr>
+                                <td colspan="6" class="admin-loading">
+                                    <div class="admin-spinner"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subscriptions Section -->
+        <div id="admin-subscriptions" class="admin-content">
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title">
+                        <i class="fas fa-credit-card"></i>
+                        Gestion des Abonnements
+                    </h3>
+                </div>
+                <div class="admin-stats-grid">
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-header">
+                            <div class="admin-stat-icon blue">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                        </div>
+                        <div class="admin-stat-value" id="total-revenue">-</div>
+                        <div class="admin-stat-label">Revenu Total</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-header">
+                            <div class="admin-stat-icon green">
+                                <i class="fas fa-user-check"></i>
+                            </div>
+                        </div>
+                        <div class="admin-stat-value" id="active-subscriptions">-</div>
+                        <div class="admin-stat-label">Abonnements Actifs</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-header">
+                            <div class="admin-stat-icon orange">
+                                <i class="fas fa-calendar"></i>
+                            </div>
+                        </div>
+                        <div class="admin-stat-value" id="expiring-soon">-</div>
+                        <div class="admin-stat-label">Expirations Proches</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-header">
+                            <div class="admin-stat-icon red">
+                                <i class="fas fa-times-circle"></i>
+                            </div>
+                        </div>
+                        <div class="admin-stat-value" id="cancelled-subscriptions">-</div>
+                        <div class="admin-stat-label">Abonnements Annulés</div>
+                    </div>
+                </div>
+                <div class="admin-table-container">
+                    <div class="admin-table-header">
+                        <input type="text" class="admin-table-search" placeholder="Rechercher un abonnement...">
+                    </div>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Utilisateur</th>
+                                <th>Forfait</th>
+                                <th>Date Début</th>
+                                <th>Date Fin</th>
+                                <th>Prix</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="subscriptions-table-body">
+                            <tr>
+                                <td colspan="7" class="admin-loading">
+                                    <div class="admin-spinner"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Organizations Section -->
+        <div id="admin-organizations" class="admin-content">
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title">
+                        <i class="fas fa-building"></i>
+                        Gestion des Organisations
+                    </h3>
+                    <div class="admin-section-actions">
+                        <button class="admin-btn primary" id="add-org-btn">
+                            <i class="fas fa-plus"></i> Nouvelle Organisation
+                        </button>
+                    </div>
+                </div>
+                <div class="admin-table-container">
+                    <div class="admin-table-header">
+                        <input type="text" class="admin-table-search" placeholder="Rechercher une organisation...">
+                    </div>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nom</th>
+                                <th>Admin</th>
+                                <th>Membres</th>
+                                <th>Visibilité</th>
+                                <th>Date Création</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="organizations-table-body">
+                            <tr>
+                                <td colspan="7" class="admin-loading">
+                                    <div class="admin-spinner"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Moderation Section -->
+        <div id="admin-moderation" class="admin-content">
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title">
+                        <i class="fas fa-shield-alt"></i>
+                        Modération du Contenu
+                    </h3>
+                </div>
+                <div class="admin-table-container">
+                    <div class="admin-table-header">
+                        <input type="text" class="admin-table-search" placeholder="Rechercher du contenu...">
+                        <select class="admin-btn">
+                            <option value="all">Tous les types</option>
+                            <option value="conversations">Conversations</option>
+                            <option value="canvas">Canvas</option>
+                            <option value="reviews">Avis</option>
+                        </select>
+                    </div>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Utilisateur</th>
+                                <th>Type</th>
+                                <th>Contenu</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="moderation-table-body">
+                            <tr>
+                                <td colspan="6" class="admin-loading">
+                                    <div class="admin-spinner"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Section -->
+        <div id="admin-reports" class="admin-content">
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title">
+                        <i class="fas fa-flag"></i>
+                        Signalements
+                    </h3>
+                    <div class="admin-section-actions">
+                        <button class="admin-btn danger" id="clear-reports-btn">
+                            <i class="fas fa-trash"></i> Tout Supprimer
+                        </button>
+                    </div>
+                </div>
+                <div class="admin-table-container">
+                    <div class="admin-table-header">
+                        <input type="text" class="admin-table-search" placeholder="Rechercher un signalement...">
+                        <select class="admin-btn" id="report-filter">
+                            <option value="pending">En Attente</option>
+                            <option value="resolved">Résolus</option>
+                            <option value="all">Tous</option>
+                        </select>
+                    </div>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Type</th>
+                                <th>Utilisateur</th>
+                                <th>Contenu Signalé</th>
+                                <th>Raison</th>
+                                <th>Date</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reports-table-body">
+                            <tr>
+                                <td colspan="8" class="admin-loading">
+                                    <div class="admin-spinner"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div id="admin-settings" class="admin-content">
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title">
+                        <i class="fas fa-cog"></i>
+                        Paramètres Système
+                    </h3>
+                </div>
+                <div class="admin-form">
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">Nom du Site</label>
+                        <input type="text" class="admin-form-input" id="site-name" value="WikiMind AI">
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">Description</label>
+                        <textarea class="admin-form-input" id="site-description" rows="3">La suite d'outils IA pour apprendre, créer et s'organiser.</textarea>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">Maintenance Mode</label>
+                        <select class="admin-form-select" id="maintenance-mode">
+                            <option value="false">Désactivé</option>
+                            <option value="true">Activé</option>
+                        </select>
+                        <p class="text-xs mt-4" style="color: #888;">Activez le mode maintenance pour bloquer l'accès aux utilisateurs non-admins</p>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">Message de Maintenance</label>
+                        <textarea class="admin-form-input" id="maintenance-message" rows="3" placeholder="Message affiché aux utilisateurs pendant la maintenance..."></textarea>
+                    </div>
+                    <div class="admin-form-footer">
+                        <button class="admin-btn secondary" id="settings-cancel">Annuler</button>
+                        <button class="admin-btn primary" id="save-settings-btn">
+                            <i class="fas fa-save"></i> Sauvegarder
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="admin-section mt-4">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title">
+                        <i class="fas fa-key"></i>
+                        Clés API
+                    </h3>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th>Clé</th>
+                                <th>Date d'Expiration</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="api-keys-table-body">
+                            <tr>
+                                <td>Mistral AI</td>
+                                <td class="text-ellipsis">sk-**********************</td>
+                                <td>-</td>
+                                <td>
+                                    <div class="admin-table-actions">
+                                        <button class="admin-table-btn edit" title="Modifier">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="admin-table-btn delete" title="Supprimer">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Firebase</td>
+                                <td class="text-ellipsis">**********************</td>
+                                <td>-</td>
+                                <td>
+                                    <div class="admin-table-actions">
+                                        <button class="admin-table-btn edit" title="Modifier">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs Section -->
+        <div id="admin-logs" class="admin-content">
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title">
+                        <i class="fas fa-file-alt"></i>
+                        Journaux Système
+                    </h3>
+                    <div class="admin-section-actions">
+                        <button class="admin-btn" id="export-logs-btn">
+                            <i class="fas fa-download"></i> Exporter
+                        </button>
+                        <button class="admin-btn danger" id="clear-logs-btn">
+                            <i class="fas fa-trash"></i> Vider
+                        </button>
+                    </div>
+                </div>
+                <div class="admin-table-container">
+                    <div class="admin-table-header">
+                        <input type="text" class="admin-table-search" placeholder="Rechercher dans les logs...">
+                        <select class="admin-btn">
+                            <option value="all">Tous les niveaux</option>
+                            <option value="info">Info</option>
+                            <option value="warning">Avertissement</option>
+                            <option value="error">Erreur</option>
+                        </select>
+                    </div>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Niveau</th>
+                                <th>Module</th>
+                                <th>Message</th>
+                                <th>Utilisateur</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-table-body">
+                            <tr>
+                                <td colspan="5" class="admin-loading">
+                                    <div class="admin-spinner"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Backups Section -->
+        <div id="admin-backups" class="admin-content">
+            <div class="admin-section">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title">
+                        <i class="fas fa-database"></i>
+                        Sauvegardes
+                    </h3>
+                    <div class="admin-section-actions">
+                        <button class="admin-btn primary" id="create-backup-btn">
+                            <i class="fas fa-plus"></i> Créer une Sauvegarde
+                        </button>
+                    </div>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Type</th>
+                                <th>Taille</th>
+                                <th>Date de Création</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="backups-table-body">
+                            <tr>
+                                <td colspan="5" class="admin-loading">
+                                    <div class="admin-spinner"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="admin-toast" class="admin-toast">
+        <i class="fas fa-check-circle admin-toast-icon"></i>
+        <span class="admin-toast-message">Action effectuée avec succès</span>
+    </div>
+
+    <!-- Modals -->
+    <!-- Add/Edit User Modal -->
+    <div id="user-modal" class="admin-modal">
+        <div class="admin-modal-content">
+            <div class="admin-modal-header">
+                <h3 class="admin-modal-title" id="user-modal-title">Ajouter un Utilisateur</h3>
+                <button class="admin-modal-close" id="user-modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="user-form" class="admin-form">
+                <input type="hidden" id="user-id">
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Nom d'Utilisateur</label>
+                    <input type="text" class="admin-form-input" id="user-name" required>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Email</label>
+                    <input type="email" class="admin-form-input" id="user-email" required>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Mot de Passe (si nouveau)</label>
+                    <input type="password" class="admin-form-input" id="user-password">
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Forfait</label>
+                    <select class="admin-form-select" id="user-plan" required>
+                        <option value="1">Free</option>
+                        <option value="2">AI Plus</option>
+                        <option value="3">AI Pro</option>
+                        <option value="4">AI Premium</option>
+                        <option value="5">AI Premium+</option>
+                        <option value="6">WikiMind Organisation</option>
+                    </select>
+                </div>
+                <div class="admin-form-row">
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">Tokens</label>
+                        <input type="number" class="admin-form-input" id="user-tokens" value="0">
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">Rôle</label>
+                        <select class="admin-form-select" id="user-role">
+                            <option value="user">Utilisateur</option>
+                            <option value="moderator">Modérateur</option>
+                            <option value="admin">Administrateur</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Statut</label>
+                    <select class="admin-form-select" id="user-status">
+                        <option value="active">Actif</option>
+                        <option value="suspended">Suspendu</option>
+                        <option value="banned">Banni</option>
+                    </select>
+                </div>
+                <div class="admin-form-footer">
+                    <button type="button" class="admin-btn secondary" id="user-modal-cancel">Annuler</button>
+                    <button type="submit" class="admin-btn primary" id="user-modal-save">Sauvegarder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Tokens Modal -->
+    <div id="tokens-modal" class="admin-modal">
+        <div class="admin-modal-content">
+            <div class="admin-modal-header">
+                <h3 class="admin-modal-title">Ajouter des Tokens</h3>
+                <button class="admin-modal-close" id="tokens-modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="tokens-form" class="admin-form">
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Utilisateur</label>
+                    <select class="admin-form-select" id="tokens-user" required>
+                        <option value="">Sélectionnez un utilisateur</option>
+                    </select>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Nombre de Tokens</label>
+                    <input type="number" class="admin-form-input" id="tokens-amount" value="100" min="1" required>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Raison</label>
+                    <select class="admin-form-select" id="tokens-reason">
+                        <option value="purchase">Achat</option>
+                        <option value="compensation">Compensation</option>
+                        <option value="bonus">Bonus</option>
+                        <option value="test">Test</option>
+                        <option value="other">Autre</option>
+                    </select>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Notes</label>
+                    <textarea class="admin-form-input" id="tokens-notes" rows="2" placeholder="Notes optionnelles..."></textarea>
+                </div>
+                <div class="admin-form-footer">
+                    <button type="button" class="admin-btn secondary" id="tokens-modal-cancel">Annuler</button>
+                    <button type="submit" class="admin-btn primary" id="tokens-modal-save">Ajouter des Tokens</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Organization Modal -->
+    <div id="org-modal" class="admin-modal">
+        <div class="admin-modal-content">
+            <div class="admin-modal-header">
+                <h3 class="admin-modal-title" id="org-modal-title">Ajouter une Organisation</h3>
+                <button class="admin-modal-close" id="org-modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="org-form" class="admin-form">
+                <input type="hidden" id="org-id">
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Nom de l'Organisation</label>
+                    <input type="text" class="admin-form-input" id="org-name" required>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Description</label>
+                    <textarea class="admin-form-input" id="org-description" rows="2"></textarea>
+                </div>
+                <div class="admin-form-row">
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">Secteur</label>
+                        <select class="admin-form-select" id="org-sector">
+                            <option value="education">Éducation</option>
+                            <option value="business">Entreprise</option>
+                            <option value="technology">Technologie</option>
+                            <option value="other">Autre</option>
+                        </select>
+                    </div>
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">Visibilité</label>
+                        <select class="admin-form-select" id="org-visibility">
+                            <option value="public">Publique</option>
+                            <option value="private">Privée</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Administrateur</label>
+                    <select class="admin-form-select" id="org-admin" required>
+                        <option value="">Sélectionnez un administrateur</option>
+                    </select>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Autoriser les demandes d'adhésion</label>
+                    <select class="admin-form-select" id="org-joinable">
+                        <option value="true">Oui</option>
+                        <option value="false">Non</option>
+                    </select>
+                </div>
+                <div class="admin-form-footer">
+                    <button type="button" class="admin-btn secondary" id="org-modal-cancel">Annuler</button>
+                    <button type="submit" class="admin-btn primary" id="org-modal-save">Sauvegarder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirm-modal" class="admin-modal">
+        <div class="admin-modal-content">
+            <div class="admin-modal-header">
+                <h3 class="admin-modal-title" id="confirm-modal-title">Confirmer</h3>
+                <button class="admin-modal-close" id="confirm-modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="admin-form">
+                <p id="confirm-modal-message" style="margin-bottom: 20px; color: #888;">
+                    Êtes-vous sûr de vouloir effectuer cette action ?
+                </p>
+                <div class="admin-form-footer">
+                    <button type="button" class="admin-btn secondary" id="confirm-modal-cancel">Annuler</button>
+                    <button type="button" class="admin-btn danger" id="confirm-modal-confirm">Confirmer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
