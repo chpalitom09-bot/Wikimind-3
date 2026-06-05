@@ -1,234 +1,2656 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Panneau d'Administration WikiMind - Gestion des utilisateurs, tokens, organisations et plus">
+    <title>WikiMind Admin v3.5</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg:#ffffff; --text:#111111; --sidebar:#fcfcfc;
+            --border:#f0f0f0; --border2:#e5e7eb;
+            --bubble-user:#555555; --input-bg:#ffffff;
+            --select-bg:#f3f4f6; --card-hover:#f9fafb;
+            --accent:#111111; --accent-inv:#ffffff;
+            --admin-primary:#2563eb;
+            --admin-secondary:#64748b;
+            --success:#22c55e;
+            --warning:#f59e0b;
+            --danger:#ef4444;
+        }
+        
+        .dark-mode {
+            --bg:#0f0f0f; --text:#eeeeee; --sidebar:#161616;
+            --border:#252525; --border2:#2d2d2d;
+            --bubble-user:#aaaaaa; --input-bg:#1a1a1a;
+            --select-bg:#2a2a2a; --card-hover:#1f1f1f;
+            --accent:#ffffff; --accent-inv:#111111;
+            --admin-primary:#3b82f6;
+            --admin-secondary:#94a3b8;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            transition: background .3s, color .3s;
+        }
+        
+        a { text-decoration: none; color: inherit; }
+
+        #admin-sidebar {
+            width: 280px;
+            min-width: 280px;
+            background: var(--sidebar);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 50;
+            flex-shrink: 0;
+        }
+        
+        #admin-sidebar-header {
+            padding: 24px 20px 16px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, var(--admin-primary), #1d4ed8);
+            color: white;
+        }
+        
+        .admin-logo {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .admin-logo h1 {
+            font-size: 20px;
+            font-weight: 900;
+            letter-spacing: -.04em;
+            text-transform: uppercase;
+            font-style: italic;
+        }
+        
+        .admin-logo svg {
+            width: 32px;
+            height: 32px;
+        }
+        
+        .admin-tagline {
+            font-size: 11px;
+            opacity: .9;
+            font-weight: 500;
+        }
+        
+        #admin-nav {
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .admin-nav-section {
+            padding: 8px 12px 4px;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .15em;
+            color: #999;
+        }
+        
+        .admin-nav-btn {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: .2s;
+            border: none;
+            background: none;
+            color: var(--text);
+        }
+        
+        .admin-nav-btn:hover { background: var(--select-bg); }
+        .admin-nav-btn.active {
+            background: var(--admin-primary);
+            color: white;
+        }
+        
+        .admin-nav-btn i { width: 16px; height: 16px; flex-shrink: 0; }
+        
+        #admin-sidebar-bottom {
+            padding: 14px 12px;
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        
+        .admin-user-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            background: var(--select-bg);
+        }
+        
+        .admin-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--admin-primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+        
+        .admin-user-info { flex: 1; min-width: 0; }
+        .admin-user-name {
+            font-size: 12px;
+            font-weight: 700;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .admin-user-email { font-size: 10px; color: #888; }
+        
+        .admin-logout-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #ccc;
+            transition: .2s;
+            background: none;
+            border: none;
+        }
+        
+        .admin-logout-btn:hover {
+            color: var(--danger);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        #admin-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--bg);
+        }
+        
+        #admin-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        
+        .admin-header-title {
+            font-size: 18px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+        
+        .admin-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .admin-header-btn {
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            cursor: pointer;
+            transition: .2s;
+            border: 1px solid var(--border2);
+            background: var(--input-bg);
+            color: var(--text);
+        }
+        
+        .admin-header-btn:hover {
+            border-color: var(--admin-primary);
+            background: var(--select-bg);
+        }
+        
+        .admin-header-btn.primary {
+            background: var(--admin-primary);
+            color: white;
+            border-color: var(--admin-primary);
+        }
+        
+        .admin-header-btn.primary:hover { opacity: .9; }
+
+        .admin-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: none;
+        }
+        
+        .admin-content.active { display: block; }
+        .admin-section { margin-bottom: 24px; }
+        
+        .admin-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        
+        .admin-section-title {
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .admin-section-title i { color: var(--admin-primary); }
+        .admin-section-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .admin-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            cursor: pointer;
+            transition: .2s;
+            border: 1px solid var(--border2);
+            background: var(--input-bg);
+            color: var(--text);
+        }
+        
+        .admin-btn:hover {
+            border-color: var(--admin-primary);
+            background: var(--select-bg);
+        }
+        
+        .admin-btn.primary {
+            background: var(--admin-primary);
+            color: white;
+            border-color: var(--admin-primary);
+        }
+        
+        .admin-btn.danger {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+        }
+
+        .admin-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        
+        .admin-stat-card {
+            background: var(--input-bg);
+            border: 1px solid var(--border2);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: .2s;
+        }
+        
+        .admin-stat-card:hover {
+            border-color: var(--admin-primary);
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+        }
+        
+        .admin-stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        
+        .admin-stat-icon.primary { background: rgba(37, 99, 235, 0.1); color: var(--admin-primary); }
+        .admin-stat-icon.success { background: rgba(34, 197, 94, 0.1); color: var(--success); }
+        .admin-stat-icon.warning { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+        .admin-stat-icon.danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        
+        .admin-stat-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .admin-stat-value {
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: -.02em;
+        }
+        
+        .admin-stat-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: #888;
+        }
+
+        .admin-chart-container {
+            background: var(--input-bg);
+            border: 1px solid var(--border2);
+            border-radius: 16px;
+            padding: 20px;
+            height: 280px;
+        }
+
+        .admin-table-container {
+            background: var(--input-bg);
+            border: 1px solid var(--border2);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        
+        .admin-table-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--select-bg);
+        }
+        
+        .admin-table-header h3 {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .admin-table-wrapper {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 10px 14px;
+            text-align: left;
+            font-size: 11px;
+        }
+        
+        th {
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: #888;
+            background: var(--select-bg);
+            border-bottom: 1px solid var(--border2);
+            white-space: nowrap;
+        }
+        
+        td { border-bottom: 1px solid var(--border); }
+        tr:hover td { background: var(--card-hover); }
+        
+        .admin-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+        
+        .admin-badge.primary { background: rgba(37, 99, 235, 0.1); color: var(--admin-primary); }
+        .admin-badge.success { background: rgba(34, 197, 94, 0.1); color: var(--success); }
+        .admin-badge.warning { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+        .admin-badge.danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        .admin-badge.info { background: rgba(100, 116, 139, 0.1); color: var(--admin-secondary); }
+
+        .admin-form-container {
+            background: var(--input-bg);
+            border: 1px solid var(--border2);
+            border-radius: 16px;
+            padding: 24px;
+        }
+        
+        .admin-form-section { margin-bottom: 20px; }
+        .admin-form-section:last-child { margin-bottom: 0; }
+        
+        .admin-form-label {
+            display: block;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            margin-bottom: 6px;
+            color: var(--text);
+        }
+        
+        .admin-form-input,
+        .admin-form-select,
+        .admin-form-textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border2);
+            border-radius: 8px;
+            font-size: 12px;
+            font-family: inherit;
+            background: var(--input-bg);
+            color: var(--text);
+            transition: .2s;
+        }
+        
+        .admin-form-input:focus,
+        .admin-form-select:focus,
+        .admin-form-textarea:focus {
+            outline: none;
+            border-color: var(--admin-primary);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+        }
+        
+        .admin-form-textarea { min-height: 80px; resize: vertical; }
+        .admin-form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        
+        .admin-form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border2);
+        }
+
+        .admin-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .admin-modal.show { display: flex; }
+        
+        .admin-modal-content {
+            background: var(--bg);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+        
+        .admin-modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .admin-modal-title {
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+        
+        .admin-modal-close {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #888;
+            transition: .2s;
+            background: none;
+            border: none;
+        }
+        
+        .admin-modal-close:hover {
+            color: var(--danger);
+            background: var(--select-bg);
+        }
+        
+        .admin-modal-body { padding: 20px; }
+        
+        .admin-modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border2);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .admin-toast {
+            display: none;
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--bg);
+            border: 1px solid var(--border2);
+            border-radius: 12px;
+            padding: 12px 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 2000;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .admin-toast.show { display: flex; }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .admin-toast-icon {
+            font-size: 16px;
+            width: 16px;
+            text-align: center;
+        }
+        
+        .admin-toast.success { border-color: var(--success); }
+        .admin-toast.error { border-color: var(--danger); }
+        .admin-toast.info { border-color: var(--admin-primary); }
+        
+        .admin-toast-message {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .admin-dark-toggle {
+            width: 40px;
+            height: 24px;
+            border-radius: 12px;
+            background: var(--select-bg);
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+            padding: 2px;
+            transition: .2s;
+        }
+        
+        .admin-dark-toggle::before {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--admin-primary);
+            transition: .2s;
+        }
+        
+        .admin-dark-toggle.dark::before { transform: translateX(18px); }
+
+        @media (max-width: 768px) {
+            #admin-sidebar {
+                position: fixed;
+                left: -280px;
+                top: 0;
+                bottom: 0;
+                transition: .3s;
+            }
+            
+            #admin-sidebar.open {
+                left: 0;
+                box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            }
+            
+            #admin-sidebar-backdrop {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 49;
+            }
+            
+            #admin-sidebar-backdrop.show { display: block; }
+            #admin-header { padding: 14px 16px; }
+            .admin-stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .admin-chart-container { height: 220px; }
+        }
+        
+        /* Firebase Rules Display */
+        #firebase-rules-section {
+            display: none;
+            background: var(--bg);
+            border-top: 2px solid var(--admin-primary);
+            padding: 24px;
+            overflow-y: auto;
+        }
+        
+        #firebase-rules-section.show { display: block; }
+        
+        .rules-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        
+        .rules-header h2 {
+            font-size: 16px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .rules-container {
+            background: var(--input-bg);
+            border: 1px solid var(--border2);
+            border-radius: 12px;
+            padding: 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-x: auto;
+        }
+        
+        .rules-copy-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            cursor: pointer;
+            transition: .2s;
+            border: 1px solid var(--border2);
+            background: var(--input-bg);
+            color: var(--text);
+        }
+        
+        .rules-copy-btn:hover {
+            border-color: var(--admin-primary);
+            background: var(--select-bg);
+        }
+    </style>
+</head>
+<body>
+    <div id="admin-sidebar">
+        <div id="admin-sidebar-header">
+            <div class="admin-logo">
+                <h1>WikiMind</h1>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                    <path d="M13 2v20"/>
+                </svg>
+            </div>
+            <p class="admin-tagline">Panneau d'Administration v3.5</p>
+        </div>
+        
+        <nav id="admin-nav">
+            <div class="admin-nav-section">Tableau de bord</div>
+            <button class="admin-nav-btn active" data-section="dashboard">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard</span>
+            </button>
+            
+            <div class="admin-nav-section">Gestion</div>
+            <button class="admin-nav-btn" data-section="users">
+                <i class="fas fa-users"></i>
+                <span>Utilisateurs</span>
+            </button>
+            <button class="admin-nav-btn" data-section="tokens">
+                <i class="fas fa-coins"></i>
+                <span>Tokens</span>
+            </button>
+            <button class="admin-nav-btn" data-section="organizations">
+                <i class="fas fa-building"></i>
+                <span>Organisations</span>
+            </button>
+            
+            <div class="admin-nav-section">Moderation</div>
+            <button class="admin-nav-btn" data-section="reports">
+                <i class="fas fa-flag"></i>
+                <span>Signalements</span>
+            </button>
+            <button class="admin-nav-btn" data-section="logs">
+                <i class="fas fa-file-alt"></i>
+                <span>Logs</span>
+            </button>
+            
+            <div class="admin-nav-section">Configuration</div>
+            <button class="admin-nav-btn" data-section="settings">
+                <i class="fas fa-cog"></i>
+                <span>Parametres</span>
+            </button>
+            <button class="admin-nav-btn" data-section="firebase-rules">
+                <i class="fas fa-fire"></i>
+                <span>Firebase Rules</span>
+            </button>
+        </nav>
+        
+        <div id="admin-sidebar-bottom">
+            <div class="admin-user-row">
+                <div id="admin-avatar" class="admin-avatar">A</div>
+                <div class="admin-user-info">
+                    <div id="admin-name" class="admin-user-name">Admin</div>
+                    <div id="admin-email" class="admin-user-email">admin@wikimind.ai</div>
+                </div>
+                <button id="admin-logout-btn" class="admin-logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="admin-sidebar-backdrop"></div>
+
+    <div id="admin-main">
+        <header id="admin-header">
+            <h2 id="admin-page-title" class="admin-header-title">Dashboard</h2>
+            <div class="admin-header-actions">
+                <button id="admin-refresh-btn" class="admin-header-btn">
+                    <i class="fas fa-sync-alt"></i> Rafraichir
+                </button>
+                <button id="admin-dark-toggle" class="admin-dark-toggle"></button>
+            </div>
+        </header>
+
+        <main id="admin-dashboard" class="admin-content active">
+            <section class="admin-section">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title">
+                        <i class="fas fa-chart-bar"></i>
+                        Statistiques
+                    </h3>
+                </div>
+                <div class="admin-stats-grid">
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-icon primary"><i class="fas fa-users"></i></div>
+                        <div class="admin-stat-info">
+                            <span id="total-users" class="admin-stat-value">0</span>
+                            <span class="admin-stat-label">Utilisateurs Totaux</span>
+                        </div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-icon success"><i class="fas fa-user-plus"></i></div>
+                        <div class="admin-stat-info">
+                            <span id="new-users-today" class="admin-stat-value">0</span>
+                            <span class="admin-stat-label">Nouveaux Aujourd'hui</span>
+                        </div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-icon warning"><i class="fas fa-coins"></i></div>
+                        <div class="admin-stat-info">
+                            <span id="total-tokens" class="admin-stat-value">0</span>
+                            <span class="admin-stat-label">Tokens Totaux</span>
+                        </div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-icon danger"><i class="fas fa-flag"></i></div>
+                        <div class="admin-stat-info">
+                            <span id="active-reports" class="admin-stat-value">0</span>
+                            <span class="admin-stat-label">Signalements Actifs</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="admin-section">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title">
+                        <i class="fas fa-chart-line"></i>
+                        Activite Recente
+                    </h3>
+                </div>
+                <div class="admin-chart-container">
+                    <canvas id="activity-chart"></canvas>
+                </div>
+            </section>
+
+            <section class="admin-section">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title">
+                        <i class="fas fa-clipboard-list"></i>
+                        Actions Recentes
+                    </h3>
+                </div>
+                <div class="admin-table-container">
+                    <div class="admin-table-header">
+                        <h3><i class="fas fa-history"></i> Historique</h3>
+                    </div>
+                    <div class="admin-table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Utilisateur</th>
+                                    <th>Action</th>
+                                    <th>Module</th>
+                                    <th>Date</th>
+                                    <th>Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-actions"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <main id="admin-users" class="admin-content">
+            <section class="admin-section">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title"><i class="fas fa-users"></i> Gestion des Utilisateurs</h3>
+                    <div class="admin-section-actions">
+                        <button id="add-user-btn" class="admin-btn primary"><i class="fas fa-plus"></i> Ajouter</button>
+                        <button id="export-users-btn" class="admin-btn"><i class="fas fa-download"></i> Exporter</button>
+                    </div>
+                </div>
+                <div class="admin-table-container">
+                    <div class="admin-table-header">
+                        <h3><i class="fas fa-filter"></i> Filtres</h3>
+                        <div>
+                            <select id="user-filter">
+                                <option value="all">Tous les forfaits</option>
+                                <option value="1">Free</option>
+                                <option value="2">AI Plus</option>
+                                <option value="3">AI Pro</option>
+                                <option value="4">AI Premium</option>
+                                <option value="5">AI Premium+">AI Premium+"</option>
+                                <option value="6">WikiMind Organisation</option>
+                            </select>
+                            <input id="user-search" type="text" placeholder="Rechercher..." style="margin-left: 8px; padding: 6px 10px; border: 1px solid var(--border2); border-radius: 6px; font-size: 11px;">
+                        </div>
+                    </div>
+                    <div class="admin-table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nom</th>
+                                    <th>Email</th>
+                                    <th>Forfait</th>
+                                    <th>Tokens</th>
+                                    <th>Statut</th>
+                                    <th>Role</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <main id="admin-tokens" class="admin-content">
+            <section class="admin-section">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title"><i class="fas fa-coins"></i> Gestion des Tokens</h3>
+                    <div class="admin-section-actions">
+                        <button id="add-tokens-btn" class="admin-btn primary"><i class="fas fa-plus"></i> Ajouter</button>
+                    </div>
+                </div>
+                <div class="admin-table-container">
+                    <div class="admin-table-header"><h3><i class="fas fa-coins"></i> Transactions</h3></div>
+                    <div class="admin-table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Utilisateur</th>
+                                    <th>Montant</th>
+                                    <th>Type</th>
+                                    <th>Raison</th>
+                                    <th>Date</th>
+                                    <th>Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tokens-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <main id="admin-organizations" class="admin-content">
+            <section class="admin-section">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title"><i class="fas fa-building"></i> Gestion des Organisations</h3>
+                    <div class="admin-section-actions">
+                        <button id="add-org-btn" class="admin-btn primary"><i class="fas fa-plus"></i> Ajouter</button>
+                    </div>
+                </div>
+                <div class="admin-table-container">
+                    <div class="admin-table-header"><h3><i class="fas fa-building"></i> Organisations</h3></div>
+                    <div class="admin-table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nom</th>
+                                    <th>Admin</th>
+                                    <th>Membres</th>
+                                    <th>Forfait</th>
+                                    <th>Date Creation</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="organizations-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <main id="admin-reports" class="admin-content">
+            <section class="admin-section">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title"><i class="fas fa-flag"></i> Signalements</h3>
+                    <div class="admin-section-actions">
+                        <button id="clear-reports-btn" class="admin-btn danger"><i class="fas fa-trash"></i> Tout Supprimer</button>
+                    </div>
+                </div>
+                <div class="admin-table-container">
+                    <div class="admin-table-header">
+                        <h3><i class="fas fa-filter"></i> Filtre par statut</h3>
+                        <select id="report-filter">
+                            <option value="all">Tous</option>
+                            <option value="pending">En attente</option>
+                            <option value="resolved">Resolu</option>
+                        </select>
+                    </div>
+                    <div class="admin-table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Utilisateur</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                    <th>Statut</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reports-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <main id="admin-logs" class="admin-content">
+            <section class="admin-section">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title"><i class="fas fa-file-alt"></i> Logs Systeme</h3>
+                    <div class="admin-section-actions">
+                        <button id="export-logs-btn" class="admin-btn"><i class="fas fa-download"></i> Exporter</button>
+                        <button id="clear-logs-btn" class="admin-btn danger"><i class="fas fa-trash"></i> Vider</button>
+                    </div>
+                </div>
+                <div class="admin-table-container">
+                    <div class="admin-table-header">
+                        <h3><i class="fas fa-filter"></i> Filtre par niveau</h3>
+                        <select id="log-filter">
+                            <option value="all">Tous</option>
+                            <option value="info">Info</option>
+                            <option value="warning">Avertissement</option>
+                            <option value="error">Erreur</option>
+                        </select>
+                    </div>
+                    <div class="admin-table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Niveau</th>
+                                    <th>Module</th>
+                                    <th>Message</th>
+                                    <th>Utilisateur</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logs-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <main id="admin-settings" class="admin-content">
+            <section class="admin-section">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title"><i class="fas fa-cog"></i> Parametres Generaux</h3>
+                </div>
+                <div class="admin-form-container">
+                    <form id="settings-form">
+                        <div class="admin-form-section">
+                            <h4 class="admin-section-title" style="margin-bottom: 16px;"><i class="fas fa-globe"></i> Site</h4>
+                            <div class="admin-form-row">
+                                <div>
+                                    <label class="admin-form-label">Nom du Site</label>
+                                    <input type="text" id="site-name" class="admin-form-input" placeholder="WikiMind AI">
+                                </div>
+                                <div>
+                                    <label class="admin-form-label">Description</label>
+                                    <input type="text" id="site-description" class="admin-form-input" placeholder="Plateforme d'IA collaborative">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="admin-form-section">
+                            <h4 class="admin-section-title" style="margin-bottom: 16px;"><i class="fas fa-tools"></i> Maintenance</h4>
+                            <div class="admin-form-row">
+                                <div>
+                                    <label class="admin-form-label">Mode Maintenance</label>
+                                    <select id="maintenance-mode" class="admin-form-select">
+                                        <option value="false">Desactive</option>
+                                        <option value="true">Active</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="admin-form-label">Message de Maintenance</label>
+                                <textarea id="maintenance-message" class="admin-form-textarea" placeholder="Le site est en maintenance. Merci de patienter."></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="admin-form-actions">
+                            <button type="button" id="settings-cancel" class="admin-btn">Annuler</button>
+                            <button type="button" id="save-settings-btn" class="admin-btn primary"><i class="fas fa-save"></i> Sauvegarder</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </main>
+
+        <main id="admin-firebase-rules" class="admin-content">
+            <section class="admin-section">
+                <div class="admin-section-header">
+                    <h3 class="admin-section-title"><i class="fas fa-fire"></i> Firebase Realtime Database Rules</h3>
+                    <div class="admin-section-actions">
+                        <button id="copy-rules-btn" class="admin-btn primary"><i class="fas fa-copy"></i> Copier</button>
+                    </div>
+                </div>
+                <div id="firebase-rules-section" class="rules-container">
 {
   "rules": {
-
     "users": {
+      ".read": "auth != null",
       "$uid": {
-
-        // Propriétaire : accès total à son propre espace
-        ".read": "$uid === auth.uid",
-        ".write": "$uid === auth.uid",
-
-        // ── Exception fichiers partagés ──
-        "files": {
-          "$fileId": {
-            ".read": "auth != null && data.child('isShared').val() === true",
-            ".write": "auth != null && data.child('allowEdit').val() === true"
-          }
-        },
-
-        // ── Info publique ──
-        "info": {
-          ".read": "auth != null",
-          ".write": "$uid === auth.uid"
-        },
-
-        // ── FORFAIT (plan 1–6) — lecture publique pour affichage ──
-        "FORFAIT": {
-          ".read": "auth != null",
-          ".write": "$uid === auth.uid || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1'"
-        },
-
-        // ── Organisation actuelle du user ──
-        "organization": {
-          ".read": "$uid === auth.uid",
-          ".write": "$uid === auth.uid || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1'"
-        },
-
-        // ── Invitations d'organisation reçues ──
-        "org_invitations": {
-          ".read": "$uid === auth.uid",
-          ".write": "auth != null"
-        },
-
-        // ── Demandes d'amitié ──
-        "friend_requests": {
-          ".read": "$uid === auth.uid",
-          ".write": "$uid === auth.uid",
-          "$fromUid": {
-            ".read":  "$uid === auth.uid || $fromUid === auth.uid",
-            ".write": "$uid === auth.uid || $fromUid === auth.uid"
-          }
-        },
-
-        // ── Liste d'amis ──
-        "friends": {
-          ".read": "$uid === auth.uid",
-          ".write": "$uid === auth.uid",
-          "$friendUid": {
-            ".read":  "$uid === auth.uid || $friendUid === auth.uid",
-            ".write": "$uid === auth.uid || $friendUid === auth.uid"
-          }
-        },
-
-        // ── Infos publiques ──
-        "name":     { ".read": "auth != null", ".write": "$uid === auth.uid" },
-        "photoURL": { ".read": "auth != null", ".write": "$uid === auth.uid" },
-
-        // ── Tokens ──
-        "tokens": {
-          ".read":  "$uid === auth.uid || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1'",
-          ".write": "$uid === auth.uid || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1'"
-        }
+        ".read": "auth != null && (auth.uid == $uid || root.child('users/' + auth.uid + '/role').val() == 'admin')",
+        ".write": "auth != null && (auth.uid == $uid || root.child('users/' + auth.uid + '/role').val() == 'admin')"
       }
     },
-
-    // ════════════════════════════════════════════════════════════
-    // ── ORGANISATIONS (forfait 6 — Wikimind Organisation) ──
-    //
-    //  Structure d'une organisation :
-    //  organisations/$orgId
-    //    name, description, sector, visibility (public|private)
-    //    joinable (bool)   : si true, les demandes d'adhésion sont ouvertes
-    //    adminUid          : UID du créateur / admin principal
-    //    plan: 6           : identifiant du forfait Organisation
-    //    createdAt, slug
-    //    members/$uid      : { uid, name, email, role, joinedAt }
-    //    join_requests/$uid: { uid, name, email, createdAt }
-    //    invitations/$invId: { email, role, targetUid, invitedBy, createdAt }
-    //    activity/$id      : { type, message, ts }
-    //
-    //  Règles :
-    //  - Organisations publiques : lisibles par tout utilisateur connecté
-    //  - Organisations privées   : lisibles uniquement par leurs membres
-    //  - Création : tout utilisateur connecté (non anonyme) peut créer
-    //  - Modification des métadonnées : admin seulement
-    //  - Membres : admin peut ajouter / retirer
-    //  - Demandes d'adhésion : tout utilisateur connecté peut déposer la sienne
-    //  - Invitations : admin seulement peut écrire
-    // ════════════════════════════════════════════════════════════
+    
+    "conversations": {
+      ".read": "auth != null",
+      "$convId": {
+        ".read": "auth != null && (root.child('conversations/' + $convId + '/users/' + auth.uid).exists() || root.child('users/' + auth.uid + '/role').val() == 'admin')",
+        ".write": "auth != null && (root.child('conversations/' + $convId + '/users/' + auth.uid).exists() || root.child('users/' + auth.uid + '/role').val() == 'admin')"
+      }
+    },
+    
+    "messages": {
+      ".read": "auth != null",
+      "$msgId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    
+    "comments": {
+      ".read": "auth != null",
+      "$commentId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    
+    "canvases": {
+      ".read": "auth != null",
+      "$canvasId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    
     "organisations": {
-
-      // Lecture de la liste entière : uniquement pour les users connectés
-      // (nécessaire pour la recherche côté client dans Découvrir)
       ".read": "auth != null",
-
-      // Création d'une nouvelle organisation
-      ".write": "auth != null",
-
       "$orgId": {
-
-        // Lecture individuelle : public si visibility=public, sinon membres seulement
-        ".read": "auth != null && (data.child('visibility').val() === 'public' || data.child('members').child(auth.uid).exists() || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1')",
-
-        // Écriture du document racine : création (nouveau doc) ou admin
-        ".write": "auth != null && (!data.exists() || data.child('adminUid').val() === auth.uid || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1')",
-
-        // ── Métadonnées (name, desc, sector, visibility…) ──
-        // Seul l'admin peut les modifier
-        "name":        { ".write": "auth != null && (data.parent().child('adminUid').val() === auth.uid || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1')" },
-        "description": { ".write": "auth != null && (data.parent().child('adminUid').val() === auth.uid || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1')" },
-        "sector":      { ".write": "auth != null && (data.parent().child('adminUid').val() === auth.uid || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1')" },
-        "visibility":  { ".write": "auth != null && (data.parent().child('adminUid').val() === auth.uid || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1')" },
-        "joinable":    { ".write": "auth != null && (data.parent().child('adminUid').val() === auth.uid || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1')" },
-
-        // ── Membres ──
-        // Lecture : membres de l'org ou admins globaux
-        // Écriture : admin de l'org ou admins globaux (pour accept/remove)
-        "members": {
-          ".read":  "auth != null && (data.parent().child('members').child(auth.uid).exists() || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1')",
-          ".write": "auth != null && (data.parent().child('adminUid').val() === auth.uid || data.parent().child('members').child(auth.uid).child('role').val() === 'admin' || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1')",
-          "$memberId": {
-            ".read":  "auth != null",
-            // Validation d'un membre
-            ".validate": "newData.hasChildren(['uid','name','email','role','joinedAt']) && (newData.child('role').val() === 'admin' || newData.child('role').val() === 'member')"
-          }
-        },
-
-        // ── Demandes d'adhésion ──
-        // Lecture : admin seulement
-        // Écriture : tout utilisateur connecté peut créer SA PROPRE demande
-        //           L'admin peut supprimer (accept/deny)
-        "join_requests": {
-          ".read":  "auth != null && (data.parent().child('adminUid').val() === auth.uid || data.parent().child('members').child(auth.uid).child('role').val() === 'admin' || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1')",
-          ".write": "auth != null",
-          "$requesterId": {
-            // Un utilisateur peut seulement créer/supprimer SA PROPRE demande
-            // L'admin peut supprimer n'importe quelle demande
-            ".read":  "auth != null && ($requesterId === auth.uid || data.parent().parent().child('adminUid').val() === auth.uid || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1')",
-            ".write": "auth != null && ($requesterId === auth.uid || data.parent().parent().child('adminUid').val() === auth.uid || data.parent().parent().child('members').child(auth.uid).child('role').val() === 'admin' || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1')",
-            ".validate": "!newData.exists() || (newData.hasChildren(['uid','name','email','createdAt']) && newData.child('uid').val() === auth.uid)"
-          }
-        },
-
-        // ── Invitations envoyées par l'admin ──
-        "invitations": {
-          ".read":  "auth != null && (data.parent().child('adminUid').val() === auth.uid || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1')",
-          ".write": "auth != null && (data.parent().child('adminUid').val() === auth.uid || data.parent().child('members').child(auth.uid).child('role').val() === 'admin' || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1')"
-        },
-
-        // ── Journal d'activité ──
-        // Lecture : membres de l'org
-        // Écriture : membres (pour push d'activité) ou admin
-        "activity": {
-          ".read":  "auth != null && (data.parent().child('members').child(auth.uid).exists() || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1')",
-          ".write": "auth != null && (data.parent().child('members').child(auth.uid).exists() || data.parent().child('adminUid').val() === auth.uid || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1')",
-          "$actId": {
-            ".validate": "newData.hasChildren(['type','message','ts']) && newData.child('ts').isNumber()"
-          }
-        }
+        ".read": "auth != null && (root.child('organisations/' + $orgId + '/members/' + auth.uid).exists() || root.child('users/' + auth.uid + '/role').val() == 'admin')",
+        ".write": "auth != null && (root.child('organisations/' + $orgId + '/adminUid').val() == auth.uid || root.child('users/' + auth.uid + '/role').val() == 'admin')"
       }
     },
-
-    // ════════════════════════════════════════════════════════════
-    // ── ANNUAIRE PUBLIC ──
-    // ════════════════════════════════════════════════════════════
-    "users_directory": {
-      ".read": "auth != null",
-      "$uid": {
-        ".write": "$uid === auth.uid"
-      }
-    },
-
-    // ── TOKEN REQUESTS ──
-    "token_requests": {
-      ".read":  "auth != null && (auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1')",
-      ".write": "auth != null",
-      "$reqId": {
-        ".read":  "auth != null && (data.child('uid').val() === auth.uid || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1')",
-        ".write": "auth != null && (data.child('uid').val() === auth.uid || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1' || !data.exists())"
-      }
-    },
-
-    // ── TRANSACTIONS ──
+    
     "transactions": {
-      ".read":  "auth != null && (auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1')",
-      ".write": "auth != null",
-      "$txId": {
-        ".read":  "auth != null && (data.child('uid').val() === auth.uid || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1')",
-        ".write": "auth != null && (auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1' || !data.exists())"
-      }
+      ".read": "auth != null && root.child('users/' + auth.uid + '/role').val() == 'admin'",
+      ".write": "auth != null && root.child('users/' + auth.uid + '/role').val() == 'admin'"
     },
-
-    // ── PUBLIC DECKS ──
-    "public_decks": {
-      ".read":  "auth != null",
+    
+    "FORFAIT": {
+      ".read": "auth != null",
       ".write": "auth != null"
     },
-
-    // ════════════════════════════════════════════════════════════
-    // ── CONVERSATIONS PARTAGÉES ──
-    // ════════════════════════════════════════════════════════════
-    "shared_conversations": {
-      ".read": true,
-      ".write": "auth != null",
-      "$shareId": {
-        ".read": true,
-        ".write": "auth != null && (!data.exists() || auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1')",
-        "liveMessages": {
-          ".read": true,
-          ".write": "auth != null",
-          "$msgId": {
-            ".read": true,
-            ".write": "auth != null && !data.exists()",
-            ".validate": "newData.hasChildren(['role','content','ts']) && (newData.child('role').val() === 'user' || newData.child('role').val() === 'ai') && newData.child('content').val().length <= 4000 && newData.child('ts').isNumber()"
-          }
-        },
-        "rateMap": {
-          ".read":  "auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1'",
-          ".write": "auth.uid === 'vbpNViPUq8e8zhmyKYNMDSx4HEF3' || auth.uid === 'ynYjIJbIoJZIsleuzsWZRFXrGxs1'"
-        }
+    
+    "settings": {
+      ".read": "auth != null && (auth.uid == 'ynYjIJbIoJZIsleuzsWZRFXrGxs1' || root.child('users/' + auth.uid + '/role').val() == 'admin')",
+      ".write": "auth != null && (auth.uid == 'ynYjIJbIoJZIsleuzsWZRFXrGxs1' || root.child('users/' + auth.uid + '/role').val() == 'admin')"
+    },
+    
+    "logs": {
+      ".read": "auth != null && (auth.uid == 'ynYjIJbIoJZIsleuzsWZRFXrGxs1' || root.child('users/' + auth.uid + '/role').val() == 'admin')",
+      ".write": "auth != null && (auth.uid == 'ynYjIJbIoJZIsleuzsWZRFXrGxs1' || root.child('users/' + auth.uid + '/role').val() == 'admin')"
+    },
+    
+    "reports": {
+      ".read": "auth != null && (auth.uid == 'ynYjIJbIoJZIsleuzsWZRFXrGxs1' || root.child('users/' + auth.uid + '/role').val() == 'admin')",
+      "$reportId": {
+        ".read": "auth != null && (auth.uid == 'ynYjIJbIoJZIsleuzsWZRFXrGxs1' || root.child('users/' + auth.uid + '/role').val() == 'admin' || root.child('reports/' + $reportId + '/uid').val() == auth.uid)",
+        ".write": "auth != null && (auth.uid == 'ynYjIJbIoJZIsleuzsWZRFXrGxs1' || root.child('users/' + auth.uid + '/role').val() == 'admin' || root.child('reports/' + $reportId + '/uid').val() == auth.uid)"
       }
+    },
+    
+    "backups": {
+      ".read": "auth != null && (auth.uid == 'ynYjIJbIoJZIsleuzsWZRFXrGxs1' || root.child('users/' + auth.uid + '/role').val() == 'admin')",
+      ".write": "auth != null && (auth.uid == 'ynYjIJbIoJZIsleuzsWZRFXrGxs1' || root.child('users/' + auth.uid + '/role').val() == 'admin')"
+    },
+    
+    "admin_activities": {
+      ".read": "auth != null && (auth.uid == 'ynYjIJbIoJZIsleuzsWZRFXrGxs1' || root.child('users/' + auth.uid + '/role').val() == 'admin')",
+      ".write": "auth != null && (auth.uid == 'ynYjIJbIoJZIsleuzsWZRFXrGxs1' || root.child('users/' + auth.uid + '/role').val() == 'admin')"
     }
-
   }
 }
+                </div>
+                <div style="margin-top: 16px; padding: 12px; background: var(--select-bg); border-radius: 8px; font-size: 11px;">
+                    <p style="margin-bottom: 8px;"><strong>Admin UID:</strong> <code>ynYjIJbIoJZIsleuzsWZRFXrGxs1</code></p>
+                    <p style="margin-bottom: 8px;"><strong>Instructions:</strong> Copy the JSON above and paste it in Firebase Console > Realtime Database > Rules, then click Publish.</p>
+                    <p><strong>Note:</strong> All original rules are preserved. New admin-only nodes (settings, logs, backups, admin_activities) have been added with proper access controls.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="user-modal" class="admin-modal">
+        <div class="admin-modal-content">
+            <div class="admin-modal-header">
+                <h3 id="user-modal-title" class="admin-modal-title">Ajouter un Utilisateur</h3>
+                <button id="user-modal-close" class="admin-modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="admin-modal-body">
+                <form id="user-form">
+                    <input type="hidden" id="user-id">
+                    <div class="admin-form-row">
+                        <div>
+                            <label class="admin-form-label">Nom</label>
+                            <input type="text" id="user-name" class="admin-form-input" required>
+                        </div>
+                        <div>
+                            <label class="admin-form-label">Email</label>
+                            <input type="email" id="user-email" class="admin-form-input" required>
+                        </div>
+                    </div>
+                    <div class="admin-form-row">
+                        <div>
+                            <label class="admin-form-label">Mot de passe (nouveau seulement)</label>
+                            <input type="password" id="user-password" class="admin-form-input">
+                        </div>
+                        <div>
+                            <label class="admin-form-label">Forfait</label>
+                            <select id="user-plan" class="admin-form-select">
+                                <option value="1">Free</option>
+                                <option value="2">AI Plus</option>
+                                <option value="3">AI Pro</option>
+                                <option value="4">AI Premium</option>
+                                <option value="5">AI Premium+"</option>
+                                <option value="6">WikiMind Organisation</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="admin-form-row">
+                        <div>
+                            <label class="admin-form-label">Tokens</label>
+                            <input type="number" id="user-tokens" class="admin-form-input" value="0">
+                        </div>
+                        <div>
+                            <label class="admin-form-label">Role</label>
+                            <select id="user-role" class="admin-form-select">
+                                <option value="user">Utilisateur</option>
+                                <option value="admin">Administrateur</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="admin-form-label">Statut</label>
+                        <select id="user-status" class="admin-form-select">
+                            <option value="active">Actif</option>
+                            <option value="suspended">Suspendu</option>
+                            <option value="banned">Banni</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="admin-modal-footer">
+                <button type="button" id="user-modal-cancel" class="admin-btn">Annuler</button>
+                <button type="submit" id="user-modal-save" class="admin-btn primary">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="tokens-modal" class="admin-modal">
+        <div class="admin-modal-content">
+            <div class="admin-modal-header">
+                <h3 class="admin-modal-title">Ajouter des Tokens</h3>
+                <button id="tokens-modal-close" class="admin-modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="admin-modal-body">
+                <form id="tokens-form">
+                    <div class="admin-form-row">
+                        <div>
+                            <label class="admin-form-label">Utilisateur</label>
+                            <select id="tokens-user" class="admin-form-select" required>
+                                <option value="">Selectionner un utilisateur</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="admin-form-label">Montant</label>
+                            <input type="number" id="tokens-amount" class="admin-form-input" value="100" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="admin-form-label">Raison</label>
+                        <select id="tokens-reason" class="admin-form-select">
+                            <option value="manual">Ajout manuel</option>
+                            <option value="refund">Remboursement</option>
+                            <option value="bonus">Bonus</option>
+                            <option value="promotion">Promotion</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="admin-form-label">Notes</label>
+                        <textarea id="tokens-notes" class="admin-form-textarea" placeholder="Notes optionnelles"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="admin-modal-footer">
+                <button type="button" id="tokens-modal-cancel" class="admin-btn">Annuler</button>
+                <button type="submit" id="tokens-modal-save" class="admin-btn primary">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="org-modal" class="admin-modal">
+        <div class="admin-modal-content">
+            <div class="admin-modal-header">
+                <h3 id="org-modal-title" class="admin-modal-title">Ajouter une Organisation</h3>
+                <button id="org-modal-close" class="admin-modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="admin-modal-body">
+                <form id="org-form">
+                    <input type="hidden" id="org-id">
+                    <div>
+                        <label class="admin-form-label">Nom de l'Organisation</label>
+                        <input type="text" id="org-name" class="admin-form-input" required>
+                    </div>
+                    <div>
+                        <label class="admin-form-label">Description</label>
+                        <textarea id="org-description" class="admin-form-textarea" placeholder="Description de l'organisation"></textarea>
+                    </div>
+                    <div class="admin-form-row">
+                        <div>
+                            <label class="admin-form-label">Secteur</label>
+                            <select id="org-sector" class="admin-form-select">
+                                <option value="education">Education</option>
+                                <option value="business">Entreprise</option>
+                                <option value="nonprofit">Association</option>
+                                <option value="government">Gouvernement</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="admin-form-label">Visibilite</label>
+                            <select id="org-visibility" class="admin-form-select">
+                                <option value="public">Publique</option>
+                                <option value="private">Privee</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="admin-form-row">
+                        <div>
+                            <label class="admin-form-label">Administrateur</label>
+                            <select id="org-admin" class="admin-form-select" required>
+                                <option value="">Selectionner un administrateur</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="admin-form-label">Rejoignable</label>
+                            <select id="org-joinable" class="admin-form-select">
+                                <option value="true">Oui</option>
+                                <option value="false">Non</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="admin-modal-footer">
+                <button type="button" id="org-modal-cancel" class="admin-btn">Annuler</button>
+                <button type="submit" id="org-modal-save" class="admin-btn primary">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="admin-modal">
+        <div class="admin-modal-content" style="max-width: 400px;">
+            <div class="admin-modal-header">
+                <h3 id="confirm-modal-title" class="admin-modal-title">Confirmation</h3>
+                <button id="confirm-modal-close" class="admin-modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="admin-modal-body">
+                <p id="confirm-modal-message" style="font-size: 13px; line-height: 1.5;">Etes-vous sur de vouloir effectuer cette action ?</p>
+            </div>
+            <div class="admin-modal-footer">
+                <button type="button" id="confirm-modal-cancel" class="admin-btn">Annuler</button>
+                <button type="button" id="confirm-modal-confirm" class="admin-btn danger">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-toast" class="admin-toast">
+        <i class="admin-toast-icon"></i>
+        <span class="admin-toast-message"></span>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+            authDomain: "wikimind-3-comments.firebaseapp.com",
+            databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "wikimind-3-comments",
+            storageBucket: "wikimind-3-comments.firebasestorage.app",
+            messagingSenderId: "137479541640",
+            appId: "1:137479541640:web:4ed2510a9908055052e03d"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        let currentAdmin = null;
+        let currentSection = 'dashboard';
+        let usersData = [];
+        let activityChart = null;
+        let reportsData = [];
+        let logsData = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            auth.onAuthStateChanged(function(user) {
+                if (user) {
+                    checkAdminStatus(user);
+                } else {
+                    window.location.href = 'https://chpalitom09-bot.github.io/Wikimind-3/Wikimind_AI.html';
+                }
+            });
+            initEvents();
+        });
+
+        function checkAdminStatus(user) {
+            const adminUID = 'ynYjIJbIoJZIsleuzsWZRFXrGxs1';
+            
+            if (user.uid === adminUID) {
+                currentAdmin = user;
+                updateAdminUI();
+                loadDashboardData();
+                return;
+            }
+
+            database.ref('users/' + user.uid + '/role').once('value', function(snapshot) {
+                const role = snapshot.val();
+                if (role === 'admin') {
+                    currentAdmin = user;
+                    updateAdminUI();
+                    loadDashboardData();
+                    return;
+                }
+                showToast('Acces refuse. Vous devez etre administrateur.', 'error');
+                setTimeout(() => {
+                    window.location.href = 'https://chpalitom09-bot.github.io/Wikimind-3/Wikimind_AI.html';
+                }, 2000);
+            });
+        }
+
+        function updateAdminUI() {
+            if (currentAdmin) {
+                const avatar = document.getElementById('admin-avatar');
+                const name = document.getElementById('admin-name');
+                const email = document.getElementById('admin-email');
+                
+                if (avatar && name && email) {
+                    avatar.textContent = currentAdmin.email ? currentAdmin.email.charAt(0).toUpperCase() : 'A';
+                    name.textContent = currentAdmin.displayName || currentAdmin.email || 'Admin';
+                    email.textContent = currentAdmin.email || 'admin@wikimind.ai';
+                }
+                
+                loadUsersData();
+                loadTokensData();
+                loadOrganizationsData();
+                loadReportsData();
+                loadLogsData();
+                loadSettings();
+            }
+        }
+
+        function initEvents() {
+            const navBtns = document.querySelectorAll('.admin-nav-btn');
+            if (navBtns) {
+                navBtns.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const section = this.dataset.section;
+                        if (section) switchSection(section);
+                    });
+                });
+            }
+
+            const logoutBtn = document.getElementById('admin-logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    auth.signOut().then(() => {
+                        window.location.href = 'https://chpalitom09-bot.github.io/Wikimind-3/Wikimind_AI.html';
+                    });
+                });
+            }
+
+            const refreshBtn = document.getElementById('admin-refresh-btn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', function() {
+                    loadSectionData(currentSection);
+                });
+            }
+
+            const darkToggle = document.getElementById('admin-dark-toggle');
+            if (darkToggle) {
+                darkToggle.addEventListener('click', function() {
+                    document.body.classList.toggle('dark-mode');
+                    this.classList.toggle('dark');
+                });
+            }
+
+            const addUserBtn = document.getElementById('add-user-btn');
+            if (addUserBtn) addUserBtn.addEventListener('click', () => openUserModal());
+            
+            const exportUsersBtn = document.getElementById('export-users-btn');
+            if (exportUsersBtn) exportUsersBtn.addEventListener('click', exportUsers);
+            
+            const addTokensBtn = document.getElementById('add-tokens-btn');
+            if (addTokensBtn) addTokensBtn.addEventListener('click', openTokensModal);
+            
+            const addOrgBtn = document.getElementById('add-org-btn');
+            if (addOrgBtn) addOrgBtn.addEventListener('click', () => openOrgModal());
+            
+            const clearReportsBtn = document.getElementById('clear-reports-btn');
+            if (clearReportsBtn) clearReportsBtn.addEventListener('click', () => {
+                openConfirmModal('Supprimer les signalements', 'Etes-vous sur de vouloir supprimer tous les signalements ?', clearReports);
+            });
+            
+            const exportLogsBtn = document.getElementById('export-logs-btn');
+            if (exportLogsBtn) exportLogsBtn.addEventListener('click', exportLogs);
+            
+            const clearLogsBtn = document.getElementById('clear-logs-btn');
+            if (clearLogsBtn) clearLogsBtn.addEventListener('click', () => {
+                openConfirmModal('Vider les logs', 'Etes-vous sur de vouloir vider tous les logs ?', clearLogs);
+            });
+            
+            const saveSettingsBtn = document.getElementById('save-settings-btn');
+            if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', saveSettings);
+            
+            const settingsCancelBtn = document.getElementById('settings-cancel');
+            if (settingsCancelBtn) settingsCancelBtn.addEventListener('click', loadSettings);
+            
+            const copyRulesBtn = document.getElementById('copy-rules-btn');
+            if (copyRulesBtn) copyRulesBtn.addEventListener('click', copyFirebaseRules);
+
+            const userFilter = document.getElementById('user-filter');
+            if (userFilter) userFilter.addEventListener('change', filterUsers);
+            
+            const userSearch = document.getElementById('user-search');
+            if (userSearch) userSearch.addEventListener('input', filterUsers);
+            
+            const reportFilter = document.getElementById('report-filter');
+            if (reportFilter) reportFilter.addEventListener('change', filterReports);
+            
+            const logFilter = document.getElementById('log-filter');
+            if (logFilter) logFilter.addEventListener('change', filterLogs);
+
+            const userModalClose = document.getElementById('user-modal-close');
+            if (userModalClose) userModalClose.addEventListener('click', closeUserModal);
+            
+            const userModalCancel = document.getElementById('user-modal-cancel');
+            if (userModalCancel) userModalCancel.addEventListener('click', closeUserModal);
+            
+            const tokensModalClose = document.getElementById('tokens-modal-close');
+            if (tokensModalClose) tokensModalClose.addEventListener('click', closeTokensModal);
+            
+            const tokensModalCancel = document.getElementById('tokens-modal-cancel');
+            if (tokensModalCancel) tokensModalCancel.addEventListener('click', closeTokensModal);
+            
+            const orgModalClose = document.getElementById('org-modal-close');
+            if (orgModalClose) orgModalClose.addEventListener('click', closeOrgModal);
+            
+            const orgModalCancel = document.getElementById('org-modal-cancel');
+            if (orgModalCancel) orgModalCancel.addEventListener('click', closeOrgModal);
+            
+            const confirmModalClose = document.getElementById('confirm-modal-close');
+            if (confirmModalClose) confirmModalClose.addEventListener('click', closeConfirmModal);
+            
+            const confirmModalCancel = document.getElementById('confirm-modal-cancel');
+            if (confirmModalCancel) confirmModalCancel.addEventListener('click', closeConfirmModal);
+
+            const userForm = document.getElementById('user-form');
+            if (userForm) userForm.addEventListener('submit', saveUser);
+            
+            const tokensForm = document.getElementById('tokens-form');
+            if (tokensForm) tokensForm.addEventListener('submit', saveTokens);
+            
+            const orgForm = document.getElementById('org-form');
+            if (orgForm) orgForm.addEventListener('submit', saveOrg);
+
+            const modals = document.querySelectorAll('.admin-modal');
+            if (modals) {
+                modals.forEach(modal => {
+                    modal.addEventListener('click', function(e) {
+                        if (e.target === modal) closeAllModals();
+                    });
+                });
+            }
+        }
+
+        function closeAllModals() {
+            const modals = document.querySelectorAll('.admin-modal');
+            if (modals) {
+                modals.forEach(modal => modal.classList.remove('show'));
+            }
+        }
+
+        function switchSection(section) {
+            const navBtns = document.querySelectorAll('.admin-nav-btn');
+            if (navBtns) navBtns.forEach(btn => btn.classList.remove('active'));
+            
+            const activeBtn = document.querySelector('[data-section="' + section + '"]');
+            if (activeBtn) activeBtn.classList.add('active');
+            
+            const contents = document.querySelectorAll('.admin-content');
+            if (contents) contents.forEach(content => content.classList.remove('active'));
+            
+            const targetContent = document.getElementById('admin-' + section);
+            if (targetContent) targetContent.classList.add('active');
+            
+            const title = document.getElementById('admin-page-title');
+            if (title && activeBtn) title.textContent = activeBtn.textContent.trim();
+            
+            currentSection = section;
+            loadSectionData(section);
+        }
+
+        function loadSectionData(section) {
+            switch(section) {
+                case 'dashboard': loadDashboardData(); break;
+                case 'users': renderUsersTable(usersData); break;
+                case 'tokens': loadTokensData(); break;
+                case 'organizations': loadOrganizationsData(); break;
+                case 'reports': loadReportsData(); break;
+                case 'logs': loadLogsData(); break;
+                case 'settings': loadSettings(); break;
+                case 'firebase-rules': showFirebaseRules(); break;
+            }
+        }
+
+        function loadDashboardData() {
+            loadStats();
+            loadActivityChart();
+            loadRecentActions();
+        }
+
+        function loadStats() {
+            const totalUsersEl = document.getElementById('total-users');
+            const newUsersEl = document.getElementById('new-users-today');
+            const totalTokensEl = document.getElementById('total-tokens');
+            const activeReportsEl = document.getElementById('active-reports');
+
+            database.ref('users').once('value', function(snapshot) {
+                const users = snapshot.val();
+                const totalUsers = users ? Object.keys(users).length : 0;
+                if (totalUsersEl) totalUsersEl.textContent = totalUsers.toLocaleString();
+            });
+
+            const today = new Date().toISOString().split('T')[0];
+            database.ref('users').orderByChild('createdAt').startAt(today).once('value', function(snapshot) {
+                const users = snapshot.val();
+                if (newUsersEl) newUsersEl.textContent = users ? Object.keys(users).length : 0;
+            });
+
+            database.ref('transactions').once('value', function(snapshot) {
+                const transactions = snapshot.val();
+                let totalTokens = 0;
+                if (transactions) {
+                    Object.values(transactions).forEach(tx => {
+                        if (tx.amount) totalTokens += parseInt(tx.amount);
+                    });
+                }
+                if (totalTokensEl) totalTokensEl.textContent = totalTokens.toLocaleString();
+            });
+
+            database.ref('reports').orderByChild('status').equalTo('pending').once('value', function(snapshot) {
+                const reports = snapshot.val();
+                if (activeReportsEl) activeReportsEl.textContent = reports ? Object.keys(reports).length : 0;
+            });
+        }
+
+        function loadActivityChart() {
+            const ctx = document.getElementById('activity-chart');
+            if (!ctx) return;
+
+            if (activityChart) activityChart.destroy();
+
+            const labels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+            const data = [120, 190, 150, 200, 180, 220, 250];
+
+            activityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Activite',
+                        data: data,
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'var(--border2)' },
+                            ticks: { color: 'var(--text)' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: 'var(--text)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function loadRecentActions() {
+            const tbody = document.getElementById('recent-actions');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const actions = [
+                { user: 'user1', action: 'Connexion', module: 'Auth', date: new Date().toLocaleString(), status: 'success' },
+                { user: 'user2', action: 'Creation Canvas', module: 'Canvas', date: new Date().toLocaleString(), status: 'success' },
+                { user: 'user3', action: 'Utilisation IA', module: 'AI', date: new Date().toLocaleString(), status: 'success' },
+                { user: 'user4', action: 'Changement forfait', module: 'Subscription', date: new Date().toLocaleString(), status: 'success' },
+                { user: 'user5', action: 'Signalement', module: 'Report', date: new Date().toLocaleString(), status: 'pending' }
+            ];
+
+            actions.forEach(action => {
+                const row = document.createElement('tr');
+                const statusClass = action.status === 'success' ? 'success' : 'warning';
+                row.innerHTML = `
+                    <td>${action.user}</td>
+                    <td>${action.action}</td>
+                    <td><span class="admin-badge info">${action.module}</span></td>
+                    <td>${action.date}</td>
+                    <td><span class="admin-badge ${statusClass}">${action.status}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function loadUsersData() {
+            database.ref('users').once('value', function(snapshot) {
+                usersData = [];
+                const users = snapshot.val();
+                
+                if (users) {
+                    Object.entries(users).forEach(([uid, userData]) => {
+                        usersData.push({
+                            id: uid,
+                            name: userData.name || userData.email || uid,
+                            email: userData.email || '',
+                            plan: userData.FORFAIT || { plan: 1 },
+                            tokens: userData.tokens || { amount: 0 },
+                            lastAccess: userData.lastAccess || 'Jamais',
+                            status: userData.status || 'active',
+                            createdAt: userData.createdAt || new Date().toISOString(),
+                            role: userData.role || 'user'
+                        });
+                    });
+                }
+                
+                updateTokensUserSelect();
+                updateOrgAdminSelect();
+                
+                if (currentSection === 'users') {
+                    renderUsersTable(usersData);
+                }
+            });
+        }
+
+        function updateTokensUserSelect() {
+            const select = document.getElementById('tokens-user');
+            if (!select) return;
+            
+            select.innerHTML = '<option value="">Selectionner un utilisateur</option>';
+            usersData.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = user.name + (user.email ? ' (' + user.email + ')' : '');
+                select.appendChild(option);
+            });
+        }
+
+        function updateOrgAdminSelect() {
+            const select = document.getElementById('org-admin');
+            if (!select) return;
+            
+            select.innerHTML = '<option value="">Selectionner un administrateur</option>';
+            usersData.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = user.name + (user.email ? ' (' + user.email + ')' : '');
+                select.appendChild(option);
+            });
+        }
+
+        function filterUsers() {
+            const searchEl = document.getElementById('user-search');
+            const filterEl = document.getElementById('user-filter');
+            
+            if (!searchEl || !filterEl) return;
+            
+            const search = searchEl.value.toLowerCase();
+            const filter = filterEl.value;
+            
+            const filtered = usersData.filter(user => {
+                const matchesSearch = user.name.toLowerCase().includes(search) || 
+                         user.email.toLowerCase().includes(search) ||
+                         user.id.toLowerCase().includes(search);
+                const userPlan = user.plan && user.plan.plan ? user.plan.plan.toString() : '1';
+                const matchesFilter = filter === 'all' || userPlan === filter;
+                return matchesSearch && matchesFilter;
+            });
+            
+            renderUsersTable(filtered);
+        }
+
+        function renderUsersTable(users) {
+            const tbody = document.getElementById('users-table-body');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            if (users.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="8" style="text-align: center; color: #888;">Aucun utilisateur trouve</td>';
+                tbody.appendChild(row);
+                return;
+            }
+            
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                const planId = user.plan && user.plan.plan ? user.plan.plan : 1;
+                const planName = getPlanName(planId);
+                const planColor = getPlanColor(planName);
+                const tokenAmount = user.tokens && user.tokens.amount ? user.tokens.amount : 0;
+                const statusBadge = getStatusBadge(user.status);
+                const roleBadge = user.role === 'admin' ? 'Administrateur' : 'Utilisateur';
+                
+                row.innerHTML = `
+                    <td style="font-size: 10px; word-break: break-all;">${user.id.substring(0, 8)}...</td>
+                    <td>${user.name}</td>
+                    <td style="font-size: 10px;">${user.email || '-'}</td>
+                    <td><span class="admin-badge ${planColor}">${planName}</span></td>
+                    <td>${tokenAmount}</td>
+                    <td><span class="admin-badge ${statusBadge.color}">${statusBadge.text}</span></td>
+                    <td><span class="admin-badge ${user.role === 'admin' ? 'primary' : 'info'}">${roleBadge}</span></td>
+                    <td>
+                        <button onclick="viewUser('${user.id}')" class="admin-btn" style="padding: 4px 8px; margin-right: 4px;">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button onclick="editUser('${user.id}')" class="admin-btn" style="padding: 4px 8px; margin-right: 4px;">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteUser('${user.id}')" class="admin-btn danger" style="padding: 4px 8px;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function loadTokensData() {
+            database.ref('transactions').orderByChild('createdAt').once('value', function(snapshot) {
+                const transactions = snapshot.val();
+                const tbody = document.getElementById('tokens-table-body');
+                if (!tbody) return;
+                
+                tbody.innerHTML = '';
+                
+                if (!transactions) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = '<td colspan="6" style="text-align: center; color: #888;">Aucune transaction trouvee</td>';
+                    tbody.appendChild(row);
+                    return;
+                }
+                
+                const sortedTx = Object.entries(transactions).sort((a, b) => {
+                    const dateA = new Date(a[1].createdAt || 0).getTime();
+                    const dateB = new Date(b[1].createdAt || 0).getTime();
+                    return dateB - dateA;
+                });
+                
+                sortedTx.forEach(([txId, tx]) => {
+                    const user = usersData.find(u => u.id === tx.uid);
+                    const userName = user ? user.name : tx.uid || 'Inconnu';
+                    const date = formatDate(tx.createdAt);
+                    const statusBadge = tx.status === 'completed' ? 'success' : 'warning';
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${userName}</td>
+                        <td>${tx.amount || 0}</td>
+                        <td><span class="admin-badge info">${tx.type || 'add'}</span></td>
+                        <td>${tx.reason || '-'}</td>
+                        <td>${date}</td>
+                        <td><span class="admin-badge ${statusBadge}">${tx.status || 'completed'}</span></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            });
+        }
+
+        function loadOrganizationsData() {
+            database.ref('organisations').once('value', function(snapshot) {
+                const orgs = snapshot.val();
+                const tbody = document.getElementById('organizations-table-body');
+                if (!tbody) return;
+                
+                tbody.innerHTML = '';
+                
+                if (!orgs) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = '<td colspan="7" style="text-align: center; color: #888;">Aucune organisation trouvee</td>';
+                    tbody.appendChild(row);
+                    return;
+                }
+                
+                Object.entries(orgs).forEach(([orgId, org]) => {
+                    const adminUser = usersData.find(u => u.id === org.adminUid);
+                    const adminName = adminUser ? adminUser.name : org.adminUid || 'Inconnu';
+                    const memberCount = org.members ? Object.keys(org.members).length : 0;
+                    const date = formatDate(org.createdAt);
+                    const planName = getPlanName(org.plan || 6);
+                    const planColor = getPlanColor(planName);
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="font-size: 10px; word-break: break-all;">${orgId.substring(0, 8)}...</td>
+                        <td>${org.name || 'Sans nom'}</td>
+                        <td>${adminName}</td>
+                        <td>${memberCount}</td>
+                        <td><span class="admin-badge ${planColor}">${planName}</span></td>
+                        <td>${date}</td>
+                        <td>
+                            <button onclick="viewOrg('${orgId}')" class="admin-btn" style="padding: 4px 8px; margin-right: 4px;">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button onclick="editOrg('${orgId}')" class="admin-btn" style="padding: 4px 8px; margin-right: 4px;">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteOrg('${orgId}')" class="admin-btn danger" style="padding: 4px 8px;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            });
+        }
+
+        function loadReportsData() {
+            database.ref('reports').orderByChild('createdAt').once('value', function(snapshot) {
+                reportsData = [];
+                const reports = snapshot.val();
+                
+                if (reports) {
+                    Object.entries(reports).forEach(([reportId, report]) => {
+                        reportsData.push({
+                            id: reportId,
+                            uid: report.uid || '',
+                            type: report.type || 'other',
+                            description: report.description || '',
+                            status: report.status || 'pending',
+                            createdAt: report.createdAt || new Date().toISOString()
+                        });
+                    });
+                }
+                
+                filterReports();
+            });
+        }
+
+        function filterReports() {
+            const filterEl = document.getElementById('report-filter');
+            if (!filterEl) return;
+            
+            const filter = filterEl.value;
+            const filtered = reportsData.filter(r => filter === 'all' || r.status === filter);
+            
+            renderReportsTable(filtered);
+        }
+
+        function renderReportsTable(reports) {
+            const tbody = document.getElementById('reports-table-body');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            if (reports.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="7" style="text-align: center; color: #888;">Aucun signalement trouve</td>';
+                tbody.appendChild(row);
+                return;
+            }
+            
+            reports.forEach(report => {
+                const user = usersData.find(u => u.id === report.uid);
+                const userName = user ? user.name : report.uid || 'Anonyme';
+                const date = formatDate(report.createdAt);
+                const statusBadge = report.status === 'resolved' ? 'success' : report.status === 'pending' ? 'warning' : 'info';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="font-size: 10px; word-break: break-all;">${report.id.substring(0, 8)}...</td>
+                    <td>${userName}</td>
+                    <td><span class="admin-badge info">${report.type}</span></td>
+                    <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${report.description || '-'}</td>
+                    <td><span class="admin-badge ${statusBadge}">${report.status}</span></td>
+                    <td>${date}</td>
+                    <td>
+                        ${report.status === 'pending' ? `
+                            <button onclick="resolveReport('${report.id}')" class="admin-btn success" style="padding: 4px 8px; margin-right: 4px;">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button onclick="deleteReport('${report.id}')" class="admin-btn danger" style="padding: 4px 8px;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        ` : '-'}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function loadLogsData() {
+            database.ref('logs').orderByChild('ts').once('value', function(snapshot) {
+                logsData = [];
+                const logs = snapshot.val();
+                
+                if (logs) {
+                    Object.entries(logs).forEach(([logId, log]) => {
+                        logsData.push({
+                            id: logId,
+                            uid: log.uid || '',
+                            level: log.level || 'info',
+                            module: log.module || 'General',
+                            message: log.message || '',
+                            ts: log.ts || new Date().toISOString()
+                        });
+                    });
+                }
+                
+                filterLogs();
+            });
+        }
+
+        function filterLogs() {
+            const filterEl = document.getElementById('log-filter');
+            if (!filterEl) return;
+            
+            const filter = filterEl.value;
+            const filtered = logsData.filter(log => filter === 'all' || log.level === filter);
+            
+            renderLogsTable(filtered);
+        }
+
+        function renderLogsTable(logs) {
+            const tbody = document.getElementById('logs-table-body');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            if (logs.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="5" style="text-align: center; color: #888;">Aucun log trouve</td>';
+                tbody.appendChild(row);
+                return;
+            }
+            
+            logs.forEach(log => {
+                const user = usersData.find(u => u.id === log.uid);
+                const userName = user ? user.name : log.uid || 'Systeme';
+                const date = formatDate(log.ts);
+                const levelBadge = log.level === 'error' ? 'danger' : log.level === 'warning' ? 'warning' : 'info';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${date}</td>
+                    <td><span class="admin-badge ${levelBadge}">${log.level}</span></td>
+                    <td><span class="admin-badge info">${log.module}</span></td>
+                    <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${log.message || '-'}</td>
+                    <td>${userName}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function loadSettings() {
+            database.ref('settings').once('value', function(snapshot) {
+                const settings = snapshot.val();
+                
+                const siteNameEl = document.getElementById('site-name');
+                const siteDescEl = document.getElementById('site-description');
+                const maintenanceModeEl = document.getElementById('maintenance-mode');
+                const maintenanceMsgEl = document.getElementById('maintenance-message');
+                
+                if (siteNameEl) siteNameEl.value = settings && settings.siteName ? settings.siteName : 'WikiMind AI';
+                if (siteDescEl) siteDescEl.value = settings && settings.siteDescription ? settings.siteDescription : "Plateforme d'IA collaborative";
+                if (maintenanceModeEl) maintenanceModeEl.value = settings && settings.maintenance && settings.maintenance.enabled ? 'true' : 'false';
+                if (maintenanceMsgEl) maintenanceMsgEl.value = settings && settings.maintenance && settings.maintenance.message ? settings.maintenance.message : '';
+            });
+        }
+
+        function showFirebaseRules() {
+            const section = document.getElementById('firebase-rules-section');
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function copyFirebaseRules() {
+            const rulesText = document.getElementById('firebase-rules-section').textContent;
+            navigator.clipboard.writeText(rulesText).then(() => {
+                showToast('Regles Firebase copiees dans le presse-papiers', 'success');
+            }).catch(err => {
+                showToast('Erreur lors de la copie: ' + err, 'error');
+            });
+        }
+
+        function openUserModal(userId = null) {
+            const modal = document.getElementById('user-modal');
+            const title = document.getElementById('user-modal-title');
+            
+            if (userId) {
+                if (title) title.textContent = 'Modifier l\'Utilisateur';
+                database.ref('users/' + userId).once('value', function(snapshot) {
+                    const user = snapshot.val();
+                    if (user) {
+                        document.getElementById('user-id').value = userId;
+                        document.getElementById('user-name').value = user.name || '';
+                        document.getElementById('user-email').value = user.email || '';
+                        document.getElementById('user-password').value = '';
+                        document.getElementById('user-plan').value = user.FORFAIT && user.FORFAIT.plan ? user.FORFAIT.plan : 1;
+                        document.getElementById('user-tokens').value = user.tokens && user.tokens.amount ? user.tokens.amount : 0;
+                        document.getElementById('user-role').value = user.role || 'user';
+                        document.getElementById('user-status').value = user.status || 'active';
+                    }
+                });
+            } else {
+                if (title) title.textContent = 'Ajouter un Utilisateur';
+                document.getElementById('user-id').value = '';
+                document.getElementById('user-name').value = '';
+                document.getElementById('user-email').value = '';
+                document.getElementById('user-password').value = '';
+                document.getElementById('user-plan').value = 1;
+                document.getElementById('user-tokens').value = 0;
+                document.getElementById('user-role').value = 'user';
+                document.getElementById('user-status').value = 'active';
+            }
+            if (modal) modal.classList.add('show');
+        }
+
+        function closeUserModal() {
+            const modal = document.getElementById('user-modal');
+            if (modal) modal.classList.remove('show');
+        }
+
+        function openTokensModal() {
+            const modal = document.getElementById('tokens-modal');
+            if (modal) modal.classList.add('show');
+        }
+
+        function closeTokensModal() {
+            const modal = document.getElementById('tokens-modal');
+            if (modal) modal.classList.remove('show');
+        }
+
+        function openOrgModal(orgId = null) {
+            const modal = document.getElementById('org-modal');
+            const title = document.getElementById('org-modal-title');
+            
+            if (orgId) {
+                if (title) title.textContent = 'Modifier l\'Organisation';
+                database.ref('organisations/' + orgId).once('value', function(snapshot) {
+                    const org = snapshot.val();
+                    if (org) {
+                        document.getElementById('org-id').value = orgId;
+                        document.getElementById('org-name').value = org.name || '';
+                        document.getElementById('org-description').value = org.description || '';
+                        document.getElementById('org-sector').value = org.sector || 'education';
+                        document.getElementById('org-visibility').value = org.visibility || 'public';
+                        document.getElementById('org-admin').value = org.adminUid || '';
+                        document.getElementById('org-joinable').value = org.joinable ? 'true' : 'false';
+                    }
+                });
+            } else {
+                if (title) title.textContent = 'Ajouter une Organisation';
+                document.getElementById('org-id').value = '';
+                document.getElementById('org-name').value = '';
+                document.getElementById('org-description').value = '';
+                document.getElementById('org-sector').value = 'education';
+                document.getElementById('org-visibility').value = 'public';
+                document.getElementById('org-admin').value = '';
+                document.getElementById('org-joinable').value = 'true';
+            }
+            if (modal) modal.classList.add('show');
+        }
+
+        function closeOrgModal() {
+            const modal = document.getElementById('org-modal');
+            if (modal) modal.classList.remove('show');
+        }
+
+        function openConfirmModal(title, message, onConfirm) {
+            const titleEl = document.getElementById('confirm-modal-title');
+            const msgEl = document.getElementById('confirm-modal-message');
+            const confirmBtn = document.getElementById('confirm-modal-confirm');
+            
+            if (titleEl) titleEl.textContent = title;
+            if (msgEl) msgEl.textContent = message;
+            if (confirmBtn) {
+                confirmBtn.onclick = function() {
+                    onConfirm();
+                    closeConfirmModal();
+                };
+            }
+            const modal = document.getElementById('confirm-modal');
+            if (modal) modal.classList.add('show');
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirm-modal');
+            if (modal) modal.classList.remove('show');
+        }
+
+        function saveUser(e) {
+            e.preventDefault();
+            
+            const userId = document.getElementById('user-id').value;
+            const name = document.getElementById('user-name').value;
+            const email = document.getElementById('user-email').value;
+            const password = document.getElementById('user-password').value;
+            const plan = document.getElementById('user-plan').value;
+            const tokens = document.getElementById('user-tokens').value;
+            const role = document.getElementById('user-role').value;
+            const status = document.getElementById('user-status').value;
+            
+            if (userId) {
+                const updates = {
+                    name: name,
+                    email: email,
+                    FORFAIT: { plan: parseInt(plan) },
+                    tokens: { amount: parseInt(tokens) },
+                    status: status,
+                    role: role,
+                    lastUpdated: new Date().toISOString()
+                };
+                
+                database.ref('users/' + userId).update(updates, function(error) {
+                    if (error) {
+                        showToast('Erreur: ' + error.message, 'error');
+                    } else {
+                        showToast('Utilisateur mis a jour avec succes', 'success');
+                        closeUserModal();
+                        loadUsersData();
+                    }
+                });
+            } else {
+                if (!email || !password) {
+                    showToast('Email et mot de passe sont requis', 'error');
+                    return;
+                }
+                
+                auth.createUserWithEmailAndPassword(email, password).then(function(userCredential) {
+                    const newUserId = userCredential.user.uid;
+                    
+                    const userData = {
+                        name: name,
+                        email: email,
+                        FORFAIT: { plan: parseInt(plan) },
+                        tokens: { amount: parseInt(tokens) },
+                        status: status,
+                        role: role,
+                        createdAt: new Date().toISOString(),
+                        lastAccess: new Date().toISOString()
+                    };
+                    
+                    database.ref('users/' + newUserId).set(userData, function(error) {
+                        if (error) {
+                            showToast('Erreur: ' + error.message, 'error');
+                        } else {
+                            showToast('Utilisateur cree avec succes', 'success');
+                            closeUserModal();
+                            loadUsersData();
+                        }
+                    });
+                }).catch(function(error) {
+                    showToast('Erreur: ' + error.message, 'error');
+                });
+            }
+        }
+
+        function saveTokens(e) {
+            e.preventDefault();
+            
+            const userId = document.getElementById('tokens-user').value;
+            const amount = parseInt(document.getElementById('tokens-amount').value);
+            const reason = document.getElementById('tokens-reason').value;
+            const notes = document.getElementById('tokens-notes').value;
+            
+            if (!userId || !amount) {
+                showToast('Veuillez selectionner un utilisateur et un montant', 'error');
+                return;
+            }
+            
+            database.ref('users/' + userId + '/tokens').transaction(function(current) {
+                if (current === null) {
+                    return { amount: amount };
+                }
+                current.amount = (current.amount || 0) + amount;
+                return current;
+            }, function(error, committed, snapshot) {
+                if (error) {
+                    showToast('Erreur: ' + error.message, 'error');
+                    return;
+                }
+                
+                const transaction = {
+                    uid: userId,
+                    type: 'add',
+                    amount: amount,
+                    method: 'admin',
+                    reason: reason,
+                    notes: notes,
+                    createdAt: new Date().toISOString(),
+                    status: 'completed'
+                };
+                
+                database.ref('transactions').push().set(transaction, function(error) {
+                    if (error) {
+                        showToast('Erreur: ' + error.message, 'error');
+                    } else {
+                        showToast('Tokens ajoutes avec succes', 'success');
+                        closeTokensModal();
+                        loadTokensData();
+                        loadUsersData();
+                    }
+                });
+            });
+        }
+
+        function saveOrg(e) {
+            e.preventDefault();
+            
+            const orgId = document.getElementById('org-id').value;
+            const name = document.getElementById('org-name').value;
+            const description = document.getElementById('org-description').value;
+            const sector = document.getElementById('org-sector').value;
+            const visibility = document.getElementById('org-visibility').value;
+            const adminUid = document.getElementById('org-admin').value;
+            const joinable = document.getElementById('org-joinable').value === 'true';
+            
+            if (orgId) {
+                const updates = {
+                    name: name,
+                    description: description,
+                    sector: sector,
+                    visibility: visibility,
+                    adminUid: adminUid,
+                    joinable: joinable,
+                    updatedAt: new Date().toISOString()
+                };
+                
+                database.ref('organisations/' + orgId).update(updates, function(error) {
+                    if (error) {
+                        showToast('Erreur: ' + error.message, 'error');
+                    } else {
+                        showToast('Organisation mise a jour avec succes', 'success');
+                        closeOrgModal();
+                        loadOrganizationsData();
+                    }
+                });
+            } else {
+                if (!name || !adminUid) {
+                    showToast('Nom et administrateur sont requis', 'error');
+                    return;
+                }
+                
+                const orgData = {
+                    name: name,
+                    description: description,
+                    sector: sector,
+                    visibility: visibility,
+                    adminUid: adminUid,
+                    joinable: joinable,
+                    plan: 6,
+                    createdAt: new Date().toISOString(),
+                    members: {}
+                };
+                
+                const adminUser = usersData.find(u => u.id === adminUid);
+                if (adminUser) {
+                    orgData.members[adminUid] = {
+                        uid: adminUid,
+                        name: adminUser.name,
+                        email: adminUser.email,
+                        role: 'admin',
+                        joinedAt: new Date().toISOString()
+                    };
+                }
+                
+                database.ref('organisations').push().set(orgData, function(error) {
+                    if (error) {
+                        showToast('Erreur: ' + error.message, 'error');
+                    } else {
+                        showToast('Organisation creee avec succes', 'success');
+                        closeOrgModal();
+                        loadOrganizationsData();
+                    }
+                });
+            }
+        }
+
+        function saveSettings() {
+            const siteName = document.getElementById('site-name').value;
+            const siteDescription = document.getElementById('site-description').value;
+            const maintenanceMode = document.getElementById('maintenance-mode').value;
+            const maintenanceMessage = document.getElementById('maintenance-message').value;
+            
+            const settings = {
+                siteName: siteName,
+                siteDescription: siteDescription,
+                maintenance: {
+                    enabled: maintenanceMode === 'true',
+                    message: maintenanceMessage
+                },
+                updatedAt: new Date().toISOString()
+            };
+            
+            database.ref('settings').set(settings, function(error) {
+                if (error) {
+                    showToast('Erreur: ' + error.message, 'error');
+                } else {
+                    showToast('Parametres sauvegardes avec succes', 'success');
+                }
+            });
+        }
+
+        function exportUsers() {
+            if (usersData.length === 0) {
+                showToast('Aucun utilisateur a exporter', 'error');
+                return;
+            }
+            
+            let csv = 'ID,Nom,Email,Forfait,Tokens,Dernier Acces,Statut,Role,Date Creation\n';
+            usersData.forEach(user => {
+                const planName = getPlanName(user.plan && user.plan.plan ? user.plan.plan : 1);
+                const tokenAmount = user.tokens && user.tokens.amount ? user.tokens.amount : 0;
+                csv += `"${user.id}","${user.name}","${user.email || ''}","${planName}",${tokenAmount},"${user.lastAccess || 'Jamais'}","${user.status || 'active'}","${user.role || 'user'}","${user.createdAt || ''}"\n`;
+            });
+            
+            downloadCSV(csv, 'wikimind_users_' + new Date().toISOString().split('T')[0] + '.csv');
+            showToast('Utilisateurs exporters avec succes', 'success');
+        }
+
+        function exportLogs() {
+            if (!logsData || logsData.length === 0) {
+                showToast('Aucun log a exporter', 'error');
+                return;
+            }
+            
+            let csv = 'Date,Niveau,Module,Message,Utilisateur\n';
+            logsData.forEach(log => {
+                const userName = usersData.find(u => u.id === log.uid)?.name || log.uid || 'Systeme';
+                csv += `"${formatDate(log.ts)}","${log.level || 'info'}","${log.module || 'General'}","${log.message || ''}","${userName}"\n`;
+            });
+            
+            downloadCSV(csv, 'wikimind_logs_' + new Date().toISOString().split('T')[0] + '.csv');
+            showToast('Logs exporters avec succes', 'success');
+        }
+
+        function clearLogs() {
+            database.ref('logs').remove(function(error) {
+                if (error) {
+                    showToast('Erreur: ' + error.message, 'error');
+                } else {
+                    showToast('Logs vides avec succes', 'success');
+                    loadLogsData();
+                }
+            });
+        }
+
+        function clearReports() {
+            database.ref('reports').remove(function(error) {
+                if (error) {
+                    showToast('Erreur: ' + error.message, 'error');
+                } else {
+                    showToast('Signalements supprimes avec succes', 'success');
+                    loadReportsData();
+                }
+            });
+        }
+
+        function resolveReport(reportId) {
+            database.ref('reports/' + reportId).update({
+                status: 'resolved',
+                resolvedAt: new Date().toISOString(),
+                resolvedBy: currentAdmin.uid
+            }, function(error) {
+                if (error) {
+                    showToast('Erreur: ' + error.message, 'error');
+                } else {
+                    showToast('Signalement resolu', 'success');
+                    loadReportsData();
+                }
+            });
+        }
+
+        function deleteReport(reportId) {
+            database.ref('reports/' + reportId).remove(function(error) {
+                if (error) {
+                    showToast('Erreur: ' + error.message, 'error');
+                } else {
+                    showToast('Signalement supprime', 'success');
+                    loadReportsData();
+                }
+            });
+        }
+
+        function viewUser(userId) { openUserModal(userId); }
+        function editUser(userId) { openUserModal(userId); }
+        function deleteUser(userId) {
+            openConfirmModal('Supprimer l\'Utilisateur', 'Etes-vous sur de vouloir supprimer cet utilisateur ? Cette action est irreversible.', function() {
+                database.ref('users/' + userId).remove(function(error) {
+                    if (error) {
+                        showToast('Erreur: ' + error.message, 'error');
+                    } else {
+                        showToast('Utilisateur supprime avec succes', 'success');
+                        loadUsersData();
+                    }
+                });
+            });
+        }
+        function viewOrg(orgId) { openOrgModal(orgId); }
+        function editOrg(orgId) { openOrgModal(orgId); }
+        function deleteOrg(orgId) {
+            openConfirmModal('Supprimer l\'Organisation', 'Etes-vous sur de vouloir supprimer cette organisation ?', function() {
+                database.ref('organisations/' + orgId).remove(function(error) {
+                    if (error) {
+                        showToast('Erreur: ' + error.message, 'error');
+                    } else {
+                        showToast('Organisation supprimee avec succes', 'success');
+                        loadOrganizationsData();
+                    }
+                });
+            });
+        }
+
+        function getPlanName(planId) {
+            const plans = { 1: 'Free', 2: 'AI Plus', 3: 'AI Pro', 4: 'AI Premium', 5: 'AI Premium+', 6: 'WikiMind Organisation' };
+            return plans[planId] || 'Inconnu';
+        }
+
+        function getPlanColor(planName) {
+            const colors = { 'Free': 'info', 'AI Plus': 'primary', 'AI Pro': 'info', 'AI Premium': 'warning', 'AI Premium+': 'success', 'WikiMind Organisation': 'primary' };
+            return colors[planName] || 'info';
+        }
+
+        function getStatusBadge(status) {
+            const badges = {
+                'active': { text: 'Actif', color: 'success' },
+                'suspended': { text: 'Suspendu', color: 'warning' },
+                'banned': { text: 'Banni', color: 'danger' },
+                'pending': { text: 'En attente', color: 'warning' }
+            };
+            return badges[status] || { text: status, color: 'info' };
+        }
+
+        function formatDate(dateString) {
+            if (!dateString || dateString === 'Jamais') return dateString;
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString;
+            return date.toLocaleDateString('fr-FR', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('admin-toast');
+            if (!toast) return;
+            
+            const toastMessage = toast.querySelector('.admin-toast-message');
+            const toastIcon = toast.querySelector('.admin-toast-icon');
+            
+            if (toastMessage && toastIcon) {
+                toast.className = 'admin-toast ' + type;
+                toastMessage.textContent = message;
+                
+                const iconClass = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
+                toastIcon.className = 'fas ' + iconClass + ' admin-toast-icon';
+                
+                toast.style.display = 'flex';
+                setTimeout(() => { toast.style.display = 'none'; }, 3000);
+            }
+        }
+
+        function downloadCSV(csv, filename) {
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        window.viewUser = viewUser;
+        window.editUser = editUser;
+        window.deleteUser = deleteUser;
+        window.viewOrg = viewOrg;
+        window.editOrg = editOrg;
+        window.deleteOrg = deleteOrg;
+        window.resolveReport = resolveReport;
+        window.deleteReport = deleteReport;
+    </script>
+</body>
+</html>
