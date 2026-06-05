@@ -3,1010 +3,1241 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Paramètres - WikiMind AI</title>
-    
-    <!-- PWA: Manifest -->
+    <title>Paramètres — WikiMind</title>
     <link rel="manifest" href="App/manifest.json">
     <meta name="theme-color" content="#050505">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="WikiMind">
     <link rel="apple-touch-icon" href="App/icon-192.png">
-    
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RRFWS36RWJ"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-RRFWS36RWJ');
-    </script>
-    
-    <!-- Tailwind CSS -->
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
-    
+
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        display: ['Space Grotesk', 'sans-serif']
-                    },
-                    colors: {
-                        glass: {
-                            panel: 'rgba(20, 20, 20, 0.6)',
-                            border: 'rgba(255, 255, 255, 0.08)'
-                        },
-                        brand: {
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            glow: '#818cf8'
-                        }
-                    },
-                    animation: {
-                        'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
-                        'fade-in': 'fadeIn 0.3s ease-out forwards'
-                    },
-                    keyframes: {
-                        fadeInUp: {
-                            '0%': { opacity: '0', transform: 'translateY(10px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' }
-                        },
-                        fadeIn: {
-                            '0%': { opacity: '0' },
-                            '100%': { opacity: '1' }
-                        }
-                    }
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Space Grotesk', 'sans-serif'] },
                 }
             }
         }
     </script>
-    
+
     <style>
-        /* Custom styles for WikiMind */
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.03);
+        :root {
+            --bg: #0a0a0a;
+            --surface: rgba(18,18,22,0.8);
+            --border: rgba(255,255,255,0.07);
+            --border-hover: rgba(255,255,255,0.15);
+            --text: #ffffff;
+            --text-muted: rgba(255,255,255,0.45);
+            --accent: #6366f1;
+            --accent-glow: rgba(99,102,241,0.3);
+        }
+        body { background-color: var(--bg); color: var(--text); overflow-x: hidden; font-family: 'Inter', sans-serif; }
+        body::before {
+            content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(99,102,241,0.04) 0%, transparent 70%);
+            pointer-events: none; z-index: 0;
+        }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 5px; }
+
+        /* GLASS */
+        .glass { background: var(--surface); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--border); }
+        .glass:hover { border-color: var(--border-hover); }
+
+        /* NAV */
+        #settings-nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            padding: 12px 20px;
+            background: linear-gradient(to bottom, rgba(10,10,10,0.98), rgba(10,10,10,0.85));
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* SIDEBAR */
+        #settings-sidebar {
+            position: fixed; top: 65px; left: 0; bottom: 0;
+            width: 260px; overflow-y: auto;
+            padding: 20px 12px;
+            border-right: 1px solid var(--border);
+            background: rgba(8,8,10,0.7);
             backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.07);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
         }
-        
-        .nav-link {
-            padding: 8px 16px;
-            border-radius: 9999px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: rgba(255, 255, 255, 0.6);
-            transition: all 0.2s;
-            background: transparent;
-            border: none;
-            cursor: pointer;
+        @media (max-width: 768px) {
+            #settings-sidebar { display: none; }
+            #settings-main { margin-left: 0 !important; }
+            #mobile-sidebar-overlay { display: none; }
+            #mobile-sidebar-overlay.active { display: flex; }
+            #settings-sidebar.mobile-open { display: block; z-index: 200; }
         }
-        
-        .nav-link:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: rgba(255, 255, 255, 0.9);
+        #settings-main { margin-left: 260px; padding-top: 65px; }
+        @media (max-width: 768px) { #settings-main { margin-left: 0; } }
+
+        /* SIDEBAR ITEMS */
+        .sidebar-section-label {
+            font-size: 9px; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.12em; color: var(--text-muted);
+            padding: 4px 10px 8px; margin-top: 16px;
         }
-        
-        .nav-link.active {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
+        .sidebar-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 12px; border-radius: 10px; margin-bottom: 2px;
+            font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.6);
+            cursor: pointer; transition: all 0.15s; text-decoration: none;
+            border: 1px solid transparent;
         }
-        
-        .setting-card {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 12px;
-            padding: 20px;
-            transition: all 0.2s;
+        .sidebar-item:hover { color: #fff; background: rgba(255,255,255,0.04); border-color: var(--border); }
+        .sidebar-item.active { color: #fff; background: rgba(99,102,241,0.12); border-color: rgba(99,102,241,0.25); }
+        .sidebar-item .icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+        .sidebar-item.active .icon { background: rgba(99,102,241,0.2); color: #818cf8; }
+        .sidebar-item:not(.active) .icon { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.4); }
+
+        /* SECTIONS */
+        .settings-section { display: none; }
+        .settings-section.active { display: block; }
+
+        /* SETTINGS BLOCK */
+        .settings-block {
+            background: rgba(14,14,18,0.7);
+            border: 1px solid var(--border);
+            border-radius: 16px; overflow: hidden; margin-bottom: 12px;
         }
-        
-        .setting-card:hover {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(255, 255, 255, 0.12);
+        .settings-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.04);
+            transition: background 0.15s;
         }
-        
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 44px;
-            height: 24px;
+        .settings-row:last-child { border-bottom: none; }
+        .settings-row:hover { background: rgba(255,255,255,0.02); }
+        .settings-row-label { font-size: 13.5px; font-weight: 500; color: rgba(255,255,255,0.85); }
+        .settings-row-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .settings-row-left { flex: 1; min-width: 0; }
+        .settings-row-right { flex-shrink: 0; margin-left: 16px; }
+
+        /* TOGGLE SWITCH */
+        .toggle-wrap { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+        .toggle-wrap input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .toggle-track {
+            position: absolute; inset: 0; border-radius: 12px; cursor: pointer;
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.25s;
         }
-        
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
+        .toggle-track::after {
+            content: ''; position: absolute; top: 3px; left: 3px;
+            width: 16px; height: 16px; border-radius: 50%; background: rgba(255,255,255,0.5);
+            transition: all 0.25s; box-shadow: 0 1px 4px rgba(0,0,0,0.4);
         }
-        
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 9999px;
-            transition: .4s;
+        input:checked + .toggle-track { background: var(--accent); border-color: var(--accent); }
+        input:checked + .toggle-track::after { transform: translateX(20px); background: #fff; }
+
+        /* SELECT */
+        .wm-select {
+            appearance: none; background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+            border-radius: 8px; padding: 7px 28px 7px 10px; font-size: 12px; color: #fff;
+            font-family: 'Inter', sans-serif; cursor: pointer; outline: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 8px center;
+            transition: border-color 0.2s;
         }
-        
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 4px;
-            bottom: 4px;
-            background: rgba(255, 255, 255, 0.4);
-            border-radius: 50%;
-            transition: .4s;
+        .wm-select:focus { border-color: rgba(99,102,241,0.5); }
+        .wm-select option { background: #111; color: #fff; }
+
+        /* ICON PICKER */
+        .icon-option {
+            width: 64px; height: 64px; border-radius: 16px; border: 2px solid transparent;
+            overflow: hidden; cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.03);
         }
-        
-        input:checked + .toggle-slider {
-            background: #6366f1;
-            border-color: #4f46e5;
+        .icon-option:hover { border-color: rgba(255,255,255,0.2); transform: scale(1.05); }
+        .icon-option.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 16px var(--accent-glow); }
+        .icon-option img, .icon-option svg { width: 44px; height: 44px; border-radius: 10px; }
+
+        /* PLAN BADGES */
+        .plan-badge { font-size:9px; font-weight:800; text-transform:uppercase; padding:2px 6px; border-radius:20px; letter-spacing:.04em; }
+        .plan-free { background:#27272a; color:#a1a1aa; }
+        .plan-plus { background:#1e3a5f; color:#60a5fa; }
+        .plan-pro { background:#3b1f5e; color:#c084fc; }
+        .plan-premium { background:#44330f; color:#fbbf24; }
+        .plan-premium-plus { background:linear-gradient(135deg,#44110f,#44330f); color:#fb923c; }
+
+        /* AVATAR RING */
+        .plan-chip-avatar { position:relative; width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+        .plan-chip-avatar img { width:44px; height:44px; object-fit:cover; border-radius:50%; position:relative; z-index:2; }
+        .plan-chip-avatar::after { content:''; position:absolute; inset:-2px; border-radius:50%; z-index:0; }
+        .plan-chip-avatar::before { content:''; position:absolute; inset:3px; border-radius:50%; z-index:1; background:#050505; }
+        .ring-free::after { background:conic-gradient(#9ca3af,#d1d5db,#9ca3af); }
+        .ring-plus::after { background:conic-gradient(#fff,#aaa,#fff,#aaa,#fff); animation:ringRotate 4s linear infinite; }
+        .ring-pro::after { background:conic-gradient(#22c55e,#4ade80,#16a34a,#86efac,#22c55e); animation:ringRotate 3s linear infinite; }
+        .ring-premium::after { background:conic-gradient(#f59e0b,#fcd34d,#d97706,#fef08a,#f59e0b); animation:ringRotate 2.5s linear infinite; }
+        .ring-premium-plus::after { background:conic-gradient(#ef4444,#f97316,#eab308,#f97316,#ef4444); animation:ringRotateFire 1.8s linear infinite; }
+        @keyframes ringRotate { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+        @keyframes ringRotateFire { 0% { transform:rotate(0deg); filter:brightness(1); } 50% { transform:rotate(180deg); filter:brightness(1.3); } 100% { transform:rotate(360deg); filter:brightness(1); } }
+
+        /* NOTIF SLIDER */
+        .wm-range {
+            -webkit-appearance: none; appearance: none; width: 140px; height: 4px;
+            border-radius: 2px; background: rgba(255,255,255,0.1); outline: none; cursor: pointer;
         }
-        
-        input:checked + .toggle-slider:before {
-            transform: translateX(20px);
-            background: white;
+        .wm-range::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+            background: #fff; cursor: pointer;
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.1);
         }
-        
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #6366f1, #818cf8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 0.9rem;
+
+        /* TOAST */
+        #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+        .toast { padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px;
+            backdrop-filter: blur(20px); border: 1px solid; animation: toastIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275) forwards; }
+        .toast-success { background: rgba(34,197,94,0.15); border-color: rgba(34,197,94,0.3); color: #86efac; }
+        .toast-error { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); color: #fca5a5; }
+        .toast-info { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.8); }
+        @keyframes toastIn { from { opacity:0; transform:translateY(8px) scale(0.95); } to { opacity:1; transform:none; } }
+
+        /* SEARCH */
+        #settings-search {
+            width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+            border-radius: 10px; padding: 9px 14px 9px 34px; font-size: 13px;
+            color: #fff; outline: none; font-family: 'Inter', sans-serif;
+            transition: border-color 0.2s;
         }
-        
-        /* Memory Popup Styles (same as index.html) */
-        #memory-popup {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1000;
-            background: rgba(14, 14, 18, 0.98);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 28px;
-            max-width: 420px;
-            width: 90%;
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
-            animation: fadeIn 0.3s ease-out;
+        #settings-search:focus { border-color: rgba(99,102,241,0.4); }
+        #settings-search::placeholder { color: var(--text-muted); }
+
+        /* ANIMATION */
+        @keyframes fadeInUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+        .anim-in { animation: fadeInUp 0.4s ease-out forwards; }
+
+        /* SECTION HEADER */
+        .section-header { padding: 28px 24px 20px; }
+        .section-header h1 { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+        .section-header p { font-size: 13px; color: var(--text-muted); }
+
+        /* SAVE INDICATOR */
+        .save-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+            padding: 3px 8px; border-radius: 20px;
+            background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.25); color: #86efac;
+            opacity: 0; transition: opacity 0.3s;
         }
-        
-        #memory-popup.active {
-            display: block;
+        .save-badge.visible { opacity: 1; }
+
+        /* MOBILE BOTTOM NAV (settings quick-nav) */
+        #mobile-settings-nav {
+            display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 150;
+            padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+            background: rgba(8,8,12,0.97); border-top: 1px solid var(--border);
+            backdrop-filter: blur(20px); gap: 4px; overflow-x: auto; white-space: nowrap;
         }
-        
-        #memory-popup-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 999;
-            backdrop-filter: blur(4px);
-            animation: fadeIn 0.2s ease-out;
+        @media (max-width: 768px) { #mobile-settings-nav { display: flex; } body { padding-bottom: 60px; } }
+        .mobile-nav-btn {
+            display: inline-flex; flex-direction: column; align-items: center; gap: 3px;
+            padding: 6px 14px; border-radius: 10px; cursor: pointer; flex-shrink: 0;
+            font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+            color: var(--text-muted); background: transparent; border: 1px solid transparent;
+            transition: all 0.15s;
         }
-        
-        #memory-popup-overlay.active {
-            display: block;
-        }
-        
-        #memory-popup h3 {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: white;
-            margin-bottom: 8px;
-        }
-        
-        #memory-popup p {
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 0.85rem;
-            line-height: 1.6;
-            margin-bottom: 20px;
-        }
-        
-        #memory-popup .btn {
-            padding: 10px 20px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        #memory-popup #confirm-memory-btn {
-            background: #6366f1;
-            color: white;
-            border: none;
-        }
-        
-        #memory-popup #confirm-memory-btn:hover {
-            background: #5558e3;
-        }
-        
-        #memory-popup #cancel-memory-btn {
-            background: rgba(255, 255, 255, 0.05);
-            color: rgba(255, 255, 255, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        #memory-popup #cancel-memory-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.9);
-        }
-        
-        /* Notification Toast */
-        .notification-toast {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            z-index: 1001;
-            background: rgba(14, 14, 18, 0.96);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 14px 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            animation: slideIn 0.3s ease-out;
-            max-width: 360px;
-        }
-        
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        .notification-toast .icon {
-            font-size: 1.2rem;
-            color: #6366f1;
-        }
-        
-        .notification-toast .message {
-            flex: 1;
-            font-size: 0.9rem;
-            color: white;
-        }
-        
-        .notification-toast .close-btn {
-            background: none;
-            border: none;
-            color: rgba(255, 255, 255, 0.5);
-            cursor: pointer;
-            font-size: 0.9rem;
-            padding: 4px;
-        }
-        
-        .notification-toast .close-btn:hover {
-            color: rgba(255, 255, 255, 0.9);
-        }
+        .mobile-nav-btn.active { color: #fff; background: rgba(99,102,241,0.12); border-color: rgba(99,102,241,0.25); }
+        .mobile-nav-btn i { font-size: 14px; }
     </style>
 </head>
+<body>
 
-<body class="bg-[#0a0a0f] text-white selection:bg-brand-500 selection:text-white">
-    
-    <!-- Memory Popup Overlay -->
-    <div id="memory-popup-overlay" onclick="closeMemoryPopup()"></div>
-    
-    <!-- Memory Popup -->
-    <div id="memory-popup">
-        <h3><i class="fa-solid fa-brain mr-2"></i>Mémoire WikiMind</h3>
-        <p>
-            Activez la mémoire pour que WikiMind AI se souvienne de vos conversations et préférences.
-            Vos données seront sauvegardées de manière sécurisée dans votre compte.
-        </p>
-        <div class="flex gap-3 justify-end">
-            <button id="cancel-memory-btn" class="btn" onclick="closeMemoryPopup()">Annuler</button>
-            <button id="confirm-memory-btn" class="btn" onclick="enableMemory()">Activer</button>
-        </div>
-    </div>
-    
-    <!-- Notification Toast -->
-    <div id="notification-toast" class="notification-toast" style="display: none;">
-        <div class="icon">
-            <i class="fa-solid fa-bell"></i>
-        </div>
-        <div class="message" id="toast-message">Notifications activées !</div>
-        <button class="close-btn" onclick="closeToast()">×</button>
-    </div>
-    
-    <!-- ========================================== -->
-    <!-- NAVBAR -->
-    <!-- ========================================== -->
-    <nav class="fixed top-0 w-full z-50 px-4 md:px-6 py-4 transition-all duration-300" id="navbar">
-        <div class="max-w-7xl mx-auto flex justify-between items-center glass-panel rounded-full px-5 py-2">
-            <!-- Logo -->
-            <a href="index.html" class="flex items-center gap-3 group">
-                <div class="w-8 h-8 bg-gradient-to-tr from-white to-gray-400 rounded-lg flex items-center justify-center">
-                    <span class="font-bold text-black text-xs">W</span>
-                </div>
-                <span class="font-display font-bold text-lg tracking-tight hidden sm:block">WikiMind <span class="text-white/40 font-normal">AI</span></span>
+<!-- TOAST -->
+<div id="toast-container"></div>
+
+<!-- NAV -->
+<nav id="settings-nav">
+    <div class="flex items-center justify-between max-w-5xl mx-auto">
+        <div class="flex items-center gap-3">
+            <!-- Mobile menu button -->
+            <button id="mobile-sidebar-btn" class="md:hidden w-8 h-8 flex items-center justify-center rounded-lg text-white/50 hover:text-white hover:bg-white/5 transition-all mr-1">
+                <i class="fa-solid fa-bars text-sm"></i>
+            </button>
+            <a href="index.html" class="flex items-center gap-2.5 group">
+                <!-- WikiMind Logo SVG -->
+                <svg viewBox="0 0 48 48" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <radialGradient id="logoGrad" cx="50%" cy="35%" r="55%">
+                            <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+                            <stop offset="100%" stop-color="#9ca3af" stop-opacity="1"/>
+                        </radialGradient>
+                        <radialGradient id="logoCenter" cx="50%" cy="40%" r="50%">
+                            <stop offset="0%" stop-color="#4b4b5a" stop-opacity="1"/>
+                            <stop offset="100%" stop-color="#0a0a0a" stop-opacity="1"/>
+                        </radialGradient>
+                        <filter id="logoShadow">
+                            <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="rgba(0,0,0,0.6)"/>
+                        </filter>
+                    </defs>
+                    <!-- 8-branch star shape -->
+                    <path d="M24 2 L27.5 16 L38 8 L30.5 20 L46 22 L32 26.5 L38 40 L25.5 32 L24 46 L22.5 32 L10 40 L16 26.5 L2 22 L17.5 20 L10 8 L20.5 16 Z" 
+                          fill="url(#logoGrad)" filter="url(#logoShadow)"/>
+                    <!-- Inner dark concave shape -->
+                    <path d="M24 10 L26 20 L33 14 L28 22 L38 24 L28 27 L33 34 L26 28 L24 38 L22 28 L15 34 L20 27 L10 24 L20 22 L15 14 L22 20 Z" 
+                          fill="url(#logoCenter)"/>
+                </svg>
+                <span class="font-display font-bold text-sm tracking-tight text-white/80 group-hover:text-white transition-colors">WikiMind <span class="text-white/30 font-normal">Paramètres</span></span>
             </a>
-            
-            <!-- Only Settings Link -->
-            <div class="hidden md:flex items-center gap-2">
-                <a href="#" class="nav-link active">Paramètres</a>
+        </div>
+        <div class="flex items-center gap-3">
+            <span id="autosave-badge" class="save-badge">
+                <i class="fa-solid fa-check text-[9px]"></i> Enregistré
+            </span>
+            <!-- User avatar -->
+            <div id="nav-user-area" class="hidden items-center gap-2">
+                <div id="nav-avatar-ring" class="plan-chip-avatar ring-free" style="width:34px;height:34px;">
+                    <img id="nav-avatar" src="" alt="Avatar" class="bg-gray-800" style="width:28px;height:28px;">
+                </div>
             </div>
-            
-            <!-- Auth / User State -->
-            <div id="auth-container" class="flex items-center gap-4">
-                <a href="Wikimind_user.html" id="login-btn" class="px-5 py-2 rounded-full bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-gray-100 transition-colors">
-                    Connexion
-                </a>
-                <div id="user-logged" class="hidden flex items-center gap-3">
-                    <div class="user-avatar" id="user-avatar">W</div>
-                    <div class="text-right hidden sm:block">
-                        <div id="user-name-display" class="text-xs font-bold text-white">Utilisateur</div>
-                        <div id="user-email-display" class="text-xs text-white/50 truncate max-w-[120px]">email@example.com</div>
+        </div>
+    </div>
+</nav>
+
+<!-- MOBILE OVERLAY -->
+<div id="mobile-sidebar-overlay" class="fixed inset-0 z-[190] bg-black/60 backdrop-blur-sm" onclick="closeMobileSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside id="settings-sidebar">
+    <!-- Search -->
+    <div class="relative mb-4">
+        <i class="fa-solid fa-magnifying-glass absolute left-10 top-1/2 -translate-y-1/2 text-white/25 text-xs" style="left:10px;"></i>
+        <input id="settings-search" type="text" placeholder="Rechercher..." autocomplete="off">
+    </div>
+
+    <!-- Nav items -->
+    <div class="sidebar-section-label">Compte</div>
+    <a class="sidebar-item active" data-section="account" onclick="showSection('account')">
+        <span class="icon"><i class="fa-solid fa-user"></i></span> Compte WikiMind
+    </a>
+    <a class="sidebar-item" data-section="ai" onclick="showSection('ai')">
+        <span class="icon"><i class="fa-solid fa-sparkles"></i></span> WikiMind AI
+    </a>
+
+    <div class="sidebar-section-label">Affichage</div>
+    <a class="sidebar-item" data-section="appearance" onclick="showSection('appearance')">
+        <span class="icon"><i class="fa-solid fa-palette"></i></span> Écran & Style
+    </a>
+
+    <div class="sidebar-section-label">Système</div>
+    <a class="sidebar-item" data-section="notifications" onclick="showSection('notifications')">
+        <span class="icon"><i class="fa-solid fa-bell"></i></span> Notifications
+    </a>
+    <a class="sidebar-item" data-section="privacy" onclick="showSection('privacy')">
+        <span class="icon"><i class="fa-solid fa-shield-halved"></i></span> Confidentialité
+    </a>
+    <a class="sidebar-item" data-section="about" onclick="showSection('about')">
+        <span class="icon"><i class="fa-solid fa-circle-info"></i></span> À propos
+    </a>
+
+    <div class="mt-8 pt-4 border-t border-white/5">
+        <a href="index.html" class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-white/30 hover:text-white/60 text-xs font-medium transition-colors">
+            <i class="fa-solid fa-arrow-left text-xs"></i> Retour à l'accueil
+        </a>
+    </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main id="settings-main" class="max-w-2xl mx-auto px-4 py-6 md:py-8">
+
+    <!-- ===== COMPTE ===== -->
+    <section id="sec-account" class="settings-section active anim-in">
+        <div class="section-header px-0 pb-6">
+            <h1>Compte WikiMind</h1>
+            <p>Vos informations personnelles et votre forfait actuel.</p>
+        </div>
+
+        <!-- Profile Card -->
+        <div id="account-logged-in" class="hidden settings-block mb-4">
+            <div class="settings-row items-start gap-4 flex-col sm:flex-row" style="padding:20px;">
+                <div id="profile-avatar-ring" class="plan-chip-avatar ring-free shrink-0">
+                    <img id="profile-avatar" src="" alt="Avatar" class="bg-gray-800">
+                </div>
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span id="profile-name" class="text-base font-display font-bold">Utilisateur</span>
+                        <span id="profile-plan-badge" class="plan-badge plan-free">Free</span>
                     </div>
-                    <button id="user-dropdown-btn" class="w-7 h-7 flex items-center justify-center rounded-full text-white/30 hover:text-white/70 hover:bg-white/5 transition-all duration-200">
-                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                    <p id="profile-email" class="text-xs text-white/40 mb-3">—</p>
+                    <div class="flex gap-2 flex-wrap">
+                        <a href="Wikimind_user.html" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/8 text-xs font-semibold transition-all">
+                            <i class="fa-solid fa-pen-to-square text-white/50 mr-1.5"></i>Modifier le profil
+                        </a>
+                        <button id="logout-btn" class="px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-xs font-semibold transition-all">
+                            <i class="fa-solid fa-right-from-bracket mr-1.5"></i>Déconnexion
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Not logged in -->
+        <div id="account-not-logged" class="settings-block mb-4">
+            <div class="settings-row" style="padding:24px; flex-direction:column; align-items:flex-start; gap:12px;">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center">
+                        <i class="fa-solid fa-user-slash text-white/30"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-white/80">Non connecté</p>
+                        <p class="text-xs text-white/35">Connectez-vous pour synchroniser vos paramètres</p>
+                    </div>
+                </div>
+                <a href="Wikimind_user.html" class="px-4 py-2 rounded-lg bg-white text-black text-xs font-bold uppercase tracking-wider hover:bg-gray-100 transition-all">
+                    Se connecter
+                </a>
+            </div>
+        </div>
+
+        <!-- Tokens -->
+        <div class="settings-block mb-4" id="tokens-block" style="display:none;">
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Mind Tokens</div>
+                    <div class="settings-row-sub">Monnaie virtuelle WikiMind</div>
+                </div>
+                <div class="settings-row-right flex items-center gap-2">
+                    <span class="text-yellow-400 text-sm"><i class="fa-solid fa-coins"></i></span>
+                    <span id="tokens-count" class="font-display font-bold text-white text-sm">–</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danger zone -->
+        <div class="settings-block" id="danger-zone" style="display:none;">
+            <div class="settings-row" style="border-color: rgba(239,68,68,0.08);">
+                <div class="settings-row-left">
+                    <div class="settings-row-label text-red-400/80">Supprimer le compte</div>
+                    <div class="settings-row-sub">Action irréversible — toutes vos données seront perdues</div>
+                </div>
+                <div class="settings-row-right">
+                    <button onclick="showDeleteConfirm()" class="px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-xs font-semibold transition-all">
+                        Supprimer
                     </button>
                 </div>
             </div>
         </div>
-    </nav>
-    
-    <!-- ========================================== -->
-    <!-- MAIN CONTENT -->
-    <!-- ========================================== -->
-    <main class="pt-24 pb-32 min-h-screen">
-        <div class="max-w-4xl mx-auto px-4 md:px-6">
-            
-            <!-- Header -->
-            <div class="mb-8 animate-fade-in-up">
-                <h1 class="text-4xl md:text-5xl font-display font-bold mb-2">Paramètres</h1>
-                <p class="text-white/50 text-sm">Personnalisez votre expérience WikiMind AI</p>
-            </div>
-            
-            <!-- ========================================== -->
-            <!-- SECTION: COMPTE -->
-            <!-- ========================================== -->
-            <section class="mb-10 animate-fade-in-up" style="animation-delay: 0.1s">
-                <h2 class="text-2xl font-display font-bold mb-6 flex items-center gap-3">
-                    <i class="fa-solid fa-user text-brand-500"></i>
-                    Compte
-                </h2>
-                
-                <div class="setting-card">
-                    <div class="flex items-center gap-4 mb-6">
-                        <div class="user-avatar text-2xl w-16 h-16" id="settings-user-avatar">W</div>
-                        <div>
-                            <h3 class="text-xl font-bold" id="settings-user-name">Utilisateur</h3>
-                            <p class="text-white/50 text-sm" id="settings-user-email">email@example.com</p>
-                        </div>
-                    </div>
-                    
-                    <div class="grid md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium text-white/70 mb-2">Nom d'affichage</label>
-                            <input type="text" id="display-name-input" class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-brand-500 transition" placeholder="Votre nom">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-white/70 mb-2">Email</label>
-                            <input type="email" id="email-input" class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-brand-500 transition" placeholder="Votre email" disabled>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-6 flex flex-wrap gap-3">
-                        <button id="save-profile-btn" class="px-6 py-2 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-lg transition shadow-lg shadow-brand-500/20">
-                            <i class="fa-solid fa-check mr-2"></i>Sauvegarder
-                        </button>
-                        <button id="logout-btn" class="px-6 py-2 bg-white/5 hover:bg-white/10 text-white/70 font-bold rounded-lg transition border border-white/10">
-                            <i class="fa-solid fa-sign-out-alt mr-2"></i>Déconnexion
-                        </button>
-                    </div>
-                </div>
-            </section>
-            
-            <!-- ========================================== -->
-            <!-- SECTION: WIKIMIND AI -->
-            <!-- ========================================== -->
-            <section class="mb-10 animate-fade-in-up" style="animation-delay: 0.2s">
-                <h2 class="text-2xl font-display font-bold mb-6 flex items-center gap-3">
-                    <i class="fa-solid fa-robot text-brand-500"></i>
-                    Wikimind AI
-                </h2>
-                
-                <div class="space-y-4">
-                    <!-- AI Tone -->
-                    <div class="setting-card">
-                        <div class="flex justify-between items-center mb-2">
-                            <div>
-                                <h3 class="font-bold">Ton de l'IA</h3>
-                                <p class="text-white/50 text-sm">Choisissez le style de réponse de l'IA</p>
-                            </div>
-                            <select id="ai-tone-select" class="bg-white/5 border border-white/10 rounded-lg px-3 py-1 text-sm focus:outline-none focus:border-brand-500">
-                                <option value="neutral">Neutre</option>
-                                <option value="friendly">Amical</option>
-                                <option value="professional">Professionnel</option>
-                                <option value="creative">Créatif</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <!-- AI Creativity -->
-                    <div class="setting-card">
-                        <div class="flex justify-between items-center mb-2">
-                            <div>
-                                <h3 class="font-bold">Créativité</h3>
-                                <p class="text-white/50 text-sm">Niveau de créativité des réponses</p>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs text-white/50">Faible</span>
-                                <input type="range" id="ai-creativity-slider" min="1" max="10" value="5" class="w-32 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer">
-                                <span class="text-xs text-white/50">Élevée</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Memory -->
-                    <div class="setting-card cursor-pointer" onclick="openMemoryPopup()">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <h3 class="font-bold">Mémoire activée</h3>
-                                <p class="text-white/50 text-sm">L'IA se souvient de vos conversations</p>
-                            </div>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="memory-toggle">
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <!-- Auto-Save -->
-                    <div class="setting-card">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <h3 class="font-bold">Sauvegarde automatique</h3>
-                                <p class="text-white/50 text-sm">Sauvegarder automatiquement vos paramètres</p>
-                            </div>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="auto-save-toggle" checked>
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            
-            <!-- ========================================== -->
-            <!-- SECTION: NOTIFICATIONS -->
-            <!-- ========================================== -->
-            <section class="mb-10 animate-fade-in-up" style="animation-delay: 0.3s">
-                <h2 class="text-2xl font-display font-bold mb-6 flex items-center gap-3">
-                    <i class="fa-solid fa-bell text-brand-500"></i>
-                    Notifications
-                </h2>
-                
-                <div class="space-y-4">
-                    <!-- Push Notifications -->
-                    <div class="setting-card">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <h3 class="font-bold">Notifications Push</h3>
-                                <p class="text-white/50 text-sm">Recevoir des notifications même hors de l'app</p>
-                            </div>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="push-notifications-toggle" onclick="requestNotificationPermission()">
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <!-- Email Notifications -->
-                    <div class="setting-card">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <h3 class="font-bold">Notifications par Email</h3>
-                                <p class="text-white/50 text-sm">Recevoir des notifications par email</p>
-                            </div>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="email-notifications-toggle" checked>
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <!-- Sound Notifications -->
-                    <div class="setting-card">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <h3 class="font-bold">Sons de notification</h3>
-                                <p class="text-white/50 text-sm">Activer les sons pour les notifications</p>
-                            </div>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="sound-notifications-toggle" checked>
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            
-            <!-- ========================================== -->
-            <!-- SECTION: PRÉFÉRENCES -->
-            <!-- ========================================== -->
-            <section class="mb-10 animate-fade-in-up" style="animation-delay: 0.4s">
-                <h2 class="text-2xl font-display font-bold mb-6 flex items-center gap-3">
-                    <i class="fa-solid fa-sliders text-brand-500"></i>
-                    Préférences
-                </h2>
-                
-                <div class="space-y-4">
-                    <!-- Theme -->
-                    <div class="setting-card">
-                        <div class="flex justify-between items-center mb-2">
-                            <div>
-                                <h3 class="font-bold">Thème</h3>
-                                <p class="text-white/50 text-sm">Choisissez l'apparence de l'application</p>
-                            </div>
-                            <select id="theme-select" class="bg-white/5 border border-white/10 rounded-lg px-3 py-1 text-sm focus:outline-none focus:border-brand-500">
-                                <option value="system">Système</option>
-                                <option value="light">Clair</option>
-                                <option value="dark">Sombre</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <!-- Language -->
-                    <div class="setting-card">
-                        <div class="flex justify-between items-center mb-2">
-                            <div>
-                                <h3 class="font-bold">Langue</h3>
-                                <p class="text-white/50 text-sm">Langue de l'interface</p>
-                            </div>
-                            <select id="language-select" class="bg-white/5 border border-white/10 rounded-lg px-3 py-1 text-sm focus:outline-none focus:border-brand-500">
-                                <option value="fr">Français</option>
-                                <option value="en">Anglais</option>
-                                <option value="es">Espagnol</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <!-- Font Size -->
-                    <div class="setting-card">
-                        <div class="flex justify-between items-center mb-2">
-                            <div>
-                                <h3 class="font-bold">Taille de la police</h3>
-                                <p class="text-white/50 text-sm">Ajustez la taille du texte</p>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs text-white/50">Petite</span>
-                                <input type="range" id="font-size-slider" min="12" max="20" value="16" class="w-32 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer">
-                                <span class="text-xs text-white/50">Grande</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            
-            <!-- ========================================== -->
-            <!-- SECTION: SUPPRESSION DE COMPTE -->
-            <!-- ========================================== -->
-            <section class="mb-10 animate-fade-in-up" style="animation-delay: 0.5s">
-                <h2 class="text-2xl font-display font-bold mb-6 flex items-center gap-3">
-                    <i class="fa-solid fa-trash text-red-500"></i>
-                    Suppression de compte
-                </h2>
-                
-                <div class="setting-card border-red-500/20 bg-red-500/5">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <h3 class="font-bold text-red-400">Supprimer mon compte</h3>
-                            <p class="text-red-300/70 text-sm">Cette action est irréversible. Toutes vos données seront supprimées.</p>
-                        </div>
-                        <button id="delete-account-btn" class="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-bold rounded-lg transition border border-red-500/30">
-                            <i class="fa-solid fa-trash mr-2"></i>Supprimer
-                        </button>
-                    </div>
-                </div>
-            </section>
-            
+    </section>
+
+    <!-- ===== WIKIMIND AI ===== -->
+    <section id="sec-ai" class="settings-section anim-in">
+        <div class="section-header px-0 pb-6">
+            <h1>WikiMind AI</h1>
+            <p>Personnalisez le comportement de l'assistant IA.</p>
         </div>
-    </main>
-    
-    <!-- ========================================== -->
-    <!-- FIREBASE INITIALIZATION -->
-    <!-- ========================================== -->
-    <script type="module">
-        // Import Firebase modules
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getDatabase, ref, set, get, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
-            authDomain: "wikimind-3-comments.firebaseapp.com",
-            projectId: "wikimind-3-comments",
-            appId: "1:137479541640:web:4ed2510a9908055052e03d",
-            databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app"
-        };
-        
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app);
-        
-        // Global variable for current user
-        let currentUser = null;
-        
-        // ==========================================
-        // MEMORY POPUP FUNCTIONS
-        // ==========================================
-        function openMemoryPopup() {
-            document.getElementById('memory-popup-overlay').classList.add('active');
-            document.getElementById('memory-popup').classList.add('active');
+
+        <div class="settings-block mb-4">
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Mémoire IA</div>
+                    <div class="settings-row-sub">L'IA se souvient de vos préférences entre les conversations</div>
+                </div>
+                <div class="settings-row-right">
+                    <label class="toggle-wrap">
+                        <input type="checkbox" id="toggle-memory" onchange="saveSetting('ai_memory', this.checked)">
+                        <span class="toggle-track"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Suggestions rapides</div>
+                    <div class="settings-row-sub">Afficher des suggestions de questions dans WikiMind AI</div>
+                </div>
+                <div class="settings-row-right">
+                    <label class="toggle-wrap">
+                        <input type="checkbox" id="toggle-suggestions" onchange="saveSetting('ai_suggestions', this.checked)" checked>
+                        <span class="toggle-track"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Modèle par défaut</div>
+                    <div class="settings-row-sub">Modèle utilisé lors de l'ouverture de WikiMind AI</div>
+                </div>
+                <div class="settings-row-right">
+                    <select id="select-model" class="wm-select" onchange="saveSetting('ai_default_model', this.value)">
+                        <option value="mistral-small-latest">WikiMind Flash (rapide)</option>
+                        <option value="mistral-medium-latest">WikiMind Work</option>
+                        <option value="mistral-large-latest">WikiMind Ultra</option>
+                        <option value="codestral-latest">WikiMind Code</option>
+                    </select>
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Langue de l'IA</div>
+                    <div class="settings-row-sub">Langue dans laquelle l'assistant répond</div>
+                </div>
+                <div class="settings-row-right">
+                    <select id="select-lang" class="wm-select" onchange="saveSetting('ai_language', this.value)">
+                        <option value="fr">🇫🇷 Français</option>
+                        <option value="en">🇬🇧 English</option>
+                        <option value="es">🇪🇸 Español</option>
+                        <option value="de">🇩🇪 Deutsch</option>
+                    </select>
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Mode streaming</div>
+                    <div class="settings-row-sub">Afficher les réponses en temps réel mot par mot</div>
+                </div>
+                <div class="settings-row-right">
+                    <label class="toggle-wrap">
+                        <input type="checkbox" id="toggle-streaming" onchange="saveSetting('ai_streaming', this.checked)" checked>
+                        <span class="toggle-track"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-block">
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Réinitialiser la mémoire IA</div>
+                    <div class="settings-row-sub">Efface tous les souvenirs enregistrés par l'IA</div>
+                </div>
+                <div class="settings-row-right">
+                    <button onclick="clearAIMemory()" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/8 text-white/60 hover:text-white text-xs font-semibold transition-all">
+                        Effacer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== APPARENCE ===== -->
+    <section id="sec-appearance" class="settings-section anim-in">
+        <div class="section-header px-0 pb-6">
+            <h1>Écran & Style</h1>
+            <p>Personnalisez l'apparence de WikiMind.</p>
+        </div>
+
+        <div class="settings-block mb-4">
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Thème</div>
+                    <div class="settings-row-sub">Mode sombre ou clair (sombre par défaut)</div>
+                </div>
+                <div class="settings-row-right">
+                    <select id="select-theme" class="wm-select" onchange="applyTheme(this.value)">
+                        <option value="dark">🌙 Sombre</option>
+                        <option value="light">☀️ Clair (bientôt)</option>
+                        <option value="system">⚙️ Système</option>
+                    </select>
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Animations</div>
+                    <div class="settings-row-sub">Activer les animations de l'interface</div>
+                </div>
+                <div class="settings-row-right">
+                    <label class="toggle-wrap">
+                        <input type="checkbox" id="toggle-animations" onchange="saveSetting('animations', this.checked)" checked>
+                        <span class="toggle-track"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Réduire les effets visuels</div>
+                    <div class="settings-row-sub">Pour les appareils moins puissants</div>
+                </div>
+                <div class="settings-row-right">
+                    <label class="toggle-wrap">
+                        <input type="checkbox" id="toggle-reduce-motion" onchange="saveSetting('reduce_motion', this.checked)">
+                        <span class="toggle-track"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Icon Picker -->
+        <div class="settings-block mb-4">
+            <div class="settings-row" style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Icône de l'application</div>
+                    <div class="settings-row-sub">Choisissez l'icône affichée sur votre écran d'accueil</div>
+                </div>
+            </div>
+            <div class="p-5 flex flex-wrap gap-3">
+                <div class="icon-option selected" data-icon="1" onclick="selectIcon(this, '1')">
+                    <!-- Default icon: star logo -->
+                    <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="44" height="44" rx="10" fill="#0a0a0a"/>
+                        <path d="M22 4 L25 17 L34.5 9 L28 19.5 L42 22 L28 25.5 L34.5 35 L25 27 L22 40 L19 27 L9.5 35 L16 25.5 L2 22 L16 19.5 L9.5 9 L19 17 Z" fill="url(#ig1)" filter="url(#is1)"/>
+                        <path d="M22 11 L24 19.5 L29.5 15 L26 21 L34 22 L26 24 L29.5 29 L24 24.5 L22 33 L20 24.5 L14.5 29 L18 24 L10 22 L18 21 L14.5 15 L20 19.5 Z" fill="#111827" opacity="0.9"/>
+                        <defs>
+                            <radialGradient id="ig1" cx="50%" cy="35%" r="55%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#9ca3af"/></radialGradient>
+                            <filter id="is1"><feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="rgba(0,0,0,0.5)"/></filter>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="icon-option" data-icon="2" onclick="selectIcon(this, '2')">
+                    <!-- Indigo variant -->
+                    <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="44" height="44" rx="10" fill="#0f0f1a"/>
+                        <path d="M22 4 L25 17 L34.5 9 L28 19.5 L42 22 L28 25.5 L34.5 35 L25 27 L22 40 L19 27 L9.5 35 L16 25.5 L2 22 L16 19.5 L9.5 9 L19 17 Z" fill="url(#ig2)"/>
+                        <path d="M22 11 L24 19.5 L29.5 15 L26 21 L34 22 L26 24 L29.5 29 L24 24.5 L22 33 L20 24.5 L14.5 29 L18 24 L10 22 L18 21 L14.5 15 L20 19.5 Z" fill="#070715" opacity="0.92"/>
+                        <defs>
+                            <radialGradient id="ig2" cx="50%" cy="35%" r="55%"><stop offset="0%" stop-color="#c7d2fe"/><stop offset="100%" stop-color="#6366f1"/></radialGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="icon-option" data-icon="3" onclick="selectIcon(this, '3')">
+                    <!-- Gold variant -->
+                    <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="44" height="44" rx="10" fill="#0d0a00"/>
+                        <path d="M22 4 L25 17 L34.5 9 L28 19.5 L42 22 L28 25.5 L34.5 35 L25 27 L22 40 L19 27 L9.5 35 L16 25.5 L2 22 L16 19.5 L9.5 9 L19 17 Z" fill="url(#ig3)"/>
+                        <path d="M22 11 L24 19.5 L29.5 15 L26 21 L34 22 L26 24 L29.5 29 L24 24.5 L22 33 L20 24.5 L14.5 29 L18 24 L10 22 L18 21 L14.5 15 L20 19.5 Z" fill="#0a0800" opacity="0.92"/>
+                        <defs>
+                            <radialGradient id="ig3" cx="50%" cy="35%" r="55%"><stop offset="0%" stop-color="#fef3c7"/><stop offset="100%" stop-color="#f59e0b"/></radialGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="icon-option" data-icon="4" onclick="selectIcon(this, '4')">
+                    <!-- Emerald variant -->
+                    <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="44" height="44" rx="10" fill="#00100a"/>
+                        <path d="M22 4 L25 17 L34.5 9 L28 19.5 L42 22 L28 25.5 L34.5 35 L25 27 L22 40 L19 27 L9.5 35 L16 25.5 L2 22 L16 19.5 L9.5 9 L19 17 Z" fill="url(#ig4)"/>
+                        <path d="M22 11 L24 19.5 L29.5 15 L26 21 L34 22 L26 24 L29.5 29 L24 24.5 L22 33 L20 24.5 L14.5 29 L18 24 L10 22 L18 21 L14.5 15 L20 19.5 Z" fill="#001a0e" opacity="0.92"/>
+                        <defs>
+                            <radialGradient id="ig4" cx="50%" cy="35%" r="55%"><stop offset="0%" stop-color="#d1fae5"/><stop offset="100%" stop-color="#10b981"/></radialGradient>
+                        </defs>
+                    </svg>
+                </div>
+            </div>
+            <div class="px-5 pb-4">
+                <p class="text-xs text-white/30">L'icône choisie sera appliquée lors de la prochaine installation ou mise à jour de l'application.</p>
+            </div>
+        </div>
+
+        <!-- Accent color -->
+        <div class="settings-block">
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Couleur d'accent</div>
+                    <div class="settings-row-sub">Couleur utilisée pour les éléments interactifs</div>
+                </div>
+                <div class="settings-row-right flex gap-2">
+                    <button class="w-6 h-6 rounded-full border-2 border-white cursor-pointer transition-all" style="background:#6366f1;" onclick="setAccent('#6366f1')" title="Indigo"></button>
+                    <button class="w-6 h-6 rounded-full border-2 border-transparent hover:border-white cursor-pointer transition-all" style="background:#8b5cf6;" onclick="setAccent('#8b5cf6')" title="Violet"></button>
+                    <button class="w-6 h-6 rounded-full border-2 border-transparent hover:border-white cursor-pointer transition-all" style="background:#06b6d4;" onclick="setAccent('#06b6d4')" title="Cyan"></button>
+                    <button class="w-6 h-6 rounded-full border-2 border-transparent hover:border-white cursor-pointer transition-all" style="background:#10b981;" onclick="setAccent('#10b981')" title="Vert"></button>
+                    <button class="w-6 h-6 rounded-full border-2 border-transparent hover:border-white cursor-pointer transition-all" style="background:#f59e0b;" onclick="setAccent('#f59e0b')" title="Or"></button>
+                    <button class="w-6 h-6 rounded-full border-2 border-transparent hover:border-white cursor-pointer transition-all" style="background:#ef4444;" onclick="setAccent('#ef4444')" title="Rouge"></button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== NOTIFICATIONS ===== -->
+    <section id="sec-notifications" class="settings-section anim-in">
+        <div class="section-header px-0 pb-6">
+            <h1>Notifications</h1>
+            <p>Gérez les notifications push WikiMind sur cet appareil.</p>
+        </div>
+
+        <div class="settings-block mb-4">
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Activer les notifications</div>
+                    <div class="settings-row-sub" id="notif-permission-status">Vérification des permissions…</div>
+                </div>
+                <div class="settings-row-right">
+                    <label class="toggle-wrap">
+                        <input type="checkbox" id="toggle-notifs" onchange="handleNotifToggle(this.checked)">
+                        <span class="toggle-track"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Rappels WikiMind AI</div>
+                    <div class="settings-row-sub">Notifications de nouvelles fonctionnalités et mises à jour</div>
+                </div>
+                <div class="settings-row-right">
+                    <label class="toggle-wrap">
+                        <input type="checkbox" id="toggle-notif-updates" checked onchange="saveSetting('notif_updates', this.checked)">
+                        <span class="toggle-track"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Rappels d'étude</div>
+                    <div class="settings-row-sub">Notifications Pomodoro et flashcards</div>
+                </div>
+                <div class="settings-row-right">
+                    <label class="toggle-wrap">
+                        <input type="checkbox" id="toggle-notif-study" onchange="saveSetting('notif_study', this.checked)">
+                        <span class="toggle-track"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-block mb-4">
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Notifications par jour</div>
+                    <div class="settings-row-sub">Nombre maximum de notifications quotidiennes</div>
+                </div>
+                <div class="settings-row-right flex items-center gap-3">
+                    <span id="notif-count-label" class="text-sm font-bold text-white min-w-[16px] text-right">3</span>
+                    <input type="range" min="0" max="10" value="3" class="wm-range" id="notif-count-slider"
+                           oninput="document.getElementById('notif-count-label').textContent=this.value; saveSetting('notif_per_day', this.value)">
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Heure de silence</div>
+                    <div class="settings-row-sub">Aucune notification entre ces heures</div>
+                </div>
+                <div class="settings-row-right flex items-center gap-2">
+                    <input type="time" id="silence-start" value="22:00" class="wm-select" style="width:80px;" onchange="saveSetting('silence_start', this.value)">
+                    <span class="text-white/30 text-xs">–</span>
+                    <input type="time" id="silence-end" value="08:00" class="wm-select" style="width:80px;" onchange="saveSetting('silence_end', this.value)">
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-block">
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Tester une notification</div>
+                    <div class="settings-row-sub">Envoie une notification de test immédiatement</div>
+                </div>
+                <div class="settings-row-right">
+                    <button onclick="sendTestNotif()" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/8 text-white/60 hover:text-white text-xs font-semibold transition-all">
+                        <i class="fa-solid fa-paper-plane mr-1.5"></i> Tester
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== CONFIDENTIALITÉ ===== -->
+    <section id="sec-privacy" class="settings-section anim-in">
+        <div class="section-header px-0 pb-6">
+            <h1>Confidentialité</h1>
+            <p>Contrôlez comment vos données sont utilisées.</p>
+        </div>
+
+        <div class="settings-block mb-4">
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Consentement mémoire IA</div>
+                    <div class="settings-row-sub">Autoriser l'IA à se souvenir de vous entre les sessions</div>
+                </div>
+                <div class="settings-row-right">
+                    <label class="toggle-wrap">
+                        <input type="checkbox" id="toggle-privacy-memory" onchange="saveLocalSetting('wikimind_memory_consent', this.checked ? 'true' : 'false')">
+                        <span class="toggle-track"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Analyse anonyme</div>
+                    <div class="settings-row-sub">Partage de données d'usage anonymes pour améliorer WikiMind</div>
+                </div>
+                <div class="settings-row-right">
+                    <label class="toggle-wrap">
+                        <input type="checkbox" id="toggle-analytics" checked onchange="saveSetting('analytics', this.checked)">
+                        <span class="toggle-track"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Cache local</div>
+                    <div class="settings-row-sub">Stockage temporaire pour améliorer les performances</div>
+                </div>
+                <div class="settings-row-right">
+                    <button onclick="clearLocalCache()" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/8 text-white/60 hover:text-white text-xs font-semibold transition-all">
+                        Vider le cache
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-block">
+            <div class="settings-row" style="cursor:pointer;" onclick="document.getElementById('rgpd-modal').style.display='flex'">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Politique de confidentialité</div>
+                    <div class="settings-row-sub">RGPD & données personnelles</div>
+                </div>
+                <div class="settings-row-right text-white/30">
+                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                </div>
+            </div>
+            <div class="settings-row" style="cursor:pointer;" onclick="exportData()">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Exporter mes données</div>
+                    <div class="settings-row-sub">Télécharger toutes vos données WikiMind (JSON)</div>
+                </div>
+                <div class="settings-row-right text-white/30">
+                    <i class="fa-solid fa-arrow-down text-xs"></i>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== À PROPOS ===== -->
+    <section id="sec-about" class="settings-section anim-in">
+        <div class="section-header px-0 pb-6">
+            <h1>À propos</h1>
+            <p>Informations sur la plateforme WikiMind.</p>
+        </div>
+
+        <div class="settings-block mb-4">
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Version</div>
+                </div>
+                <div class="settings-row-right">
+                    <span class="text-xs font-mono text-white/50">WikiMind 3.5</span>
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Service Worker</div>
+                </div>
+                <div class="settings-row-right">
+                    <span id="sw-status" class="text-xs font-mono text-white/50">Vérification…</span>
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Développeur</div>
+                </div>
+                <div class="settings-row-right">
+                    <span class="text-xs text-white/50">Tom Duval — Tactera</span>
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Plateforme</div>
+                </div>
+                <div class="settings-row-right">
+                    <span class="text-xs text-white/50">GitHub Pages · PWA</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-block">
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">GitHub</div>
+                    <div class="settings-row-sub">Code source</div>
+                </div>
+                <div class="settings-row-right">
+                    <a href="https://github.com/chpalitom09-bot" target="_blank" class="text-xs text-white/40 hover:text-white transition-colors font-mono">
+                        chpalitom09-bot <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Instagram</div>
+                    <div class="settings-row-sub">Tactera</div>
+                </div>
+                <div class="settings-row-right">
+                    <a href="https://www.instagram.com/tactera.si/" target="_blank" class="text-xs text-white/40 hover:text-white transition-colors">
+                        @tactera.si <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-left">
+                    <div class="settings-row-label">Contact</div>
+                </div>
+                <div class="settings-row-right">
+                    <a href="mailto:wikimind.ai@gmail.com" class="text-xs text-white/40 hover:text-white transition-colors font-mono">
+                        wikimind.ai@gmail.com
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- MOBILE BOTTOM NAV -->
+<div id="mobile-settings-nav">
+    <button class="mobile-nav-btn active" data-section="account" onclick="showSection('account')">
+        <i class="fa-solid fa-user"></i> Compte
+    </button>
+    <button class="mobile-nav-btn" data-section="ai" onclick="showSection('ai')">
+        <i class="fa-solid fa-sparkles"></i> AI
+    </button>
+    <button class="mobile-nav-btn" data-section="appearance" onclick="showSection('appearance')">
+        <i class="fa-solid fa-palette"></i> Style
+    </button>
+    <button class="mobile-nav-btn" data-section="notifications" onclick="showSection('notifications')">
+        <i class="fa-solid fa-bell"></i> Notifs
+    </button>
+    <button class="mobile-nav-btn" data-section="privacy" onclick="showSection('privacy')">
+        <i class="fa-solid fa-shield-halved"></i> Vie privée
+    </button>
+    <button class="mobile-nav-btn" data-section="about" onclick="showSection('about')">
+        <i class="fa-solid fa-circle-info"></i> Infos
+    </button>
+</div>
+
+<!-- RGPD Modal (simple) -->
+<div id="rgpd-modal" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.85);backdrop-filter:blur(5px);align-items:center;justify-content:center;" onclick="this.style.display='none'">
+    <div style="max-width:500px;width:90%;max-height:80vh;overflow-y:auto;background:#0f0f14;border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:28px;" onclick="event.stopPropagation()">
+        <h3 style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;margin-bottom:16px;">Politique de confidentialité</h3>
+        <div style="font-size:12px;color:rgba(255,255,255,0.55);line-height:1.7;space-y:10px;">
+            <p style="margin-bottom:10px;">WikiMind collecte uniquement les données nécessaires au fonctionnement de la plateforme : authentification Firebase, préférences utilisateur, et données de conversation locales.</p>
+            <p style="margin-bottom:10px;">Vos données ne sont jamais vendues à des tiers. Les modèles Mistral AI utilisent des serveurs européens — vos données ne quittent pas l'Union Européenne.</p>
+            <p style="margin-bottom:10px;">Conformément au RGPD, vous pouvez demander l'export ou la suppression de vos données à tout moment via la section Confidentialité ou par email.</p>
+            <p style="color:rgba(255,255,255,0.3);">Contact : wikimind.ai@gmail.com</p>
+        </div>
+        <button onclick="document.getElementById('rgpd-modal').style.display='none'" style="margin-top:20px;width:100%;padding:10px;background:#fff;color:#000;border:none;border-radius:10px;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;">Fermer</button>
+    </div>
+</div>
+
+<!-- FIREBASE + LOGIC -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getDatabase, ref, get, set, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // ── Firebase ──
+    const app = initializeApp({
+        apiKey: "AIzaSyD6qIOtKSx0Sl1Ht_a6ppLiMdKZRCc75tA",
+        authDomain: "wikimind-3-comments.firebaseapp.com",
+        projectId: "wikimind-3-comments",
+        appId: "1:137479541640:web:4ed2510a9908055052e03d",
+        databaseURL: "https://wikimind-3-comments-default-rtdb.europe-west1.firebasedatabase.app"
+    });
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    let currentUser = null;
+    let settingsData = {};
+
+    // ── PLAN MAP ──
+    const PM = {
+        1: ['Free', 'plan-free', 'ring-free'],
+        2: ['AI Plus', 'plan-plus', 'ring-plus'],
+        3: ['AI Pro', 'plan-pro', 'ring-pro'],
+        4: ['AI Premium', 'plan-premium', 'ring-premium'],
+        5: ['AI Premium+', 'plan-premium-plus', 'ring-premium-plus']
+    };
+
+    // ── TOAST ──
+    window.showToast = (msg, type = 'info') => {
+        const c = document.getElementById('toast-container');
+        const t = document.createElement('div');
+        const icons = { success: 'fa-check-circle', error: 'fa-triangle-exclamation', info: 'fa-info-circle' };
+        t.className = `toast toast-${type}`;
+        t.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i> ${msg}`;
+        c.appendChild(t);
+        setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'scale(0.9)'; t.style.transition = '0.3s'; setTimeout(() => t.remove(), 300); }, 3000);
+    };
+
+    // ── SAVE INDICATOR ──
+    function showSaved() {
+        const b = document.getElementById('autosave-badge');
+        b.classList.add('visible');
+        clearTimeout(window._saveTimer);
+        window._saveTimer = setTimeout(() => b.classList.remove('visible'), 2500);
+    }
+
+    // ── AUTH STATE ──
+    onAuthStateChanged(auth, async (user) => {
+        currentUser = user;
+        if (user) {
+            // Show logged-in profile
+            document.getElementById('account-logged-in').classList.remove('hidden');
+            document.getElementById('account-not-logged').style.display = 'none';
+            document.getElementById('tokens-block').style.display = '';
+            document.getElementById('danger-zone').style.display = '';
+
+            // Nav avatar
+            document.getElementById('nav-user-area').classList.remove('hidden');
+            document.getElementById('nav-user-area').style.display = 'flex';
+
+            const avatarEl = document.getElementById('nav-avatar');
+            if (user.photoURL) avatarEl.src = user.photoURL;
+            else avatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'U')}&background=1a1a2e&color=fff&bold=true`;
+
+            document.getElementById('profile-name').textContent = user.displayName || user.email?.split('@')[0] || 'Utilisateur';
+            document.getElementById('profile-email').textContent = user.email || '—';
+            const profAvatar = document.getElementById('profile-avatar');
+            if (user.photoURL) profAvatar.src = user.photoURL;
+            else profAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'U')}&background=1a1a2e&color=fff&bold=true&size=128`;
+
+            // Load Firebase data
+            try {
+                const snap = await get(child(ref(db), `users/${user.uid}`));
+                if (snap.exists()) {
+                    const data = snap.val();
+                    const plan = data.FORFAIT || 1;
+                    const [label, badgeClass, ringClass] = PM[plan] || PM[1];
+                    // Plan badge
+                    const pb = document.getElementById('profile-plan-badge');
+                    pb.textContent = label;
+                    pb.className = `plan-badge ${badgeClass}`;
+                    // Avatar ring
+                    const pr = document.getElementById('profile-avatar-ring');
+                    pr.className = `plan-chip-avatar ${ringClass}`;
+                    const nr = document.getElementById('nav-avatar-ring');
+                    nr.className = `plan-chip-avatar ${ringClass}`;
+                    // Tokens
+                    document.getElementById('tokens-count').textContent = data.tokens !== undefined ? data.tokens : '0';
+                    // Load saved settings from Firebase
+                    if (data.settings) {
+                        settingsData = data.settings;
+                        applyLoadedSettings(settingsData);
+                    }
+                }
+            } catch(e) {
+                console.warn('Settings load error:', e);
+            }
+        } else {
+            document.getElementById('account-logged-in').classList.add('hidden');
+            document.getElementById('account-not-logged').style.display = '';
+            document.getElementById('tokens-block').style.display = 'none';
+            document.getElementById('danger-zone').style.display = 'none';
         }
-        
-        function closeMemoryPopup() {
-            document.getElementById('memory-popup-overlay').classList.remove('active');
-            document.getElementById('memory-popup').classList.remove('active');
+        // Always load local settings
+        loadLocalSettings();
+    });
+
+    // ── APPLY LOADED SETTINGS ──
+    function applyLoadedSettings(s) {
+        if (s.ai_memory !== undefined) document.getElementById('toggle-memory').checked = s.ai_memory;
+        if (s.ai_suggestions !== undefined) document.getElementById('toggle-suggestions').checked = s.ai_suggestions;
+        if (s.ai_streaming !== undefined) document.getElementById('toggle-streaming').checked = s.ai_streaming;
+        if (s.ai_default_model) document.getElementById('select-model').value = s.ai_default_model;
+        if (s.ai_language) document.getElementById('select-lang').value = s.ai_language;
+        if (s.animations !== undefined) document.getElementById('toggle-animations').checked = s.animations;
+        if (s.reduce_motion !== undefined) document.getElementById('toggle-reduce-motion').checked = s.reduce_motion;
+        if (s.notif_updates !== undefined) document.getElementById('toggle-notif-updates').checked = s.notif_updates;
+        if (s.notif_study !== undefined) document.getElementById('toggle-notif-study').checked = s.notif_study;
+        if (s.notif_per_day !== undefined) {
+            document.getElementById('notif-count-slider').value = s.notif_per_day;
+            document.getElementById('notif-count-label').textContent = s.notif_per_day;
         }
-        
-        function enableMemory() {
-            document.getElementById('memory-toggle').checked = true;
-            closeMemoryPopup();
-            showToast("Mémoire activée avec succès !");
-            saveUserSettings();
+        if (s.silence_start) document.getElementById('silence-start').value = s.silence_start;
+        if (s.silence_end) document.getElementById('silence-end').value = s.silence_end;
+        if (s.analytics !== undefined) document.getElementById('toggle-analytics').checked = s.analytics;
+        if (s.app_icon) selectIconById(s.app_icon);
+        if (s.accent) setAccent(s.accent, false);
+    }
+
+    function loadLocalSettings() {
+        const memConsent = localStorage.getItem('wikimind_memory_consent');
+        if (memConsent !== null) document.getElementById('toggle-privacy-memory').checked = memConsent === 'true';
+    }
+
+    // ── SAVE SETTING (Firebase + local cache) ──
+    window.saveSetting = async (key, value) => {
+        settingsData[key] = value;
+        // Always save to localStorage as fallback
+        try { localStorage.setItem('wm_settings_' + key, JSON.stringify(value)); } catch(e) {}
+        showSaved();
+        // Save to Firebase if logged in
+        if (currentUser) {
+            try {
+                await set(ref(db, `users/${currentUser.uid}/settings/${key}`), value);
+            } catch(e) {
+                console.warn('Firebase save failed, kept locally');
+            }
         }
-        
-        // ==========================================
-        // NOTIFICATION TOAST FUNCTIONS
-        // ==========================================
-        function showToast(message) {
-            const toast = document.getElementById('notification-toast');
-            const toastMessage = document.getElementById('toast-message');
-            toastMessage.textContent = message;
-            toast.style.display = 'flex';
-            
-            // Hide after 3 seconds
-            setTimeout(() => {
-                closeToast();
-            }, 3000);
-        }
-        
-        function closeToast() {
-            document.getElementById('notification-toast').style.display = 'none';
-        }
-        
-        // ==========================================
-        // NOTIFICATION PERMISSION
-        // ==========================================
-        function requestNotificationPermission() {
+    };
+
+    window.saveLocalSetting = (key, value) => {
+        localStorage.setItem(key, value);
+        showSaved();
+    };
+
+    // ── SECTIONS ──
+    window.showSection = (id) => {
+        // Hide all
+        document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.mobile-nav-btn').forEach(s => s.classList.remove('active'));
+        // Show target
+        const sec = document.getElementById('sec-' + id);
+        if (sec) { sec.classList.add('active'); sec.classList.add('anim-in'); setTimeout(() => sec.classList.remove('anim-in'), 500); }
+        document.querySelectorAll(`[data-section="${id}"]`).forEach(el => el.classList.add('active'));
+        window.scrollTo(0, 0);
+    };
+
+    // ── MOBILE SIDEBAR ──
+    window.closeMobileSidebar = () => {
+        document.getElementById('settings-sidebar').classList.remove('mobile-open');
+        document.getElementById('mobile-sidebar-overlay').classList.remove('active');
+    };
+    document.getElementById('mobile-sidebar-btn').addEventListener('click', () => {
+        document.getElementById('settings-sidebar').classList.toggle('mobile-open');
+        document.getElementById('mobile-sidebar-overlay').classList.toggle('active');
+    });
+
+    // ── LOGOUT ──
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
+        await signOut(auth);
+        window.showToast('Déconnecté avec succès.', 'info');
+        setTimeout(() => { window.location.href = 'index.html'; }, 1200);
+    });
+
+    // ── THEME ──
+    window.applyTheme = (val) => {
+        // 'light' not fully implemented yet
+        window.showToast(val === 'light' ? 'Le mode clair arrive bientôt !' : 'Thème sombre appliqué.', 'info');
+        saveSetting('theme', val);
+    };
+
+    // ── ACCENT ──
+    window.setAccent = (color, save = true) => {
+        document.documentElement.style.setProperty('--accent', color);
+        document.documentElement.style.setProperty('--accent-glow', color + '40');
+        document.querySelectorAll('.settings-row-right .w-6').forEach(b => {
+            b.style.borderColor = b.style.background === color ? '#fff' : 'transparent';
+        });
+        if (save) saveSetting('accent', color);
+    };
+
+    // ── ICON PICKER ──
+    window.selectIcon = (el, iconId) => {
+        document.querySelectorAll('.icon-option').forEach(o => o.classList.remove('selected'));
+        el.classList.add('selected');
+        saveSetting('app_icon', iconId);
+        window.showToast('Icône sélectionnée. Réinstallez l\'app pour l\'appliquer.', 'info');
+    };
+    window.selectIconById = (id) => {
+        const el = document.querySelector(`[data-icon="${id}"]`);
+        if (el) { document.querySelectorAll('.icon-option').forEach(o => o.classList.remove('selected')); el.classList.add('selected'); }
+    };
+
+    // ── NOTIFICATIONS ──
+    window.handleNotifToggle = async (checked) => {
+        if (checked) {
             if (!('Notification' in window)) {
-                showToast("Les notifications ne sont pas supportées par votre navigateur.");
+                window.showToast('Notifications non supportées sur cet appareil.', 'error');
+                document.getElementById('toggle-notifs').checked = false;
                 return;
             }
-            
-            Notification.requestPermission().then(permission => {
-                if (permission === 'granted') {
-                    showToast("Notifications activées !");
-                    document.getElementById('push-notifications-toggle').checked = true;
-                    saveUserSettings();
-                } else {
-                    showToast("Les notifications ont été refusées.");
-                    document.getElementById('push-notifications-toggle').checked = false;
-                }
-            });
-        }
-        
-        // ==========================================
-        // AUTH STATE LISTENER
-        // ==========================================
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            updateAuthUI(user);
-            if (user) {
-                loadUserSettings(user.uid);
-            }
-        });
-        
-        // ==========================================
-        // UPDATE AUTH UI
-        // ==========================================
-        function updateAuthUI(user) {
-            const loginBtn = document.getElementById('login-btn');
-            const userLogged = document.getElementById('user-logged');
-            
-            if (user) {
-                if (loginBtn) loginBtn.classList.add('hidden');
-                if (userLogged) {
-                    userLogged.classList.remove('hidden');
-                    userLogged.classList.add('flex');
-                }
-                
-                // Update user info
-                const userName = user.displayName || user.email.split('@')[0] || 'Utilisateur';
-                const userEmail = user.email || 'email@example.com';
-                const userAvatar = user.photoURL || userName.charAt(0).toUpperCase();
-                
-                document.getElementById('user-name-display').textContent = userName;
-                document.getElementById('user-email-display').textContent = userEmail;
-                document.getElementById('user-avatar').textContent = userAvatar;
-                
-                // Update settings page
-                document.getElementById('settings-user-name').textContent = userName;
-                document.getElementById('settings-user-email').textContent = userEmail;
-                document.getElementById('settings-user-avatar').textContent = userAvatar;
-                document.getElementById('display-name-input').value = userName;
-                document.getElementById('email-input').value = userEmail;
+            const perm = await Notification.requestPermission();
+            if (perm === 'granted') {
+                document.getElementById('notif-permission-status').textContent = 'Autorisées sur cet appareil';
+                saveSetting('notifs_enabled', true);
+                window.showToast('Notifications activées !', 'success');
             } else {
-                if (loginBtn) loginBtn.classList.remove('hidden');
-                if (userLogged) {
-                    userLogged.classList.add('hidden');
-                    userLogged.classList.remove('flex');
-                }
+                document.getElementById('notif-permission-status').textContent = 'Permission refusée — vérifiez les réglages du navigateur';
+                document.getElementById('toggle-notifs').checked = false;
             }
+        } else {
+            document.getElementById('notif-permission-status').textContent = 'Désactivées';
+            saveSetting('notifs_enabled', false);
         }
-        
-        // ==========================================
-        // LOAD USER SETTINGS
-        // ==========================================
-        function loadUserSettings(uid) {
-            const settingsRef = ref(db, `users/${uid}/settings`);
-            
-            get(settingsRef).then((snapshot) => {
-                if (snapshot.exists()) {
-                    const settings = snapshot.val();
-                    
-                    // Update UI with saved settings
-                    if (settings.aiTone) {
-                        document.getElementById('ai-tone-select').value = settings.aiTone;
-                    }
-                    if (settings.aiCreativity) {
-                        document.getElementById('ai-creativity-slider').value = settings.aiCreativity;
-                    }
-                    if (settings.memoryEnabled !== undefined) {
-                        document.getElementById('memory-toggle').checked = settings.memoryEnabled;
-                    }
-                    if (settings.autoSave !== undefined) {
-                        document.getElementById('auto-save-toggle').checked = settings.autoSave;
-                    }
-                    if (settings.pushNotifications !== undefined) {
-                        document.getElementById('push-notifications-toggle').checked = settings.pushNotifications;
-                    }
-                    if (settings.emailNotifications !== undefined) {
-                        document.getElementById('email-notifications-toggle').checked = settings.emailNotifications;
-                    }
-                    if (settings.soundNotifications !== undefined) {
-                        document.getElementById('sound-notifications-toggle').checked = settings.soundNotifications;
-                    }
-                    if (settings.theme) {
-                        document.getElementById('theme-select').value = settings.theme;
-                        applyTheme(settings.theme);
-                    }
-                    if (settings.language) {
-                        document.getElementById('language-select').value = settings.language;
-                    }
-                    if (settings.fontSize) {
-                        document.getElementById('font-size-slider').value = settings.fontSize;
-                        document.documentElement.style.fontSize = `${settings.fontSize}px`;
-                    }
-                }
-            }).catch((error) => {
-                console.error("Error loading user settings:", error);
-            });
+    };
+
+    window.sendTestNotif = () => {
+        if (!('Notification' in window) || Notification.permission !== 'granted') {
+            window.showToast('Activez d\'abord les notifications.', 'error');
+            return;
         }
-        
-        // ==========================================
-        // APPLY THEME
-        // ==========================================
-        function applyTheme(theme) {
-            if (theme === 'dark') {
-                document.documentElement.classList.add('dark');
-            } else if (theme === 'light') {
-                document.documentElement.classList.remove('dark');
-            } else {
-                // System theme
-                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                    document.documentElement.classList.add('dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                }
-            }
+        new Notification('WikiMind', {
+            body: 'Ceci est une notification de test 🧠',
+            icon: '/Wikimind-3/1.png'
+        });
+    };
+
+    // ── SERVICE WORKER STATUS ──
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(() => {
+            document.getElementById('sw-status').textContent = 'Actif (v3.3.0)';
+            document.getElementById('sw-status').style.color = '#86efac';
+        }).catch(() => {
+            document.getElementById('sw-status').textContent = 'Inactif';
+        });
+    } else {
+        document.getElementById('sw-status').textContent = 'Non supporté';
+    }
+
+    // ── NOTIF PERMISSION STATUS ──
+    if ('Notification' in window) {
+        const st = document.getElementById('notif-permission-status');
+        if (Notification.permission === 'granted') {
+            st.textContent = 'Autorisées sur cet appareil';
+            document.getElementById('toggle-notifs').checked = true;
+        } else if (Notification.permission === 'denied') {
+            st.textContent = 'Refusées — modifiez les réglages du navigateur';
+        } else {
+            st.textContent = 'Non configurées';
         }
-        
-        // ==========================================
-        // SAVE USER SETTINGS
-        // ==========================================
-        function saveUserSettings() {
-            if (!currentUser) {
-                showToast("Vous devez être connecté pour sauvegarder vos paramètres.");
-                return;
-            }
-            
-            const uid = currentUser.uid;
-            const settingsRef = ref(db, `users/${uid}/settings`);
-            
-            const settings = {
-                aiTone: document.getElementById('ai-tone-select').value,
-                aiCreativity: parseInt(document.getElementById('ai-creativity-slider').value),
-                memoryEnabled: document.getElementById('memory-toggle').checked,
-                autoSave: document.getElementById('auto-save-toggle').checked,
-                pushNotifications: document.getElementById('push-notifications-toggle').checked,
-                emailNotifications: document.getElementById('email-notifications-toggle').checked,
-                soundNotifications: document.getElementById('sound-notifications-toggle').checked,
-                theme: document.getElementById('theme-select').value,
-                language: document.getElementById('language-select').value,
-                fontSize: parseInt(document.getElementById('font-size-slider').value),
-                lastUpdated: Date.now()
-            };
-            
-            set(settingsRef, settings).then(() => {
-                console.log("Settings saved successfully!");
-                showToast("Paramètres sauvegardés !");
-            }).catch((error) => {
-                console.error("Error saving settings:", error);
-                showToast("Erreur lors de la sauvegarde.");
-            });
+    }
+
+    // ── CACHE CLEAR ──
+    window.clearLocalCache = async () => {
+        // Clear old SW caches
+        if ('caches' in window) {
+            const keys = await caches.keys();
+            const old = keys.filter(k => !k.includes('v3.3.0'));
+            await Promise.all(old.map(k => caches.delete(k)));
         }
-        
-        // ==========================================
-        // SAVE PROFILE
-        // ==========================================
-        document.getElementById('save-profile-btn').addEventListener('click', () => {
-            if (!currentUser) {
-                showToast("Vous devez être connecté pour modifier votre profil.");
-                return;
-            }
-            
-            const displayName = document.getElementById('display-name-input').value;
-            
-            // Update Firebase Auth profile
-            updateProfile(currentUser, {
-                displayName: displayName
-            }).then(() => {
-                // Update Realtime Database
-                const userRef = ref(db, `users/${currentUser.uid}/info`);
-                set(userRef, {
-                    name: displayName,
-                    email: currentUser.email,
-                    lastUpdated: Date.now()
-                }).then(() => {
-                    showToast("Profil mis à jour !");
-                    // Update UI
-                    document.getElementById('user-name-display').textContent = displayName;
-                    document.getElementById('settings-user-name').textContent = displayName;
-                }).catch((error) => {
-                    console.error("Error updating database:", error);
-                });
-            }).catch((error) => {
-                console.error("Error updating profile:", error);
-                showToast("Erreur lors de la mise à jour du profil.");
-            });
+        // Clear user cache prefix
+        Object.keys(localStorage).forEach(k => { if (k.startsWith('wm_user_cache_')) localStorage.removeItem(k); });
+        window.showToast('Cache vidé avec succès.', 'success');
+    };
+
+    // ── AI MEMORY CLEAR ──
+    window.clearAIMemory = () => {
+        localStorage.removeItem('wikimind_memory_consent');
+        localStorage.removeItem('wikimind_memories');
+        window.showToast('Mémoire IA réinitialisée.', 'success');
+    };
+
+    // ── DELETE ACCOUNT ──
+    window.showDeleteConfirm = () => {
+        if (confirm('⚠️ Supprimer définitivement votre compte WikiMind ? Cette action est irréversible.')) {
+            window.showToast('Contactez wikimind.ai@gmail.com pour la suppression de compte.', 'info');
+        }
+    };
+
+    // ── DATA EXPORT ──
+    window.exportData = () => {
+        const data = {
+            exported_at: new Date().toISOString(),
+            settings: settingsData,
+            local: Object.fromEntries(
+                Object.keys(localStorage)
+                    .filter(k => k.startsWith('wm_'))
+                    .map(k => [k, localStorage.getItem(k)])
+            )
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `wikimind-data-${Date.now()}.json`;
+        a.click(); URL.revokeObjectURL(url);
+        window.showToast('Export téléchargé.', 'success');
+    };
+
+    // ── SEARCH ──
+    document.getElementById('settings-search').addEventListener('input', function() {
+        const q = this.value.toLowerCase();
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.style.display = !q || item.textContent.toLowerCase().includes(q) ? '' : 'none';
         });
-        
-        // ==========================================
-        // LOGOUT
-        // ==========================================
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            signOut(auth).then(() => {
-                showToast("Déconnexion réussie !");
-                setTimeout(() => {
-                    window.location.href = "index.html";
-                }, 1000);
-            }).catch((error) => {
-                console.error("Error signing out:", error);
-                showToast("Erreur lors de la déconnexion.");
-            });
-        });
-        
-        // ==========================================
-        // AUTO-SAVE SETTINGS
-        // ==========================================
-        let autoSaveTimeout;
-        
-        // Listen for changes on all setting inputs
-        const settingInputs = [
-            'ai-tone-select', 'ai-creativity-slider', 'memory-toggle', 
-            'auto-save-toggle', 'push-notifications-toggle', 
-            'email-notifications-toggle', 'sound-notifications-toggle',
-            'theme-select', 'language-select', 'font-size-slider'
-        ];
-        
-        settingInputs.forEach(inputId => {
-            const input = document.getElementById(inputId);
-            if (input) {
-                input.addEventListener('change', () => {
-                    if (document.getElementById('auto-save-toggle').checked) {
-                        clearTimeout(autoSaveTimeout);
-                        autoSaveTimeout = setTimeout(saveUserSettings, 2000);
-                    }
-                });
-            }
-        });
-        
-        // ==========================================
-        // DELETE ACCOUNT
-        // ==========================================
-        document.getElementById('delete-account-btn').addEventListener('click', () => {
-            if (!currentUser) {
-                showToast("Vous devez être connecté pour supprimer votre compte.");
-                return;
-            }
-            
-            if (confirm("Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.")) {
-                // Delete user data from Realtime Database
-                const userRef = ref(db, `users/${currentUser.uid}`);
-                remove(userRef).then(() => {
-                    // Delete user from Auth
-                    currentUser.delete().then(() => {
-                        showToast("Compte supprimé avec succès.");
-                        setTimeout(() => {
-                            window.location.href = "index.html";
-                        }, 1000);
-                    }).catch((error) => {
-                        console.error("Error deleting user:", error);
-                        showToast("Erreur lors de la suppression du compte.");
-                    });
-                }).catch((error) => {
-                    console.error("Error deleting user data:", error);
-                    showToast("Erreur lors de la suppression des données.");
-                });
-            }
-        });
-        
-        // ==========================================
-        // THEME CHANGE
-        // ==========================================
-        document.getElementById('theme-select').addEventListener('change', (e) => {
-            applyTheme(e.target.value);
-            if (document.getElementById('auto-save-toggle').checked) {
-                saveUserSettings();
-            }
-        });
-        
-        // ==========================================
-        // FONT SIZE CHANGE
-        // ==========================================
-        document.getElementById('font-size-slider').addEventListener('input', (e) => {
-            const fontSize = e.target.value;
-            document.documentElement.style.fontSize = `${fontSize}px`;
-        });
-        
-        // ==========================================
-        // MEMORY TOGGLE CHANGE
-        // ==========================================
-        document.getElementById('memory-toggle').addEventListener('change', (e) => {
-            if (e.target.checked) {
-                showToast("Mémoire activée !");
-            } else {
-                showToast("Mémoire désactivée.");
-            }
-            if (document.getElementById('auto-save-toggle').checked) {
-                saveUserSettings();
-            }
-        });
-    </script>
+    });
+
+</script>
 </body>
 </html>
