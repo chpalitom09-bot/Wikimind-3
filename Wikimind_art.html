@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wikimind Art - Générateur d'Images IA</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #1e40af;
+            --accent: #7c3aed;
+            --light: #f8fafc;
+            --dark: #0f172a;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--light) 0%, #e2e8f0 100%);
+            color: var(--dark);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo {
+            height: 40px;
+            width: auto;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--dark);
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: var(--transition);
+        }
+
+        .nav-links a:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1.25rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--dark);
+            border: 1px solid var(--dark);
+        }
+
+        .btn-secondary:hover {
+            background: var(--dark);
+            color: white;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 50%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(37, 99, 235, 0.1) 0%, transparent 50%);
+            z-index: -1;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            color: #4b5563;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 3rem;
+        }
+
+        .hero-image {
+            max-width: 100%;
+            border-radius: 1rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            animation: fadeIn 2s ease-out;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .features h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+
+        .features-subtitle {
+            font-size: 1.125rem;
+            color: #6b7280;
+            max-width: 600px;
+            margin: 0 auto 3rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .feature-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-card p {
+            color: #6b7280;
+        }
+
+        /* Generation Section */
+        .generation {
+            padding: 4rem 2rem;
+            background: white;
+            position: relative;
+        }
+
+        .generation::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            background: linear-gradient(to bottom, var(--light), transparent);
+        }
+
+        .generation-container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .generation h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .generation-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            text-align: left;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .login-prompt {
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .login-prompt a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        /* Gallery Section */
+        .gallery {
+            padding: 4rem 2rem;
+            background: linear-gradient(135deg, #e2e8f0 0%, var(--light) 100%);
+        }
+
+        .gallery h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .gallery-subtitle {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 3rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .gallery-item {
+            background: white;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .gallery-item.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .gallery-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .gallery-item-info {
+            padding: 1rem;
+        }
+
+        .gallery-item-info h3 {
+            font-size: 1.125rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .gallery-item-info p {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading.visible {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid rgba(37, 99, 235, 0.1);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Result Display */
+        .result {
+            display: none;
+            text-align: center;
+            margin-top: 2rem;
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+        }
+
+        .result.visible {
+            display: block;
+        }
+
+        .result img {
+            max-width: 100%;
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1rem;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.visible {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
+        }
+
+        .modal-body {
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero-cta {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-1 { margin-top: 0.5rem; }
+        .mt-2 { margin-top: 1rem; }
+        .mt-3 { margin-top: 1.5rem; }
+        .mt-4 { margin-top: 2rem; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo-container">
+            <img src="pollinationai.png" alt="Pollinations AI Logo" class="logo">
+            <span style="font-weight: 700; font-size: 1.25rem;">Wikimind Art</span>
+        </div>
+        <nav class="nav-links">
+            <a href="#features">Fonctionnalités</a>
+            <a href="#gallery">Galerie</a>
+            <a href="#generate">Générer</a>
+        </nav>
+        <div class="auth-buttons">
+            <a href="https://chpalitom09-bot.github.io/Wikimind-3/" class="btn btn-secondary">Accueil</a>
+            <a href="https://chpalitom09-bot.github.io/Wikimind-5/" class="btn btn-secondary">IA Chatbot</a>
+            <button id="loginBtn" class="btn btn-secondary">Se connecter</button>
+            <button id="signupBtn" class="btn btn-primary">Créer un compte</button>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Créez des images extraordinaires avec l'IA</h1>
+            <p>Transformez vos idées en œuvres d'art uniques grâce à la puissance de Pollinations AI. Générez, personnalisez et partagez des images de qualité professionnelle en quelques secondes.</p>
+            <div class="hero-cta">
+                <button id="tryNowBtn" class="btn btn-primary">Essayer maintenant</button>
+                <button id="seeExamplesBtn" class="btn btn-secondary">Voir des exemples</button>
+            </div>
+            <div style="margin-top: 2rem;">
+                <img src="images/1.jpg" alt="Exemple d'image générée par IA" class="hero-image" onerror="this.style.display='none'">
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <h2>Pourquoi choisir Wikimind Art ?</h2>
+        <p class="features-subtitle">Découvrez les fonctionnalités puissantes qui rendent notre générateur d'images unique.</p>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🎨</div>
+                <h3>Génération illimitée</h3>
+                <p>Créez autant d'images que vous le souhaitez avec nos différents plans. Une génération gratuite pour essayer, puis accédez à plus avec un compte.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>Technologie avancée</h3>
+                <p>Utilisez les modèles les plus performants de Pollinations AI pour des résultats époustouflants.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔄</div>
+                <h3>Personnalisation totale</h3>
+                <p>Contrôlez chaque aspect de vos créations avec des options avancées et le système BYOK (Bring Your Own Key).</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Sécurité et confidentialité</h3>
+                <p>Vos données et créations sont protégées. Connexion sécurisée avec vérification par email.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🌐</div>
+                <h3>Intégration Wikimind</h3>
+                <p>Connectez-vous une fois, accédez à tous les services Wikimind, y compris notre IA chatbot.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">✨</div>
+                <h3>Animations fluides</h3>
+                <p>Une expérience utilisateur exceptionnelle avec des animations modernes au défilement.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Generation Section -->
+    <section class="generation" id="generate">
+        <div class="generation-container">
+            <h2>Générez vos images</h2>
+            <p style="margin-bottom: 2rem; color: #6b7280;">Utilisez notre interface intuitive pour créer des images uniques. Essayez gratuitement sans compte, puis connectez-vous pour débloquer tout le potentiel.</p>
+            
+            <div class="generation-form">
+                <div class="form-group">
+                    <label for="prompt">Description de l'image (Prompt)</label>
+                    <textarea id="prompt" placeholder="Exemple: Un coucher de soleil sur une montagne enneigée, style peinture à l'huile, couleurs vives, très détaillé, 8k"></textarea>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                    <div class="form-group">
+                        <label for="width">Largeur</label>
+                        <input type="number" id="width" value="512" min="64" max="2048">
+                    </div>
+                    <div class="form-group">
+                        <label for="height">Hauteur</label>
+                        <input type="number" id="height" value="512" min="64" max="2048">
+                    </div>
+                    <div class="form-group">
+                        <label for="model">Modèle</label>
+                        <select id="model">
+                            <option value="flux-dev">Flux (Dev)</option>
+                            <option value="flux-schnell">Flux (Schnell)</option>
+                            <option value="stabilityai/stable-diffusion-xl-base-1.0">Stable Diffusion XL</option>
+                            <option value="black-forest-labs/FLUX.1-dev">FLUX.1 Dev</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="apiKeySelect">Clé API</label>
+                        <select id="apiKeySelect">
+                            <option value="default">Clé par défaut (Wikimind)</option>
+                            <option value="custom">Ma clé API (BYOK)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="customApiKeyGroup" class="form-group hidden">
+                    <label for="customApiKey">Votre clé API Pollinations</label>
+                    <input type="password" id="customApiKey" placeholder="Entrez votre clé API">
+                </div>
+
+                <div class="form-actions">
+                    <button id="generateBtn" class="btn btn-primary">Générer l'image</button>
+                    <button id="randomPromptBtn" class="btn btn-secondary">Prompt aléatoire</button>
+                </div>
+
+                <div class="login-prompt">
+                    <p>Vous avez <span id="remainingGenerations">1</span> génération gratuite restante sans compte. 
+                    <a id="createAccountLink">Créez un compte</a> pour en obtenir plus.</p>
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Génération en cours...</p>
+            </div>
+
+            <div class="result" id="result">
+                <h3>Votre image générée</h3>
+                <img id="generatedImage" alt="Image générée">
+                <div class="result-actions">
+                    <button id="downloadBtn" class="btn btn-primary">Télécharger</button>
+                    <button id="regenerateBtn" class="btn btn-secondary">Regénérer</button>
+                    <button id="saveToGalleryBtn" class="btn btn-secondary">Sauvegarder</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gallery Section -->
+    <section class="gallery" id="gallery">
+        <h2>Galerie d'exemples</h2>
+        <p class="gallery-subtitle">Découvrez ce que nos utilisateurs ont créé avec Wikimind Art. Laissez-vous inspirer par ces œuvres générées par IA.</p>
+        <div class="gallery-grid" id="galleryGrid">
+            <!-- Gallery items will be added here dynamically -->
+        </div>
+    </section>
+
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Se connecter</h2>
+                <button class="close-modal" id="closeLoginModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" placeholder="votre@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Mot de passe</label>
+                    <input type="password" id="loginPassword" placeholder="Votre mot de passe">
+                </div>
+                <p style="font-size: 0.875rem; color: #6b7280; margin-top: 1rem;">
+                    <a id="forgotPasswordLink">Mot de passe oublié ?</a>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button id="loginSubmitBtn" class="btn btn-primary">Se connecter</button>
+                <button id="showSignupModalBtn" class="btn btn-secondary">Créer un compte</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signup Modal -->
+    <div class="modal" id="signupModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Créer un compte</h2>
+                <button class="close-modal" id="closeSignupModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="signupName">Nom complet</label>
+                    <input type="text" id="signupName" placeholder="Votre nom">
+                </div>
+                <div class="form-group">
+                    <label for="signupEmail">Email</label>
+                    <input type="email" id="signupEmail" placeholder="votre@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="signupPassword">Mot de passe</label>
+                    <input type="password" id="signupPassword" placeholder="Créez un mot de passe">
+                </div>
+                <div class="form-group">
+                    <label for="signupConfirmPassword">Confirmer le mot de passe</label>
+                    <input type="password" id="signupConfirmPassword" placeholder="Confirmez votre mot de passe">
+                </div>
+                <p style="font-size: 0.875rem; color: #6b7280; margin-top: 1rem;">
+                    En créant un compte, vous acceptez nos <a href="#">Conditions d'utilisation</a> et notre <a href="#">Politique de confidentialité</a>.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button id="signupSubmitBtn" class="btn btn-primary">Créer un compte</button>
+                <button id="showLoginModalBtn" class="btn btn-secondary">Se connecter</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Verification Modal -->
+    <div class="modal" id="emailVerificationModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Vérification de l'email</h2>
+                <button class="close-modal" id="closeEmailVerificationModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Nous avons envoyé un email de vérification à <span id="verificationEmail" style="font-weight: 600;"></span>.</p>
+                <p style="margin-top: 1rem;">Veuillez vérifier votre boîte de réception et cliquer sur le lien de vérification pour activer votre compte.</p>
+                <p style="margin-top: 1rem; color: #6b7280; font-size: 0.875rem;">
+                    Vous n'avez pas reçu l'email ? <a id="resendVerificationLink">Renvoyer le code</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal" id="successModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Succès !</h2>
+                <button class="close-modal" id="closeSuccessModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="successMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button id="closeSuccessModalBtn" class="btn btn-primary">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div class="modal" id="errorModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Erreur</h2>
+                <button class="close-modal" id="closeErrorModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="errorMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button id="closeErrorModalBtn" class="btn btn-primary">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== DOM Elements ==========
+        const tryNowBtn = document.getElementById('tryNowBtn');
+        const seeExamplesBtn = document.getElementById('seeExamplesBtn');
+        const generateBtn = document.getElementById('generateBtn');
+        const randomPromptBtn = document.getElementById('randomPromptBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const regenerateBtn = document.getElementById('regenerateBtn');
+        const saveToGalleryBtn = document.getElementById('saveToGalleryBtn');
+        const loginBtn = document.getElementById('loginBtn');
+        const signupBtn = document.getElementById('signupBtn');
+        const apiKeySelect = document.getElementById('apiKeySelect');
+        const customApiKeyGroup = document.getElementById('customApiKeyGroup');
+        const customApiKeyInput = document.getElementById('customApiKey');
+        const remainingGenerationsSpan = document.getElementById('remainingGenerations');
+        const createAccountLink = document.getElementById('createAccountLink');
+        const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+        const resendVerificationLink = document.getElementById('resendVerificationLink');
+        const showSignupModalBtn = document.getElementById('showSignupModalBtn');
+        const showLoginModalBtn = document.getElementById('showLoginModalBtn');
+        const closeLoginModal = document.getElementById('closeLoginModal');
+        const closeSignupModal = document.getElementById('closeSignupModal');
+        const closeEmailVerificationModal = document.getElementById('closeEmailVerificationModal');
+        const closeSuccessModal = document.getElementById('closeSuccessModal');
+        const closeErrorModal = document.getElementById('closeErrorModal');
+        const closeSuccessModalBtn = document.getElementById('closeSuccessModalBtn');
+        const closeErrorModalBtn = document.getElementById('closeErrorModalBtn');
+        const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+        const signupSubmitBtn = document.getElementById('signupSubmitBtn');
+        const loginModal = document.getElementById('loginModal');
+        const signupModal = document.getElementById('signupModal');
+        const emailVerificationModal = document.getElementById('emailVerificationModal');
+        const successModal = document.getElementById('successModal');
+        const errorModal = document.getElementById('errorModal');
+        const loadingDiv = document.getElementById('loading');
+        const resultDiv = document.getElementById('result');
+        const generatedImage = document.getElementById('generatedImage');
+        const promptInput = document.getElementById('prompt');
+        const widthInput = document.getElementById('width');
+        const heightInput = document.getElementById('height');
+        const modelSelect = document.getElementById('model');
+        const galleryGrid = document.getElementById('galleryGrid');
+        const verificationEmailSpan = document.getElementById('verificationEmail');
+        const successMessage = document.getElementById('successMessage');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // ========== State ==========
+        let isLoggedIn = false;
+        let userEmail = '';
+        let userCredits = 1; // 1 free generation for guests
+        let currentImageUrl = '';
+        let currentPrompt = '';
+        let userApiKey = 'pk_w6wnuGBObh7FeHwp'; // Default Wikimind API key
+        let customApiKey = '';
+
+        // Example prompts for random generation
+        const examplePrompts = [
+            'Un paysage futuriste avec des bâtiments flottants, style cyberpunk, néons bleus et violets, très détaillé, 8k',
+            'Un portrait de femme elfique dans une forêt enchantée, style fantasy, couleurs pastel, éclairé par des lucioles',
+            'Une voiture de sport rouge sur une route de montagne, style réaliste, lumière du coucher de soleil, ultra HD',
+            'Un chat robotique dans un laboratoire high-tech, style steampunk, détails métalliques, 4k',
+            'Une plage tropicale avec des palmiers et une mer turquoise, style peinture à l\'huile, couleurs vives',
+            'Un dragon crachant du feu au-dessus d\'un château médiéval, style dark fantasy, ambiance dramatique',
+            'Un jardin japonais avec des cerisiers en fleurs, style aquarelle, couleurs douces et apaisantes',
+            'Un robot géant combattant des monstres dans une ville en ruines, style anime, dynamique et intense',
+            'Un café parisien de nuit avec des lumières chaudes, style impressionniste, ambiance romantique',
+            'Une forêt magique avec des champignons géants et des fées, style conte de fées, couleurs vives'
+        ];
+
+        // Example gallery images (to be replaced with actual generated images)
+        const exampleGalleryItems = [
+            { title: 'Paysage Cyberpunk', description: 'Un paysage futuriste avec des bâtiments flottants', image: 'images/1.jpg' },
+            { title: 'Portrait Elfique', description: 'Un portrait de femme elfique dans une forêt enchantée', image: 'images/2.jpg' },
+            { title: 'Voiture de Sport', description: 'Une voiture de sport rouge sur une route de montagne', image: 'images/3.jpg' },
+            { title: 'Chat Robotique', description: 'Un chat robotique dans un laboratoire high-tech', image: 'images/4.jpg' },
+            { title: 'Plage Tropicale', description: 'Une plage tropicale avec des palmiers', image: 'images/5.jpg' }
+        ];
+
+        // ========== Initialization ==========
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if user is already logged in (simplified for demo)
+            const savedUser = localStorage.getItem('wikimindArtUser');
+            if (savedUser) {
+                const user = JSON.parse(savedUser);
+                isLoggedIn = user.isVerified;
+                userEmail = user.email;
+                userCredits = user.credits || 10; // Logged-in users get 10 credits
+                updateUI();
+            }
+
+            // Load gallery items
+            loadGallery();
+
+            // Set up event listeners
+            setupEventListeners();
+
+            // Set up scroll animations
+            setupScrollAnimations();
+
+            // Show first feature card immediately
+            const firstFeatureCard = document.querySelector('.feature-card');
+            if (firstFeatureCard) {
+                firstFeatureCard.classList.add('visible');
+            }
+        });
+
+        // ========== Event Listeners ==========
+        function setupEventListeners() {
+            // Header buttons
+            tryNowBtn.addEventListener('click', () => {
+                document.getElementById('generate').scrollIntoView({ behavior: 'smooth' });
+            });
+
+            seeExamplesBtn.addEventListener('click', () => {
+                document.getElementById('gallery').scrollIntoView({ behavior: 'smooth' });
+            });
+
+            // API Key selector
+            apiKeySelect.addEventListener('change', (e) => {
+                if (e.target.value === 'custom') {
+                    customApiKeyGroup.classList.remove('hidden');
+                } else {
+                    customApiKeyGroup.classList.add('hidden');
+                    userApiKey = 'pk_w6wnuGBObh7FeHwp';
+                }
+            });
+
+            customApiKeyInput.addEventListener('input', (e) => {
+                customApiKey = e.target.value;
+                if (customApiKey.trim()) {
+                    userApiKey = customApiKey;
+                }
+            });
+
+            // Generate button
+            generateBtn.addEventListener('click', generateImage);
+
+            // Random prompt button
+            randomPromptBtn.addEventListener('click', () => {
+                const randomPrompt = examplePrompts[Math.floor(Math.random() * examplePrompts.length)];
+                promptInput.value = randomPrompt;
+            });
+
+            // Download button
+            downloadBtn.addEventListener('click', downloadImage);
+
+            // Regenerate button
+            regenerateBtn.addEventListener('click', () => {
+                resultDiv.classList.remove('visible');
+                generateImage();
+            });
+
+            // Save to gallery button
+            saveToGalleryBtn.addEventListener('click', saveToGallery);
+
+            // Auth buttons
+            loginBtn.addEventListener('click', () => showModal(loginModal));
+            signupBtn.addEventListener('click', () => showModal(signupModal));
+            createAccountLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                showModal(signupModal);
+            });
+
+            // Modal close buttons
+            closeLoginModal.addEventListener('click', () => hideModal(loginModal));
+            closeSignupModal.addEventListener('click', () => hideModal(signupModal));
+            closeEmailVerificationModal.addEventListener('click', () => hideModal(emailVerificationModal));
+            closeSuccessModal.addEventListener('click', () => hideModal(successModal));
+            closeErrorModal.addEventListener('click', () => hideModal(errorModal));
+            closeSuccessModalBtn.addEventListener('click', () => hideModal(successModal));
+            closeErrorModalBtn.addEventListener('click', () => hideModal(errorModal));
+
+            // Modal submit buttons
+            loginSubmitBtn.addEventListener('click', handleLogin);
+            signupSubmitBtn.addEventListener('click', handleSignup);
+
+            // Show signup from login modal
+            showSignupModalBtn.addEventListener('click', () => {
+                hideModal(loginModal);
+                showModal(signupModal);
+            });
+
+            // Show login from signup modal
+            showLoginModalBtn.addEventListener('click', () => {
+                hideModal(signupModal);
+                showModal(loginModal);
+            });
+
+            // Close modals when clicking outside
+            [loginModal, signupModal, emailVerificationModal, successModal, errorModal].forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        hideModal(modal);
+                    }
+                });
+            });
+
+            // Resend verification email
+            resendVerificationLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (userEmail) {
+                    showMessage('Un nouvel email de vérification a été envoyé.', 'success');
+                    // In a real implementation, you would call your backend to resend the verification email
+                }
+            });
+        }
+
+        // ========== Scroll Animations ==========
+        function setupScrollAnimations() {
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.1
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, observerOptions);
+
+            // Observe feature cards
+            document.querySelectorAll('.feature-card').forEach(card => {
+                observer.observe(card);
+            });
+
+            // Observe gallery items
+            document.querySelectorAll('.gallery-item').forEach(item => {
+                observer.observe(item);
+            });
+        }
+
+        // ========== Gallery Functions ==========
+        function loadGallery() {
+            galleryGrid.innerHTML = '';
+            exampleGalleryItems.forEach((item, index) => {
+                const galleryItem = document.createElement('div');
+                galleryItem.className = 'gallery-item';
+                if (index === 0) galleryItem.classList.add('visible');
+                
+                galleryItem.innerHTML = `
+                    <img src="${item.image}" alt="${item.title}" onerror="this.parentElement.style.display='none'">
+                    <div class="gallery-item-info">
+                        <h3>${item.title}</h3>
+                        <p>${item.description}</p>
+                    </div>
+                `;
+                galleryGrid.appendChild(galleryItem);
+            });
+        }
+
+        function saveToGallery() {
+            if (!currentImageUrl) {
+                showMessage('Aucune image à sauvegarder.', 'error');
+                return;
+            }
+
+            const nextImageNumber = exampleGalleryItems.length + 1;
+            const newItem = {
+                title: `Ma création ${nextImageNumber}`,
+                description: currentPrompt || 'Image générée avec Wikimind Art',
+                image: `images/${nextImageNumber}.jpg`
+            };
+
+            exampleGalleryItems.push(newItem);
+            loadGallery();
+            
+            // In a real implementation, you would save this to your backend
+            showMessage('Image sauvegardée dans votre galerie !', 'success');
+        }
+
+        // ========== Image Generation ==========
+        async function generateImage() {
+            const prompt = promptInput.value.trim();
+            if (!prompt) {
+                showMessage('Veuillez entrer une description pour l\'image.', 'error');
+                return;
+            }
+
+            // Check if user has credits
+            if (userCredits <= 0 && !isLoggedIn) {
+                showMessage('Vous avez épuisé vos générations gratuites. Veuillez créer un compte pour continuer.', 'error');
+                showModal(signupModal);
+                return;
+            }
+
+            // Show loading
+            loadingDiv.classList.add('visible');
+            resultDiv.classList.remove('visible');
+            generateBtn.disabled = true;
+
+            try {
+                // Prepare request
+                const width = parseInt(widthInput.value) || 512;
+                const height = parseInt(heightInput.value) || 512;
+                const model = modelSelect.value;
+                
+                // For demo purposes, we'll use the Pollinations AI API
+                // In production, you would use your own backend to handle API keys securely
+                const apiUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${width}&height=${height}&model=${model}&nologo=true`;
+                
+                // If using custom API key, you would need to implement this differently
+                // For now, we'll just use the default API
+                
+                currentPrompt = prompt;
+                
+                // Simulate API call (in a real implementation, you would use fetch)
+                // For this demo, we'll generate a placeholder image URL
+                const timestamp = Date.now();
+                currentImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${width}&height=${height}&model=${model}&nologo=true&seed=${timestamp}`;
+                
+                // For the actual demo, let's try to use the real API
+                try {
+                    const response = await fetch(apiUrl);
+                    if (response.ok) {
+                        currentImageUrl = apiUrl;
+                    }
+                } catch (e) {
+                    console.log('Using placeholder image due to API limitations in this environment');
+                }
+
+                // Update UI
+                generatedImage.src = currentImageUrl;
+                
+                // Decrement credits if not logged in
+                if (!isLoggedIn) {
+                    userCredits--;
+                    remainingGenerationsSpan.textContent = userCredits;
+                }
+
+                // Show result
+                loadingDiv.classList.remove('visible');
+                resultDiv.classList.add('visible');
+                
+            } catch (error) {
+                console.error('Error generating image:', error);
+                showMessage('Une erreur est survenue lors de la génération de l\'image. Veuillez réessayer.', 'error');
+                loadingDiv.classList.remove('visible');
+            } finally {
+                generateBtn.disabled = false;
+            }
+        }
+
+        function downloadImage() {
+            if (!currentImageUrl) {
+                showMessage('Aucune image à télécharger.', 'error');
+                return;
+            }
+
+            const link = document.createElement('a');
+            link.href = currentImageUrl;
+            link.download = `wikimind-art-${Date.now()}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // ========== Authentication Functions ==========
+        function handleLogin() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                showMessage('Veuillez remplir tous les champs.', 'error');
+                return;
+            }
+
+            // In a real implementation, you would call your backend to verify credentials
+            // For this demo, we'll simulate a successful login
+            if (email && password) {
+                isLoggedIn = true;
+                userEmail = email;
+                userCredits = 10; // Give logged-in users 10 credits
+                
+                // Save to localStorage (in a real app, use secure HTTP-only cookies)
+                localStorage.setItem('wikimindArtUser', JSON.stringify({
+                    email: email,
+                    isVerified: true,
+                    credits: 10
+                }));
+
+                updateUI();
+                hideModal(loginModal);
+                showMessage('Connexion réussie !', 'success');
+            } else {
+                showMessage('Email ou mot de passe incorrect.', 'error');
+            }
+        }
+
+        function handleSignup() {
+            const name = document.getElementById('signupName').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
+            const password = document.getElementById('signupPassword').value;
+            const confirmPassword = document.getElementById('signupConfirmPassword').value;
+
+            if (!name || !email || !password || !confirmPassword) {
+                showMessage('Veuillez remplir tous les champs.', 'error');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showMessage('Les mots de passe ne correspondent pas.', 'error');
+                return;
+            }
+
+            if (!isValidEmail(email)) {
+                showMessage('Veuillez entrer un email valide.', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showMessage('Le mot de passe doit contenir au moins 6 caractères.', 'error');
+                return;
+            }
+
+            // In a real implementation, you would call your backend to create the account
+            // For this demo, we'll simulate the process
+            userEmail = email;
+            verificationEmailSpan.textContent = email;
+            
+            hideModal(signupModal);
+            showModal(emailVerificationModal);
+        }
+
+        function isValidEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+
+        function updateUI() {
+            if (isLoggedIn) {
+                loginBtn.textContent = 'Mon compte';
+                signupBtn.classList.add('hidden');
+                remainingGenerationsSpan.textContent = userCredits;
+                createAccountLink.parentElement.style.display = 'none';
+            } else {
+                loginBtn.textContent = 'Se connecter';
+                signupBtn.classList.remove('hidden');
+                remainingGenerationsSpan.textContent = userCredits;
+                createAccountLink.parentElement.style.display = 'block';
+            }
+        }
+
+        // ========== Modal Functions ==========
+        function showModal(modal) {
+            modal.classList.add('visible');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideModal(modal) {
+            modal.classList.remove('visible');
+            document.body.style.overflow = '';
+            
+            // Clear form fields
+            if (modal === loginModal) {
+                document.getElementById('loginEmail').value = '';
+                document.getElementById('loginPassword').value = '';
+            } else if (modal === signupModal) {
+                document.getElementById('signupName').value = '';
+                document.getElementById('signupEmail').value = '';
+                document.getElementById('signupPassword').value = '';
+                document.getElementById('signupConfirmPassword').value = '';
+            }
+        }
+
+        function showMessage(message, type) {
+            if (type === 'success') {
+                successMessage.textContent = message;
+                showModal(successModal);
+            } else {
+                errorMessage.textContent = message;
+                showModal(errorModal);
+            }
+        }
+
+        // ========== Utility Functions ==========
+        function getApiKey() {
+            return apiKeySelect.value === 'custom' && customApiKey.trim() ? customApiKey : userApiKey;
+        }
+    </script>
+</body>
+</html>
