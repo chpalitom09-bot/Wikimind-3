@@ -1,1310 +1,1998 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wikimind Art - Générateur d'Images IA</title>
-    <style>
-        :root {
-            --primary: #2563eb;
-            --secondary: #1e40af;
-            --accent: #7c3aed;
-            --light: #f8fafc;
-            --dark: #0f172a;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --transition: all 0.3s ease;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, var(--light) 0%, #e2e8f0 100%);
-            color: var(--dark);
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
-
-        /* Header */
-        .header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            box-shadow: var(--shadow);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-        }
-
-        .logo-container {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .logo {
-            height: 40px;
-            width: auto;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 1.5rem;
-        }
-
-        .nav-links a {
-            text-decoration: none;
-            color: var(--dark);
-            font-weight: 500;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            transition: var(--transition);
-        }
-
-        .nav-links a:hover {
-            background: var(--primary);
-            color: white;
-        }
-
-        .auth-buttons {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .btn {
-            padding: 0.5rem 1.25rem;
-            border: none;
-            border-radius: 0.5rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: var(--transition);
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: var(--secondary);
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: var(--dark);
-            border: 1px solid var(--dark);
-        }
-
-        .btn-secondary:hover {
-            background: var(--dark);
-            color: white;
-        }
-
-        /* Hero Section */
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(circle at 20% 50%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 20%, rgba(37, 99, 235, 0.1) 0%, transparent 50%);
-            z-index: -1;
-        }
-
-        .hero-content {
-            max-width: 800px;
-            margin: 0 auto;
-            animation: fadeInUp 1s ease-out;
-        }
-
-        .hero h1 {
-            font-size: 3.5rem;
-            font-weight: 800;
-            margin-bottom: 1rem;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .hero p {
-            font-size: 1.25rem;
-            margin-bottom: 2rem;
-            color: #4b5563;
-        }
-
-        .hero-cta {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            margin-bottom: 3rem;
-        }
-
-        .hero-image {
-            max-width: 100%;
-            border-radius: 1rem;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            animation: fadeIn 2s ease-out;
-        }
-
-        /* Features Section */
-        .features {
-            padding: 4rem 2rem;
-            text-align: center;
-        }
-
-        .features h2 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            color: var(--dark);
-        }
-
-        .features-subtitle {
-            font-size: 1.125rem;
-            color: #6b7280;
-            max-width: 600px;
-            margin: 0 auto 3rem;
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            margin-top: 3rem;
-        }
-
-        .feature-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: var(--shadow);
-            transition: var(--transition);
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        .feature-card.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-
-        .feature-icon {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            color: var(--primary);
-        }
-
-        .feature-card h3 {
-            font-size: 1.5rem;
-            margin-bottom: 0.75rem;
-        }
-
-        .feature-card p {
-            color: #6b7280;
-        }
-
-        /* Generation Section */
-        .generation {
-            padding: 4rem 2rem;
-            background: white;
-            position: relative;
-        }
-
-        .generation::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 100px;
-            background: linear-gradient(to bottom, var(--light), transparent);
-        }
-
-        .generation-container {
-            max-width: 800px;
-            margin: 0 auto;
-            text-align: center;
-        }
-
-        .generation h2 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .generation-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            margin-top: 2rem;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            text-align: left;
-        }
-
-        .form-group label {
-            font-weight: 600;
-            color: var(--dark);
-        }
-
-        .form-group input,
-        .form-group textarea,
-        .form-group select {
-            padding: 0.75rem 1rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            transition: var(--transition);
-        }
-
-        .form-group input:focus,
-        .form-group textarea:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-
-        .form-group textarea {
-            min-height: 120px;
-            resize: vertical;
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            margin-top: 1rem;
-        }
-
-        .login-prompt {
-            margin-top: 1rem;
-            font-size: 0.875rem;
-            color: #6b7280;
-        }
-
-        .login-prompt a {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        /* Gallery Section */
-        .gallery {
-            padding: 4rem 2rem;
-            background: linear-gradient(135deg, #e2e8f0 0%, var(--light) 100%);
-        }
-
-        .gallery h2 {
-            text-align: center;
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .gallery-subtitle {
-            text-align: center;
-            color: #6b7280;
-            margin-bottom: 3rem;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .gallery-item {
-            background: white;
-            border-radius: 0.75rem;
-            overflow: hidden;
-            box-shadow: var(--shadow);
-            transition: var(--transition);
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        .gallery-item.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .gallery-item:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-
-        .gallery-item img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .gallery-item-info {
-            padding: 1rem;
-        }
-
-        .gallery-item-info h3 {
-            font-size: 1.125rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .gallery-item-info p {
-            color: #6b7280;
-            font-size: 0.875rem;
-        }
-
-        /* Loading Animation */
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 2rem;
-        }
-
-        .loading.visible {
-            display: block;
-        }
-
-        .spinner {
-            border: 4px solid rgba(37, 99, 235, 0.1);
-            border-top: 4px solid var(--primary);
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 1rem;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Result Display */
-        .result {
-            display: none;
-            text-align: center;
-            margin-top: 2rem;
-            background: white;
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: var(--shadow);
-        }
-
-        .result.visible {
-            display: block;
-        }
-
-        .result img {
-            max-width: 100%;
-            border-radius: 0.5rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 1rem;
-        }
-
-        .result-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-        }
-
-        /* Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal.visible {
-            display: flex;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 2rem;
-            border-radius: 1rem;
-            max-width: 500px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .modal-header h2 {
-            font-size: 1.5rem;
-        }
-
-        .close-modal {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #6b7280;
-        }
-
-        .modal-body {
-            margin-bottom: 1.5rem;
-        }
-
-        .modal-footer {
-            display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
-        }
-
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2.5rem;
-            }
-
-            .hero-cta {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .nav-links {
-                display: none;
-            }
-
-            .form-actions {
-                flex-direction: column;
-            }
-        }
-
-        /* Utility Classes */
-        .hidden {
-            display: none !important;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .mt-1 { margin-top: 0.5rem; }
-        .mt-2 { margin-top: 1rem; }
-        .mt-3 { margin-top: 1.5rem; }
-        .mt-4 { margin-top: 2rem; }
-    </style>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WikiMind Art — Génération d'images IA</title>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #000000;
+      --bg2: #0a0a0a;
+      --bg3: #111111;
+      --bg4: #1a1a1a;
+      --border: rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.15);
+      --text: #ffffff;
+      --text2: #a0a0a0;
+      --text3: #555555;
+      --accent: #ffffff;
+      --accent2: rgba(255,255,255,0.06);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Geist', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+
+    /* ── VIEWS ── */
+    #view-landing { display: block; }
+    #view-app { display: none; }
+
+    /* ────────────────────────────────────────────
+       LANDING PAGE
+    ──────────────────────────────────────────── */
+
+    /* NAV */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px;
+      height: 60px;
+      background: rgba(0,0,0,0.85);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; color: var(--text);
+    }
+    .nav-logo img { height: 22px; width: auto; opacity: 0.9; }
+    .nav-logo-text {
+      font-size: 0.95rem; font-weight: 700; letter-spacing: 0.04em;
+    }
+    .nav-logo-badge {
+      font-size: 0.6rem; font-weight: 600; letter-spacing: 0.1em;
+      color: var(--text3); background: var(--bg3); border: 1px solid var(--border);
+      padding: 2px 6px; border-radius: 4px; text-transform: uppercase;
+    }
+    .nav-links { display: flex; align-items: center; gap: 6px; }
+    .nav-link {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 8px;
+      color: var(--text2); font-size: 0.83rem; font-weight: 500;
+      text-decoration: none; border: none; background: transparent; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .nav-link:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    .nav-link i { font-size: 0.78rem; }
+    .nav-btn-primary {
+      padding: 7px 16px; border-radius: 8px;
+      background: #fff; color: #000; font-size: 0.83rem; font-weight: 600;
+      border: none; cursor: pointer; text-decoration: none;
+      transition: opacity 0.15s;
+    }
+    .nav-btn-primary:hover { opacity: 0.88; }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 80px 24px 60px;
+      position: relative; text-align: center;
+      overflow: hidden;
+    }
+    .hero-glow {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 500px;
+      background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.04) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-grid {
+      position: absolute; inset: 0; pointer-events: none; opacity: 0.03;
+      background-image: linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 5px 14px; border-radius: 100px;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      font-size: 0.75rem; font-weight: 500; color: var(--text2); letter-spacing: 0.06em;
+      margin-bottom: 28px; text-transform: uppercase;
+      animation: fadeInUp 0.6s ease both;
+    }
+    .hero-eyebrow span { color: var(--text); }
+    .hero-eyebrow-dot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; flex-shrink: 0; }
+    .hero-title {
+      font-size: clamp(2.8rem, 7vw, 5.5rem); font-weight: 800;
+      line-height: 1.06; letter-spacing: -0.03em; color: var(--text);
+      max-width: 900px; margin: 0 auto 20px;
+      animation: fadeInUp 0.6s 0.1s ease both;
+    }
+    .hero-title-dim { color: rgba(255,255,255,0.3); }
+    .hero-subtitle {
+      font-size: 1.1rem; font-weight: 400; color: var(--text2); line-height: 1.6;
+      max-width: 540px; margin: 0 auto 40px;
+      animation: fadeInUp 0.6s 0.2s ease both;
+    }
+    .hero-actions {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center;
+      animation: fadeInUp 0.6s 0.3s ease both;
+    }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 24px; border-radius: 10px;
+      background: #fff; color: #000; font-size: 0.9rem; font-weight: 600;
+      border: none; cursor: pointer; text-decoration: none;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 24px; border-radius: 10px;
+      background: transparent; color: var(--text2); font-size: 0.9rem; font-weight: 500;
+      border: 1px solid var(--border); cursor: pointer; text-decoration: none;
+      transition: all 0.15s;
+    }
+    .btn-secondary:hover { color: var(--text); border-color: var(--border2); background: rgba(255,255,255,0.03); }
+
+    /* HERO QUICK GENERATE */
+    .hero-generator {
+      margin-top: 60px; width: 100%; max-width: 700px;
+      animation: fadeInUp 0.6s 0.4s ease both;
+    }
+    .hero-gen-box {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      backdrop-filter: blur(20px);
+    }
+    .hero-gen-label {
+      font-size: 0.72rem; font-weight: 600; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 0.1em;
+      margin-bottom: 12px; text-align: left;
+    }
+    .hero-gen-input-row {
+      display: flex; gap: 10px;
+    }
+    .hero-gen-input {
+      flex: 1; background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 16px;
+      color: var(--text); font-family: 'Geist', sans-serif; font-size: 0.9rem;
+      outline: none; transition: border-color 0.15s;
+    }
+    .hero-gen-input:focus { border-color: rgba(255,255,255,0.25); }
+    .hero-gen-input::placeholder { color: var(--text3); }
+    .hero-gen-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 20px; border-radius: 10px;
+      background: #fff; color: #000; font-size: 0.85rem; font-weight: 600;
+      border: none; cursor: pointer; white-space: nowrap;
+      transition: opacity 0.15s;
+    }
+    .hero-gen-btn:hover { opacity: 0.85; }
+    .hero-gen-btn:disabled { opacity: 0.5; cursor: default; }
+    .hero-gen-result {
+      margin-top: 16px; border-radius: 12px; overflow: hidden;
+      display: none; position: relative;
+    }
+    .hero-gen-result img {
+      width: 100%; max-height: 340px; object-fit: cover;
+      display: block; border-radius: 12px;
+    }
+    .hero-gen-result-overlay {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 20px 16px 16px;
+      background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
+      display: flex; align-items: flex-end; justify-content: space-between;
+    }
+    .hero-gen-prompt-tag {
+      font-size: 0.75rem; color: rgba(255,255,255,0.7); max-width: 70%;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .hero-gen-dl {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 8px;
+      background: rgba(255,255,255,0.1); color: #fff; font-size: 0.78rem; font-weight: 500;
+      border: 1px solid rgba(255,255,255,0.15); cursor: pointer; text-decoration: none;
+      transition: background 0.15s;
+    }
+    .hero-gen-dl:hover { background: rgba(255,255,255,0.18); }
+    .hero-gen-loader {
+      display: none; flex-direction: column; align-items: center; gap: 14px;
+      padding: 30px; color: var(--text2); font-size: 0.85rem;
+    }
+    .hero-gen-spinner {
+      width: 32px; height: 32px; border: 2px solid rgba(255,255,255,0.1);
+      border-top-color: rgba(255,255,255,0.6); border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    .hero-gen-free-note {
+      margin-top: 12px; font-size: 0.72rem; color: var(--text3);
+      display: flex; align-items: center; gap: 6px; justify-content: center;
+    }
+    .hero-gen-free-note i { color: #4ade80; }
+
+    /* SCROLL INDICATOR */
+    .scroll-indicator {
+      position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      color: var(--text3); font-size: 0.7rem; letter-spacing: 0.08em;
+      text-transform: uppercase; animation: fadeInUp 0.6s 0.8s ease both;
+    }
+    .scroll-arrow {
+      width: 20px; height: 20px; border-right: 1.5px solid var(--text3);
+      border-bottom: 1.5px solid var(--text3);
+      transform: rotate(45deg); animation: scrollBounce 1.5s ease infinite;
+    }
+
+    /* SECTION COMMONS */
+    .section { padding: 100px 24px; }
+    .section-inner { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--text3); margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 700;
+      letter-spacing: -0.025em; line-height: 1.1; margin-bottom: 16px;
+    }
+    .section-sub { font-size: 1rem; color: var(--text2); max-width: 500px; line-height: 1.6; }
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* DIVIDER */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+    /* GALLERY SECTION */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px; margin-top: 48px;
+    }
+    .gallery-card {
+      border-radius: 14px; overflow: hidden; position: relative;
+      background: var(--bg3); border: 1px solid var(--border);
+      aspect-ratio: 1; cursor: pointer;
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+    .gallery-card:hover { transform: scale(1.02); box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+    .gallery-card img {
+      width: 100%; height: 100%; object-fit: cover;
+      display: block; transition: opacity 0.3s;
+    }
+    .gallery-card-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 50%);
+      opacity: 0; transition: opacity 0.25s;
+      display: flex; align-items: flex-end; padding: 16px;
+    }
+    .gallery-card:hover .gallery-card-overlay { opacity: 1; }
+    .gallery-card-prompt { font-size: 0.78rem; color: rgba(255,255,255,0.9); line-height: 1.4; }
+    .gallery-card-tall { grid-row: span 2; aspect-ratio: auto; }
+    .gallery-card-wide { grid-column: span 2; aspect-ratio: 16/9; }
+
+    /* FEATURES */
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1px; margin-top: 60px;
+      background: var(--border);
+      border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+    }
+    .feature-card {
+      background: var(--bg); padding: 32px 28px;
+      transition: background 0.2s;
+    }
+    .feature-card:hover { background: var(--bg2); }
+    .feature-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--bg3); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.95rem; color: var(--text2); margin-bottom: 18px;
+    }
+    .feature-title { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
+    .feature-desc { font-size: 0.85rem; color: var(--text2); line-height: 1.6; }
+
+    /* HOW IT WORKS */
+    .steps-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 40px; margin-top: 60px;
+    }
+    .step { position: relative; }
+    .step-num {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.15em;
+      color: var(--text3); text-transform: uppercase; margin-bottom: 16px;
+    }
+    .step-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: var(--bg3); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; margin-bottom: 16px;
+    }
+    .step-title { font-size: 1.05rem; font-weight: 600; margin-bottom: 8px; }
+    .step-desc { font-size: 0.84rem; color: var(--text2); line-height: 1.6; }
+
+    /* MODELS SECTION */
+    .models-row {
+      display: flex; gap: 12px; flex-wrap: wrap; margin-top: 40px;
+    }
+    .model-chip {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; border-radius: 100px;
+      background: var(--bg3); border: 1px solid var(--border);
+      font-size: 0.83rem; font-weight: 500; color: var(--text2);
+      transition: all 0.15s; cursor: default;
+    }
+    .model-chip:hover { border-color: var(--border2); color: var(--text); }
+    .model-chip-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.2); flex-shrink: 0; }
+    .model-chip-dot.green { background: #4ade80; }
+    .model-chip-dot.blue { background: #60a5fa; }
+
+    /* PRICING */
+    .pricing-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px; margin-top: 48px; max-width: 800px;
+    }
+    .pricing-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px; position: relative;
+      transition: border-color 0.2s;
+    }
+    .pricing-card:hover { border-color: var(--border2); }
+    .pricing-card.featured { border-color: rgba(255,255,255,0.2); background: var(--bg3); }
+    .pricing-badge {
+      position: absolute; top: -1px; right: 20px;
+      background: #fff; color: #000; font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 0 0 8px 8px;
+    }
+    .pricing-name { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2); margin-bottom: 12px; }
+    .pricing-price { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 4px; }
+    .pricing-price-sub { font-size: 0.78rem; color: var(--text3); margin-bottom: 20px; }
+    .pricing-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+    .pricing-features li { display: flex; align-items: center; gap: 10px; font-size: 0.84rem; color: var(--text2); }
+    .pricing-features li i { color: #4ade80; font-size: 0.78rem; flex-shrink: 0; }
+    .pricing-btn {
+      width: 100%; padding: 10px; border-radius: 10px;
+      font-size: 0.85rem; font-weight: 600; cursor: pointer; border: none;
+      transition: opacity 0.15s;
+    }
+    .pricing-btn.outlined {
+      background: transparent; color: var(--text); border: 1px solid var(--border);
+    }
+    .pricing-btn.outlined:hover { border-color: var(--border2); background: rgba(255,255,255,0.03); }
+    .pricing-btn.filled { background: #fff; color: #000; }
+    .pricing-btn.filled:hover { opacity: 0.88; }
+
+    /* FOOTER */
+    .footer {
+      padding: 60px 32px 40px;
+      border-top: 1px solid var(--border);
+    }
+    .footer-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; flex-direction: column; gap: 40px;
+    }
+    .footer-top {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      flex-wrap: wrap; gap: 32px;
+    }
+    .footer-brand { max-width: 260px; }
+    .footer-brand-name {
+      font-size: 0.95rem; font-weight: 700; letter-spacing: 0.04em; margin-bottom: 8px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .footer-brand-desc { font-size: 0.82rem; color: var(--text3); line-height: 1.6; }
+    .footer-links-group { display: flex; flex-direction: column; gap: 10px; }
+    .footer-links-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 4px; }
+    .footer-link { font-size: 0.83rem; color: var(--text2); text-decoration: none; transition: color 0.15s; }
+    .footer-link:hover { color: var(--text); }
+    .footer-bottom {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 0.75rem; color: var(--text3); flex-wrap: wrap; gap: 12px;
+      border-top: 1px solid var(--border); padding-top: 24px;
+    }
+    .footer-powered {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .footer-powered img { height: 16px; opacity: 0.5; }
+
+    /* ────────────────────────────────────────────
+       APP VIEW
+    ──────────────────────────────────────────── */
+    #view-app {
+      height: 100vh; height: 100dvh;
+      display: grid; grid-template-rows: 56px 1fr;
+      background: var(--bg);
+    }
+
+    /* APP TOPBAR */
+    .app-topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; border-bottom: 1px solid var(--border);
+      background: var(--bg2); gap: 12px; position: relative; z-index: 10;
+    }
+    .app-topbar-left { display: flex; align-items: center; gap: 10px; }
+    .app-topbar-logo { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; color: var(--text); }
+    .app-topbar-logo span { color: var(--text3); }
+    .topbar-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 10px; border-radius: 7px;
+      background: transparent; color: var(--text2); font-size: 0.78rem; font-weight: 500;
+      border: none; cursor: pointer; font-family: 'Geist', sans-serif;
+      transition: all 0.12s;
+    }
+    .topbar-btn:hover { background: var(--bg3); color: var(--text); }
+    .topbar-btn i { font-size: 0.75rem; }
+    .topbar-user-btn {
+      width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border);
+      background: var(--bg3); color: var(--text2); font-size: 0.72rem; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.12s;
+    }
+    .topbar-user-btn:hover { border-color: var(--border2); color: var(--text); }
+
+    /* APP LAYOUT */
+    .app-body {
+      display: grid; grid-template-columns: 280px 1fr;
+      overflow: hidden;
+    }
+    @media (max-width: 768px) {
+      .app-body { grid-template-columns: 1fr; }
+      .app-sidebar { display: none; }
+      .app-sidebar.open { display: flex; position: fixed; inset: 56px 0 0 0; z-index: 50; }
+    }
+
+    /* SIDEBAR */
+    .app-sidebar {
+      display: flex; flex-direction: column;
+      border-right: 1px solid var(--border);
+      background: var(--bg2); overflow-y: auto;
+    }
+    .sidebar-section { padding: 16px 14px 8px; }
+    .sidebar-section-title {
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--text3); margin-bottom: 10px;
+    }
+    /* Model select */
+    .model-select {
+      width: 100%; padding: 8px 10px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 9px; color: var(--text); font-family: 'Geist', sans-serif;
+      font-size: 0.82rem; outline: none; cursor: pointer;
+      transition: border-color 0.15s; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center;
+      padding-right: 28px;
+    }
+    .model-select:focus { border-color: var(--border2); }
+    /* Style controls */
+    .styles-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px;
+    }
+    .style-chip {
+      padding: 7px 6px; border-radius: 8px;
+      background: var(--bg3); border: 1px solid var(--border);
+      font-size: 0.72rem; font-weight: 500; color: var(--text2);
+      cursor: pointer; text-align: center; transition: all 0.12s;
+    }
+    .style-chip:hover, .style-chip.active { background: rgba(255,255,255,0.08); color: var(--text); border-color: rgba(255,255,255,0.2); }
+    /* Aspect ratio */
+    .ratio-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .ratio-btn {
+      padding: 7px 4px; border-radius: 8px;
+      background: var(--bg3); border: 1px solid var(--border);
+      font-size: 0.7rem; font-weight: 500; color: var(--text2);
+      cursor: pointer; text-align: center; transition: all 0.12s;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+    }
+    .ratio-icon {
+      background: rgba(255,255,255,0.15); border-radius: 3px;
+    }
+    .ratio-btn:hover, .ratio-btn.active { background: rgba(255,255,255,0.08); color: var(--text); border-color: rgba(255,255,255,0.2); }
+    /* BYOK section */
+    .byok-input {
+      width: 100%; padding: 8px 10px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 9px; color: var(--text); font-family: 'Geist Mono', monospace;
+      font-size: 0.75rem; outline: none; transition: border-color 0.15s;
+    }
+    .byok-input:focus { border-color: rgba(255,255,255,0.25); }
+    .byok-input::placeholder { color: var(--text3); font-family: 'Geist', sans-serif; }
+    .byok-status {
+      display: flex; align-items: center; gap: 6px;
+      margin-top: 8px; font-size: 0.72rem; color: var(--text3);
+    }
+    .byok-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; flex-shrink: 0; }
+    .byok-dot.active { background: #4ade80; }
+    .sidebar-divider { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+    /* Range slider */
+    .range-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .range-label { font-size: 0.78rem; color: var(--text2); }
+    .range-val { font-size: 0.78rem; color: var(--text3); font-family: 'Geist Mono', monospace; }
+    input[type=range] {
+      width: 100%; height: 3px; appearance: none;
+      background: var(--bg4); border-radius: 3px; outline: none; cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      appearance: none; width: 14px; height: 14px;
+      border-radius: 50%; background: #fff;
+      border: 2px solid var(--bg2); cursor: pointer;
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #fff; border: 2px solid var(--bg2); cursor: pointer;
+    }
+
+    /* APP MAIN */
+    .app-main {
+      display: flex; flex-direction: column;
+      overflow: hidden; position: relative;
+    }
+    /* CANVAS */
+    .app-canvas {
+      flex: 1; overflow-y: auto; padding: 24px;
+      display: flex; flex-direction: column;
+    }
+    .canvas-empty {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 12px;
+      color: var(--text3); text-align: center;
+    }
+    .canvas-empty-icon { font-size: 2.5rem; margin-bottom: 8px; opacity: 0.3; }
+    .canvas-empty-title { font-size: 1rem; font-weight: 600; color: var(--text2); }
+    .canvas-empty-sub { font-size: 0.83rem; max-width: 300px; line-height: 1.6; }
+    /* Results grid */
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .result-card {
+      border-radius: 12px; overflow: hidden;
+      background: var(--bg3); border: 1px solid var(--border);
+      position: relative; group: hover;
+      transition: border-color 0.2s;
+    }
+    .result-card:hover { border-color: var(--border2); }
+    .result-card img { width: 100%; display: block; aspect-ratio: 1; object-fit: cover; }
+    .result-card-actions {
+      position: absolute; top: 8px; right: 8px;
+      display: flex; gap: 6px; opacity: 0; transition: opacity 0.2s;
+    }
+    .result-card:hover .result-card-actions { opacity: 1; }
+    .result-action-btn {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.15);
+      color: #fff; cursor: pointer; font-size: 0.75rem;
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(10px); transition: background 0.15s;
+    }
+    .result-action-btn:hover { background: rgba(0,0,0,0.9); }
+    .result-card-footer {
+      padding: 10px 12px;
+    }
+    .result-card-prompt {
+      font-size: 0.74rem; color: var(--text2); line-height: 1.4;
+      overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    }
+    .result-card-meta {
+      font-size: 0.68rem; color: var(--text3); margin-top: 4px;
+      font-family: 'Geist Mono', monospace;
+    }
+    /* Loading card */
+    .result-card-loading {
+      border-radius: 12px; background: var(--bg3); border: 1px solid var(--border);
+      aspect-ratio: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 12px;
+    }
+    .gen-spinner {
+      width: 28px; height: 28px; border: 2px solid rgba(255,255,255,0.08);
+      border-top-color: rgba(255,255,255,0.5); border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    .gen-spinner-label { font-size: 0.75rem; color: var(--text3); }
+
+    /* PROMPT BAR */
+    .app-prompt-bar {
+      border-top: 1px solid var(--border); padding: 16px 20px;
+      background: var(--bg2);
+    }
+    .prompt-bar-inner {
+      max-width: 800px; margin: 0 auto;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .prompt-textarea {
+      width: 100%; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 16px;
+      color: var(--text); font-family: 'Geist', sans-serif; font-size: 0.88rem;
+      outline: none; resize: none; min-height: 60px; max-height: 120px;
+      transition: border-color 0.15s; line-height: 1.5;
+    }
+    .prompt-textarea:focus { border-color: rgba(255,255,255,0.2); }
+    .prompt-textarea::placeholder { color: var(--text3); }
+    .prompt-bar-actions {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+    .prompt-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .prompt-tag {
+      padding: 4px 10px; border-radius: 100px;
+      background: var(--bg3); border: 1px solid var(--border);
+      font-size: 0.72rem; color: var(--text3); cursor: pointer;
+      transition: all 0.12s;
+    }
+    .prompt-tag:hover { color: var(--text); border-color: var(--border2); }
+    .prompt-bar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .count-display { font-size: 0.75rem; color: var(--text3); font-family: 'Geist Mono', monospace; }
+    .generate-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 20px; border-radius: 10px;
+      background: #fff; color: #000; font-size: 0.85rem; font-weight: 600;
+      border: none; cursor: pointer; font-family: 'Geist', sans-serif;
+      transition: opacity 0.15s;
+    }
+    .generate-btn:hover { opacity: 0.88; }
+    .generate-btn:disabled { opacity: 0.4; cursor: default; }
+    .generate-btn i { font-size: 0.8rem; }
+
+    /* ── AUTH MODALS ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+      display: none; align-items: center; justify-content: center; padding: 24px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 36px 32px;
+      width: 100%; max-width: 420px;
+      animation: fadeInUp 0.3s ease;
+    }
+    .modal-header { margin-bottom: 28px; }
+    .modal-logo {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
+    }
+    .modal-logo img { height: 20px; }
+    .modal-logo-text { font-size: 0.85rem; font-weight: 700; }
+    .modal-title { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; }
+    .modal-sub { font-size: 0.84rem; color: var(--text2); line-height: 1.5; }
+    .modal-form { display: flex; flex-direction: column; gap: 14px; }
+    .form-label { font-size: 0.75rem; font-weight: 600; color: var(--text2); margin-bottom: 4px; letter-spacing: 0.04em; }
+    .form-input {
+      width: 100%; padding: 10px 14px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text); font-family: 'Geist', sans-serif;
+      font-size: 0.88rem; outline: none; transition: border-color 0.15s;
+    }
+    .form-input:focus { border-color: rgba(255,255,255,0.3); }
+    .form-input::placeholder { color: var(--text3); }
+    .modal-submit {
+      width: 100%; padding: 11px; border-radius: 10px;
+      background: #fff; color: #000; font-size: 0.9rem; font-weight: 600;
+      border: none; cursor: pointer; font-family: 'Geist', sans-serif;
+      transition: opacity 0.15s; margin-top: 4px;
+    }
+    .modal-submit:hover { opacity: 0.88; }
+    .modal-switch { text-align: center; font-size: 0.82rem; color: var(--text3); margin-top: 16px; }
+    .modal-switch a { color: var(--text2); cursor: pointer; text-decoration: none; }
+    .modal-switch a:hover { color: var(--text); }
+    .modal-error { display: none; padding: 10px 14px; border-radius: 9px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: #fca5a5; font-size: 0.8rem; }
+    .modal-error.show { display: block; }
+    .modal-success { display: none; padding: 10px 14px; border-radius: 9px; background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.2); color: #86efac; font-size: 0.8rem; }
+    .modal-success.show { display: block; }
+    .modal-close-btn {
+      position: absolute; top: 16px; right: 16px;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,255,255,0.07); border: none; color: var(--text2);
+      cursor: pointer; font-size: 0.75rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-box { position: relative; }
+    /* Upgrade gate modal */
+    .upgrade-modal-inner { text-align: center; }
+    .upgrade-icon { font-size: 2.5rem; margin-bottom: 16px; }
+    .upgrade-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; }
+    .upgrade-sub { font-size: 0.85rem; color: var(--text2); margin-bottom: 24px; line-height: 1.6; }
+    .upgrade-btns { display: flex; flex-direction: column; gap: 10px; }
+
+    /* TOAST */
+    #toast-container {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      z-index: 2000; display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    .toast {
+      padding: 10px 18px; border-radius: 100px;
+      background: rgba(30,30,30,0.97); border: 1px solid rgba(255,255,255,0.12);
+      color: #fff; font-size: 0.82rem; font-weight: 500;
+      backdrop-filter: blur(20px); box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      animation: toastIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275) both;
+      display: flex; align-items: center; gap: 8px; white-space: nowrap;
+    }
+    .toast.success { border-color: rgba(74,222,128,0.3); }
+    .toast.error { border-color: rgba(239,68,68,0.3); }
+    .toast i { font-size: 0.75rem; }
+    .toast i.fa-check-circle { color: #4ade80; }
+    .toast i.fa-exclamation-circle { color: #f87171; }
+    .toast i.fa-info-circle { color: #60a5fa; }
+
+    /* USER DROPDOWN */
+    .user-dropdown {
+      position: absolute; top: 48px; right: 16px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 12px; min-width: 200px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      overflow: hidden; display: none; z-index: 100;
+    }
+    .user-dropdown.open { display: block; }
+    .dropdown-header {
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .dropdown-email { font-size: 0.78rem; color: var(--text2); overflow: hidden; text-overflow: ellipsis; }
+    .dropdown-plan { font-size: 0.68rem; color: var(--text3); margin-top: 2px; }
+    .dropdown-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 14px; font-size: 0.82rem; color: var(--text2);
+      cursor: pointer; border: none; background: transparent;
+      width: 100%; text-align: left; font-family: 'Geist', sans-serif;
+      transition: all 0.1s;
+    }
+    .dropdown-item:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+    .dropdown-item i { width: 14px; font-size: 0.78rem; }
+    .dropdown-item.danger { color: #f87171; }
+    .dropdown-item.danger:hover { background: rgba(248,113,113,0.08); }
+
+    /* ANIMATIONS */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes scrollBounce {
+      0%, 100% { transform: rotate(45deg) translateY(0); }
+      50% { transform: rotate(45deg) translateY(4px); }
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    /* PLACEHOLDER shimmer */
+    .placeholder-img {
+      width: 100%; aspect-ratio: 1;
+      background: linear-gradient(90deg, var(--bg3) 25%, var(--bg4) 50%, var(--bg3) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+
+    @media (max-width: 600px) {
+      .nav { padding: 0 16px; }
+      .nav-links .nav-link:not(.keep) { display: none; }
+      .hero-title { font-size: 2.4rem; }
+      .hero-gen-input-row { flex-direction: column; }
+      .gallery-card-wide { grid-column: span 1; aspect-ratio: 1; }
+      .app-body { grid-template-columns: 1fr; }
+      .prompt-bar-actions { flex-wrap: wrap; }
+    }
+
+    /* NAV SCROLL STATE */
+    .nav.scrolled { background: rgba(0,0,0,0.95); }
+  </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="logo-container">
-            <img src="pollinationai.png" alt="Pollinations AI Logo" class="logo">
-            <span style="font-weight: 700; font-size: 1.25rem;">Wikimind Art</span>
-        </div>
-        <nav class="nav-links">
-            <a href="#features">Fonctionnalités</a>
-            <a href="#gallery">Galerie</a>
-            <a href="#generate">Générer</a>
-        </nav>
-        <div class="auth-buttons">
-            <a href="https://chpalitom09-bot.github.io/Wikimind-3/" class="btn btn-secondary">Accueil</a>
-            <a href="https://chpalitom09-bot.github.io/Wikimind-5/" class="btn btn-secondary">IA Chatbot</a>
-            <button id="loginBtn" class="btn btn-secondary">Se connecter</button>
-            <button id="signupBtn" class="btn btn-primary">Créer un compte</button>
-        </div>
-    </header>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-content">
-            <h1>Créez des images extraordinaires avec l'IA</h1>
-            <p>Transformez vos idées en œuvres d'art uniques grâce à la puissance de Pollinations AI. Générez, personnalisez et partagez des images de qualité professionnelle en quelques secondes.</p>
-            <div class="hero-cta">
-                <button id="tryNowBtn" class="btn btn-primary">Essayer maintenant</button>
-                <button id="seeExamplesBtn" class="btn btn-secondary">Voir des exemples</button>
-            </div>
-            <div style="margin-top: 2rem;">
-                <img src="images/1.jpg" alt="Exemple d'image générée par IA" class="hero-image" onerror="this.style.display='none'">
-            </div>
-        </div>
-    </section>
+<!-- ══════════════════════════════════════════
+     LANDING VIEW
+══════════════════════════════════════════ -->
+<div id="view-landing">
 
-    <!-- Features Section -->
-    <section class="features" id="features">
-        <h2>Pourquoi choisir Wikimind Art ?</h2>
-        <p class="features-subtitle">Découvrez les fonctionnalités puissantes qui rendent notre générateur d'images unique.</p>
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon">🎨</div>
-                <h3>Génération illimitée</h3>
-                <p>Créez autant d'images que vous le souhaitez avec nos différents plans. Une génération gratuite pour essayer, puis accédez à plus avec un compte.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">⚡</div>
-                <h3>Technologie avancée</h3>
-                <p>Utilisez les modèles les plus performants de Pollinations AI pour des résultats époustouflants.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">🔄</div>
-                <h3>Personnalisation totale</h3>
-                <p>Contrôlez chaque aspect de vos créations avec des options avancées et le système BYOK (Bring Your Own Key).</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">🔒</div>
-                <h3>Sécurité et confidentialité</h3>
-                <p>Vos données et créations sont protégées. Connexion sécurisée avec vérification par email.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">🌐</div>
-                <h3>Intégration Wikimind</h3>
-                <p>Connectez-vous une fois, accédez à tous les services Wikimind, y compris notre IA chatbot.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">✨</div>
-                <h3>Animations fluides</h3>
-                <p>Une expérience utilisateur exceptionnelle avec des animations modernes au défilement.</p>
-            </div>
-        </div>
-    </section>
+  <!-- NAV -->
+  <nav class="nav" id="main-nav">
+    <a href="https://chpalitom09-bot.github.io/Wikimind-3/" class="nav-logo">
+      <img src="images/pollinationai.png" alt="Pollinations" id="nav-pollination-logo">
+      <span class="nav-logo-text">WikiMind Art</span>
+      <span class="nav-logo-badge">Beta</span>
+    </a>
+    <div class="nav-links">
+      <a href="https://chpalitom09-bot.github.io/Wikimind-3/" class="nav-link keep" title="Accueil Wikimind">
+        <i class="fa-solid fa-house"></i> Accueil
+      </a>
+      <a href="https://chpalitom09-bot.github.io/Wikimind-5/" class="nav-link" title="WikiMind IA">
+        <i class="fa-solid fa-robot"></i> IA Chat
+      </a>
+      <button class="nav-link keep" id="nav-login-btn">
+        <i class="fa-regular fa-user"></i> Connexion
+      </button>
+      <button class="btn-primary" id="nav-start-btn" onclick="openApp()">
+        Générer <i class="fa-solid fa-arrow-right" style="font-size:0.75rem"></i>
+      </button>
+    </div>
+  </nav>
 
-    <!-- Generation Section -->
-    <section class="generation" id="generate">
-        <div class="generation-container">
-            <h2>Générez vos images</h2>
-            <p style="margin-bottom: 2rem; color: #6b7280;">Utilisez notre interface intuitive pour créer des images uniques. Essayez gratuitement sans compte, puis connectez-vous pour débloquer tout le potentiel.</p>
-            
-            <div class="generation-form">
-                <div class="form-group">
-                    <label for="prompt">Description de l'image (Prompt)</label>
-                    <textarea id="prompt" placeholder="Exemple: Un coucher de soleil sur une montagne enneigée, style peinture à l'huile, couleurs vives, très détaillé, 8k"></textarea>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
-                    <div class="form-group">
-                        <label for="width">Largeur</label>
-                        <input type="number" id="width" value="512" min="64" max="2048">
-                    </div>
-                    <div class="form-group">
-                        <label for="height">Hauteur</label>
-                        <input type="number" id="height" value="512" min="64" max="2048">
-                    </div>
-                    <div class="form-group">
-                        <label for="model">Modèle</label>
-                        <select id="model">
-                            <option value="flux-dev">Flux (Dev)</option>
-                            <option value="flux-schnell">Flux (Schnell)</option>
-                            <option value="stabilityai/stable-diffusion-xl-base-1.0">Stable Diffusion XL</option>
-                            <option value="black-forest-labs/FLUX.1-dev">FLUX.1 Dev</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="apiKeySelect">Clé API</label>
-                        <select id="apiKeySelect">
-                            <option value="default">Clé par défaut (Wikimind)</option>
-                            <option value="custom">Ma clé API (BYOK)</option>
-                        </select>
-                    </div>
-                </div>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-grid"></div>
 
-                <div id="customApiKeyGroup" class="form-group hidden">
-                    <label for="customApiKey">Votre clé API Pollinations</label>
-                    <input type="password" id="customApiKey" placeholder="Entrez votre clé API">
-                </div>
-
-                <div class="form-actions">
-                    <button id="generateBtn" class="btn btn-primary">Générer l'image</button>
-                    <button id="randomPromptBtn" class="btn btn-secondary">Prompt aléatoire</button>
-                </div>
-
-                <div class="login-prompt">
-                    <p>Vous avez <span id="remainingGenerations">1</span> génération gratuite restante sans compte. 
-                    <a id="createAccountLink">Créez un compte</a> pour en obtenir plus.</p>
-                </div>
-            </div>
-
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p>Génération en cours...</p>
-            </div>
-
-            <div class="result" id="result">
-                <h3>Votre image générée</h3>
-                <img id="generatedImage" alt="Image générée">
-                <div class="result-actions">
-                    <button id="downloadBtn" class="btn btn-primary">Télécharger</button>
-                    <button id="regenerateBtn" class="btn btn-secondary">Regénérer</button>
-                    <button id="saveToGalleryBtn" class="btn btn-secondary">Sauvegarder</button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Gallery Section -->
-    <section class="gallery" id="gallery">
-        <h2>Galerie d'exemples</h2>
-        <p class="gallery-subtitle">Découvrez ce que nos utilisateurs ont créé avec Wikimind Art. Laissez-vous inspirer par ces œuvres générées par IA.</p>
-        <div class="gallery-grid" id="galleryGrid">
-            <!-- Gallery items will be added here dynamically -->
-        </div>
-    </section>
-
-    <!-- Login Modal -->
-    <div class="modal" id="loginModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Se connecter</h2>
-                <button class="close-modal" id="closeLoginModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="loginEmail">Email</label>
-                    <input type="email" id="loginEmail" placeholder="votre@email.com">
-                </div>
-                <div class="form-group">
-                    <label for="loginPassword">Mot de passe</label>
-                    <input type="password" id="loginPassword" placeholder="Votre mot de passe">
-                </div>
-                <p style="font-size: 0.875rem; color: #6b7280; margin-top: 1rem;">
-                    <a id="forgotPasswordLink">Mot de passe oublié ?</a>
-                </p>
-            </div>
-            <div class="modal-footer">
-                <button id="loginSubmitBtn" class="btn btn-primary">Se connecter</button>
-                <button id="showSignupModalBtn" class="btn btn-secondary">Créer un compte</button>
-            </div>
-        </div>
+    <div class="hero-eyebrow">
+      <span class="hero-eyebrow-dot"></span>
+      Propulsé par <span>Pollinations AI</span> &nbsp;·&nbsp; Gratuit pour commencer
     </div>
 
-    <!-- Signup Modal -->
-    <div class="modal" id="signupModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Créer un compte</h2>
-                <button class="close-modal" id="closeSignupModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="signupName">Nom complet</label>
-                    <input type="text" id="signupName" placeholder="Votre nom">
-                </div>
-                <div class="form-group">
-                    <label for="signupEmail">Email</label>
-                    <input type="email" id="signupEmail" placeholder="votre@email.com">
-                </div>
-                <div class="form-group">
-                    <label for="signupPassword">Mot de passe</label>
-                    <input type="password" id="signupPassword" placeholder="Créez un mot de passe">
-                </div>
-                <div class="form-group">
-                    <label for="signupConfirmPassword">Confirmer le mot de passe</label>
-                    <input type="password" id="signupConfirmPassword" placeholder="Confirmez votre mot de passe">
-                </div>
-                <p style="font-size: 0.875rem; color: #6b7280; margin-top: 1rem;">
-                    En créant un compte, vous acceptez nos <a href="#">Conditions d'utilisation</a> et notre <a href="#">Politique de confidentialité</a>.
-                </p>
-            </div>
-            <div class="modal-footer">
-                <button id="signupSubmitBtn" class="btn btn-primary">Créer un compte</button>
-                <button id="showLoginModalBtn" class="btn btn-secondary">Se connecter</button>
-            </div>
-        </div>
+    <h1 class="hero-title">
+      Créez des images<br>
+      <span class="hero-title-dim">avec l'IA</span>
+    </h1>
+
+    <p class="hero-subtitle">
+      Des illustrations, photos, œuvres d'art et visuels professionnels en quelques secondes. 
+      Aucune compétence requise.
+    </p>
+
+    <div class="hero-actions">
+      <button class="btn-primary" onclick="openApp()">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Commencer à créer
+      </button>
+      <a href="#gallery" class="btn-secondary">
+        Voir les exemples <i class="fa-solid fa-arrow-down"></i>
+      </a>
     </div>
 
-    <!-- Email Verification Modal -->
-    <div class="modal" id="emailVerificationModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Vérification de l'email</h2>
-                <button class="close-modal" id="closeEmailVerificationModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p>Nous avons envoyé un email de vérification à <span id="verificationEmail" style="font-weight: 600;"></span>.</p>
-                <p style="margin-top: 1rem;">Veuillez vérifier votre boîte de réception et cliquer sur le lien de vérification pour activer votre compte.</p>
-                <p style="margin-top: 1rem; color: #6b7280; font-size: 0.875rem;">
-                    Vous n'avez pas reçu l'email ? <a id="resendVerificationLink">Renvoyer le code</a>
-                </p>
-            </div>
+    <!-- Quick generate demo -->
+    <div class="hero-generator">
+      <div class="hero-gen-box">
+        <div class="hero-gen-label">Essayez maintenant — 1 génération gratuite sans compte</div>
+        <div class="hero-gen-input-row">
+          <input type="text" class="hero-gen-input" id="hero-prompt" 
+            placeholder="Un château flottant dans les nuages au coucher du soleil..."
+            maxlength="500">
+          <button class="hero-gen-btn" id="hero-gen-btn" onclick="heroGenerate()">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Générer
+          </button>
         </div>
+        <div class="hero-gen-loader" id="hero-loader">
+          <div class="hero-gen-spinner"></div>
+          <span>Création en cours...</span>
+        </div>
+        <div class="hero-gen-result" id="hero-result">
+          <img id="hero-result-img" src="" alt="">
+          <div class="hero-gen-result-overlay">
+            <span class="hero-gen-prompt-tag" id="hero-result-prompt"></span>
+            <a class="hero-gen-dl" id="hero-result-dl" href="#" download>
+              <i class="fa-solid fa-download"></i> Télécharger
+            </a>
+          </div>
+        </div>
+        <div class="hero-gen-free-note">
+          <i class="fa-solid fa-check"></i>
+          1 génération gratuite · Créez un compte pour en générer plus
+        </div>
+      </div>
     </div>
 
-    <!-- Success Modal -->
-    <div class="modal" id="successModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Succès !</h2>
-                <button class="close-modal" id="closeSuccessModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p id="successMessage"></p>
-            </div>
-            <div class="modal-footer">
-                <button id="closeSuccessModalBtn" class="btn btn-primary">Fermer</button>
-            </div>
-        </div>
+    <div class="scroll-indicator">
+      <span>Découvrir</span>
+      <div class="scroll-arrow"></div>
     </div>
+  </section>
 
-    <!-- Error Modal -->
-    <div class="modal" id="errorModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Erreur</h2>
-                <button class="close-modal" id="closeErrorModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p id="errorMessage"></p>
-            </div>
-            <div class="modal-footer">
-                <button id="closeErrorModalBtn" class="btn btn-primary">Fermer</button>
-            </div>
+  <hr class="divider">
+
+  <!-- GALLERY SECTION -->
+  <section class="section" id="gallery">
+    <div class="section-inner">
+      <div class="reveal">
+        <div class="section-label">Galerie d'exemples</div>
+        <h2 class="section-title">Ce que WikiMind Art peut créer</h2>
+        <p class="section-sub">Des portraits photoréalistes aux paysages fantastiques, en passant par l'art abstrait et le design graphique.</p>
+      </div>
+
+      <div class="gallery-grid reveal">
+        <!-- Les images sont générées par IA et placées dans images/ -->
+        <div class="gallery-card">
+          <img src="images/1.jpg" alt="" onerror="this.parentElement.querySelector('.placeholder-img')&&(this.style.display='none')||true" loading="lazy">
+          <div class="placeholder-img" style="display:none"></div>
+          <div class="gallery-card-overlay">
+            <span class="gallery-card-prompt">Château médiéval sous une aurore boréale violette et verte, ultra-réaliste</span>
+          </div>
         </div>
+        <div class="gallery-card gallery-card-tall">
+          <img src="images/2.jpg" alt="" loading="lazy">
+          <div class="gallery-card-overlay">
+            <span class="gallery-card-prompt">Portrait d'une femme cyborg aux yeux lumineux bleus, cinematic lighting</span>
+          </div>
+        </div>
+        <div class="gallery-card">
+          <img src="images/3.jpg" alt="" loading="lazy">
+          <div class="gallery-card-overlay">
+            <span class="gallery-card-prompt">Forêt de bambous au Japon, brume matinale, style aquarelle</span>
+          </div>
+        </div>
+        <div class="gallery-card gallery-card-wide">
+          <img src="images/4.jpg" alt="" loading="lazy">
+          <div class="gallery-card-overlay">
+            <span class="gallery-card-prompt">Cité futuriste flottante dans les nuages au coucher du soleil, Blade Runner aesthetic</span>
+          </div>
+        </div>
+        <div class="gallery-card">
+          <img src="images/5.jpg" alt="" loading="lazy">
+          <div class="gallery-card-overlay">
+            <span class="gallery-card-prompt">Dragon de cristal lumineux dans une caverne de glace bleue</span>
+          </div>
+        </div>
+        <div class="gallery-card">
+          <img src="images/6.jpg" alt="" loading="lazy">
+          <div class="gallery-card-overlay">
+            <span class="gallery-card-prompt">Astronaute marchant sur une planète rouge avec deux lunes, style peinture à l'huile</span>
+          </div>
+        </div>
+        <div class="gallery-card">
+          <img src="images/7.jpg" alt="" loading="lazy">
+          <div class="gallery-card-overlay">
+            <span class="gallery-card-prompt">Café parisien sous la pluie la nuit, reflets colorés sur le pavé mouillé</span>
+          </div>
+        </div>
+        <div class="gallery-card">
+          <img src="images/8.jpg" alt="" loading="lazy">
+          <div class="gallery-card-overlay">
+            <span class="gallery-card-prompt">Architecture organique biomimétique, vue intérieure, lumière naturelle</span>
+          </div>
+        </div>
+      </div>
     </div>
+  </section>
 
-    <script>
-        // ========== DOM Elements ==========
-        const tryNowBtn = document.getElementById('tryNowBtn');
-        const seeExamplesBtn = document.getElementById('seeExamplesBtn');
-        const generateBtn = document.getElementById('generateBtn');
-        const randomPromptBtn = document.getElementById('randomPromptBtn');
-        const downloadBtn = document.getElementById('downloadBtn');
-        const regenerateBtn = document.getElementById('regenerateBtn');
-        const saveToGalleryBtn = document.getElementById('saveToGalleryBtn');
-        const loginBtn = document.getElementById('loginBtn');
-        const signupBtn = document.getElementById('signupBtn');
-        const apiKeySelect = document.getElementById('apiKeySelect');
-        const customApiKeyGroup = document.getElementById('customApiKeyGroup');
-        const customApiKeyInput = document.getElementById('customApiKey');
-        const remainingGenerationsSpan = document.getElementById('remainingGenerations');
-        const createAccountLink = document.getElementById('createAccountLink');
-        const forgotPasswordLink = document.getElementById('forgotPasswordLink');
-        const resendVerificationLink = document.getElementById('resendVerificationLink');
-        const showSignupModalBtn = document.getElementById('showSignupModalBtn');
-        const showLoginModalBtn = document.getElementById('showLoginModalBtn');
-        const closeLoginModal = document.getElementById('closeLoginModal');
-        const closeSignupModal = document.getElementById('closeSignupModal');
-        const closeEmailVerificationModal = document.getElementById('closeEmailVerificationModal');
-        const closeSuccessModal = document.getElementById('closeSuccessModal');
-        const closeErrorModal = document.getElementById('closeErrorModal');
-        const closeSuccessModalBtn = document.getElementById('closeSuccessModalBtn');
-        const closeErrorModalBtn = document.getElementById('closeErrorModalBtn');
-        const loginSubmitBtn = document.getElementById('loginSubmitBtn');
-        const signupSubmitBtn = document.getElementById('signupSubmitBtn');
-        const loginModal = document.getElementById('loginModal');
-        const signupModal = document.getElementById('signupModal');
-        const emailVerificationModal = document.getElementById('emailVerificationModal');
-        const successModal = document.getElementById('successModal');
-        const errorModal = document.getElementById('errorModal');
-        const loadingDiv = document.getElementById('loading');
-        const resultDiv = document.getElementById('result');
-        const generatedImage = document.getElementById('generatedImage');
-        const promptInput = document.getElementById('prompt');
-        const widthInput = document.getElementById('width');
-        const heightInput = document.getElementById('height');
-        const modelSelect = document.getElementById('model');
-        const galleryGrid = document.getElementById('galleryGrid');
-        const verificationEmailSpan = document.getElementById('verificationEmail');
-        const successMessage = document.getElementById('successMessage');
-        const errorMessage = document.getElementById('errorMessage');
+  <hr class="divider">
 
-        // ========== State ==========
-        let isLoggedIn = false;
-        let userEmail = '';
-        let userCredits = 1; // 1 free generation for guests
-        let currentImageUrl = '';
-        let currentPrompt = '';
-        let userApiKey = 'pk_w6wnuGBObh7FeHwp'; // Default Wikimind API key
-        let customApiKey = '';
+  <!-- FEATURES -->
+  <section class="section">
+    <div class="section-inner">
+      <div class="reveal">
+        <div class="section-label">Fonctionnalités</div>
+        <h2 class="section-title">Tout ce dont vous avez besoin</h2>
+        <p class="section-sub">Une plateforme complète de génération d'images, simple à utiliser et puissante sous le capot.</p>
+      </div>
 
-        // Example prompts for random generation
-        const examplePrompts = [
-            'Un paysage futuriste avec des bâtiments flottants, style cyberpunk, néons bleus et violets, très détaillé, 8k',
-            'Un portrait de femme elfique dans une forêt enchantée, style fantasy, couleurs pastel, éclairé par des lucioles',
-            'Une voiture de sport rouge sur une route de montagne, style réaliste, lumière du coucher de soleil, ultra HD',
-            'Un chat robotique dans un laboratoire high-tech, style steampunk, détails métalliques, 4k',
-            'Une plage tropicale avec des palmiers et une mer turquoise, style peinture à l\'huile, couleurs vives',
-            'Un dragon crachant du feu au-dessus d\'un château médiéval, style dark fantasy, ambiance dramatique',
-            'Un jardin japonais avec des cerisiers en fleurs, style aquarelle, couleurs douces et apaisantes',
-            'Un robot géant combattant des monstres dans une ville en ruines, style anime, dynamique et intense',
-            'Un café parisien de nuit avec des lumières chaudes, style impressionniste, ambiance romantique',
-            'Une forêt magique avec des champignons géants et des fées, style conte de fées, couleurs vives'
-        ];
+      <div class="features-grid reveal">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+          <div class="feature-title">Génération par prompt</div>
+          <div class="feature-desc">Décrivez simplement ce que vous voulez créer en texte. Notre IA comprend le français et l'anglais.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fa-solid fa-sliders"></i></div>
+          <div class="feature-title">Contrôle total du style</div>
+          <div class="feature-desc">Choisissez le style artistique, le ratio, la qualité et le modèle. Peauinez chaque détail de votre image.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fa-solid fa-key"></i></div>
+          <div class="feature-title">BYOK — Votre clé API</div>
+          <div class="feature-desc">Connectez votre propre clé Pollinations AI pour des générations illimitées sans contrainte.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fa-solid fa-images"></i></div>
+          <div class="feature-title">Génération multiple</div>
+          <div class="feature-desc">Générez jusqu'à 4 variations d'un même prompt simultanément pour choisir le meilleur résultat.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fa-solid fa-user-circle"></i></div>
+          <div class="feature-title">Compte Wikimind unifié</div>
+          <div class="feature-desc">Connecté sur WikiMind ? Vous l'êtes automatiquement ici. Un seul compte pour tout l'écosystème.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><i class="fa-solid fa-download"></i></div>
+          <div class="feature-title">Export haute résolution</div>
+          <div class="feature-desc">Téléchargez vos créations en haute qualité, prêtes à être publiées ou imprimées.</div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-        // Example gallery images (to be replaced with actual generated images)
-        const exampleGalleryItems = [
-            { title: 'Paysage Cyberpunk', description: 'Un paysage futuriste avec des bâtiments flottants', image: 'images/1.jpg' },
-            { title: 'Portrait Elfique', description: 'Un portrait de femme elfique dans une forêt enchantée', image: 'images/2.jpg' },
-            { title: 'Voiture de Sport', description: 'Une voiture de sport rouge sur une route de montagne', image: 'images/3.jpg' },
-            { title: 'Chat Robotique', description: 'Un chat robotique dans un laboratoire high-tech', image: 'images/4.jpg' },
-            { title: 'Plage Tropicale', description: 'Une plage tropicale avec des palmiers', image: 'images/5.jpg' }
-        ];
+  <hr class="divider">
 
-        // ========== Initialization ==========
-        document.addEventListener('DOMContentLoaded', () => {
-            // Check if user is already logged in (simplified for demo)
-            const savedUser = localStorage.getItem('wikimindArtUser');
-            if (savedUser) {
-                const user = JSON.parse(savedUser);
-                isLoggedIn = user.isVerified;
-                userEmail = user.email;
-                userCredits = user.credits || 10; // Logged-in users get 10 credits
-                updateUI();
-            }
+  <!-- HOW IT WORKS -->
+  <section class="section">
+    <div class="section-inner">
+      <div class="reveal">
+        <div class="section-label">Comment ça marche</div>
+        <h2 class="section-title">Simple. Rapide. Puissant.</h2>
+      </div>
+      <div class="steps-grid reveal">
+        <div class="step">
+          <div class="step-num">Étape 01</div>
+          <div class="step-icon">✍️</div>
+          <div class="step-title">Décrivez votre vision</div>
+          <div class="step-desc">Écrivez ce que vous imaginez en langage naturel. Plus vous êtes précis, meilleur sera le résultat.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">Étape 02</div>
+          <div class="step-icon">⚙️</div>
+          <div class="step-title">Choisissez le style</div>
+          <div class="step-desc">Sélectionnez le modèle, le style artistique et le format qui correspond à votre projet.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">Étape 03</div>
+          <div class="step-icon">✨</div>
+          <div class="step-title">L'IA génère</div>
+          <div class="step-desc">Pollinations AI crée votre image en quelques secondes directement dans votre navigateur.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">Étape 04</div>
+          <div class="step-icon">📥</div>
+          <div class="step-title">Téléchargez et partagez</div>
+          <div class="step-desc">Enregistrez votre image en haute qualité ou continuez à l'affiner avec de nouveaux prompts.</div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-            // Load gallery items
-            loadGallery();
+  <hr class="divider">
 
-            // Set up event listeners
-            setupEventListeners();
+  <!-- MODELS -->
+  <section class="section">
+    <div class="section-inner">
+      <div class="reveal">
+        <div class="section-label">Modèles disponibles</div>
+        <h2 class="section-title">Propulsé par les meilleurs modèles</h2>
+        <p class="section-sub">Accédez aux modèles de génération d'images les plus performants via Pollinations AI.</p>
+      </div>
+      <div class="models-row reveal">
+        <div class="model-chip"><span class="model-chip-dot green"></span> Flux (Default)</div>
+        <div class="model-chip"><span class="model-chip-dot green"></span> Flux Pro</div>
+        <div class="model-chip"><span class="model-chip-dot blue"></span> Flux Realism</div>
+        <div class="model-chip"><span class="model-chip-dot blue"></span> Flux Anime</div>
+        <div class="model-chip"><span class="model-chip-dot blue"></span> Flux 3D</div>
+        <div class="model-chip"><span class="model-chip-dot"></span> Turbo</div>
+        <div class="model-chip"><span class="model-chip-dot"></span> Kontext</div>
+        <div class="model-chip"><span class="model-chip-dot"></span> Ghibli</div>
+      </div>
+    </div>
+  </section>
 
-            // Set up scroll animations
-            setupScrollAnimations();
+  <hr class="divider">
 
-            // Show first feature card immediately
-            const firstFeatureCard = document.querySelector('.feature-card');
-            if (firstFeatureCard) {
-                firstFeatureCard.classList.add('visible');
-            }
-        });
+  <!-- PRICING -->
+  <section class="section">
+    <div class="section-inner">
+      <div class="reveal">
+        <div class="section-label">Tarifs</div>
+        <h2 class="section-title">Commencez gratuitement</h2>
+        <p class="section-sub">Utilisez WikiMind Art sans dépenser un centime. Passez à Plus pour lever toutes les limites.</p>
+      </div>
+      <div class="pricing-grid reveal">
+        <div class="pricing-card">
+          <div class="pricing-name">Gratuit</div>
+          <div class="pricing-price">0€</div>
+          <div class="pricing-price-sub">pour toujours</div>
+          <ul class="pricing-features">
+            <li><i class="fa-solid fa-check"></i> 1 génération sans compte</li>
+            <li><i class="fa-solid fa-check"></i> 10 générations/jour avec compte</li>
+            <li><i class="fa-solid fa-check"></i> Modèles standards</li>
+            <li><i class="fa-solid fa-check"></i> Résolution standard</li>
+            <li><i class="fa-solid fa-check"></i> Téléchargement JPG</li>
+          </ul>
+          <button class="pricing-btn outlined" onclick="openSignup()">Créer un compte</button>
+        </div>
+        <div class="pricing-card featured">
+          <div class="pricing-badge">Populaire</div>
+          <div class="pricing-name">BYOK</div>
+          <div class="pricing-price">Gratuit</div>
+          <div class="pricing-price-sub">avec votre clé Pollinations</div>
+          <ul class="pricing-features">
+            <li><i class="fa-solid fa-check"></i> Générations illimitées</li>
+            <li><i class="fa-solid fa-check"></i> Tous les modèles</li>
+            <li><i class="fa-solid fa-check"></i> Haute résolution</li>
+            <li><i class="fa-solid fa-check"></i> 4 images simultanées</li>
+            <li><i class="fa-solid fa-check"></i> Téléchargement PNG/JPG</li>
+          </ul>
+          <button class="pricing-btn filled" onclick="openApp()">Connecter ma clé</button>
+        </div>
+      </div>
+    </div>
+  </section>
 
-        // ========== Event Listeners ==========
-        function setupEventListeners() {
-            // Header buttons
-            tryNowBtn.addEventListener('click', () => {
-                document.getElementById('generate').scrollIntoView({ behavior: 'smooth' });
-            });
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <div class="footer-brand-name">
+            <img src="images/pollinationai.png" alt="" style="height:18px;opacity:0.7">
+            WikiMind Art
+          </div>
+          <div class="footer-brand-desc">
+            Génération d'images IA premium, propulsé par Pollinations AI. 
+            Faisant partie de l'écosystème WikiMind.
+          </div>
+        </div>
+        <div class="footer-links-group">
+          <div class="footer-links-title">WikiMind</div>
+          <a href="https://chpalitom09-bot.github.io/Wikimind-3/" class="footer-link">Accueil</a>
+          <a href="https://chpalitom09-bot.github.io/Wikimind-5/" class="footer-link">IA Chat</a>
+          <a href="#" class="footer-link" onclick="openApp()">WikiMind Art</a>
+        </div>
+        <div class="footer-links-group">
+          <div class="footer-links-title">Compte</div>
+          <a href="#" class="footer-link" onclick="openLogin()">Connexion</a>
+          <a href="#" class="footer-link" onclick="openSignup()">Inscription</a>
+          <a href="#" class="footer-link">Paramètres</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2025 WikiMind · Tous droits réservés</span>
+        <div class="footer-powered">
+          Propulsé par 
+          <img src="images/pollinationai.png" alt="Pollinations">
+          Pollinations AI
+        </div>
+      </div>
+    </div>
+  </footer>
 
-            seeExamplesBtn.addEventListener('click', () => {
-                document.getElementById('gallery').scrollIntoView({ behavior: 'smooth' });
-            });
+</div><!-- /view-landing -->
 
-            // API Key selector
-            apiKeySelect.addEventListener('change', (e) => {
-                if (e.target.value === 'custom') {
-                    customApiKeyGroup.classList.remove('hidden');
-                } else {
-                    customApiKeyGroup.classList.add('hidden');
-                    userApiKey = 'pk_w6wnuGBObh7FeHwp';
-                }
-            });
+<!-- ══════════════════════════════════════════
+     APP VIEW
+══════════════════════════════════════════ -->
+<div id="view-app">
 
-            customApiKeyInput.addEventListener('input', (e) => {
-                customApiKey = e.target.value;
-                if (customApiKey.trim()) {
-                    userApiKey = customApiKey;
-                }
-            });
+  <!-- TOPBAR -->
+  <header class="app-topbar">
+    <div class="app-topbar-left">
+      <button class="topbar-btn" onclick="closeApp()" title="Retour à l'accueil">
+        <i class="fa-solid fa-arrow-left"></i>
+      </button>
+      <span class="app-topbar-logo">WikiMind <span>Art</span></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <a href="https://chpalitom09-bot.github.io/Wikimind-3/" class="topbar-btn">
+        <i class="fa-solid fa-house"></i> Wikimind
+      </a>
+      <a href="https://chpalitom09-bot.github.io/Wikimind-5/" class="topbar-btn">
+        <i class="fa-solid fa-robot"></i> IA
+      </a>
+      <button class="topbar-user-btn" id="app-user-btn" onclick="toggleUserDropdown()">?</button>
+      <div class="user-dropdown" id="user-dropdown">
+        <div class="dropdown-header">
+          <div class="dropdown-email" id="dropdown-email">Non connecté</div>
+          <div class="dropdown-plan" id="dropdown-plan">Plan gratuit · 0/10 générés</div>
+        </div>
+        <button class="dropdown-item" id="dd-login-item" onclick="openLogin();closeDropdown()">
+          <i class="fa-regular fa-user"></i> Connexion
+        </button>
+        <button class="dropdown-item" id="dd-signup-item" onclick="openSignup();closeDropdown()">
+          <i class="fa-solid fa-user-plus"></i> Inscription
+        </button>
+        <button class="dropdown-item" id="dd-logout-item" style="display:none" onclick="logout()">
+          <i class="fa-solid fa-right-from-bracket"></i> Déconnexion
+        </button>
+      </div>
+    </div>
+  </header>
 
-            // Generate button
-            generateBtn.addEventListener('click', generateImage);
+  <!-- BODY -->
+  <div class="app-body">
 
-            // Random prompt button
-            randomPromptBtn.addEventListener('click', () => {
-                const randomPrompt = examplePrompts[Math.floor(Math.random() * examplePrompts.length)];
-                promptInput.value = randomPrompt;
-            });
+    <!-- SIDEBAR -->
+    <aside class="app-sidebar" id="app-sidebar">
 
-            // Download button
-            downloadBtn.addEventListener('click', downloadImage);
+      <!-- Model -->
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Modèle</div>
+        <select class="model-select" id="model-select">
+          <option value="flux">Flux (Recommandé)</option>
+          <option value="flux-pro">Flux Pro</option>
+          <option value="flux-realism">Flux Realism</option>
+          <option value="flux-anime">Flux Anime</option>
+          <option value="flux-3d">Flux 3D</option>
+          <option value="turbo">Turbo (Rapide)</option>
+          <option value="kontext">Kontext</option>
+          <option value="ghibli">Ghibli</option>
+        </select>
+      </div>
+      <hr class="sidebar-divider">
 
-            // Regenerate button
-            regenerateBtn.addEventListener('click', () => {
-                resultDiv.classList.remove('visible');
-                generateImage();
-            });
+      <!-- Style -->
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Style artistique</div>
+        <div class="styles-grid">
+          <div class="style-chip active" data-style="" onclick="selectStyle(this,'')">Aucun</div>
+          <div class="style-chip" data-style="photorealistic" onclick="selectStyle(this,'photorealistic')">Photo</div>
+          <div class="style-chip" data-style="digital art" onclick="selectStyle(this,'digital art')">Digital</div>
+          <div class="style-chip" data-style="oil painting" onclick="selectStyle(this,'oil painting')">Peinture</div>
+          <div class="style-chip" data-style="watercolor" onclick="selectStyle(this,'watercolor')">Aquarelle</div>
+          <div class="style-chip" data-style="anime" onclick="selectStyle(this,'anime')">Anime</div>
+          <div class="style-chip" data-style="cinematic" onclick="selectStyle(this,'cinematic')">Cinéma</div>
+          <div class="style-chip" data-style="sketch" onclick="selectStyle(this,'sketch')">Croquis</div>
+        </div>
+      </div>
+      <hr class="sidebar-divider">
 
-            // Save to gallery button
-            saveToGalleryBtn.addEventListener('click', saveToGallery);
+      <!-- Ratio -->
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Format</div>
+        <div class="ratio-grid">
+          <div class="ratio-btn active" data-w="1024" data-h="1024" onclick="selectRatio(this,1024,1024)">
+            <div class="ratio-icon" style="width:16px;height:16px"></div>
+            <span>1:1</span>
+          </div>
+          <div class="ratio-btn" data-w="1280" data-h="720" onclick="selectRatio(this,1280,720)">
+            <div class="ratio-icon" style="width:20px;height:12px"></div>
+            <span>16:9</span>
+          </div>
+          <div class="ratio-btn" data-w="720" data-h="1280" onclick="selectRatio(this,720,1280)">
+            <div class="ratio-icon" style="width:12px;height:20px"></div>
+            <span>9:16</span>
+          </div>
+          <div class="ratio-btn" data-w="1200" data-h="900" onclick="selectRatio(this,1200,900)">
+            <div class="ratio-icon" style="width:20px;height:15px"></div>
+            <span>4:3</span>
+          </div>
+          <div class="ratio-btn" data-w="900" data-h="1200" onclick="selectRatio(this,900,1200)">
+            <div class="ratio-icon" style="width:15px;height:20px"></div>
+            <span>3:4</span>
+          </div>
+          <div class="ratio-btn" data-w="1024" data-h="512" onclick="selectRatio(this,1024,512)">
+            <div class="ratio-icon" style="width:20px;height:10px"></div>
+            <span>2:1</span>
+          </div>
+        </div>
+      </div>
+      <hr class="sidebar-divider">
 
-            // Auth buttons
-            loginBtn.addEventListener('click', () => showModal(loginModal));
-            signupBtn.addEventListener('click', () => showModal(signupModal));
-            createAccountLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                showModal(signupModal);
-            });
+      <!-- Count -->
+      <div class="sidebar-section">
+        <div class="range-row">
+          <span class="range-label">Nombre d'images</span>
+          <span class="range-val" id="count-val">1</span>
+        </div>
+        <input type="range" min="1" max="4" value="1" id="count-range" oninput="document.getElementById('count-val').textContent=this.value">
+      </div>
+      <hr class="sidebar-divider">
 
-            // Modal close buttons
-            closeLoginModal.addEventListener('click', () => hideModal(loginModal));
-            closeSignupModal.addEventListener('click', () => hideModal(signupModal));
-            closeEmailVerificationModal.addEventListener('click', () => hideModal(emailVerificationModal));
-            closeSuccessModal.addEventListener('click', () => hideModal(successModal));
-            closeErrorModal.addEventListener('click', () => hideModal(errorModal));
-            closeSuccessModalBtn.addEventListener('click', () => hideModal(successModal));
-            closeErrorModalBtn.addEventListener('click', () => hideModal(errorModal));
+      <!-- Seed -->
+      <div class="sidebar-section">
+        <div class="range-row">
+          <span class="range-label">Seed</span>
+          <span class="range-val" id="seed-val">Aléatoire</span>
+        </div>
+        <input type="range" min="0" max="9999" value="0" id="seed-range" oninput="document.getElementById('seed-val').textContent=this.value==0?'Aléatoire':this.value">
+      </div>
+      <hr class="sidebar-divider">
 
-            // Modal submit buttons
-            loginSubmitBtn.addEventListener('click', handleLogin);
-            signupSubmitBtn.addEventListener('click', handleSignup);
+      <!-- BYOK -->
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">🔑 Clé API Pollinations (BYOK)</div>
+        <input type="password" class="byok-input" id="byok-input" placeholder="pk_votre_clé_api..." maxlength="100">
+        <div class="byok-status">
+          <div class="byok-dot" id="byok-dot"></div>
+          <span id="byok-status-text">Clé non configurée</span>
+        </div>
+        <button onclick="saveBYOK()" style="margin-top:8px;width:100%;padding:7px;border-radius:8px;background:var(--bg4);border:1px solid var(--border);color:var(--text2);font-size:0.78rem;font-weight:500;cursor:pointer;font-family:'Geist',sans-serif;transition:all 0.12s" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='var(--bg4)'">
+          Enregistrer la clé
+        </button>
+      </div>
+      <hr class="sidebar-divider">
 
-            // Show signup from login modal
-            showSignupModalBtn.addEventListener('click', () => {
-                hideModal(loginModal);
-                showModal(signupModal);
-            });
+      <!-- History toggle -->
+      <div class="sidebar-section">
+        <button onclick="clearHistory()" style="width:100%;padding:8px;border-radius:8px;background:transparent;border:1px solid var(--border);color:var(--text3);font-size:0.78rem;cursor:pointer;font-family:'Geist',sans-serif;transition:all 0.12s" onmouseover="this.style.borderColor='rgba(248,113,113,0.3)';this.style.color='#f87171'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'">
+          <i class="fa-solid fa-trash" style="font-size:0.72rem;margin-right:6px"></i>Effacer l'historique
+        </button>
+      </div>
 
-            // Show login from signup modal
-            showLoginModalBtn.addEventListener('click', () => {
-                hideModal(signupModal);
-                showModal(loginModal);
-            });
+    </aside>
 
-            // Close modals when clicking outside
-            [loginModal, signupModal, emailVerificationModal, successModal, errorModal].forEach(modal => {
-                modal.addEventListener('click', (e) => {
-                    if (e.target === modal) {
-                        hideModal(modal);
-                    }
-                });
-            });
+    <!-- MAIN CANVAS -->
+    <main class="app-main">
+      <div class="app-canvas" id="app-canvas">
+        <div class="canvas-empty" id="canvas-empty">
+          <div class="canvas-empty-icon">🎨</div>
+          <div class="canvas-empty-title">Votre toile est vierge</div>
+          <div class="canvas-empty-sub">Écrivez un prompt ci-dessous et cliquez sur Générer pour créer votre première image.</div>
+        </div>
+        <div class="results-grid" id="results-grid" style="display:none"></div>
+      </div>
 
-            // Resend verification email
-            resendVerificationLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (userEmail) {
-                    showMessage('Un nouvel email de vérification a été envoyé.', 'success');
-                    // In a real implementation, you would call your backend to resend the verification email
-                }
-            });
-        }
+      <!-- PROMPT BAR -->
+      <div class="app-prompt-bar">
+        <div class="prompt-bar-inner">
+          <textarea class="prompt-textarea" id="app-prompt" 
+            placeholder="Décrivez l'image que vous souhaitez créer..." 
+            rows="2" maxlength="1000"></textarea>
+          <div class="prompt-bar-actions">
+            <div class="prompt-tags">
+              <span class="prompt-tag" onclick="addTag('photoréaliste')">photoréaliste</span>
+              <span class="prompt-tag" onclick="addTag('4K')">4K</span>
+              <span class="prompt-tag" onclick="addTag('détaillé')">détaillé</span>
+              <span class="prompt-tag" onclick="addTag('cinematic lighting')">éclairage cinéma</span>
+              <span class="prompt-tag" onclick="addTag('fantasy')">fantasy</span>
+              <span class="prompt-tag" onclick="addTag('portrait')">portrait</span>
+            </div>
+            <div class="prompt-bar-right">
+              <span class="count-display" id="gen-count-display"></span>
+              <button class="generate-btn" id="generate-btn" onclick="generateImages()">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Générer
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
 
-        // ========== Scroll Animations ==========
-        function setupScrollAnimations() {
-            const observerOptions = {
-                root: null,
-                rootMargin: '0px',
-                threshold: 0.1
-            };
+  </div>
+</div><!-- /view-app -->
 
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('visible');
-                    }
-                });
-            }, observerOptions);
+<!-- ══════════════════════════════════════════
+     MODALS
+══════════════════════════════════════════ -->
 
-            // Observe feature cards
-            document.querySelectorAll('.feature-card').forEach(card => {
-                observer.observe(card);
-            });
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="modal-login">
+  <div class="modal-box">
+    <button class="modal-close-btn" onclick="closeModal('modal-login')"><i class="fa-solid fa-xmark"></i></button>
+    <div class="modal-header">
+      <div class="modal-logo">
+        <img src="images/pollinationai.png" alt="" style="height:18px;opacity:0.8">
+        <span class="modal-logo-text">WikiMind Art</span>
+      </div>
+      <div class="modal-title">Connexion</div>
+      <div class="modal-sub">Connectez-vous pour accéder à plus de générations.</div>
+    </div>
+    <div class="modal-form">
+      <div class="modal-error" id="login-error"></div>
+      <div>
+        <div class="form-label">Adresse email</div>
+        <input type="email" class="form-input" id="login-email" placeholder="vous@exemple.com">
+      </div>
+      <div>
+        <div class="form-label">Mot de passe</div>
+        <input type="password" class="form-input" id="login-password" placeholder="••••••••">
+      </div>
+      <button class="modal-submit" onclick="handleLogin()">Se connecter</button>
+    </div>
+    <div class="modal-switch">
+      Pas encore de compte ? <a onclick="switchModal('modal-login','modal-signup')">Créer un compte</a>
+    </div>
+  </div>
+</div>
 
-            // Observe gallery items
-            document.querySelectorAll('.gallery-item').forEach(item => {
-                observer.observe(item);
-            });
-        }
+<!-- SIGNUP MODAL -->
+<div class="modal-overlay" id="modal-signup">
+  <div class="modal-box">
+    <button class="modal-close-btn" onclick="closeModal('modal-signup')"><i class="fa-solid fa-xmark"></i></button>
+    <div class="modal-header">
+      <div class="modal-logo">
+        <img src="images/pollinationai.png" alt="" style="height:18px;opacity:0.8">
+        <span class="modal-logo-text">WikiMind Art</span>
+      </div>
+      <div class="modal-title">Créer un compte</div>
+      <div class="modal-sub">Rejoignez WikiMind pour accéder à toutes les fonctionnalités.</div>
+    </div>
+    <div class="modal-form">
+      <div class="modal-error" id="signup-error"></div>
+      <div class="modal-success" id="signup-success"></div>
+      <div>
+        <div class="form-label">Nom d'affichage</div>
+        <input type="text" class="form-input" id="signup-name" placeholder="Votre nom">
+      </div>
+      <div>
+        <div class="form-label">Adresse email</div>
+        <input type="email" class="form-input" id="signup-email" placeholder="vous@exemple.com">
+      </div>
+      <div>
+        <div class="form-label">Mot de passe</div>
+        <input type="password" class="form-input" id="signup-password" placeholder="Min. 8 caractères">
+      </div>
+      <div>
+        <div class="form-label">Confirmer le mot de passe</div>
+        <input type="password" class="form-input" id="signup-confirm" placeholder="••••••••">
+      </div>
+      <button class="modal-submit" onclick="handleSignup()">Créer mon compte</button>
+    </div>
+    <div class="modal-switch">
+      Déjà un compte ? <a onclick="switchModal('modal-signup','modal-login')">Se connecter</a>
+    </div>
+  </div>
+</div>
 
-        // ========== Gallery Functions ==========
-        function loadGallery() {
-            galleryGrid.innerHTML = '';
-            exampleGalleryItems.forEach((item, index) => {
-                const galleryItem = document.createElement('div');
-                galleryItem.className = 'gallery-item';
-                if (index === 0) galleryItem.classList.add('visible');
-                
-                galleryItem.innerHTML = `
-                    <img src="${item.image}" alt="${item.title}" onerror="this.parentElement.style.display='none'">
-                    <div class="gallery-item-info">
-                        <h3>${item.title}</h3>
-                        <p>${item.description}</p>
-                    </div>
-                `;
-                galleryGrid.appendChild(galleryItem);
-            });
-        }
+<!-- UPGRADE MODAL -->
+<div class="modal-overlay" id="modal-upgrade">
+  <div class="modal-box">
+    <button class="modal-close-btn" onclick="closeModal('modal-upgrade')"><i class="fa-solid fa-xmark"></i></button>
+    <div class="upgrade-modal-inner">
+      <div class="upgrade-icon">✨</div>
+      <div class="upgrade-title">Limite atteinte</div>
+      <div class="upgrade-sub">
+        Vous avez utilisé votre génération gratuite. Créez un compte pour 10 générations par jour, 
+        ou connectez votre clé Pollinations API pour des générations illimitées.
+      </div>
+      <div class="upgrade-btns">
+        <button class="pricing-btn filled" onclick="switchModal('modal-upgrade','modal-signup')">
+          Créer un compte gratuit
+        </button>
+        <button class="pricing-btn outlined" onclick="closeModal('modal-upgrade');document.getElementById('byok-input').focus()">
+          Connecter ma clé API
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
-        function saveToGallery() {
-            if (!currentImageUrl) {
-                showMessage('Aucune image à sauvegarder.', 'error');
-                return;
-            }
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
 
-            const nextImageNumber = exampleGalleryItems.length + 1;
-            const newItem = {
-                title: `Ma création ${nextImageNumber}`,
-                description: currentPrompt || 'Image générée avec Wikimind Art',
-                image: `images/${nextImageNumber}.jpg`
-            };
+<!-- ══════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════ -->
+<script>
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+const DEFAULT_API_KEY = 'pk_w6wnuGBObh7FeHwp';
+const POLLINATIONS_CONNECTOR_KEY = 'pk_k17pnl1BAXA1Lqsb';
+let currentUser = null;
+let selectedStyle = '';
+let selectedWidth = 1024;
+let selectedHeight = 1024;
+let isGenerating = false;
+let freeGenUsed = false;
+let genHistory = [];
 
-            exampleGalleryItems.push(newItem);
-            loadGallery();
-            
-            // In a real implementation, you would save this to your backend
-            showMessage('Image sauvegardée dans votre galerie !', 'success');
-        }
+// ── INIT ──
+(function init() {
+  // Load stored user
+  const stored = localStorage.getItem('wikimind_art_user');
+  if (stored) {
+    try { currentUser = JSON.parse(stored); updateAuthUI(); }
+    catch(e) { localStorage.removeItem('wikimind_art_user'); }
+  }
+  // Sync with Wikimind main site auth
+  const wmUser = localStorage.getItem('wikimind_user') || localStorage.getItem('wm_user');
+  if (wmUser && !currentUser) {
+    try { currentUser = JSON.parse(wmUser); updateAuthUI(); }
+    catch(e) {}
+  }
+  // Free gen used?
+  freeGenUsed = localStorage.getItem('wm_art_free_used') === '1';
+  // BYOK
+  const savedBYOK = localStorage.getItem('wm_art_byok');
+  if (savedBYOK) {
+    document.getElementById('byok-input').value = savedBYOK;
+    updateBYOKStatus(savedBYOK);
+  }
+  // History
+  const hist = localStorage.getItem('wm_art_history');
+  if (hist) { try { genHistory = JSON.parse(hist); } catch(e) {} }
+  // Update count display
+  updateCountDisplay();
+  // Nav scroll
+  window.addEventListener('scroll', () => {
+    document.getElementById('main-nav').classList.toggle('scrolled', window.scrollY > 20);
+  });
+  // Reveal on scroll
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+  // Keyboard
+  document.getElementById('app-prompt').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) generateImages();
+  });
+  document.getElementById('hero-prompt').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') heroGenerate();
+  });
+  // Close dropdown on outside click
+  document.addEventListener('click', (e) => {
+    const dd = document.getElementById('user-dropdown');
+    const btn = document.getElementById('app-user-btn');
+    if (dd.classList.contains('open') && !dd.contains(e.target) && e.target !== btn) {
+      dd.classList.remove('open');
+    }
+  });
+})();
 
-        // ========== Image Generation ==========
-        async function generateImage() {
-            const prompt = promptInput.value.trim();
-            if (!prompt) {
-                showMessage('Veuillez entrer une description pour l\'image.', 'error');
-                return;
-            }
+// ══════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════
+function openApp() {
+  document.getElementById('view-landing').style.display = 'none';
+  document.getElementById('view-app').style.display = 'grid';
+  document.body.style.overflow = 'hidden';
+  updateCountDisplay();
+}
 
-            // Check if user has credits
-            if (userCredits <= 0 && !isLoggedIn) {
-                showMessage('Vous avez épuisé vos générations gratuites. Veuillez créer un compte pour continuer.', 'error');
-                showModal(signupModal);
-                return;
-            }
+function closeApp() {
+  document.getElementById('view-app').style.display = 'none';
+  document.getElementById('view-landing').style.display = 'block';
+  document.body.style.overflow = '';
+}
 
-            // Show loading
-            loadingDiv.classList.add('visible');
-            resultDiv.classList.remove('visible');
-            generateBtn.disabled = true;
+// ══════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════
+function openLogin() { openModal('modal-login'); }
+function openSignup() { openModal('modal-signup'); }
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+}
+function switchModal(from, to) { closeModal(from); openModal(to); }
 
-            try {
-                // Prepare request
-                const width = parseInt(widthInput.value) || 512;
-                const height = parseInt(heightInput.value) || 512;
-                const model = modelSelect.value;
-                
-                // For demo purposes, we'll use the Pollinations AI API
-                // In production, you would use your own backend to handle API keys securely
-                const apiUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${width}&height=${height}&model=${model}&nologo=true`;
-                
-                // If using custom API key, you would need to implement this differently
-                // For now, we'll just use the default API
-                
-                currentPrompt = prompt;
-                
-                // Simulate API call (in a real implementation, you would use fetch)
-                // For this demo, we'll generate a placeholder image URL
-                const timestamp = Date.now();
-                currentImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${width}&height=${height}&model=${model}&nologo=true&seed=${timestamp}`;
-                
-                // For the actual demo, let's try to use the real API
-                try {
-                    const response = await fetch(apiUrl);
-                    if (response.ok) {
-                        currentImageUrl = apiUrl;
-                    }
-                } catch (e) {
-                    console.log('Using placeholder image due to API limitations in this environment');
-                }
+// Click outside modal to close
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeModal(overlay.id);
+  });
+});
 
-                // Update UI
-                generatedImage.src = currentImageUrl;
-                
-                // Decrement credits if not logged in
-                if (!isLoggedIn) {
-                    userCredits--;
-                    remainingGenerationsSpan.textContent = userCredits;
-                }
+function showModalError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+function showModalSuccess(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.classList.add('show');
+}
 
-                // Show result
-                loadingDiv.classList.remove('visible');
-                resultDiv.classList.add('visible');
-                
-            } catch (error) {
-                console.error('Error generating image:', error);
-                showMessage('Une erreur est survenue lors de la génération de l\'image. Veuillez réessayer.', 'error');
-                loadingDiv.classList.remove('visible');
-            } finally {
-                generateBtn.disabled = false;
-            }
-        }
+function handleLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-password').value;
+  if (!email || !pass) return showModalError('login-error', 'Veuillez remplir tous les champs.');
+  if (!isValidEmail(email)) return showModalError('login-error', 'Adresse email invalide.');
+  // Check local accounts
+  const accounts = JSON.parse(localStorage.getItem('wm_art_accounts') || '{}');
+  const acc = accounts[email];
+  if (!acc) return showModalError('login-error', 'Aucun compte trouvé avec cet email.');
+  if (acc.password !== hashSimple(pass)) return showModalError('login-error', 'Mot de passe incorrect.');
+  if (!acc.verified) return showModalError('login-error', 'Veuillez vérifier votre email avant de vous connecter.');
+  currentUser = { email, name: acc.name, plan: 'free', dailyCount: acc.dailyCount || 0, lastReset: acc.lastReset || '' };
+  localStorage.setItem('wikimind_art_user', JSON.stringify(currentUser));
+  updateAuthUI();
+  closeModal('modal-login');
+  showToast('Connexion réussie ! Bienvenue ' + acc.name, 'success');
+  updateCountDisplay();
+}
 
-        function downloadImage() {
-            if (!currentImageUrl) {
-                showMessage('Aucune image à télécharger.', 'error');
-                return;
-            }
+function handleSignup() {
+  const name = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const pass = document.getElementById('signup-password').value;
+  const confirm = document.getElementById('signup-confirm').value;
+  if (!name || !email || !pass) return showModalError('signup-error', 'Veuillez remplir tous les champs.');
+  if (!isValidEmail(email)) return showModalError('signup-error', 'Adresse email invalide.');
+  if (pass.length < 8) return showModalError('signup-error', 'Le mot de passe doit contenir au moins 8 caractères.');
+  if (pass !== confirm) return showModalError('signup-error', 'Les mots de passe ne correspondent pas.');
+  const accounts = JSON.parse(localStorage.getItem('wm_art_accounts') || '{}');
+  if (accounts[email]) return showModalError('signup-error', 'Un compte existe déjà avec cet email.');
+  // Create account (simulated email verification)
+  const verifyCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+  accounts[email] = { name, password: hashSimple(pass), verified: false, verifyCode, dailyCount: 0, lastReset: '', createdAt: Date.now() };
+  localStorage.setItem('wm_art_accounts', JSON.stringify(accounts));
+  showModalSuccess('signup-success', `✅ Compte créé ! Code de vérification simulé : ${verifyCode} — Dans un vrai déploiement, vous recevriez un email.`);
+  // Auto-verify for demo
+  accounts[email].verified = true;
+  localStorage.setItem('wm_art_accounts', JSON.stringify(accounts));
+  setTimeout(() => {
+    currentUser = { email, name, plan: 'free', dailyCount: 0, lastReset: '' };
+    localStorage.setItem('wikimind_art_user', JSON.stringify(currentUser));
+    updateAuthUI();
+    closeModal('modal-signup');
+    showToast('Compte créé ! Bienvenue sur WikiMind Art 🎨', 'success');
+    updateCountDisplay();
+  }, 2500);
+}
 
-            const link = document.createElement('a');
-            link.href = currentImageUrl;
-            link.download = `wikimind-art-${Date.now()}.jpg`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
+function logout() {
+  currentUser = null;
+  localStorage.removeItem('wikimind_art_user');
+  updateAuthUI();
+  closeDropdown();
+  showToast('Déconnecté', 'info');
+  updateCountDisplay();
+}
 
-        // ========== Authentication Functions ==========
-        function handleLogin() {
-            const email = document.getElementById('loginEmail').value.trim();
-            const password = document.getElementById('loginPassword').value;
+function updateAuthUI() {
+  const userBtn = document.getElementById('app-user-btn');
+  const loginItem = document.getElementById('dd-login-item');
+  const signupItem = document.getElementById('dd-signup-item');
+  const logoutItem = document.getElementById('dd-logout-item');
+  const emailEl = document.getElementById('dropdown-email');
+  const planEl = document.getElementById('dropdown-plan');
+  const navLoginBtn = document.getElementById('nav-login-btn');
+  if (currentUser) {
+    userBtn.textContent = (currentUser.name || currentUser.email).charAt(0).toUpperCase();
+    emailEl.textContent = currentUser.email;
+    loginItem.style.display = 'none';
+    signupItem.style.display = 'none';
+    logoutItem.style.display = 'flex';
+    if (navLoginBtn) navLoginBtn.style.display = 'none';
+    updateDailyCount();
+  } else {
+    userBtn.textContent = '?';
+    emailEl.textContent = 'Non connecté';
+    planEl.textContent = 'Plan gratuit';
+    loginItem.style.display = 'flex';
+    signupItem.style.display = 'flex';
+    logoutItem.style.display = 'none';
+    if (navLoginBtn) navLoginBtn.style.display = 'flex';
+  }
+}
 
-            if (!email || !password) {
-                showMessage('Veuillez remplir tous les champs.', 'error');
-                return;
-            }
+function updateDailyCount() {
+  if (!currentUser) return;
+  const today = new Date().toDateString();
+  if (currentUser.lastReset !== today) { currentUser.dailyCount = 0; currentUser.lastReset = today; }
+  const planEl = document.getElementById('dropdown-plan');
+  planEl.textContent = `Plan gratuit · ${currentUser.dailyCount || 0}/10 aujourd'hui`;
+}
 
-            // In a real implementation, you would call your backend to verify credentials
-            // For this demo, we'll simulate a successful login
-            if (email && password) {
-                isLoggedIn = true;
-                userEmail = email;
-                userCredits = 10; // Give logged-in users 10 credits
-                
-                // Save to localStorage (in a real app, use secure HTTP-only cookies)
-                localStorage.setItem('wikimindArtUser', JSON.stringify({
-                    email: email,
-                    isVerified: true,
-                    credits: 10
-                }));
+function toggleUserDropdown() {
+  document.getElementById('user-dropdown').classList.toggle('open');
+}
+function closeDropdown() {
+  document.getElementById('user-dropdown').classList.remove('open');
+}
 
-                updateUI();
-                hideModal(loginModal);
-                showMessage('Connexion réussie !', 'success');
-            } else {
-                showMessage('Email ou mot de passe incorrect.', 'error');
-            }
-        }
+// ══════════════════════════════════════════
+// BYOK
+// ══════════════════════════════════════════
+function saveBYOK() {
+  const key = document.getElementById('byok-input').value.trim();
+  if (key) {
+    localStorage.setItem('wm_art_byok', key);
+    updateBYOKStatus(key);
+    showToast('Clé API enregistrée ✓', 'success');
+  } else {
+    localStorage.removeItem('wm_art_byok');
+    updateBYOKStatus('');
+    showToast('Clé API supprimée', 'info');
+  }
+}
 
-        function handleSignup() {
-            const name = document.getElementById('signupName').value.trim();
-            const email = document.getElementById('signupEmail').value.trim();
-            const password = document.getElementById('signupPassword').value;
-            const confirmPassword = document.getElementById('signupConfirmPassword').value;
+function updateBYOKStatus(key) {
+  const dot = document.getElementById('byok-dot');
+  const txt = document.getElementById('byok-status-text');
+  if (key && key.startsWith('pk_')) {
+    dot.classList.add('active');
+    txt.textContent = 'Clé active · Générations illimitées';
+    txt.style.color = '#4ade80';
+  } else if (key) {
+    dot.classList.remove('active');
+    dot.style.background = '#fbbf24';
+    txt.textContent = 'Format de clé invalide';
+    txt.style.color = '#fbbf24';
+  } else {
+    dot.classList.remove('active');
+    txt.textContent = 'Clé non configurée';
+    txt.style.color = '';
+  }
+}
 
-            if (!name || !email || !password || !confirmPassword) {
-                showMessage('Veuillez remplir tous les champs.', 'error');
-                return;
-            }
+function getActiveAPIKey() {
+  return localStorage.getItem('wm_art_byok') || DEFAULT_API_KEY;
+}
 
-            if (password !== confirmPassword) {
-                showMessage('Les mots de passe ne correspondent pas.', 'error');
-                return;
-            }
+// ══════════════════════════════════════════
+// GENERATION
+// ══════════════════════════════════════════
+function updateCountDisplay() {
+  const el = document.getElementById('gen-count-display');
+  if (!el) return;
+  const byok = localStorage.getItem('wm_art_byok');
+  if (byok && byok.startsWith('pk_')) { el.textContent = '∞ illimité'; return; }
+  if (currentUser) {
+    updateDailyCount();
+    const remaining = 10 - (currentUser.dailyCount || 0);
+    el.textContent = `${remaining} restante${remaining !== 1 ? 's' : ''}/10`;
+  } else {
+    el.textContent = freeGenUsed ? '0 restante' : '1 gratuite';
+  }
+}
 
-            if (!isValidEmail(email)) {
-                showMessage('Veuillez entrer un email valide.', 'error');
-                return;
-            }
+function canGenerate() {
+  const byok = localStorage.getItem('wm_art_byok');
+  if (byok && byok.startsWith('pk_')) return true;
+  if (currentUser) {
+    updateDailyCount();
+    return (currentUser.dailyCount || 0) < 10;
+  }
+  return !freeGenUsed;
+}
 
-            if (password.length < 6) {
-                showMessage('Le mot de passe doit contenir au moins 6 caractères.', 'error');
-                return;
-            }
+function incrementGenCount() {
+  const byok = localStorage.getItem('wm_art_byok');
+  if (byok && byok.startsWith('pk_')) return;
+  if (currentUser) {
+    currentUser.dailyCount = (currentUser.dailyCount || 0) + 1;
+    localStorage.setItem('wikimind_art_user', JSON.stringify(currentUser));
+    updateDailyCount();
+    updateCountDisplay();
+  } else {
+    freeGenUsed = true;
+    localStorage.setItem('wm_art_free_used', '1');
+    updateCountDisplay();
+  }
+}
 
-            // In a real implementation, you would call your backend to create the account
-            // For this demo, we'll simulate the process
-            userEmail = email;
-            verificationEmailSpan.textContent = email;
-            
-            hideModal(signupModal);
-            showModal(emailVerificationModal);
-        }
+async function generateImages() {
+  const prompt = document.getElementById('app-prompt').value.trim();
+  if (!prompt) { showToast('Entrez un prompt pour commencer', 'info'); return; }
+  if (isGenerating) return;
+  if (!canGenerate()) { openModal('modal-upgrade'); return; }
 
-        function isValidEmail(email) {
-            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return re.test(email);
-        }
+  const count = parseInt(document.getElementById('count-range').value);
+  const model = document.getElementById('model-select').value;
+  const seed = parseInt(document.getElementById('seed-range').value);
+  const fullPrompt = selectedStyle ? `${prompt}, ${selectedStyle}` : prompt;
+  const apiKey = getActiveAPIKey();
 
-        function updateUI() {
-            if (isLoggedIn) {
-                loginBtn.textContent = 'Mon compte';
-                signupBtn.classList.add('hidden');
-                remainingGenerationsSpan.textContent = userCredits;
-                createAccountLink.parentElement.style.display = 'none';
-            } else {
-                loginBtn.textContent = 'Se connecter';
-                signupBtn.classList.remove('hidden');
-                remainingGenerationsSpan.textContent = userCredits;
-                createAccountLink.parentElement.style.display = 'block';
-            }
-        }
+  isGenerating = true;
+  const btn = document.getElementById('generate-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="gen-spinner" style="width:14px;height:14px;border-width:1.5px"></div> Génération...';
 
-        // ========== Modal Functions ==========
-        function showModal(modal) {
-            modal.classList.add('visible');
-            document.body.style.overflow = 'hidden';
-        }
+  // Show canvas, hide empty
+  document.getElementById('canvas-empty').style.display = 'none';
+  document.getElementById('results-grid').style.display = 'grid';
 
-        function hideModal(modal) {
-            modal.classList.remove('visible');
-            document.body.style.overflow = '';
-            
-            // Clear form fields
-            if (modal === loginModal) {
-                document.getElementById('loginEmail').value = '';
-                document.getElementById('loginPassword').value = '';
-            } else if (modal === signupModal) {
-                document.getElementById('signupName').value = '';
-                document.getElementById('signupEmail').value = '';
-                document.getElementById('signupPassword').value = '';
-                document.getElementById('signupConfirmPassword').value = '';
-            }
-        }
+  // Add loading placeholders
+  const loadingIds = [];
+  for (let i = 0; i < count; i++) {
+    const id = 'load_' + Date.now() + '_' + i;
+    loadingIds.push(id);
+    addLoadingCard(id);
+  }
 
-        function showMessage(message, type) {
-            if (type === 'success') {
-                successMessage.textContent = message;
-                showModal(successModal);
-            } else {
-                errorMessage.textContent = message;
-                showModal(errorModal);
-            }
-        }
+  incrementGenCount();
 
-        // ========== Utility Functions ==========
-        function getApiKey() {
-            return apiKeySelect.value === 'custom' && customApiKey.trim() ? customApiKey : userApiKey;
-        }
-    </script>
+  // Generate all images
+  const promises = loadingIds.map((id, i) => {
+    const imgSeed = seed === 0 ? Math.floor(Math.random() * 9999) : seed + i;
+    return generateSingle(id, fullPrompt, model, selectedWidth, selectedHeight, imgSeed, apiKey, i);
+  });
+
+  await Promise.allSettled(promises);
+
+  isGenerating = false;
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Générer';
+  updateCountDisplay();
+}
+
+async function generateSingle(cardId, prompt, model, width, height, seed, apiKey, index) {
+  const encoded = encodeURIComponent(prompt);
+  const url = `https://image.pollinations.ai/prompt/${encoded}?model=${model}&width=${width}&height=${height}&seed=${seed}&nologo=true&enhance=true`;
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      replaceLoadingCard(cardId, url, prompt, model, seed);
+      // Save to history
+      genHistory.unshift({ url, prompt, model, seed, width, height, ts: Date.now() });
+      if (genHistory.length > 50) genHistory.pop();
+      localStorage.setItem('wm_art_history', JSON.stringify(genHistory));
+      resolve({ url });
+    };
+    img.onerror = () => {
+      replaceLoadingCardError(cardId, 'Échec de la génération');
+      resolve({ error: true });
+    };
+    img.src = url;
+  });
+}
+
+function addLoadingCard(id) {
+  const grid = document.getElementById('results-grid');
+  const card = document.createElement('div');
+  card.className = 'result-card-loading';
+  card.id = id;
+  card.innerHTML = `<div class="gen-spinner"></div><div class="gen-spinner-label">Génération en cours...</div>`;
+  grid.prepend(card);
+}
+
+function replaceLoadingCard(id, url, prompt, model, seed) {
+  const card = document.getElementById(id);
+  if (!card) return;
+  card.className = 'result-card';
+  card.style.animation = 'fadeInUp 0.4s ease';
+  card.innerHTML = `
+    <img src="${url}" alt="${escHtml(prompt)}" loading="lazy" style="cursor:pointer" onclick="openImageFull('${escHtml(url)}','${escHtml(prompt)}')">
+    <div class="result-card-actions">
+      <button class="result-action-btn" onclick="downloadImage('${escHtml(url)}','${escHtml(prompt)}')" title="Télécharger">
+        <i class="fa-solid fa-download"></i>
+      </button>
+      <button class="result-action-btn" onclick="copyPrompt('${escHtml(prompt)}')" title="Copier le prompt">
+        <i class="fa-solid fa-copy"></i>
+      </button>
+    </div>
+    <div class="result-card-footer">
+      <div class="result-card-prompt">${escHtml(prompt)}</div>
+      <div class="result-card-meta">${model} · seed ${seed}</div>
+    </div>
+  `;
+}
+
+function replaceLoadingCardError(id, msg) {
+  const card = document.getElementById(id);
+  if (!card) return;
+  card.className = 'result-card-loading';
+  card.innerHTML = `<div style="font-size:1.5rem;opacity:0.3">⚠️</div><div class="gen-spinner-label">${msg}</div>`;
+}
+
+// ── HERO QUICK GENERATE ──
+async function heroGenerate() {
+  const prompt = document.getElementById('hero-prompt').value.trim();
+  if (!prompt) return;
+  if (!canGenerate() && !freeGenUsed) { openModal('modal-upgrade'); return; }
+
+  const btn = document.getElementById('hero-gen-btn');
+  const loader = document.getElementById('hero-loader');
+  const result = document.getElementById('hero-result');
+  const img = document.getElementById('hero-result-img');
+
+  btn.disabled = true;
+  loader.style.display = 'flex';
+  result.style.display = 'none';
+
+  const encoded = encodeURIComponent(prompt);
+  const seed = Math.floor(Math.random() * 9999);
+  const url = `https://image.pollinations.ai/prompt/${encoded}?model=flux&width=1024&height=768&seed=${seed}&nologo=true&enhance=true`;
+
+  const loadImg = new Image();
+  loadImg.crossOrigin = 'anonymous';
+  loadImg.onload = () => {
+    img.src = url;
+    document.getElementById('hero-result-prompt').textContent = prompt;
+    document.getElementById('hero-result-dl').href = url;
+    document.getElementById('hero-result-dl').download = 'wikimind-art.jpg';
+    loader.style.display = 'none';
+    result.style.display = 'block';
+    btn.disabled = false;
+    // Mark free gen used
+    if (!currentUser) {
+      freeGenUsed = true;
+      localStorage.setItem('wm_art_free_used', '1');
+    }
+    updateCountDisplay();
+  };
+  loadImg.onerror = () => {
+    loader.style.display = 'none';
+    btn.disabled = false;
+    showToast('Erreur lors de la génération', 'error');
+  };
+  loadImg.src = url;
+}
+
+// ══════════════════════════════════════════
+// CONTROLS
+// ══════════════════════════════════════════
+function selectStyle(el, style) {
+  document.querySelectorAll('.style-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  selectedStyle = style;
+}
+
+function selectRatio(el, w, h) {
+  document.querySelectorAll('.ratio-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectedWidth = w;
+  selectedHeight = h;
+}
+
+function addTag(tag) {
+  const ta = document.getElementById('app-prompt');
+  const val = ta.value.trim();
+  ta.value = val ? val + ', ' + tag : tag;
+  ta.focus();
+}
+
+// ══════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════
+function openImageFull(url, prompt) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;cursor:pointer;';
+  overlay.innerHTML = `
+    <img src="${url}" style="max-width:90vw;max-height:80vh;object-fit:contain;border-radius:12px;box-shadow:0 20px 80px rgba(0,0,0,0.8)">
+    <div style="margin-top:16px;font-size:0.82rem;color:rgba(255,255,255,0.5);max-width:600px;text-align:center;">${escHtml(prompt)}</div>
+    <button style="margin-top:16px;padding:8px 20px;border-radius:10px;background:#fff;color:#000;border:none;font-size:0.85rem;font-weight:600;cursor:pointer;" onclick="event.stopPropagation();downloadImageURL('${escHtml(url)}')">
+      <i class="fa-solid fa-download"></i> Télécharger
+    </button>
+  `;
+  overlay.addEventListener('click', () => document.body.removeChild(overlay));
+  document.body.appendChild(overlay);
+}
+
+function downloadImage(url, prompt) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'wikimind-art-' + Date.now() + '.jpg';
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToast('Téléchargement démarré', 'success');
+}
+
+function downloadImageURL(url) {
+  downloadImage(url, '');
+}
+
+function copyPrompt(prompt) {
+  navigator.clipboard.writeText(prompt).then(() => showToast('Prompt copié', 'success'));
+}
+
+function clearHistory() {
+  if (!confirm('Effacer toute la galerie ?')) return;
+  document.getElementById('results-grid').innerHTML = '';
+  document.getElementById('results-grid').style.display = 'none';
+  document.getElementById('canvas-empty').style.display = 'flex';
+  genHistory = [];
+  localStorage.removeItem('wm_art_history');
+  showToast('Galerie effacée', 'info');
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function hashSimple(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) - h) + str.charCodeAt(i);
+    h = h & h;
+  }
+  return h.toString(36);
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle';
+  toast.innerHTML = `<i class="fa-solid fa-${icon}"></i> ${msg}`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(8px) scale(0.95)';
+    toast.style.transition = 'all 0.3s ease';
+    setTimeout(() => { if (toast.parentNode) container.removeChild(toast); }, 300);
+  }, 3000);
+}
+
+// Nav login button
+document.getElementById('nav-login-btn').addEventListener('click', openLogin);
+</script>
+
 </body>
 </html>
